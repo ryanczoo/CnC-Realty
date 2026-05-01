@@ -1,0 +1,338 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  BUYER
+  AGENT
+  ADMIN
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  SHOWING
+  OFFER
+  UNDER_CONTRACT
+  CLOSED
+  LOST
+}
+
+enum LeadSource {
+  WEBSITE
+  REFERRAL
+  SOCIAL
+  OPEN_HOUSE
+  COLD_CALL
+  OTHER
+}
+
+enum ActivityType {
+  NOTE
+  CALL
+  EMAIL
+  SHOWING
+  OFFER
+  DOCUMENT
+}
+
+enum TransactionStatus {
+  ACTIVE
+  PENDING
+  UNDER_CONTRACT
+  CLOSED
+  CANCELLED
+}
+
+enum CampaignType {
+  EMAIL
+  DRIP
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  ACTIVE
+  COMPLETED
+  PAUSED
+}
+
+enum ContactStatus {
+  PENDING
+  SENT
+  OPENED
+  CLICKED
+  BOUNCED
+  UNSUBSCRIBED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          UserRole  @default(BUYER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  agent         Agent?
+  savedSearches SavedSearch[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Agent {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  slug        String   @unique
+  bio         String?
+  headshot    String?
+  licenseNum  String?
+  phone       String?
+  instagram   String?
+  facebook    String?
+  linkedin    String?
+  listingsClosed Int   @default(0)
+  volumeClosed   Float @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  leads        Lead[]
+  transactions Transaction[]
+}
+
+model Property {
+  id            String   @id @default(cuid())
+  mlsNumber     String   @unique
+  status        String
+  listPrice     Float
+  beds          Int?
+  baths         Float?
+  sqft          Int?
+  lotSize       Float?
+  yearBuilt     Int?
+  propertyType  String?
+  description   String?
+  address       String
+  city          String
+  state         String
+  zip           String
+  county        String?
+  latitude      Float?
+  longitude     Float?
+  photos        Json     @default("[]")
+  rawData       Json     @default("{}")
+  listedAt      DateTime?
+  modifiedAt    DateTime?
+  syncedAt      DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  alerts PropertyAlert[]
+}
+
+model Lead {
+  id          String     @id @default(cuid())
+  firstName   String
+  lastName    String
+  email       String
+  phone       String?
+  status      LeadStatus @default(NEW)
+  source      LeadSource @default(WEBSITE)
+  score       Int        @default(0)
+  notes       String?
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  agentId     String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  agent        Agent?       @relation(fields: [agentId], references: [id])
+  activities   Activity[]
+  transactions Transaction[]
+  campaignContacts CampaignContact[]
+}
+
+model Activity {
+  id            String       @id @default(cuid())
+  type          ActivityType
+  content       String
+  leadId        String?
+  transactionId String?
+  createdAt     DateTime     @default(now())
+
+  lead        Lead?        @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  transaction Transaction? @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+}
+
+model Transaction {
+  id              String            @id @default(cuid())
+  status          TransactionStatus @default(ACTIVE)
+  address         String
+  listPrice       Float?
+  salePrice       Float?
+  commissionRate  Float?
+  offerDate       DateTime?
+  acceptanceDate  DateTime?
+  closeDate       DateTime?
+  agentId         String
+  leadId          String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  agent      Agent      @relation(fields: [agentId], references: [id])
+  lead       Lead?      @relation(fields: [leadId], references: [id])
+  activities Activity[]
+  documents  Document[]
+}
+
+model Document {
+  id            String   @id @default(cuid())
+  name          String
+  url           String
+  size          Int?
+  mimeType      String?
+  transactionId String
+  uploadedAt    DateTime @default(now())
+
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+}
+
+model Campaign {
+  id          String         @id @default(cuid())
+  name        String
+  type        CampaignType
+  status      CampaignStatus @default(DRAFT)
+  subject     String?
+  body        String?
+  scheduledAt DateTime?
+  sentAt      DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  contacts CampaignContact[]
+}
+
+model CampaignContact {
+  id         String        @id @default(cuid())
+  campaignId String
+  leadId     String
+  status     ContactStatus @default(PENDING)
+  sentAt     DateTime?
+  openedAt   DateTime?
+  clickedAt  DateTime?
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  lead     Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, leadId])
+}
+
+model SavedSearch {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String?
+  minPrice    Float?
+  maxPrice    Float?
+  minBeds     Int?
+  minBaths    Float?
+  propertyType String?
+  cities      String[] @default([])
+  zips        String[] @default([])
+  alertsOn    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user   User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  alerts PropertyAlert[]
+}
+
+model PropertyAlert {
+  id            String   @id @default(cuid())
+  savedSearchId String
+  propertyId    String
+  notifiedAt    DateTime?
+  createdAt     DateTime @default(now())
+
+  savedSearch SavedSearch @relation(fields: [savedSearchId], references: [id], onDelete: Cascade)
+  property    Property    @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@unique([savedSearchId, propertyId])
+}
+
+model BlogPost {
+  id          String    @id @default(cuid())
+  title       String
+  slug        String    @unique
+  excerpt     String?
+  content     String
+  published   Boolean   @default(false)
+  publishedAt DateTime?
+  coverImage  String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String?
+  body      String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model SiteSettings {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}
