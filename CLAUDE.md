@@ -199,6 +199,63 @@ Full Prisma schema with all enums (`LeadStatus`, `TransactionStatus`, `CampaignT
 
 ---
 
+## Session Notes — 2026-05-02
+
+### What Was Completed This Session
+
+**Phase 1 (Foundation) — DONE ✅**
+- Turborepo monorepo initialized with pnpm workspaces
+- Next.js 14 App Router scaffolded at `apps/web`
+- CRM API service scaffolded at `apps/crm-api`
+- Full Prisma schema written at `packages/database/prisma/schema.prisma` (14 models)
+- NextAuth configured with email/password + Google OAuth, JWT sessions, role-based redirects
+- Auth pages built: `/login`, `/register`, `/forgot-password`
+- Route protection middleware at `apps/web/src/middleware.ts`
+- Navbar + Footer with CnC brand colors
+- shadcn/ui initialized
+- Magic UI installed (framer-motion + shimmer-button component)
+- Aceternity UI MCP server available (24 free components)
+- Railway PostgreSQL provisioned and initial migration run (`20260502064718_init`)
+- `.env.local` configured at `apps/web/.env.local` (DATABASE_URL + NEXTAUTH_SECRET set)
+- Everything committed and pushed to `claude/real-estate-website-9bdWi`
+
+### Phase 2 Design Decisions — APPROVED, NOT YET BUILT
+
+**Inspiration:** eXp Realty (exprealty.com) — but more interactive and premium
+
+**Design Direction: Option A — Video Hero, Dark Gold + Light Body**
+
+**Color shift:** Primary hero color changed from navy to **dark gold**. Navy used as accent/secondary.
+
+**Homepage sections (in order):**
+1. **Hero** — Full-viewport video background (`C:\Users\hey_r\Desktop\Homepage video 6K.mp4`, copy to `apps/web/public/`). Dark gold semi-transparent overlay. Centered: CnC logo, typewriter effect cycling *"Find Your Dream Home" → "Sell Smarter" → "Join Our Team" → "Your Future Starts Here"*, and Aceternity `placeholder-and-vanish-input` search bar.
+2. **Stats Bar** — Full-width dark gold strip. Animated number counters (homes sold, active listings, agents, years in CA) ticking up on scroll.
+3. **Featured Listings** — White background. Aceternity `focus-cards` grid (hover to focus, blur others). Placeholder data for now — real MLS data comes in Phase 4.
+4. **Why CnC** — Light gray background. Aceternity `bento-grid` highlighting differentiators: CRMLS access, free agent signup, tech tools, local expertise.
+5. **Agent Spotlight** — White background. Aceternity `animated-tooltip` on agent photos — hover to see stats pop up.
+6. **Testimonials** — Dark gold background. Framer-motion animated cards.
+7. **Join CnC CTA Banner** — Navy background. Magic UI `shimmer-button` with bold recruitment message.
+
+**Vibe:** Warm/trustworthy + tech-forward + premium (like Compass meets eXp but more alive)
+
+**Video note:** `Homepage video 6K.mp4` is 160MB — fine for local dev, needs compression before Vercel deploy.
+
+**Feedback workflow:** Ryan will run `pnpm dev` locally, take screenshots (save as PNG to Desktop with path), and describe changes. No Word docs — paste feedback in chat or share PNG file paths.
+
+**Component libraries available:**
+- shadcn/ui (base components)
+- Magic UI via shadcn registry (`pnpm dlx shadcn@latest add "https://magicui.design/r/[name]"`)
+- Aceternity UI via MCP + shadcn registry (`npx shadcn@latest add https://ui.aceternity.com/registry/[name].json`)
+
+### Next Session — Start Here
+
+1. Copy video to `apps/web/public/homepage-video.mp4`
+2. Build Phase 2 homepage (all 7 sections above) and remaining marketing pages
+3. Run `pnpm dev` in `apps/web`, open `localhost:3000`, Ryan reviews and gives feedback
+4. Iterate on visuals until approved, then commit and move to Phase 3
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`
