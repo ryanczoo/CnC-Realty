@@ -240,6 +240,25 @@ function ServiceCard({
 
 export function ServicesSection() {
   const sectionRef = useRef<HTMLElement>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalForm, setModalForm] = useState({ firstName: "", lastName: "", email: "", phone: "", dealType: "Buy" });
+  const [modalStatus, setModalStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+
+  async function handleModalSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setModalStatus("loading");
+    try {
+      const res = await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...modalForm, notes: `Deal type: ${modalForm.dealType}`, source: "WEBSITE" }),
+      });
+      if (!res.ok) throw new Error();
+      setModalStatus("success");
+    } catch {
+      setModalStatus("error");
+    }
+  }
 
   const { scrollYProgress } = useScroll({
     target: sectionRef,
@@ -269,19 +288,92 @@ export function ServicesSection() {
             <RevealText delay={0.1}><span className="text-[2.5rem] xl:text-[3rem]">with </span><span style={{ color: "#9E8C61" }}>CnC</span></RevealText>
           </span>
         </h2>
-        <motion.a
-          href="/sell"
+        <motion.button
+          onClick={() => setModalOpen(true)}
           whileHover={{ scale: 1.1 }}
           transition={{ type: "spring", stiffness: 300, damping: 20 }}
           className="ml-auto mt-6 flex w-fit items-center rounded-full bg-[#1B1B1B] px-7 py-3.5 text-sm font-medium text-white"
         >
           Let&apos;s Start
-        </motion.a>
+        </motion.button>
       </motion.div>
 
       {CARDS.map((card, i) => (
         <ServiceCard key={card.label} {...card} y={yValues[i]} />
       ))}
+
+      {/* Lead capture modal */}
+      {modalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          onClick={(e) => { if (e.target === e.currentTarget) { setModalOpen(false); setModalStatus("idle"); } }}
+        >
+          <div className="relative w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl">
+            <button
+              onClick={() => { setModalOpen(false); setModalStatus("idle"); }}
+              className="absolute right-4 top-4 text-[#1B1B1B]/40 hover:text-[#1B1B1B]"
+            >
+              ✕
+            </button>
+            {modalStatus === "success" ? (
+              <div className="py-8 text-center">
+                <p className="font-sans text-lg font-light text-[#1B1B1B]">Got it — we&apos;ll be in touch soon.</p>
+              </div>
+            ) : (
+              <form onSubmit={handleModalSubmit} className="flex flex-col gap-5">
+                <h2 className="font-sans text-2xl font-light text-[#1B1B1B]">Let&apos;s get started.</h2>
+                <div className="grid grid-cols-2 gap-4">
+                  {(["firstName", "lastName"] as const).map((k) => (
+                    <div key={k} className="flex flex-col gap-1">
+                      <label className="font-sans text-xs text-[#1B1B1B]/50">{k === "firstName" ? "First Name *" : "Last Name *"}</label>
+                      <input
+                        required
+                        value={modalForm[k]}
+                        onChange={(e) => setModalForm((f) => ({ ...f, [k]: e.target.value }))}
+                        className="border-b border-[#1B1B1B]/20 bg-transparent py-1.5 font-sans text-sm text-[#1B1B1B] outline-none focus:border-[#1B1B1B]/60"
+                      />
+                    </div>
+                  ))}
+                </div>
+                {(["email", "phone"] as const).map((k) => (
+                  <div key={k} className="flex flex-col gap-1">
+                    <label className="font-sans text-xs text-[#1B1B1B]/50">{k === "email" ? "Email *" : "Phone"}</label>
+                    <input
+                      type={k === "email" ? "email" : "tel"}
+                      required={k === "email"}
+                      value={modalForm[k]}
+                      onChange={(e) => setModalForm((f) => ({ ...f, [k]: e.target.value }))}
+                      className="border-b border-[#1B1B1B]/20 bg-transparent py-1.5 font-sans text-sm text-[#1B1B1B] outline-none focus:border-[#1B1B1B]/60"
+                    />
+                  </div>
+                ))}
+                <div className="flex flex-col gap-1">
+                  <label className="font-sans text-xs text-[#1B1B1B]/50">I&apos;m looking to…</label>
+                  <select
+                    value={modalForm.dealType}
+                    onChange={(e) => setModalForm((f) => ({ ...f, dealType: e.target.value }))}
+                    className="border-b border-[#1B1B1B]/20 bg-transparent py-1.5 font-sans text-sm text-[#1B1B1B] outline-none focus:border-[#1B1B1B]/60"
+                  >
+                    {["Buy", "Sell", "Rent", "Property Management"].map((v) => (
+                      <option key={v} value={v}>{v}</option>
+                    ))}
+                  </select>
+                </div>
+                {modalStatus === "error" && (
+                  <p className="font-sans text-xs text-red-500">Something went wrong. Please try again.</p>
+                )}
+                <button
+                  type="submit"
+                  disabled={modalStatus === "loading"}
+                  className="w-full rounded-full bg-[#1B1B1B] py-3 font-sans text-sm font-medium text-white transition-opacity hover:opacity-80 disabled:opacity-40"
+                >
+                  {modalStatus === "loading" ? "Sending…" : "Next →"}
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </section>
   );
 }
