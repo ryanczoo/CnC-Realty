@@ -23,6 +23,10 @@
     --brand-gold: #c9a84c;
     --brand-gold-light: #e8c97a;
     --brand-navy-light: #1a3a6b;
+    /* Phase 2 design-system tokens */
+    --cnc-gold: #9E8C61;
+    --cnc-dark: #1B1B1B;
+    --cnc-bg: #F2F0EF;
 
     --background: oklch(1 0 0);
     --foreground: oklch(0.145 0 0);
@@ -91,7 +95,7 @@
     --sidebar-ring: oklch(0.556 0 0);
   }
   * {
-    @apply border-border outline-ring/50;
+    border-color: var(--border);
   }
   body {
     @apply bg-background text-foreground;
@@ -101,24 +105,8 @@
   }
 }
 
-@theme inline {
-  @keyframes shimmer-slide {
-  to {
-    transform: translate(calc(100cqw - 100%), 0);
-    }
-  }
-  @keyframes spin-around {
-  0% {
-    transform: translateZ(0) rotate(0);
-    }
-  15%, 35% {
-    transform: translateZ(0) rotate(90deg);
-    }
-  65%, 85% {
-    transform: translateZ(0) rotate(270deg);
-    }
-  100% {
-    transform: translateZ(0) rotate(360deg);
-    }
-  }
+@keyframes testimonial-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }
+

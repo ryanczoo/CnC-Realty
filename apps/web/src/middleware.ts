@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { getToken } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
 
