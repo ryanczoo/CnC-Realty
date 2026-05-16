@@ -255,6 +255,7 @@ export function ServicesSection() {
       });
       if (!res.ok) throw new Error();
       setModalStatus("success");
+      setModalForm({ firstName: "", lastName: "", email: "", phone: "", dealType: "Buy" });
     } catch {
       setModalStatus("error");
     }
@@ -306,11 +307,11 @@ export function ServicesSection() {
       {modalOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-          onClick={(e) => { if (e.target === e.currentTarget) { setModalOpen(false); setModalStatus("idle"); } }}
+          onClick={(e) => { if (e.target === e.currentTarget) { setModalOpen(false); setModalStatus("idle"); setModalForm({ firstName: "", lastName: "", email: "", phone: "", dealType: "Buy" });} }}
         >
           <div className="relative w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl">
             <button
-              onClick={() => { setModalOpen(false); setModalStatus("idle"); }}
+              onClick={() => { setModalOpen(false); setModalStatus("idle"); setModalForm({ firstName: "", lastName: "", email: "", phone: "", dealType: "Buy" });}}
               className="absolute right-4 top-4 text-[#1B1B1B]/40 hover:text-[#1B1B1B]"
             >
               ✕
