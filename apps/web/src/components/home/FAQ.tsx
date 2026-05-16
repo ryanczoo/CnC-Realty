@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
+import { RevealText } from "@/components/ui/reveal-text";
 
 const FAQS = [
   {
@@ -29,13 +30,13 @@ export function FAQ() {
   return (
     <section className="bg-[#F2F0EF] px-8 pb-20 pt-16 lg:px-20">
       <motion.h2
-        className="mb-6 font-sans text-[2.8rem] font-light leading-[1.0] text-[#1B1B1B] xl:text-[3.5rem]"
+        className="mb-6 font-sans text-[2.8rem] font-light leading-[1.0] xl:text-[3.5rem]"
         initial={{ opacity: 0, y: 24 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
         viewport={{ once: true }}
       >
-        FAQs
+        <RevealText>FAQs</RevealText>
       </motion.h2>
 
       <div>

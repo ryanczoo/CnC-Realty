@@ -3,6 +3,7 @@
 import { fadeUp, SPRING_HOVER } from "@/lib/motion";
 import { motion } from "motion/react";
 import Image from "next/image";
+import { RevealText } from "@/components/ui/reveal-text";
 import Link from "next/link";
 
 const MotionLink = motion(Link);
@@ -24,8 +25,8 @@ export function JoinCnCCTA() {
           className="font-sans font-light leading-[1.15]"
           {...fadeUp(0, 24)}
         >
-          <span className="block whitespace-nowrap text-[2.5rem] text-white xl:text-[3rem]">Be the agent you&apos;re meant to be.</span>
-          <span className="block text-[3.5rem] text-white/50 xl:text-[4.2rem]">Be CnC.</span>
+          <span className="block whitespace-nowrap text-[2.5rem] xl:text-[3rem]"><RevealText onDark>Be the agent you&apos;re meant to be.</RevealText></span>
+          <span className="block text-[3.5rem] xl:text-[4.2rem]"><RevealText onDark delay={0.15} className="opacity-50">Be CnC.</RevealText></span>
         </motion.h2>
 
         <motion.div {...fadeUp(0.15, 16)} className="flex flex-col items-center gap-4">

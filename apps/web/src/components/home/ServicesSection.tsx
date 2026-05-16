@@ -10,6 +10,7 @@ import {
 } from "motion/react";
 import type { CSSProperties } from "react";
 import { useRef, useState } from "react";
+import { RevealText } from "@/components/ui/reveal-text";
 
 const CARDS = [
   {
@@ -262,10 +263,10 @@ export function ServicesSection() {
         transition={{ duration: 0.8, ease: "easeOut" }}
         viewport={{ once: true }}
       >
-        <h2 className="font-sans font-light leading-[1.0] text-[#1B1B1B]">
-          <span className="block text-[2.5rem] xl:text-[3rem]">See the difference,</span>
+        <h2 className="font-sans font-light leading-[1.0]">
+          <span className="block text-[2.5rem] xl:text-[3rem]"><RevealText>See the difference,</RevealText></span>
           <span className="block text-[3.5rem] xl:text-[4.2rem]">
-            <span className="text-[2.5rem] xl:text-[3rem]">with </span>CnC
+            <RevealText delay={0.1}><span className="text-[2.5rem] xl:text-[3rem]">with </span><span style={{ color: "#9E8C61" }}>CnC</span></RevealText>
           </span>
         </h2>
         <motion.a

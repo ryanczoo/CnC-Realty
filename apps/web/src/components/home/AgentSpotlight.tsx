@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { RevealText } from "@/components/ui/reveal-text";
 
 const AGENTS = [
   {
@@ -62,8 +63,8 @@ export function AgentSpotlight() {
         >
           Meet the Team
         </p>
-        <h2 className="mt-3 font-display text-5xl font-light uppercase tracking-wide text-[#1B1B1B]">
-          Agent Spotlight
+        <h2 className="mt-3 font-display text-5xl font-light uppercase tracking-wide">
+          <RevealText>Agent Spotlight</RevealText>
         </h2>
         <div className="mx-auto mt-5 h-px w-16 bg-gradient-to-r from-transparent via-[#c9a84c] to-transparent" />
       </div>

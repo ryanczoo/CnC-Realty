@@ -163,25 +163,30 @@ export function WhyCnC() {
                     visible: { transition: { staggerChildren: 0.1 } },
                   }}
                 >
-                  {active.title.map((part, i) => (
-                    <span
-                      key={i}
-                      className={`block ${part.sm ? "text-[3rem] xl:text-[3.6rem]" : "text-[4rem] xl:text-[4.8rem]"}`}
-                    >
-                      {part.text.split(" ").map((word, j) => (
-                        <motion.span
-                          key={j}
-                          className="mr-[0.22em] inline-block"
-                          variants={{
-                            hidden: { opacity: 0, x: -16 },
-                            visible: { opacity: 1, x: 0, transition: { duration: 0.55, ease: "easeOut" } },
-                          }}
-                        >
-                          {word}
-                        </motion.span>
-                      ))}
-                    </span>
-                  ))}
+                  {active.title.map((part, i) => {
+                    const words = part.text.split(" ");
+                    const isLastPart = i === active.title.length - 1;
+                    return (
+                      <span
+                        key={i}
+                        className={`block ${part.sm ? "text-[3rem] xl:text-[3.6rem]" : "text-[4rem] xl:text-[4.8rem]"}`}
+                      >
+                        {words.map((word, j) => (
+                          <motion.span
+                            key={j}
+                            className="mr-[0.22em] inline-block"
+                            style={isLastPart && j === words.length - 1 ? { color: "#9E8C61" } : undefined}
+                            variants={{
+                              hidden: { opacity: 0, x: -16 },
+                              visible: { opacity: 1, x: 0, transition: { duration: 0.55, ease: "easeOut" } },
+                            }}
+                          >
+                            {word}
+                          </motion.span>
+                        ))}
+                      </span>
+                    );
+                  })}
                 </motion.h2>
 
                 <motion.p

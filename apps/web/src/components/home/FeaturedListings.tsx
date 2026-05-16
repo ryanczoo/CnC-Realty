@@ -3,6 +3,7 @@
 import { motion } from "motion/react";
 import Link from "next/link";
 import { useState } from "react";
+import { RevealText } from "@/components/ui/reveal-text";
 
 const LISTINGS = [
   {
@@ -102,8 +103,8 @@ export function FeaturedListings() {
   return (
     <section className="overflow-hidden bg-[#F2F0EF] py-10">
       <div className="mb-12 px-4 text-center">
-        <h2 className="font-sans text-[2.5rem] font-light text-[#1B1B1B] xl:text-[3rem]">
-          Exclusive Listings
+        <h2 className="font-sans text-[2.5rem] font-light xl:text-[3rem]">
+          <RevealText>Exclusive Listings</RevealText>
         </h2>
       </div>
 
