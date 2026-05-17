@@ -34,10 +34,8 @@ export function mapResoToProperty(raw: ResoProperty) {
     ? `${streetParts.join(" ")} #${raw.UnitNumber}`
     : streetParts.join(" ");
 
-  const baths =
-    raw.BathroomsTotalInteger ??
-    ((raw.BathroomsFull ?? 0) + (raw.BathroomsHalf ?? 0) * 0.5) ||
-    undefined;
+  const bathsCalc = raw.BathroomsTotalInteger ?? ((raw.BathroomsFull ?? 0) + (raw.BathroomsHalf ?? 0) * 0.5);
+  const baths = bathsCalc || undefined;
 
   const photos = (raw.Media ?? [])
     .sort((a, b) => (a.Order ?? 0) - (b.Order ?? 0))
