@@ -1,7 +1,7 @@
 import { getResoToken } from "./auth";
 import { mapResoToProperty, ResoProperty } from "./field-map";
 
-const BASE_URL = "https://replication.crmls.org/CRMLS/reso/odata";
+const BASE_URL = "https://api-trestle.corelogic.com/trestle/odata";
 const SELECT_FIELDS = [
   "ListingKey", "StandardStatus", "ListPrice",
   "BedroomsTotal", "BathroomsTotalInteger", "BathroomsFull", "BathroomsHalf",

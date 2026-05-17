@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 
-const TOKEN_URL = "https://replication.crmls.org/CRMLS/oauth2/connect/token";
+const TOKEN_URL = "https://api-trestle.corelogic.com/trestle/oidc/connect/token";
 const SETTINGS_KEY = "crmls_token_cache";
 
 interface TokenCache {
