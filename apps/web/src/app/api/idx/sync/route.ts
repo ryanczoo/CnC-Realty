@@ -5,35 +5,38 @@ import { fetchProperties } from "@/lib/idx/client";
 export const maxDuration = 300;
 
 async function runSync(type: string) {
-  const modifiedSince = type === "full" ? undefined : new Date(Date.now() - 20 * 60 * 1000);
+  const startedAt = Date.now();
+  console.log(`[idx-sync] starting ${type} sync`);
+
+  const modifiedSince = type === "full" ? undefined : new Date(Date.now() - 30 * 60 * 1000);
 
   let upserted = 0;
   let errors = 0;
 
   for await (const batch of fetchProperties(modifiedSince)) {
-    await Promise.allSettled(
-      batch.map(async (property) => {
-        try {
-          await prisma.property.upsert({
-            where: { mlsNumber: property.mlsNumber },
-            create: property,
-            update: property,
-          });
-          upserted++;
-        } catch (err) {
-          console.error("Upsert failed for", property.mlsNumber, err);
-          errors++;
-        }
-      })
-    );
+    for (const property of batch) {
+      try {
+        await prisma.property.upsert({
+          where: { mlsNumber: property.mlsNumber },
+          create: property,
+          update: property,
+        });
+        upserted++;
+      } catch (err) {
+        console.error("Upsert failed for", property.mlsNumber, err);
+        errors++;
+      }
+    }
   }
 
+  console.log(`[idx-sync] done in ${Date.now() - startedAt}ms — upserted: ${upserted}, errors: ${errors}`);
   return { upserted, errors, type };
 }
 
 function isAuthorized(req: Request): boolean {
-  const auth = req.headers.get("authorization");
-  return auth === `Bearer ${process.env.CRON_SECRET}`;
+  const secret = process.env.CRON_SECRET;
+  if (!secret) return false;
+  return req.headers.get("authorization") === `Bearer ${secret}`;
 }
 
 // Vercel Cron calls GET
