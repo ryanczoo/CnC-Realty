@@ -1058,17 +1058,99 @@ Nothing committed to git this session.
 | FAQ | ✅ Approved |
 | Footer | 🔄 Built, needs final sign-off |
 
-Nothing committed to git this session.
+**Phase 2 committed:** `6bd9740` feat: Phase 2 — homepage, footer, and public marketing shell
+
+### Next Session — Start Here (Phase 3)
+
+Phase 3: Lead Capture & Agent Dashboard (CLAUDE.md Phase 3 section)
+
+1. Wire all public forms (contact, property inquiry, valuation) to `/api/leads` → creates Lead + email notification
+2. Agent dashboard home with StatsCards
+3. Lead pipeline Kanban board (`@dnd-kit`) with drag-to-change-status
+4. Lead detail page with activity feed + add note form
+5. `/api/leads/*` endpoints with role-based auth guards
+
+---
+
+## Session Notes — 2026-05-17
+
+### What Was Completed This Session
+
+**Phase 4A — IDX Backend: Tasks 4–7 complete, Task 8 blocked on Railway DB**
+
+#### Phase 4A files committed to `claude/real-estate-website-9bdWi`:
+
+| Commit | File | Description |
+|---|---|---|
+| `b9e0cc9` | `apps/web/src/lib/idx/client.ts` | RESO OData paginated fetcher (async generator) |
+| `3710d4a` | `apps/web/src/lib/idx/client.ts` | Fix: 401 retry, 30s fetch timeout, null value guard |
+| `05484ac` | `apps/web/src/app/api/idx/sync/route.ts` + `vercel.json` | Sync route (GET+POST) + Vercel cron every 15 min |
+| `98ef793` | `apps/web/src/app/api/idx/sync/route.ts` | Fix: fail-closed auth, serialized upserts, 30-min delta window, logging |
+| `5558ae7` | `apps/web/src/app/api/properties/route.ts` | GET /api/properties with filters |
+| `0c41e89` | `apps/web/src/app/api/properties/route.ts` | Fix: NaN safety, typed price filter, error handling |
+| `133d655` | `apps/web/src/app/api/properties/[mlsNumber]/route.ts` | GET /api/properties/[mlsNumber] detail |
+| `8371145` | `apps/web/src/lib/idx/auth.ts` + `client.ts` | Fix: update endpoints to Trestle |
+| `902ba29` | `apps/web/src/lib/idx/field-map.ts` | Fix: ?? and \|\| operator precedence syntax error |
+| `8431700` | `packages/database/prisma/schema.prisma` | Fix: add debian-openssl-3.0.x binary target for Vercel |
+
+#### Key decisions and discoveries:
+
+1. **CRMLS API is via Trestle (CoreLogic), not direct CRMLS endpoint**
+   - Ryan connected through Trestle at `trestle.corelogic.com`
+   - Feed: IDX Plus - WebAPI, MLS-Wide Feeds, California Regional MLS
+   - Token URL updated: `https://api-trestle.corelogic.com/trestle/oidc/connect/token`
+   - Base URL updated: `https://api-trestle.corelogic.com/trestle/odata`
+   - Credentials are stored in `.env.local` (not committed)
+
+2. **Trestle credentials**
+   - `CRMLS_CLIENT_ID` and `CRMLS_CLIENT_SECRET` are in `.env.local`
+   - Connection expires: 05/17/2027
+   - Feed group: MLS-Wide Feeds
+
+3. **Node.js architecture issue resolved**
+   - Machine is ARM64 Windows (Snapdragon), was running Node.js v25.9.0 ARM64
+   - Prisma 5.22.0 has no ARM64 Windows binary — needs x64 Node.js
+   - **Fixed:** Uninstalled ARM64 Node.js, installed x64 Node.js v24.15.0 LTS from nodejs.org
+   - Must always use x64 Node.js on this machine for Prisma to work
+   - `node -e "console.log(process.arch)"` should print `x64`
+
+4. **Railway PostgreSQL crashed — disk full**
+   - Error: `FATAL: could not write to file "pg_wal/xlogtemp.33": No space left on device`
+   - Root cause: Railway trial credits ($4.68) nearly exhausted, hitting resource limits
+   - **Fix needed:** Add payment method to Railway → Billing to restore DB
+
+5. **Prisma binary targets**
+   - `packages/database/prisma/schema.prisma` now has: `["native", "windows", "debian-openssl-3.0.x"]`
+   - `debian-openssl-3.0.x` is required for Vercel (Linux) deployment
+   - Always run `pnpm --filter @cnc/database exec prisma generate` from a PowerShell window (not bash) on this machine
 
 ### Next Session — Start Here
 
-1. Run `pnpm dev --filter web` from `C:\Users\hey_r\Desktop\CnC-Realty` in a terminal
-2. Open `localhost:3000`
-3. **Review Join CnC CTA** — full-width image background, two-line headline, "Join Now →" button
-4. **Review Footer** — scroll down to reveal video, check layout/text/icons/legal bar
-5. **Supply Services verbiage** — final descriptions for Buy, Sell, Rent, Property Management card backs
-6. **Supply FAQ copy** — final Q&A text for all 4 questions
-7. Once all sections + footer approved → one Phase 2 git commit → move to Phase 3
+**BEFORE ANYTHING ELSE:**
+1. Go to Railway → Account Settings → Billing → add a credit card (Hobby plan ~$5/mo)
+2. Wait for the Postgres service to restart (check the Railway dashboard — should show green)
+3. Open Claude Code in `C:\Users\hey_r\Desktop\CnC-Realty`
+4. Open a PowerShell window and run:
+   ```
+   cd C:\Users\hey_r\Desktop\CnC-Realty
+   pnpm --filter web dev
+   ```
+5. In a second PowerShell window, trigger the full sync:
+   ```
+   $token = "7f3a9c2e8b1d4f6a0e5c7b3d9f2a8e1c4b6d0f3a9c2e8b1d4f6a0e5c7b3d9f2"
+   Invoke-RestMethod -Uri "http://localhost:3000/api/idx/sync?type=full" -Method POST -Headers @{ Authorization = "Bearer $token" } -TimeoutSec 300
+   ```
+   (Note: adjust port if 3000 is in use — check the dev server output)
+6. Expected response: `{ upserted: N, errors: 0, type: "full" }` where N > 0
+7. Verify with: `Invoke-RestMethod "http://localhost:3000/api/properties?city=Los%20Angeles"`
+8. Once sync is verified → mark Task 8 complete → push branch → move to Phase 4B
+
+**Phase 4B (next plan to write):**
+- Property search page UI (`/properties`)
+- Property detail page (gallery, mortgage calculator, inquiry form)
+- Map search page (`/properties/map`) with Mapbox GL JS
+- Homepage carousel with real DB listings
+- Saved properties (heart button + saved searches)
 
 ---
 
