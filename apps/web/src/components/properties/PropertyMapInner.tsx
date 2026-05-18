@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import Map, { Layer, LayerProps, Popup, Source } from "react-map-gl/mapbox";
+import { useCallback, useRef, useState } from "react";
+import Map, { Layer, LayerProps, Popup, Source, MapRef } from "react-map-gl/mapbox";
 import Image from "next/image";
 import Link from "next/link";
 import { PropertyListing } from "@/types/property";
@@ -81,6 +81,7 @@ interface PopupInfo {
 }
 
 export function PropertyMapInner({ properties, hoveredId }: Props) {
+  const mapRef = useRef<MapRef>(null);
   const [popup, setPopup] = useState<PopupInfo | null>(null);
 
   const validProperties = properties.filter(
@@ -144,6 +145,7 @@ export function PropertyMapInner({ properties, hoveredId }: Props) {
 
   return (
     <Map
+      ref={mapRef}
       mapboxAccessToken={TOKEN}
       initialViewState={{ longitude: -118.2437, latitude: 34.0522, zoom: 9 }}
       style={{ width: "100%", height: "100%" }}
@@ -165,6 +167,25 @@ export function PropertyMapInner({ properties, hoveredId }: Props) {
         <Layer {...unclusteredLabelLayer} />
         <Layer {...highlightedLayer} />
       </Source>
+
+      {/* Zoom controls — Zillow-style white circles, bottom-right */}
+      <div className="absolute bottom-8 right-3 flex flex-col overflow-hidden rounded-full border border-[#e0e0e0] shadow-lg">
+        <button
+          onClick={() => mapRef.current?.zoomIn()}
+          className="flex h-10 w-10 items-center justify-center bg-white text-xl font-light text-[#333] transition-colors hover:bg-[#f5f5f5] active:bg-[#eee]"
+          aria-label="Zoom in"
+        >
+          +
+        </button>
+        <div className="h-px w-full bg-[#e0e0e0]" />
+        <button
+          onClick={() => mapRef.current?.zoomOut()}
+          className="flex h-10 w-10 items-center justify-center bg-white text-xl font-light text-[#333] transition-colors hover:bg-[#f5f5f5] active:bg-[#eee]"
+          aria-label="Zoom out"
+        >
+          −
+        </button>
+      </div>
 
       {popup && (
         <Popup
