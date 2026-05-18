@@ -172,14 +172,14 @@ export function PropertyMapInner({ properties, hoveredId }: Props) {
       <div className="absolute bottom-8 right-3 flex flex-col gap-2">
         <button
           onClick={() => mapRef.current?.zoomIn()}
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-[#e0e0e0] bg-white text-xl font-light text-[#333] shadow-md transition-colors hover:bg-[#f5f5f5] active:bg-[#eee]"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-white/70 bg-transparent text-xl font-light text-white shadow-md transition-colors hover:bg-white/10 active:bg-white/20"
           aria-label="Zoom in"
         >
           +
         </button>
         <button
           onClick={() => mapRef.current?.zoomOut()}
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-[#e0e0e0] bg-white text-xl font-light text-[#333] shadow-md transition-colors hover:bg-[#f5f5f5] active:bg-[#eee]"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-white/70 bg-transparent text-xl font-light text-white shadow-md transition-colors hover:bg-white/10 active:bg-white/20"
           aria-label="Zoom out"
         >
           −
