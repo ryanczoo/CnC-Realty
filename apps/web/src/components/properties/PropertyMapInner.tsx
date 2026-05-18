@@ -168,19 +168,18 @@ export function PropertyMapInner({ properties, hoveredId }: Props) {
         <Layer {...highlightedLayer} />
       </Source>
 
-      {/* Zoom controls — Zillow-style white circles, bottom-right */}
-      <div className="absolute bottom-8 right-3 flex flex-col overflow-hidden rounded-full border border-[#e0e0e0] shadow-lg">
+      {/* Zoom controls — two separate circles like Zillow, bottom-right */}
+      <div className="absolute bottom-8 right-3 flex flex-col gap-2">
         <button
           onClick={() => mapRef.current?.zoomIn()}
-          className="flex h-10 w-10 items-center justify-center bg-white text-xl font-light text-[#333] transition-colors hover:bg-[#f5f5f5] active:bg-[#eee]"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-[#e0e0e0] bg-white text-xl font-light text-[#333] shadow-md transition-colors hover:bg-[#f5f5f5] active:bg-[#eee]"
           aria-label="Zoom in"
         >
           +
         </button>
-        <div className="h-px w-full bg-[#e0e0e0]" />
         <button
           onClick={() => mapRef.current?.zoomOut()}
-          className="flex h-10 w-10 items-center justify-center bg-white text-xl font-light text-[#333] transition-colors hover:bg-[#f5f5f5] active:bg-[#eee]"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-[#e0e0e0] bg-white text-xl font-light text-[#333] shadow-md transition-colors hover:bg-[#f5f5f5] active:bg-[#eee]"
           aria-label="Zoom out"
         >
           −
