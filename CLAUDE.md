@@ -1154,6 +1154,65 @@ Phase 3: Lead Capture & Agent Dashboard (CLAUDE.md Phase 3 section)
 
 ---
 
+## Session Notes — 2026-05-18
+
+### What Was Completed This Session
+
+**Phase 4B — IDX Frontend: ALL TASKS COMPLETE ✅**
+
+All changes committed to `claude/real-estate-website-9bdWi`.
+
+#### New files committed:
+
+| Path | Description |
+|---|---|
+| `src/types/property.ts` | `PropertyListing`, `SearchFilters`, `DEFAULT_FILTERS` types |
+| `src/hooks/useSearchFilters.ts` | URL-synced filters hook, 400ms debounce, `router.replace` |
+| `src/hooks/useProperties.ts` | Paginated fetch hook, initialData for SSR hydration, `loadNextPage` |
+| `src/hooks/useSavedProperties.ts` | Optimistic toggle, syncs with `/api/saved-properties` |
+| `src/components/properties/PropertyCard.tsx` | Dark-theme card, heart button, login modal |
+| `src/components/properties/FilterBar.tsx` | Sticky pill bar: price/beds/baths/type dropdowns |
+| `src/components/properties/PropertyMapInner.tsx` | Mapbox `react-map-gl/mapbox` v8, clustered pins, price labels, popup |
+| `src/components/properties/PropertyMap.tsx` | Dynamic import wrapper (ssr:false) |
+| `src/components/properties/SearchResults.tsx` | 45/55 split client component, IntersectionObserver infinite scroll |
+| `src/components/properties/MortgageCalculator.tsx` | Client-side formula, sliders for rate/down/term |
+| `src/components/properties/PhotoGallery.tsx` | CSS grid + full-screen lightbox |
+| `src/components/properties/ContactForm.tsx` | Tour request → POST /api/leads |
+| `src/components/properties/BackLink.tsx` | Reads sessionStorage for previous search URL |
+| `src/app/(listings)/layout.tsx` | Route group layout, imports mapbox-gl CSS |
+| `src/app/(listings)/properties/page.tsx` | SSR Server Component, initial Prisma fetch |
+| `src/app/(listings)/properties/[mlsNumber]/page.tsx` | Full SSR, generateMetadata OG tags |
+| `src/app/api/saved-properties/route.ts` | GET + POST saved properties |
+| `src/app/api/saved-properties/[mlsNumber]/route.ts` | DELETE saved property |
+| `src/components/home/FeaturedListingsServer.tsx` | Server Component wrapper, fetches 8 real listings |
+
+#### Modified:
+- `packages/database/prisma/schema.prisma` — added `SavedProperty` model
+- `src/components/home/FeaturedListings.tsx` — accepts optional `listings` prop, falls back to placeholders
+- `src/app/page.tsx` — uses `FeaturedListingsServer` instead of `FeaturedListings`
+
+#### Key technical notes:
+- `react-map-gl` v8 installed (not v7) — import from `react-map-gl/mapbox` sub-path, not root
+- `react-map-gl/mapbox` uses `mapbox-gl` as peer; `NEXT_PUBLIC_MAPBOX_TOKEN` already in `.env.local`
+- Prisma generate had EPERM (DLL locked by dev server) but TypeScript types updated successfully
+- SavedProperty migration: `20260518001050_add_saved_property`
+- Build passes: `pnpm --filter web build` ✅
+
+### Next Session — Start Here (Phase 5)
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. Open `localhost:3000/properties` — review split list/map layout
+3. Open a listing detail page (click any card) — review gallery, contact form, mortgage calc
+4. Check homepage carousel shows real listings (not placeholders)
+5. Test heart button — click while logged out (should show login modal), click while logged in (should toggle saved)
+6. Once approved → **Phase 5:**
+   - Transaction management: create from lead, timeline view, document upload (R2), status progression
+   - Email campaigns: Tiptap editor, SendGrid delivery
+   - Property alert job: match new listings to saved searches → notify via email
+   - Admin dashboard
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`
