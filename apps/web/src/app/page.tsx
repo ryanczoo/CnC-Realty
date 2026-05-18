@@ -1,5 +1,5 @@
 import { FAQ } from "@/components/home/FAQ";
-import { FeaturedListings } from "@/components/home/FeaturedListings";
+import { FeaturedListingsServer } from "@/components/home/FeaturedListingsServer";
 import { HeroSection } from "@/components/home/HeroSection";
 import { JoinCnCCTA } from "@/components/home/JoinCnCCTA";
 import { ServicesSection } from "@/components/home/ServicesSection";
@@ -10,7 +10,7 @@ export default function HomePage() {
   return (
     <>
       <HeroSection />
-      <FeaturedListings />
+      <FeaturedListingsServer />
       <div className="bg-[#F2F0EF] px-16 pt-10 pb-0">
         <div className="h-px w-full bg-[#1B1B1B]/10" />
       </div>
