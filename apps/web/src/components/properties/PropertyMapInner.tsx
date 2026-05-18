@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import Map, { Layer, LayerProps, Popup, Source } from "react-map-gl";
+import Map, { Layer, LayerProps, Popup, Source } from "react-map-gl/mapbox";
 import Image from "next/image";
 import Link from "next/link";
 import { PropertyListing } from "@/types/property";
@@ -20,7 +20,7 @@ const clusterLayer: LayerProps = {
   filter: ["has", "point_count"],
   paint: {
     "circle-color": "#9E8C61",
-    "circle-radius": ["step", ["get", "point_count"], 16, 10, 22, 50, 28] as LayerProps["paint"],
+    "circle-radius": ["step", ["get", "point_count"], 16, 10, 22, 50, 28] as unknown as number,
     "circle-stroke-width": 2,
     "circle-stroke-color": "#fff",
   },
@@ -122,8 +122,9 @@ export function PropertyMapInner({ properties, hoveredId }: Props) {
     },
   };
 
-  const onClick = useCallback((e: { features?: GeoJSON.Feature[] }) => {
-    const features = e.features;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const onClick = useCallback((e: any) => {
+    const features: GeoJSON.Feature[] | undefined = e.features;
     if (!features?.length) {
       setPopup(null);
       return;
@@ -148,7 +149,7 @@ export function PropertyMapInner({ properties, hoveredId }: Props) {
       style={{ width: "100%", height: "100%" }}
       mapStyle="mapbox://styles/mapbox/dark-v11"
       interactiveLayerIds={["unclustered-point", "clusters"]}
-      onClick={onClick as unknown as Parameters<typeof Map>[0]["onClick"]}
+      onClick={onClick}
     >
       <Source
         id="properties"

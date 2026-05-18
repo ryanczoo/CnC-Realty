@@ -1,5 +1,4 @@
 import { Metadata } from "next";
-import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { SearchResults } from "@/components/properties/SearchResults";
 import { PropertyListing } from "@/types/property";
@@ -24,7 +23,8 @@ interface PageProps {
 export default async function PropertiesPage({ searchParams }: PageProps) {
   const limit = 20;
 
-  const where: Prisma.PropertyWhereInput = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const where: Record<string, any> = {
     status: { in: ["Active", "Coming Soon"] },
   };
 
@@ -36,10 +36,10 @@ export default async function PropertiesPage({ searchParams }: PageProps) {
     }
   }
 
-  const priceFilter: Prisma.FloatFilter = {};
+  const priceFilter: Record<string, number> = {};
   if (searchParams.minPrice) priceFilter.gte = parseFloat(searchParams.minPrice);
   if (searchParams.maxPrice) priceFilter.lte = parseFloat(searchParams.maxPrice);
-  if (priceFilter.gte !== undefined || priceFilter.lte !== undefined) {
+  if (Object.keys(priceFilter).length > 0) {
     where.listPrice = priceFilter;
   }
 
