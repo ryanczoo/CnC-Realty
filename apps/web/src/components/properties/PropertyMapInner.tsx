@@ -149,7 +149,7 @@ export function PropertyMapInner({ properties, hoveredId }: Props) {
       mapboxAccessToken={TOKEN}
       initialViewState={{ longitude: -118.2437, latitude: 34.0522, zoom: 9 }}
       style={{ width: "100%", height: "100%" }}
-      mapStyle="mapbox://styles/mapbox/light-v11"
+      mapStyle="mapbox://styles/mapbox/streets-v12"
       interactiveLayerIds={["unclustered-point", "clusters"]}
       onClick={onClick}
     >
