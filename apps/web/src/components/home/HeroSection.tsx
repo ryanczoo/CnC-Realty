@@ -113,7 +113,7 @@ export function HeroSection() {
                 "input"
               ) as HTMLInputElement;
               if (input?.value) {
-                router.push(`/properties?q=${encodeURIComponent(input.value)}`);
+                router.push(`/properties?query=${encodeURIComponent(input.value)}`);
               }
             }}
           />

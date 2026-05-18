@@ -54,7 +54,7 @@ function SearchResultsInner({ initialProperties, initialTotal }: Props) {
   }, []);
 
   return (
-    <div className="flex flex-col bg-[#0f0f0f]" style={{ height: "calc(100dvh - 64px)" }}>
+    <div className="fixed inset-x-0 bottom-0 flex flex-col bg-[#0f0f0f]" style={{ top: "64px" }}>
       <FilterBar
         filters={filters}
         setFilter={setFilter}

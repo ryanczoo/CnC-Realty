@@ -81,7 +81,7 @@ export function FilterBar({
   return (
     <div
       ref={barRef}
-      className="flex flex-wrap items-center gap-2 border-b border-white/5 bg-[#0f0f0f]/95 px-4 py-2.5 backdrop-blur-md"
+      className="relative z-10 flex flex-wrap items-center gap-2 border-b border-white/5 bg-[#0f0f0f]/95 px-4 py-2.5 backdrop-blur-md"
     >
       {/* Search input */}
       <div className="relative w-56">
