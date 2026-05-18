@@ -1,11 +1,13 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { AnimatePresence } from "framer-motion";
 import { useSearchFilters } from "@/hooks/useSearchFilters";
 import { useProperties } from "@/hooks/useProperties";
 import { useSavedProperties } from "@/hooks/useSavedProperties";
 import { PropertyCard } from "./PropertyCard";
 import { PropertyMap } from "./PropertyMap";
+import { PropertyDrawer } from "./PropertyDrawer";
 import { FilterBar } from "./FilterBar";
 import { PropertyListing } from "@/types/property";
 import { Loader2 } from "lucide-react";
@@ -23,6 +25,7 @@ function SearchResultsInner({ initialProperties, initialTotal }: Props) {
   );
   const { savedSet, toggle } = useSavedProperties();
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [selectedMls, setSelectedMls] = useState<string | null>(null);
 
   // Infinite scroll sentinel
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -39,7 +42,7 @@ function SearchResultsInner({ initialProperties, initialTotal }: Props) {
     return () => observer.disconnect();
   }, [hasMore, isLoading, loadNextPage]);
 
-  // Save current URL for "back to search" on the detail page
+  // Save current URL for "back to search" on the full detail page
   useEffect(() => {
     if (typeof window !== "undefined") {
       sessionStorage.setItem(
@@ -49,8 +52,21 @@ function SearchResultsInner({ initialProperties, initialTotal }: Props) {
     }
   }, [filters]);
 
+  // Close drawer when filters change (new search context)
+  useEffect(() => {
+    setSelectedMls(null);
+  }, [filters]);
+
   const handleHover = useCallback((mlsNumber: string | null) => {
     setHoveredId(mlsNumber);
+  }, []);
+
+  const handleSelect = useCallback((mlsNumber: string) => {
+    setSelectedMls(mlsNumber);
+  }, []);
+
+  const handleCloseDrawer = useCallback(() => {
+    setSelectedMls(null);
   }, []);
 
   return (
@@ -74,23 +90,24 @@ function SearchResultsInner({ initialProperties, initialTotal }: Props) {
                 isSaved={savedSet.has(p.mlsNumber)}
                 onToggleSave={toggle}
                 onHover={handleHover}
+                onSelect={handleSelect}
               />
             ))}
 
             {isLoading && (
-              <div className="flex justify-center py-6">
+              <div className="col-span-2 flex justify-center py-6">
                 <Loader2 className="h-5 w-5 animate-spin text-[#9E8C61]" />
               </div>
             )}
 
             {isError && (
-              <div className="py-16 text-center text-sm text-red-400">
+              <div className="col-span-2 py-16 text-center text-sm text-red-400">
                 Failed to load listings. Check your connection and try again.
               </div>
             )}
 
             {!isLoading && !isError && properties.length === 0 && (
-              <div className="py-16 text-center text-sm text-white/40">
+              <div className="col-span-2 py-16 text-center text-sm text-white/40">
                 No properties found. Try adjusting your filters.
               </div>
             )}
@@ -105,6 +122,17 @@ function SearchResultsInner({ initialProperties, initialTotal }: Props) {
           <PropertyMap properties={properties} hoveredId={hoveredId} />
         </div>
       </div>
+
+      {/* Property detail drawer */}
+      <AnimatePresence>
+        {selectedMls && (
+          <PropertyDrawer
+            key={selectedMls}
+            mlsNumber={selectedMls}
+            onClose={handleCloseDrawer}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
