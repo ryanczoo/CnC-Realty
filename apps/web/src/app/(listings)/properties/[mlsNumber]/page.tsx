@@ -5,7 +5,7 @@ import { PhotoGallery } from "@/components/properties/PhotoGallery";
 import { MortgageCalculator } from "@/components/properties/MortgageCalculator";
 import { ContactForm } from "@/components/properties/ContactForm";
 import { BackLink } from "@/components/properties/BackLink";
-import { BedDouble, Bath, Ruler, Calendar, MapPin } from "lucide-react";
+import { BedDouble, Bath, Ruler, Calendar, MapPin, ShieldCheck } from "lucide-react";
 
 interface PageProps {
   params: { mlsNumber: string };
@@ -192,6 +192,46 @@ export default async function PropertyDetailPage({ params }: PageProps) {
                 {property.address}, {property.city}, {property.state}
               </div>
             )}
+
+            {/* MLS Compliance */}
+            <div className="mt-8 rounded-xl border border-white/10 bg-[#1a1a1a] p-4 text-xs text-white/40">
+              <div className="mb-2 flex items-center gap-1.5">
+                <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-[#9E8C61]/70" />
+                <span className="font-medium uppercase tracking-wide text-white/50">
+                  Listing Information
+                </span>
+              </div>
+              <p className="leading-relaxed">
+                <span className="font-medium text-white/50">MLS #:</span>{" "}
+                {property.mlsNumber} &nbsp;·&nbsp;{" "}
+                <span className="font-medium text-white/50">Status:</span>{" "}
+                {property.status} &nbsp;·&nbsp;{" "}
+                <span className="font-medium text-white/50">Courtesy of:</span>{" "}
+                California Regional MLS (CRMLS)
+              </p>
+              <p className="mt-2 leading-relaxed">
+                Based on information from the California Regional Multiple Listing Service
+                (CRMLS) as of{" "}
+                {property.syncedAt
+                  ? new Date(property.syncedAt).toLocaleDateString("en-US", {
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    })
+                  : "the date listed above"}
+                . All data, including all measurements and calculations of area, is
+                obtained from various sources and has not been, and will not be,
+                verified by broker or MLS. All information should be independently
+                reviewed and verified for accuracy.
+              </p>
+              <p className="mt-2 leading-relaxed">
+                This information is provided for the consumer&apos;s personal,
+                non-commercial use and may not be used for any purpose other than to
+                identify prospective properties the consumer may be interested in
+                purchasing. Any use of this data other than by a consumer to identify
+                real property for sale or lease is strictly prohibited.
+              </p>
+            </div>
           </div>
 
           {/* Right: sticky sidebar */}
