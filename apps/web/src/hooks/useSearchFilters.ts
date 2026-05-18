@@ -10,6 +10,7 @@ export function useSearchFilters() {
 
   const [filters, setFiltersState] = useState<SearchFilters>(() => ({
     query: searchParams.get("query") ?? "",
+    listingType: searchParams.get("listingType") ?? "FOR_SALE",
     minPrice: searchParams.get("minPrice") ?? "",
     maxPrice: searchParams.get("maxPrice") ?? "",
     minBeds: searchParams.get("minBeds") ?? "",

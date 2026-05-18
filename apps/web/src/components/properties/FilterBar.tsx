@@ -44,7 +44,7 @@ const TYPE_OPTIONS = [
   { label: "Land", value: "Land" },
 ];
 
-type DropdownKey = "price" | "beds" | "baths" | "type" | null;
+type DropdownKey = "listingType" | "price" | "beds" | "baths" | "type" | null;
 
 export function FilterBar({
   filters,
@@ -83,6 +83,38 @@ export function FilterBar({
       ref={barRef}
       className="relative z-10 flex flex-wrap items-center gap-2 border-b border-white/5 bg-[#0f0f0f]/95 px-4 py-2.5 backdrop-blur-md"
     >
+      {/* Listing type toggle */}
+      <div className="relative">
+        <button
+          onClick={() => toggle("listingType")}
+          className={`${pillBase} ${pillActive} font-medium`}
+        >
+          {filters.listingType === "FOR_RENT" ? "For Rent" : "For Sale"} ▾
+        </button>
+        {openDropdown === "listingType" && (
+          <div className="absolute left-0 top-full z-40 mt-1 w-36 rounded-xl border border-white/10 bg-[#1a1a1a] py-1 shadow-2xl">
+            {[
+              { label: "For Sale", value: "FOR_SALE" },
+              { label: "For Rent", value: "FOR_RENT" },
+            ].map((o) => (
+              <button
+                key={o.value}
+                onClick={() => {
+                  setFilter("listingType", o.value);
+                  setOpenDropdown(null);
+                }}
+                className={`flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-white/5 ${
+                  filters.listingType === o.value ? "text-[#9E8C61]" : "text-white/70 hover:text-white"
+                }`}
+              >
+                <span className={`h-2 w-2 rounded-full border ${filters.listingType === o.value ? "border-[#9E8C61] bg-[#9E8C61]" : "border-white/30"}`} />
+                {o.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Search input */}
       <div className="relative w-56">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />

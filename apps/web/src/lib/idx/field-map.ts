@@ -41,9 +41,13 @@ export function mapResoToProperty(raw: ResoProperty) {
     .sort((a, b) => (a.Order ?? 0) - (b.Order ?? 0))
     .map((m) => m.MediaURL);
 
+  const propType = (raw.PropertyType ?? "").toLowerCase();
+  const listingType = propType.includes("lease") || propType.includes("rent") ? "FOR_RENT" : "FOR_SALE";
+
   return {
     mlsNumber: raw.ListingKey,
     status: raw.StandardStatus ?? "Unknown",
+    listingType,
     listPrice: raw.ListPrice ?? 0,
     beds: raw.BedroomsTotal ?? null,
     baths: baths ?? null,

@@ -24,9 +24,11 @@ export async function GET(req: Request) {
   const city = searchParams.get("city");
   const zip = searchParams.get("zip");
   const propertyType = searchParams.get("propertyType");
+  const listingType = searchParams.get("listingType") ?? "FOR_SALE";
 
   const where: Prisma.PropertyWhereInput = {
     status: { in: ["Active", "Coming Soon"] },
+    listingType,
   };
 
   if (city) where.city = { contains: city, mode: "insensitive" };

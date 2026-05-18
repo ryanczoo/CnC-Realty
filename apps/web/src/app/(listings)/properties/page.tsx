@@ -12,6 +12,7 @@ export const metadata: Metadata = {
 interface PageProps {
   searchParams: {
     query?: string;
+    listingType?: string;
     minPrice?: string;
     maxPrice?: string;
     minBeds?: string;
@@ -22,10 +23,12 @@ interface PageProps {
 
 export default async function PropertiesPage({ searchParams }: PageProps) {
   const limit = 20;
+  const listingType = searchParams.listingType ?? "FOR_SALE";
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const where: Record<string, any> = {
     status: { in: ["Active", "Coming Soon"] },
+    listingType,
   };
 
   if (searchParams.query) {

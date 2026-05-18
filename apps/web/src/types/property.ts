@@ -19,6 +19,7 @@ export interface PropertyListing {
 
 export interface SearchFilters {
   query: string;
+  listingType: string;
   minPrice: string;
   maxPrice: string;
   minBeds: string;
@@ -28,6 +29,7 @@ export interface SearchFilters {
 
 export const DEFAULT_FILTERS: SearchFilters = {
   query: "",
+  listingType: "FOR_SALE",
   minPrice: "",
   maxPrice: "",
   minBeds: "",
