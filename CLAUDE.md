@@ -1198,14 +1198,66 @@ All changes committed to `claude/real-estate-website-9bdWi`.
 - SavedProperty migration: `20260518001050_add_saved_property`
 - Build passes: `pnpm --filter web build` ✅
 
-### Next Session — Start Here (Phase 5)
+### Phase 4B Follow-On — Property Drawer & MLS Compliance
+
+After the initial Phase 4B build, additional work was done in the same session:
+
+#### What was built:
+
+1. **MLS compliance section added to property detail page** (`commit 7d7a36d`)
+   - ShieldCheck icon + "Listing Information" header
+   - Full CRMLS attribution: MLS #, status, "Courtesy of: California Regional MLS (CRMLS)"
+   - Full disclaimer: data accuracy, independent verification, consumer use restriction
+   - File: `src/app/(listings)/properties/[mlsNumber]/page.tsx`
+
+2. **Zillow-style property detail drawer** (`commit df9771c`)
+   - New file: `src/components/properties/PropertyDrawer.tsx`
+   - Slide-in panel from right, `width: min(880px, 63vw)`, `top: 64px` to clear navbar
+   - `AnimatePresence` + `motion.div` (spring: stiffness 320, damping 32)
+   - Fetches `/api/properties/[mlsNumber]` with `AbortController` cleanup
+   - Photo carousel with prev/next buttons + counter badge + status badge
+   - Two-column layout at xl breakpoint (right sidebar: ContactForm + MortgageCalculator)
+   - "Open full page ↗" link (top-right, `<Link>` not `<a>`)
+   - Escape key closes drawer
+   - `PropertyCard.tsx` gains optional `onSelect?: (mlsNumber: string) => void` — when set, opens drawer instead of navigating
+   - `SearchResults.tsx` manages `selectedMls` state, `key={selectedMls}` forces remount per listing, `AnimatePresence` wraps drawer
+
+3. **Listing agent/broker attribution** (`commit e1c635e`)
+   - Agent fields added to `SELECT_FIELDS` in `src/lib/idx/client.ts`: `ListAgentFullName`, `ListOfficeName`, `ListAgentStateLicense`
+   - `ResoProperty` interface updated in `src/lib/idx/field-map.ts` with those fields
+   - Agent attribution displayed using IIFE reading `rawData` — falls back to "Listing courtesy of California Regional MLS" when not populated
+   - Uses `User` icon (not `MapPin`) in both drawer and full detail page
+   - Full IDX resync triggered: **28,856 records updated** — agent/broker data now populated
+
+4. **Details grid moved below agent line** (`commit 0e4b1cd`)
+   - Content order in drawer and detail page: price/address → key facts pills → description → agent attribution → details grid → MLS compliance
+
+5. **ContactForm text** (`commits fd775b3, 840d847`)
+   - Section heading: **"Request a Tour"** (kept)
+   - Submit button: **"Contact Agent"** (changed from "Request a Tour")
+   - Loading state: "Sending…"
+
+6. **Code review fixes** (`commit df1156c`)
+   - Added `AbortController` + cleanup `return () => controller.abort()` to drawer fetch (race condition fix)
+   - Removed unused `AnimatePresence` import from `PropertyDrawer.tsx`
+   - Lot size display fixed: was showing "sqft" but `lotSize` is stored as **acres** (`LotSizeSquareFeet / 43560`). Now: `.toFixed(2) ac`
+   - MLS compliance text in drawer aligned to full CRMLS-standard wording (was shorter)
+   - `<a>` → `<Link>` for "Open full page ↗" (Next.js prefetching)
+
+#### Known issues (not yet fixed):
+- No `role="dialog"` / `aria-modal` / focus management on drawer (accessibility)
+- `xl:flex` breakpoint measures viewport width not drawer width — sidebar may not show at expected sizes (needs CSS container query)
+- `<ListingAttribution>` and `<MlsComplianceBlock>` are duplicated between drawer and full page — not yet extracted into shared components
+- Dev server runs on **localhost:3001** (not 3000 — 3000 was killed; start with `pnpm --filter web dev`)
+
+### Next Session — Start Here
 
 1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
-2. Open `localhost:3000/properties` — review split list/map layout
-3. Open a listing detail page (click any card) — review gallery, contact form, mortgage calc
-4. Check homepage carousel shows real listings (not placeholders)
-5. Test heart button — click while logged out (should show login modal), click while logged in (should toggle saved)
-6. Once approved → **Phase 5:**
+2. Dev server will start on **localhost:3001** (or next available port — check terminal output)
+3. Open `/properties` — review the split list/map layout with the slide-in drawer
+4. Click a listing — drawer should slide in from the right, keeping map visible
+5. **More work needed on the listing popup/drawer** — user stated this explicitly. Specific items TBD.
+6. Once drawer is polished → **Phase 5:**
    - Transaction management: create from lead, timeline view, document upload (R2), status progression
    - Email campaigns: Tiptap editor, SendGrid delivery
    - Property alert job: match new listings to saved searches → notify via email
