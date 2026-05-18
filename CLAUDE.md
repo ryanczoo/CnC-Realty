@@ -1265,6 +1265,29 @@ After the initial Phase 4B build, additional work was done in the same session:
 
 ---
 
+## Session Notes — 2026-05-18 (continuation)
+
+### What Was Completed This Session
+
+Short housekeeping session — no new features built.
+
+1. **CLAUDE.md updated and committed** with full Phase 4B follow-on notes (drawer, attribution, compliance, code review fixes)
+2. **Plan file committed** — `docs/superpowers/plans/2026-05-17-phase-4b.md`
+3. **Git push blocked by GitHub push protection** — the plan file contained the Mapbox public token (`NEXT_PUBLIC_MAPBOX_TOKEN`, `pk.eyJ1...`) which GitHub's scanner treats as a secret even though it's a public-facing key
+4. **Fixed by squashing commits** — soft-reset the two offending commits, redacted the token to `<your-mapbox-public-token>`, recommitted as one clean commit with the token never in history
+5. **Successfully pushed** — all 9 commits are now on GitHub at `claude/real-estate-website-9bdWi`
+
+### Decisions Made
+
+- **Mapbox `pk.` tokens** are public by design (embedded in client JS) but GitHub's secret scanner still blocks them — always use a placeholder like `<your-mapbox-public-token>` in any committed docs/plans
+- **Branch explained** — all work lives on `claude/real-estate-website-9bdWi`; nothing has been merged to `main` yet
+
+### Next Session — Start Here
+
+Same as above — pick up the listing popup/drawer work.
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`
