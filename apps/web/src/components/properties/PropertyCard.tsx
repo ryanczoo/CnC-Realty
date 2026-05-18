@@ -36,69 +36,73 @@ export function PropertyCard({ property, isSaved, onToggleSave, onHover }: Props
         href={`/properties/${property.mlsNumber}`}
         onMouseEnter={() => onHover?.(property.mlsNumber)}
         onMouseLeave={() => onHover?.(null)}
-        className="group relative flex gap-3 rounded-xl bg-[#1a1a1a] p-3 transition-colors hover:bg-[#222]"
+        className="group flex flex-col overflow-hidden rounded-xl bg-[#1a1a1a] transition-colors hover:bg-[#222]"
       >
-        <div className="relative h-[88px] w-[116px] flex-shrink-0 overflow-hidden rounded-lg bg-[#2a2a2a]">
+        {/* Photo */}
+        <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#2a2a2a]">
           {thumb ? (
             <Image
               src={thumb}
               alt={property.address}
               fill
-              className="object-cover"
-              sizes="116px"
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
+              sizes="(max-width: 768px) 50vw, 280px"
               unoptimized
             />
           ) : (
-            <div className="flex h-full items-center justify-center text-[10px] text-[#555]">
+            <div className="flex h-full items-center justify-center text-xs text-[#555]">
               No photo
             </div>
           )}
-          <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] text-white/80 backdrop-blur-sm">
+
+          {/* Status badge */}
+          <span className="absolute left-2.5 top-2.5 rounded-full bg-black/60 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur-sm">
             {property.status}
           </span>
+
+          {/* Heart button */}
+          <button
+            onClick={handleHeartClick}
+            className="absolute right-2.5 top-2.5 rounded-full bg-black/50 p-2 backdrop-blur-sm transition-colors hover:bg-black/70"
+            aria-label={isSaved ? "Remove from saved" : "Save property"}
+          >
+            <Heart
+              className={`h-4 w-4 transition-colors ${
+                isSaved ? "fill-[#9E8C61] text-[#9E8C61]" : "text-white"
+              }`}
+            />
+          </button>
         </div>
 
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <p className="text-[15px] font-semibold text-white">
+        {/* Details */}
+        <div className="flex flex-col gap-1 p-3">
+          <p className="text-base font-bold text-white">
             ${property.listPrice.toLocaleString()}
           </p>
-          <div className="flex items-center gap-1.5 text-xs text-white/50">
-            {property.beds != null && <span>{property.beds} bd</span>}
+          <div className="flex items-center gap-1 text-xs text-white/60">
+            {property.beds != null && <span><strong className="text-white/80">{property.beds}</strong> bd</span>}
             {property.baths != null && (
               <>
-                <span className="text-white/20">·</span>
-                <span>{property.baths} ba</span>
+                <span className="text-white/20">|</span>
+                <span><strong className="text-white/80">{property.baths}</strong> ba</span>
               </>
             )}
             {property.sqft != null && (
               <>
-                <span className="text-white/20">·</span>
-                <span>{property.sqft.toLocaleString()} sf</span>
+                <span className="text-white/20">|</span>
+                <span><strong className="text-white/80">{property.sqft.toLocaleString()}</strong> sqft</span>
               </>
             )}
           </div>
-          <p className="truncate text-sm text-white/70">{property.address}</p>
-          <p className="text-xs text-white/40">
-            {property.city}, {property.state}
+          <p className="truncate text-xs text-white/60">
+            {property.address}, {property.city}, {property.state}
           </p>
           {property.propertyType && (
-            <span className="mt-auto w-fit rounded-full bg-[#9E8C61]/20 px-2 py-0.5 text-[10px] text-[#9E8C61]">
+            <span className="mt-1 w-fit rounded-full bg-[#9E8C61]/15 px-2 py-0.5 text-[10px] text-[#9E8C61]">
               {property.propertyType}
             </span>
           )}
         </div>
-
-        <button
-          onClick={handleHeartClick}
-          className="absolute right-3 top-3 rounded-full bg-black/40 p-1.5 backdrop-blur-sm transition-colors hover:bg-black/60"
-          aria-label={isSaved ? "Remove from saved" : "Save property"}
-        >
-          <Heart
-            className={`h-4 w-4 transition-colors ${
-              isSaved ? "fill-[#9E8C61] text-[#9E8C61]" : "text-white/60"
-            }`}
-          />
-        </button>
       </Link>
 
       {showLoginModal && (

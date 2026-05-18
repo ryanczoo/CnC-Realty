@@ -66,7 +66,7 @@ function SearchResultsInner({ initialProperties, initialTotal }: Props) {
       <div className="flex flex-1 overflow-hidden">
         {/* List pane — 45% */}
         <div className="flex w-[45%] flex-col overflow-y-auto">
-          <div className="flex flex-col gap-2 p-3">
+          <div className="grid grid-cols-2 gap-3 p-3">
             {properties.map((p) => (
               <PropertyCard
                 key={p.mlsNumber}
