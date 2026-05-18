@@ -5,7 +5,7 @@ import { PhotoGallery } from "@/components/properties/PhotoGallery";
 import { MortgageCalculator } from "@/components/properties/MortgageCalculator";
 import { ContactForm } from "@/components/properties/ContactForm";
 import { BackLink } from "@/components/properties/BackLink";
-import { BedDouble, Bath, Ruler, Calendar, MapPin, ShieldCheck } from "lucide-react";
+import { BedDouble, Bath, Ruler, Calendar, User, ShieldCheck } from "lucide-react";
 
 interface PageProps {
   params: { mlsNumber: string };
@@ -149,7 +149,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
               const license = raw?.ListAgentStateLicense as string | undefined;
               return (
                 <div className="mt-6 flex items-center gap-2 text-sm text-white/50">
-                  <MapPin className="h-4 w-4 shrink-0 text-[#9E8C61]" />
+                  <User className="h-4 w-4 shrink-0 text-[#9E8C61]" />
                   {agent || office ? (
                     <span>
                       {agent && <>Listed by <span className="text-white/70">{agent}</span></>}
@@ -178,7 +178,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
               {property.lotSize != null && (
                 <div className="flex justify-between">
                   <span className="text-white/50">Lot Size</span>
-                  <span>{property.lotSize.toLocaleString()} sqft</span>
+                  <span>{property.lotSize.toFixed(2)} ac</span>
                 </div>
               )}
               {property.yearBuilt != null && (

@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import Image from "next/image";
-import { X, BedDouble, Bath, Ruler, Calendar, MapPin, ChevronLeft, ChevronRight, ShieldCheck, Loader2 } from "lucide-react";
+import { X, BedDouble, Bath, Ruler, Calendar, User, ChevronLeft, ChevronRight, ShieldCheck, Loader2 } from "lucide-react";
+import Link from "next/link";
 import { ContactForm } from "./ContactForm";
 import { MortgageCalculator } from "./MortgageCalculator";
 
@@ -45,20 +46,25 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const controller = new AbortController();
     setIsLoading(true);
     setIsError(false);
     setPhotoIdx(0);
     setProperty(null);
     if (scrollRef.current) scrollRef.current.scrollTop = 0;
 
-    fetch(`/api/properties/${mlsNumber}`)
+    fetch(`/api/properties/${mlsNumber}`, { signal: controller.signal })
       .then((r) => {
         if (!r.ok) throw new Error("Not found");
         return r.json();
       })
       .then((data) => setProperty(data))
-      .catch(() => setIsError(true))
+      .catch((err) => {
+        if (err.name !== "AbortError") setIsError(true);
+      })
       .finally(() => setIsLoading(false));
+
+    return () => controller.abort();
   }, [mlsNumber]);
 
   const photos = Array.isArray(property?.photos) ? (property!.photos as string[]) : [];
@@ -109,14 +115,14 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
             Back to search
           </button>
           {property && (
-            <a
+            <Link
               href={`/properties/${property.mlsNumber}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs text-white/30 hover:text-white/60 transition-colors"
             >
               Open full page ↗
-            </a>
+            </Link>
           )}
         </div>
 
@@ -226,7 +232,7 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
                     const license = property.rawData?.ListAgentStateLicense as string | undefined;
                     return (
                       <div className="mt-4 flex items-center gap-1.5 text-xs text-white/50">
-                        <MapPin className="h-3.5 w-3.5 shrink-0 text-[#9E8C61]/70" />
+                        <User className="h-3.5 w-3.5 shrink-0 text-[#9E8C61]/70" />
                         {agent || office ? (
                           <span>
                             {agent && <span>Listed by <span className="text-white/70">{agent}</span></span>}
@@ -255,7 +261,7 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
                     {property.lotSize != null && (
                       <div className="flex justify-between">
                         <span className="text-white/50">Lot Size</span>
-                        <span className="text-white">{property.lotSize.toLocaleString()} sqft</span>
+                        <span className="text-white">{property.lotSize.toFixed(2)} ac</span>
                       </div>
                     )}
                     {property.yearBuilt != null && (
@@ -310,15 +316,17 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
                             year: "numeric",
                           })
                         : "the date listed above"}
-                      . All data has not been, and will not be, verified by broker or MLS.
-                      All information should be independently reviewed and verified for
-                      accuracy.
+                      . All data, including all measurements and calculations of area, is
+                      obtained from various sources and has not been, and will not be,
+                      verified by broker or MLS. All information should be independently
+                      reviewed and verified for accuracy.
                     </p>
                     <p className="mt-2 leading-relaxed">
-                      This information is for the consumer&apos;s personal,
-                      non-commercial use only and may not be used for any purpose other
-                      than to identify prospective properties the consumer may be
-                      interested in purchasing.
+                      This information is provided for the consumer&apos;s personal,
+                      non-commercial use and may not be used for any purpose other than to
+                      identify prospective properties the consumer may be interested in
+                      purchasing. Any use of this data other than by a consumer to identify
+                      real property for sale or lease is strictly prohibited.
                     </p>
                   </div>
                 </div>
