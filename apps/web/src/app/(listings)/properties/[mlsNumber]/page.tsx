@@ -185,13 +185,27 @@ export default async function PropertyDetailPage({ params }: PageProps) {
               </div>
             )}
 
-            {/* Location */}
-            {property.latitude != null && property.longitude != null && (
-              <div className="mt-6 flex items-center gap-2 text-sm text-white/50">
-                <MapPin className="h-4 w-4 text-[#9E8C61]" />
-                {property.address}, {property.city}, {property.state}
-              </div>
-            )}
+            {/* Listing agent / brokerage attribution */}
+            {(() => {
+              const raw = property.rawData as Record<string, unknown> | null;
+              const agent = raw?.ListAgentFullName as string | undefined;
+              const office = raw?.ListOfficeName as string | undefined;
+              const license = raw?.ListAgentStateLicense as string | undefined;
+              return (
+                <div className="mt-6 flex items-center gap-2 text-sm text-white/50">
+                  <MapPin className="h-4 w-4 shrink-0 text-[#9E8C61]" />
+                  {agent || office ? (
+                    <span>
+                      {agent && <>Listed by <span className="text-white/70">{agent}</span></>}
+                      {agent && license && <span className="text-white/40"> · DRE #{license}</span>}
+                      {office && <>{agent ? " · " : "Listed by "}<span className="text-white/70">{office}</span></>}
+                    </span>
+                  ) : (
+                    <span>Listing courtesy of California Regional MLS</span>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* MLS Compliance */}
             <div className="mt-8 rounded-xl border border-white/10 bg-[#1a1a1a] p-4 text-xs text-white/40">

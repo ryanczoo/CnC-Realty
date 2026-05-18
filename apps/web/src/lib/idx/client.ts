@@ -10,6 +10,7 @@ const SELECT_FIELDS = [
   "StreetNumber", "StreetName", "StreetSuffix", "UnitNumber",
   "City", "StateOrProvince", "PostalCode", "CountyOrParish",
   "Latitude", "Longitude", "ModificationTimestamp", "ListingContractDate",
+  "ListAgentFullName", "ListOfficeName", "ListAgentStateLicense",
 ].join(",");
 
 interface ODataResponse {

@@ -25,6 +25,9 @@ export interface ResoProperty {
   ModificationTimestamp?: string;
   ListingContractDate?: string;
   Media?: { MediaURL: string; Order?: number }[];
+  ListAgentFullName?: string;
+  ListOfficeName?: string;
+  ListAgentStateLicense?: string;
   [key: string]: unknown;
 }
 

@@ -29,6 +29,7 @@ interface PropertyDetail {
   photos: unknown;
   listedAt: string | null;
   syncedAt: string | null;
+  rawData: Record<string, unknown> | null;
 }
 
 interface Props {
@@ -262,13 +263,26 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
                     </div>
                   )}
 
-                  {/* Location line */}
-                  {property.latitude != null && property.longitude != null && (
-                    <div className="mt-4 flex items-center gap-1.5 text-xs text-white/40">
-                      <MapPin className="h-3.5 w-3.5 text-[#9E8C61]/70" />
-                      {property.address}, {property.city}, {property.state}
-                    </div>
-                  )}
+                  {/* Listing agent / brokerage attribution */}
+                  {(() => {
+                    const agent = property.rawData?.ListAgentFullName as string | undefined;
+                    const office = property.rawData?.ListOfficeName as string | undefined;
+                    const license = property.rawData?.ListAgentStateLicense as string | undefined;
+                    return (
+                      <div className="mt-4 flex items-center gap-1.5 text-xs text-white/50">
+                        <MapPin className="h-3.5 w-3.5 shrink-0 text-[#9E8C61]/70" />
+                        {agent || office ? (
+                          <span>
+                            {agent && <span>Listed by <span className="text-white/70">{agent}</span></span>}
+                            {agent && license && <span className="text-white/30"> · DRE #{license}</span>}
+                            {office && <span>{agent ? " · " : "Listed by "}<span className="text-white/70">{office}</span></span>}
+                          </span>
+                        ) : (
+                          <span>Listing courtesy of California Regional MLS</span>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   {/* MLS Compliance */}
                   <div className="mt-6 rounded-xl border border-white/10 bg-[#1a1a1a] p-4 text-xs text-white/40">
