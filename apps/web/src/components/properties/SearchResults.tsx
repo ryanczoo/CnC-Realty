@@ -17,7 +17,7 @@ interface Props {
 
 function SearchResultsInner({ initialProperties, initialTotal }: Props) {
   const { filters, setFilter, clearFilters, hasActiveFilters } = useSearchFilters();
-  const { properties, total, isLoading, hasMore, loadNextPage } = useProperties(
+  const { properties, total, isLoading, isError, hasMore, loadNextPage } = useProperties(
     filters,
     { properties: initialProperties, total: initialTotal }
   );
@@ -83,7 +83,13 @@ function SearchResultsInner({ initialProperties, initialTotal }: Props) {
               </div>
             )}
 
-            {!isLoading && properties.length === 0 && (
+            {isError && (
+              <div className="py-16 text-center text-sm text-red-400">
+                Failed to load listings. Check your connection and try again.
+              </div>
+            )}
+
+            {!isLoading && !isError && properties.length === 0 && (
               <div className="py-16 text-center text-sm text-white/40">
                 No properties found. Try adjusting your filters.
               </div>

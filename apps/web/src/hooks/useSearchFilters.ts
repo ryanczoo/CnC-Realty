@@ -47,7 +47,9 @@ export function useSearchFilters() {
     router.replace("/properties", { scroll: false });
   }, [router]);
 
-  const hasActiveFilters = Object.values(filters).some(Boolean);
+  const hasActiveFilters = Object.entries(filters)
+    .filter(([k]) => k !== "listingType")
+    .some(([, v]) => Boolean(v));
 
   return { filters, setFilter, clearFilters, hasActiveFilters };
 }

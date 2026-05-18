@@ -40,14 +40,16 @@ export default async function PropertiesPage({ searchParams }: PageProps) {
   }
 
   const priceFilter: Record<string, number> = {};
-  if (searchParams.minPrice) priceFilter.gte = parseFloat(searchParams.minPrice);
-  if (searchParams.maxPrice) priceFilter.lte = parseFloat(searchParams.maxPrice);
-  if (Object.keys(priceFilter).length > 0) {
-    where.listPrice = priceFilter;
-  }
+  const minPrice = parseFloat(searchParams.minPrice ?? "");
+  const maxPrice = parseFloat(searchParams.maxPrice ?? "");
+  if (!Number.isNaN(minPrice)) priceFilter.gte = minPrice;
+  if (!Number.isNaN(maxPrice)) priceFilter.lte = maxPrice;
+  if (Object.keys(priceFilter).length > 0) where.listPrice = priceFilter;
 
-  if (searchParams.minBeds) where.beds = { gte: parseInt(searchParams.minBeds) };
-  if (searchParams.minBaths) where.baths = { gte: parseFloat(searchParams.minBaths) };
+  const minBeds = parseInt(searchParams.minBeds ?? "");
+  const minBaths = parseFloat(searchParams.minBaths ?? "");
+  if (!Number.isNaN(minBeds)) where.beds = { gte: minBeds };
+  if (!Number.isNaN(minBaths)) where.baths = { gte: minBaths };
   if (searchParams.propertyType) {
     where.propertyType = { contains: searchParams.propertyType, mode: "insensitive" };
   }

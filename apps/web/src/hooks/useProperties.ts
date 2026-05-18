@@ -7,6 +7,7 @@ interface UsePropertiesResult {
   properties: PropertyListing[];
   total: number;
   isLoading: boolean;
+  isError: boolean;
   hasMore: boolean;
   loadNextPage: () => void;
 }
@@ -21,6 +22,7 @@ export function useProperties(
   const [total, setTotal] = useState(initialData?.total ?? 0);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(!initialData);
+  const [isError, setIsError] = useState(false);
   const [totalPages, setTotalPages] = useState(
     initialData ? Math.ceil(initialData.total / 20) : 1
   );
@@ -39,6 +41,7 @@ export function useProperties(
     if (f.minBeds) params.set("minBeds", f.minBeds);
     if (f.minBaths) params.set("minBaths", f.minBaths);
     if (f.propertyType) params.set("propertyType", f.propertyType);
+    params.set("listingType", f.listingType);
     params.set("page", String(page));
     params.set("limit", "20");
 
@@ -60,6 +63,7 @@ export function useProperties(
     setCurrentPage(1);
     setPages([]);
     setIsLoading(true);
+    setIsError(false);
 
     fetchPage(filters, 1)
       .then((data) => {
@@ -67,6 +71,7 @@ export function useProperties(
         setTotal(data.total);
         setTotalPages(data.pages);
       })
+      .catch(() => setIsError(true))
       .finally(() => setIsLoading(false));
   }, [filtersKey, filters, fetchPage, initialData]);
 
@@ -85,6 +90,7 @@ export function useProperties(
         setTotal(data.total);
         setTotalPages(data.pages);
       })
+      .catch(() => setIsError(true))
       .finally(() => setIsLoading(false));
   }, [isLoading, currentPage, totalPages, fetchPage]);
 
@@ -92,6 +98,7 @@ export function useProperties(
     properties: pages.flat(),
     total,
     isLoading,
+    isError,
     hasMore: currentPage < totalPages,
     loadNextPage,
   };

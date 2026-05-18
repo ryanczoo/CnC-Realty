@@ -125,14 +125,16 @@ export function PropertyMapInner({ properties, hoveredId }: Props) {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const onClick = useCallback((e: any) => {
-    const features: GeoJSON.Feature[] | undefined = e.features;
-    if (!features?.length) {
-      setPopup(null);
+    const f: GeoJSON.Feature | undefined = e.features?.[0];
+    if (!f?.geometry || f.geometry.type !== "Point") { setPopup(null); return; }
+    const [lng, lat] = f.geometry.coordinates as [number, number];
+
+    // Cluster tap → zoom in
+    if (f.properties?.cluster) {
+      mapRef.current?.easeTo({ center: [lng, lat], zoom: (mapRef.current.getZoom() ?? 9) + 2 });
       return;
     }
-    const f = features[0];
-    if (!f.geometry || f.geometry.type !== "Point") return;
-    const [lng, lat] = f.geometry.coordinates as [number, number];
+
     setPopup({
       longitude: lng,
       latitude: lat,
