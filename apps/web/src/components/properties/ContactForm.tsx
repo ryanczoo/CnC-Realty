@@ -63,7 +63,7 @@ export function ContactForm({ mlsNumber, address }: Props) {
   return (
     <div className="rounded-2xl bg-[#1a1a1a] p-5">
       <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-white/70">
-        Contact Agent
+        Request a Tour
       </h3>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <input
