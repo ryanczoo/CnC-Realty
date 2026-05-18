@@ -87,7 +87,8 @@ model User {
   accounts      Account[]
   sessions      Session[]
   agent         Agent?
-  savedSearches SavedSearch[]
+  savedSearches   SavedSearch[]
+  savedProperties SavedProperty[]
 }
 
 model Account {
@@ -305,6 +306,17 @@ model PropertyAlert {
   property    Property    @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   @@unique([savedSearchId, propertyId])
+}
+
+model SavedProperty {
+  id        String   @id @default(cuid())
+  userId    String
+  mlsNumber String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, mlsNumber])
 }
 
 model BlogPost {
