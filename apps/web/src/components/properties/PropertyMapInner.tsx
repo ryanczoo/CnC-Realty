@@ -149,7 +149,7 @@ export function PropertyMapInner({ properties, hoveredId }: Props) {
       mapboxAccessToken={TOKEN}
       initialViewState={{ longitude: -118.2437, latitude: 34.0522, zoom: 9 }}
       style={{ width: "100%", height: "100%" }}
-      mapStyle="mapbox://styles/mapbox/dark-v11"
+      mapStyle="mapbox://styles/mapbox/light-v11"
       interactiveLayerIds={["unclustered-point", "clusters"]}
       onClick={onClick}
     >
@@ -172,14 +172,14 @@ export function PropertyMapInner({ properties, hoveredId }: Props) {
       <div className="absolute bottom-8 right-3 flex flex-col gap-2">
         <button
           onClick={() => mapRef.current?.zoomIn()}
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-white/70 bg-transparent text-xl font-light text-white shadow-md transition-colors hover:bg-white/10 active:bg-white/20"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-[#ccc] bg-white text-xl font-light text-[#333] shadow-md transition-colors hover:bg-[#f5f5f5] active:bg-[#eee]"
           aria-label="Zoom in"
         >
           +
         </button>
         <button
           onClick={() => mapRef.current?.zoomOut()}
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-white/70 bg-transparent text-xl font-light text-white shadow-md transition-colors hover:bg-white/10 active:bg-white/20"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-[#ccc] bg-white text-xl font-light text-[#333] shadow-md transition-colors hover:bg-[#f5f5f5] active:bg-[#eee]"
           aria-label="Zoom out"
         >
           −
