@@ -63,7 +63,7 @@ export function ContactForm({ mlsNumber, address }: Props) {
   return (
     <div className="rounded-2xl bg-[#1a1a1a] p-5">
       <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-white/70">
-        Request a Tour
+        Contact Agent
       </h3>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <input
@@ -110,7 +110,7 @@ export function ContactForm({ mlsNumber, address }: Props) {
           disabled={state === "loading"}
           className="rounded-full bg-[#9E8C61] py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#b09870] disabled:opacity-60"
         >
-          {state === "loading" ? "Sending…" : "Request a Tour"}
+          {state === "loading" ? "Sending…" : "Contact Agent"}
         </button>
       </form>
     </div>
