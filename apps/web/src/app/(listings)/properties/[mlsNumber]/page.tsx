@@ -131,6 +131,38 @@ export default async function PropertyDetailPage({ params }: PageProps) {
               </div>
             )}
 
+            {/* Description */}
+            {property.description && (
+              <div className="mt-6">
+                <h2 className="mb-3 text-lg font-semibold">About this home</h2>
+                <p className="leading-relaxed text-white/70">
+                  {property.description}
+                </p>
+              </div>
+            )}
+
+            {/* Listing agent / brokerage attribution */}
+            {(() => {
+              const raw = property.rawData as Record<string, unknown> | null;
+              const agent = raw?.ListAgentFullName as string | undefined;
+              const office = raw?.ListOfficeName as string | undefined;
+              const license = raw?.ListAgentStateLicense as string | undefined;
+              return (
+                <div className="mt-6 flex items-center gap-2 text-sm text-white/50">
+                  <MapPin className="h-4 w-4 shrink-0 text-[#9E8C61]" />
+                  {agent || office ? (
+                    <span>
+                      {agent && <>Listed by <span className="text-white/70">{agent}</span></>}
+                      {agent && license && <span className="text-white/40"> · DRE #{license}</span>}
+                      {office && <>{agent ? " · " : "Listed by "}<span className="text-white/70">{office}</span></>}
+                    </span>
+                  ) : (
+                    <span>Listing courtesy of California Regional MLS</span>
+                  )}
+                </div>
+              );
+            })()}
+
             {/* Listing details grid */}
             <div className="mt-6 grid grid-cols-2 gap-x-8 gap-y-3 rounded-2xl bg-[#1a1a1a] p-5 text-sm">
               <div className="flex justify-between">
@@ -174,38 +206,6 @@ export default async function PropertyDetailPage({ params }: PageProps) {
                 </div>
               )}
             </div>
-
-            {/* Description */}
-            {property.description && (
-              <div className="mt-6">
-                <h2 className="mb-3 text-lg font-semibold">About this home</h2>
-                <p className="leading-relaxed text-white/70">
-                  {property.description}
-                </p>
-              </div>
-            )}
-
-            {/* Listing agent / brokerage attribution */}
-            {(() => {
-              const raw = property.rawData as Record<string, unknown> | null;
-              const agent = raw?.ListAgentFullName as string | undefined;
-              const office = raw?.ListOfficeName as string | undefined;
-              const license = raw?.ListAgentStateLicense as string | undefined;
-              return (
-                <div className="mt-6 flex items-center gap-2 text-sm text-white/50">
-                  <MapPin className="h-4 w-4 shrink-0 text-[#9E8C61]" />
-                  {agent || office ? (
-                    <span>
-                      {agent && <>Listed by <span className="text-white/70">{agent}</span></>}
-                      {agent && license && <span className="text-white/40"> · DRE #{license}</span>}
-                      {office && <>{agent ? " · " : "Listed by "}<span className="text-white/70">{office}</span></>}
-                    </span>
-                  ) : (
-                    <span>Listing courtesy of California Regional MLS</span>
-                  )}
-                </div>
-              );
-            })()}
 
             {/* MLS Compliance */}
             <div className="mt-8 rounded-xl border border-white/10 bg-[#1a1a1a] p-4 text-xs text-white/40">

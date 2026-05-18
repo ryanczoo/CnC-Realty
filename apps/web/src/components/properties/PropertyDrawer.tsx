@@ -207,6 +207,39 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
                     </div>
                   )}
 
+                  {/* Description */}
+                  {property.description && (
+                    <div className="mt-5">
+                      <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-white/50">
+                        About this home
+                      </h2>
+                      <p className="text-sm leading-relaxed text-white/70">
+                        {property.description}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Listing agent / brokerage attribution */}
+                  {(() => {
+                    const agent = property.rawData?.ListAgentFullName as string | undefined;
+                    const office = property.rawData?.ListOfficeName as string | undefined;
+                    const license = property.rawData?.ListAgentStateLicense as string | undefined;
+                    return (
+                      <div className="mt-4 flex items-center gap-1.5 text-xs text-white/50">
+                        <MapPin className="h-3.5 w-3.5 shrink-0 text-[#9E8C61]/70" />
+                        {agent || office ? (
+                          <span>
+                            {agent && <span>Listed by <span className="text-white/70">{agent}</span></span>}
+                            {agent && license && <span className="text-white/30"> · DRE #{license}</span>}
+                            {office && <span>{agent ? " · " : "Listed by "}<span className="text-white/70">{office}</span></span>}
+                          </span>
+                        ) : (
+                          <span>Listing courtesy of California Regional MLS</span>
+                        )}
+                      </div>
+                    );
+                  })()}
+
                   {/* Details grid */}
                   <div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-2.5 rounded-xl bg-[#1a1a1a] p-4 text-sm">
                     <div className="flex justify-between">
@@ -250,39 +283,6 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
                       </div>
                     )}
                   </div>
-
-                  {/* Description */}
-                  {property.description && (
-                    <div className="mt-5">
-                      <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-white/50">
-                        About this home
-                      </h2>
-                      <p className="text-sm leading-relaxed text-white/70">
-                        {property.description}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Listing agent / brokerage attribution */}
-                  {(() => {
-                    const agent = property.rawData?.ListAgentFullName as string | undefined;
-                    const office = property.rawData?.ListOfficeName as string | undefined;
-                    const license = property.rawData?.ListAgentStateLicense as string | undefined;
-                    return (
-                      <div className="mt-4 flex items-center gap-1.5 text-xs text-white/50">
-                        <MapPin className="h-3.5 w-3.5 shrink-0 text-[#9E8C61]/70" />
-                        {agent || office ? (
-                          <span>
-                            {agent && <span>Listed by <span className="text-white/70">{agent}</span></span>}
-                            {agent && license && <span className="text-white/30"> · DRE #{license}</span>}
-                            {office && <span>{agent ? " · " : "Listed by "}<span className="text-white/70">{office}</span></span>}
-                          </span>
-                        ) : (
-                          <span>Listing courtesy of California Regional MLS</span>
-                        )}
-                      </div>
-                    );
-                  })()}
 
                   {/* MLS Compliance */}
                   <div className="mt-6 rounded-xl border border-white/10 bg-[#1a1a1a] p-4 text-xs text-white/40">
