@@ -84,7 +84,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-[#0f0f0f] pb-20 text-white">
-      <div className="mx-auto max-w-7xl px-4 pt-6">
+      <div className="mx-auto max-w-7xl px-4 pt-20">
         {/* Back to search */}
         <BackLink />
 

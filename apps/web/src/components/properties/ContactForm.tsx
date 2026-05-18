@@ -66,22 +66,20 @@ export function ContactForm({ mlsNumber, address }: Props) {
         Request a Tour
       </h3>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-        <div className="flex gap-2">
-          <input
-            required
-            placeholder="First name"
-            value={form.firstName}
-            onChange={update("firstName")}
-            className={`flex-1 ${inputClass}`}
-          />
-          <input
-            required
-            placeholder="Last name"
-            value={form.lastName}
-            onChange={update("lastName")}
-            className={`flex-1 ${inputClass}`}
-          />
-        </div>
+        <input
+          required
+          placeholder="First name"
+          value={form.firstName}
+          onChange={update("firstName")}
+          className={inputClass}
+        />
+        <input
+          required
+          placeholder="Last name"
+          value={form.lastName}
+          onChange={update("lastName")}
+          className={inputClass}
+        />
         <input
           required
           type="email"
