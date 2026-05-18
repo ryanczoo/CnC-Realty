@@ -177,6 +177,15 @@ model Property {
   updatedAt     DateTime @updatedAt
 
   alerts PropertyAlert[]
+
+  @@index([status, listingType])
+  @@index([zip])
+  @@index([city])
+  @@index([listPrice])
+  @@index([beds])
+  @@index([baths])
+  @@index([listedAt])
+  @@index([status, listingType, listedAt])
 }
 
 model Lead {
