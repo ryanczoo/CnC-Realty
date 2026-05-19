@@ -13,6 +13,10 @@ interface Props {
 
 const TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!;
 
+const M = 1_000_000;
+const HUNDRED_K = 100_000;
+const TEN_K = 10_000;
+
 const clusterLayer: LayerProps = {
   id: "clusters",
   type: "circle",
@@ -59,11 +63,18 @@ const unclusteredLabelLayer: LayerProps = {
   filter: ["!", ["has", "point_count"]],
   layout: {
     "text-field": [
-      "concat",
-      "$",
-      ["to-string", ["round", ["/", ["get", "price"], 1000]]],
-      "k",
-    ],
+      "case",
+      [">=", ["get", "price"], 1000000],
+      ["concat",
+        "$",
+        ["to-string", ["floor", ["/", ["get", "price"], M]]],
+        ".",
+        ["to-string", ["floor", ["/", ["%", ["get", "price"], M], HUNDRED_K]]],
+        ["to-string", ["floor", ["/", ["%", ["get", "price"], HUNDRED_K], TEN_K]]],
+        "M",
+      ],
+      ["concat", "$", ["to-string", ["round", ["/", ["get", "price"], 1000]]], "K"],
+    ] as unknown as string,
     "text-size": 9,
     "text-font": ["Open Sans Bold", "Arial Unicode MS Bold"],
     "text-anchor": "center",

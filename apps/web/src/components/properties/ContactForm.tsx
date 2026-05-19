@@ -12,10 +12,9 @@ type FormState = "idle" | "loading" | "done" | "error";
 export function ContactForm({ mlsNumber, address }: Props) {
   const [form, setForm] = useState({
     firstName: "",
-    lastName: "",
     email: "",
     phone: "",
-    notes: "",
+    notes: `Hi there! I am interested in ${address}.`,
   });
   const [state, setState] = useState<FormState>("idle");
 
@@ -69,29 +68,23 @@ export function ContactForm({ mlsNumber, address }: Props) {
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <input
           required
-          placeholder="First name"
+          placeholder="Name"
           value={form.firstName}
           onChange={update("firstName")}
           className={inputClass}
         />
         <input
           required
-          placeholder="Last name"
-          value={form.lastName}
-          onChange={update("lastName")}
-          className={inputClass}
-        />
-        <input
-          required
           type="email"
-          placeholder="Email address"
+          placeholder="Email"
           value={form.email}
           onChange={update("email")}
           className={inputClass}
         />
         <input
+          required
           type="tel"
-          placeholder="Phone (optional)"
+          placeholder="Phone"
           value={form.phone}
           onChange={update("phone")}
           className={inputClass}

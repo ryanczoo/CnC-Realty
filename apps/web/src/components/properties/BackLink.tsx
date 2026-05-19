@@ -15,7 +15,7 @@ export function BackLink() {
   return (
     <Link
       href={href}
-      className="inline-flex items-center gap-1 text-sm text-white/60 transition-colors hover:text-white"
+      className="inline-flex items-center gap-1 text-sm text-white transition-colors hover:text-white/70"
     >
       <ChevronLeft className="h-4 w-4" />
       Back to search

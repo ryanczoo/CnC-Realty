@@ -26,40 +26,36 @@ export function useSavedProperties(): UseSavedPropertiesResult {
       .catch(() => {});
   }, [session]);
 
-  const toggle = useCallback(
-    async (mlsNumber: string) => {
-      const isSaved = savedSet.has(mlsNumber);
+  const toggle = useCallback(async (mlsNumber: string) => {
+    // Read current state inside the updater so this callback stays stable (no savedSet dep)
+    let isSaved = false;
+    setSavedSet((prev) => {
+      isSaved = prev.has(mlsNumber);
+      const next = new Set(prev);
+      if (isSaved) next.delete(mlsNumber);
+      else next.add(mlsNumber);
+      return next;
+    });
 
-      // Optimistic update
-      setSavedSet((prev) => {
-        const next = new Set(prev);
-        if (isSaved) next.delete(mlsNumber);
-        else next.add(mlsNumber);
-        return next;
-      });
-
-      try {
-        if (isSaved) {
-          await fetch(`/api/saved-properties/${mlsNumber}`, { method: "DELETE" });
-        } else {
-          await fetch("/api/saved-properties", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ mlsNumber }),
-          });
-        }
-      } catch {
-        // Roll back on error
-        setSavedSet((prev) => {
-          const next = new Set(prev);
-          if (isSaved) next.add(mlsNumber);
-          else next.delete(mlsNumber);
-          return next;
+    try {
+      if (isSaved) {
+        await fetch(`/api/saved-properties/${mlsNumber}`, { method: "DELETE" });
+      } else {
+        await fetch("/api/saved-properties", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mlsNumber }),
         });
       }
-    },
-    [savedSet]
-  );
+    } catch {
+      setSavedSet((prev) => {
+        const next = new Set(prev);
+        if (isSaved) next.add(mlsNumber);
+        else next.delete(mlsNumber);
+        return next;
+      });
+    }
+  }, []);
 
   return { savedSet, toggle };
 }

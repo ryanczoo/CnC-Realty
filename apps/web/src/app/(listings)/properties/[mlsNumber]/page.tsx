@@ -8,6 +8,7 @@ import { ContactForm } from "@/components/properties/ContactForm";
 import { BackLink } from "@/components/properties/BackLink";
 import { AgentAttribution } from "@/components/properties/AgentAttribution";
 import { CrmlsDisclaimer } from "@/components/properties/CrmlsDisclaimer";
+import { SaveButton } from "@/components/properties/SaveButton";
 
 interface PageProps {
   params: { mlsNumber: string };
@@ -67,9 +68,12 @@ export default async function PropertyDetailPage({ params }: PageProps) {
                 <p className="mt-1 text-lg text-[#1B1B1B]/80">{property.address}</p>
                 <p className="text-sm text-[#1B1B1B]/70">{property.city}, {property.state} {property.zip}</p>
               </div>
-              <span className="shrink-0 rounded-full bg-[#9E8C61]/20 px-3 py-1 text-sm text-[#9E8C61]">
-                {property.status}
-              </span>
+              <div className="flex shrink-0 items-center gap-2">
+                <SaveButton mlsNumber={property.mlsNumber} />
+                <span className="rounded-full bg-[#9E8C61]/20 px-3 py-1 text-sm text-[#9E8C61]">
+                  {property.status}
+                </span>
+              </div>
             </div>
 
             {/* Stats grid */}

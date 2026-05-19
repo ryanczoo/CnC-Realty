@@ -3,13 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { X, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Loader2, Heart } from "lucide-react";
 import Link from "next/link";
 import { ContactForm } from "./ContactForm";
 import { MortgageCalculator } from "./MortgageCalculator";
 import { AgentAttribution } from "./AgentAttribution";
 import { CrmlsDisclaimer } from "./CrmlsDisclaimer";
 import { buildStatsFields, buildDetailSections } from "@/lib/property-ui-helpers";
+import { useSavedProperties } from "@/hooks/useSavedProperties";
 
 interface PropertyDetail {
   mlsNumber: string;
@@ -80,6 +81,7 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  const { savedSet, toggle } = useSavedProperties();
   const photos = Array.isArray(property?.photos) ? property!.photos : [];
   const r = property?.rawData ?? {};
   const statsFields = property ? buildStatsFields(property) : [];
@@ -107,7 +109,7 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
         <div className="flex shrink-0 items-center justify-between bg-[#1B1B1B] px-5 py-3">
           <button
             onClick={onClose}
-            className="flex items-center gap-2 rounded-full px-3 py-1.5 text-sm text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+            className="flex items-center gap-2 rounded-full px-3 py-1.5 text-sm text-white transition-colors hover:bg-white/10"
           >
             <X className="h-4 w-4" />
             Back to search
@@ -117,7 +119,7 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
               href={`/properties/${property.mlsNumber}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs text-white/30 transition-colors hover:text-white/60"
+              className="text-xs text-white transition-colors hover:text-white/70"
             >
               Open full page ↗
             </Link>
@@ -179,6 +181,17 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
                 <span className="absolute left-3 top-3 rounded-full bg-black/60 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm">
                   {property.status}
                 </span>
+                <button
+                  onClick={() => toggle(property.mlsNumber)}
+                  className="absolute right-3 top-3 rounded-full bg-black/50 p-2 backdrop-blur-sm transition-colors hover:bg-black/70"
+                  aria-label={savedSet.has(property.mlsNumber) ? "Remove from saved" : "Save property"}
+                >
+                  <Heart
+                    className={`h-5 w-5 transition-colors ${
+                      savedSet.has(property.mlsNumber) ? "fill-[#9E8C61] text-[#9E8C61]" : "text-white"
+                    }`}
+                  />
+                </button>
               </div>
 
               {/* Content: two columns at wider widths */}
