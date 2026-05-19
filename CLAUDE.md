@@ -1288,6 +1288,64 @@ Same as above — pick up the listing popup/drawer work.
 
 ---
 
+## Session Notes — 2026-05-19 (continuation 2)
+
+### What Was Completed This Session
+
+All changes committed as `7d093e5` on `claude/real-estate-website-9bdWi`. Map search phase complete ✅
+
+### Map Search Polish
+
+1. **ContactForm — UX improvements** (`ContactForm.tsx`)
+   - Removed last name field — single "Name" field only
+   - Phone is now required (was optional)
+   - Placeholders simplified: "Email address" → "Email", "Phone number" → "Phone"
+   - Message pre-filled: `"Hi there! I am interested in {address}."` (Zillow-style, address injected from prop)
+   - Applies to both the drawer and full detail page (shared component)
+
+2. **PropertyDrawer — heart/save button** (`PropertyDrawer.tsx`)
+   - Heart button added to top-right corner of photo carousel (absolute positioned over photo)
+   - Style: dark frosted-glass circle (`bg-black/50 backdrop-blur-sm`), fills gold when saved
+   - Uses `useSavedProperties` hook — syncs with list cards and map popup saves
+   - "Back to search" and "Open full page ↗" text changed to full white (was `white/60` and `white/30`)
+
+3. **BackLink — white text** (`BackLink.tsx`)
+   - "Back to search" on full detail page changed to full white
+
+4. **SaveButton — new component** (`SaveButton.tsx`)
+   - New client component for the full detail page
+   - Heart button placed to the left of the status badge ("Active")
+   - Light-background style: empty state `text-[#1B1B1B]/40`, filled state gold
+
+5. **PropertyMapInner — Zillow-style price labels** (`PropertyMapInner.tsx`)
+   - Under $1M: `$950K`, `$499K` (was `$950k`, `$1108k`)
+   - $1M+: `$1.10M`, `$1.99M`, `$2.40M` — always 2 decimal places
+   - Extracted `M`, `HUNDRED_K`, `TEN_K` constants for readability
+
+6. **useSavedProperties — stable toggle** (`useSavedProperties.ts`)
+   - `toggle` callback removed `savedSet` from dependency array
+   - Reads current state via `setSavedSet` functional updater instead — toggle is now stable across renders
+
+### Phase Status Update
+
+**Phase 4B: COMPLETE ✅** — Map search polish done, all committed.
+
+### Next Session — Start Here (Phase 5)
+
+Phase 5: Full CRM
+
+1. Transaction management: create from lead, timeline view, document upload (Cloudflare R2), status progression
+2. Email campaigns: Tiptap rich text editor, recipient selection, SendGrid delivery
+3. Drip email sequence builder
+4. SendGrid webhook handlers to update `CampaignContact` stats
+5. Property alert job: match new listings to saved searches → notify via email
+6. Admin dashboard: manage all agents, leads, transactions, campaigns; commission reports
+7. Agent onboarding multi-step form
+
+**Also pending before Phase 5:** Full IDX resync (Ryan confirmed — triggers from dev server, call `/api/idx/sync?type=full` with the sync token)
+
+---
+
 ## Session Notes — 2026-05-19
 
 ### What Was Completed This Session
