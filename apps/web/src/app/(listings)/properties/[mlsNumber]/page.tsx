@@ -1,11 +1,13 @@
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
+import { buildStatsFields, buildDetailSections } from "@/lib/property-ui-helpers";
 import { PhotoGallery } from "@/components/properties/PhotoGallery";
 import { MortgageCalculator } from "@/components/properties/MortgageCalculator";
 import { ContactForm } from "@/components/properties/ContactForm";
 import { BackLink } from "@/components/properties/BackLink";
-import { BedDouble, Bath, Ruler, Calendar, User, ShieldCheck } from "lucide-react";
+import { AgentAttribution } from "@/components/properties/AgentAttribution";
+import { CrmlsDisclaimer } from "@/components/properties/CrmlsDisclaimer";
 
 interface PageProps {
   params: { mlsNumber: string };
@@ -14,28 +16,17 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const property = await prisma.property.findUnique({
     where: { mlsNumber: params.mlsNumber },
-    select: {
-      address: true,
-      city: true,
-      state: true,
-      listPrice: true,
-      photos: true,
-      description: true,
-    },
+    select: { address: true, city: true, state: true, listPrice: true, photos: true, description: true },
   });
 
   if (!property) return { title: "Property Not Found" };
 
-  const photos = Array.isArray(property.photos)
-    ? (property.photos as string[])
-    : [];
+  const photos = Array.isArray(property.photos) ? (property.photos as string[]) : [];
   const title = `${property.address}, ${property.city}, ${property.state}`;
 
   return {
     title,
-    description:
-      property.description ??
-      `${title} — $${property.listPrice.toLocaleString()}`,
+    description: property.description ?? `${title} — $${property.listPrice.toLocaleString()}`,
     openGraph: {
       title,
       description: `$${property.listPrice.toLocaleString()} · ${title}`,
@@ -45,219 +36,125 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function PropertyDetailPage({ params }: PageProps) {
-  const property = await prisma.property.findUnique({
-    where: { mlsNumber: params.mlsNumber },
-  });
-
+  const property = await prisma.property.findUnique({ where: { mlsNumber: params.mlsNumber } });
   if (!property) notFound();
 
-  const photos = Array.isArray(property.photos)
-    ? (property.photos as string[])
-    : [];
+  const photos = Array.isArray(property.photos) ? (property.photos as string[]) : [];
+  const r = (property.rawData ?? {}) as Record<string, unknown>;
 
-  const facts = [
-    property.beds != null && {
-      icon: BedDouble,
-      label: "Beds",
-      value: property.beds,
-    },
-    property.baths != null && {
-      icon: Bath,
-      label: "Baths",
-      value: property.baths,
-    },
-    property.sqft != null && {
-      icon: Ruler,
-      label: "Sq Ft",
-      value: property.sqft.toLocaleString(),
-    },
-    property.yearBuilt != null && {
-      icon: Calendar,
-      label: "Year Built",
-      value: property.yearBuilt,
-    },
-  ].filter(Boolean) as {
-    icon: React.ComponentType<{ className?: string }>;
-    label: string;
-    value: string | number;
-  }[];
+  const statsFields = buildStatsFields(property);
+  const detailSections = buildDetailSections(r, property.lotSize);
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f] pb-20 text-white">
-      <div className="mx-auto max-w-7xl px-4 pt-20">
-        {/* Back to search */}
-        <BackLink />
-
-        {/* Photo gallery */}
-        <div className="mt-4">
-          <PhotoGallery photos={photos} address={property.address} />
+    <div className="min-h-screen bg-[#F2F0EF] pb-20 text-[#1B1B1B]">
+      {/* Dark header bar */}
+      <div className="bg-[#1B1B1B] pb-3 pt-[76px]">
+        <div className="mx-auto max-w-7xl px-4">
+          <BackLink />
         </div>
+      </div>
 
-        {/* Two-column layout */}
+      <div className="mx-auto max-w-7xl px-4 pt-6">
+        <PhotoGallery photos={photos} address={property.address} />
+
         <div className="mt-8 flex gap-8">
           {/* Left: listing details */}
           <div className="min-w-0 flex-1">
             {/* Header */}
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h1 className="text-3xl font-bold">
-                  ${property.listPrice.toLocaleString()}
-                </h1>
-                <p className="mt-1 text-lg text-white/70">{property.address}</p>
-                <p className="text-sm text-white/50">
-                  {property.city}, {property.state} {property.zip}
-                </p>
+                <h1 className="text-3xl font-bold">${property.listPrice.toLocaleString()}</h1>
+                <p className="mt-1 text-lg text-[#1B1B1B]/80">{property.address}</p>
+                <p className="text-sm text-[#1B1B1B]/70">{property.city}, {property.state} {property.zip}</p>
               </div>
               <span className="shrink-0 rounded-full bg-[#9E8C61]/20 px-3 py-1 text-sm text-[#9E8C61]">
                 {property.status}
               </span>
             </div>
 
-            {/* Key facts pills */}
-            {facts.length > 0 && (
-              <div className="mt-6 flex flex-wrap gap-3">
-                {facts.map(({ icon: Icon, label, value }) => (
-                  <div
-                    key={label}
-                    className="flex items-center gap-2 rounded-xl bg-[#1a1a1a] px-4 py-2.5"
-                  >
-                    <Icon className="h-4 w-4 text-[#9E8C61]" />
-                    <div>
-                      <p className="text-xs text-white/40">{label}</p>
-                      <p className="text-sm font-semibold">{value}</p>
+            {/* Stats grid */}
+            {statsFields.length > 0 && (
+              <div className="mt-5 overflow-hidden rounded-xl bg-white">
+                <div className="grid grid-cols-3">
+                  {statsFields.map(({ icon: Icon, label, value }) => (
+                    <div key={label} className="flex items-center gap-2.5 px-4 py-3.5">
+                      <Icon className="h-4 w-4 shrink-0 text-[#9E8C61]" />
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-[#1B1B1B]" title={String(value)}>{value}</p>
+                        <p className="text-[11px] text-[#1B1B1B]/60">{label}</p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             )}
 
             {/* Description */}
             {property.description && (
               <div className="mt-6">
-                <h2 className="mb-3 text-lg font-semibold">About this home</h2>
-                <p className="leading-relaxed text-white/70">
-                  {property.description}
-                </p>
+                <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#1B1B1B]/70">About this home</h2>
+                <p className="leading-relaxed text-[#1B1B1B]/80">{property.description}</p>
               </div>
             )}
 
-            {/* Listing agent / brokerage attribution */}
-            {(() => {
-              const raw = property.rawData as Record<string, unknown> | null;
-              const agent = raw?.ListAgentFullName as string | undefined;
-              const office = raw?.ListOfficeName as string | undefined;
-              const license = raw?.ListAgentStateLicense as string | undefined;
-              return (
-                <div className="mt-6 flex items-center gap-2 text-sm text-white/50">
-                  <User className="h-4 w-4 shrink-0 text-[#9E8C61]" />
-                  {agent || office ? (
-                    <span>
-                      {agent && <>Listed by <span className="text-white/70">{agent}</span></>}
-                      {agent && license && <span className="text-white/40"> · DRE #{license}</span>}
-                      {office && <>{agent ? " · " : "Listed by "}<span className="text-white/70">{office}</span></>}
-                    </span>
-                  ) : (
-                    <span>Listing courtesy of California Regional MLS</span>
-                  )}
-                </div>
-              );
-            })()}
+            <AgentAttribution rawData={r} />
 
-            {/* Listing details grid */}
-            <div className="mt-6 grid grid-cols-2 gap-x-8 gap-y-3 rounded-2xl bg-[#1a1a1a] p-5 text-sm">
+            {/* MLS # and Listed date */}
+            <div className="mt-5 grid grid-cols-2 gap-x-8 gap-y-2.5 rounded-xl bg-white p-4 text-sm">
               <div className="flex justify-between">
-                <span className="text-white/50">MLS #</span>
+                <span className="text-[#1B1B1B]/70">MLS #</span>
                 <span>{property.mlsNumber}</span>
               </div>
-              {property.propertyType && (
-                <div className="flex justify-between">
-                  <span className="text-white/50">Type</span>
-                  <span>{property.propertyType}</span>
-                </div>
-              )}
-              {property.lotSize != null && (
-                <div className="flex justify-between">
-                  <span className="text-white/50">Lot Size</span>
-                  <span>{property.lotSize.toFixed(2)} ac</span>
-                </div>
-              )}
-              {property.yearBuilt != null && (
-                <div className="flex justify-between">
-                  <span className="text-white/50">Year Built</span>
-                  <span>{property.yearBuilt}</span>
-                </div>
-              )}
-              {property.county && (
-                <div className="flex justify-between">
-                  <span className="text-white/50">County</span>
-                  <span>{property.county}</span>
-                </div>
-              )}
               {property.listedAt && (
                 <div className="flex justify-between">
-                  <span className="text-white/50">Listed</span>
+                  <span className="text-[#1B1B1B]/70">Listed</span>
                   <span>
                     {new Date(property.listedAt).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
+                      month: "short", day: "numeric", year: "numeric",
                     })}
                   </span>
                 </div>
               )}
             </div>
 
-            {/* MLS Compliance */}
-            <div className="mt-8 rounded-xl border border-white/10 bg-[#1a1a1a] p-4 text-xs text-white/40">
-              <div className="mb-2 flex items-center gap-1.5">
-                <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-[#9E8C61]/70" />
-                <span className="font-medium uppercase tracking-wide text-white/50">
-                  Listing Information
-                </span>
-              </div>
-              <p className="leading-relaxed">
-                <span className="font-medium text-white/50">MLS #:</span>{" "}
-                {property.mlsNumber} &nbsp;·&nbsp;{" "}
-                <span className="font-medium text-white/50">Status:</span>{" "}
-                {property.status} &nbsp;·&nbsp;{" "}
-                <span className="font-medium text-white/50">Courtesy of:</span>{" "}
-                California Regional MLS (CRMLS)
-              </p>
-              <p className="mt-2 leading-relaxed">
-                Based on information from the California Regional Multiple Listing Service
-                (CRMLS) as of{" "}
-                {property.syncedAt
-                  ? new Date(property.syncedAt).toLocaleDateString("en-US", {
-                      month: "long",
-                      day: "numeric",
-                      year: "numeric",
-                    })
-                  : "the date listed above"}
-                . All data, including all measurements and calculations of area, is
-                obtained from various sources and has not been, and will not be,
-                verified by broker or MLS. All information should be independently
-                reviewed and verified for accuracy.
-              </p>
-              <p className="mt-2 leading-relaxed">
-                This information is provided for the consumer&apos;s personal,
-                non-commercial use and may not be used for any purpose other than to
-                identify prospective properties the consumer may be interested in
-                purchasing. Any use of this data other than by a consumer to identify
-                real property for sale or lease is strictly prohibited.
-              </p>
+            {/* Property Details sections */}
+            <div className="mt-6 space-y-3">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-[#1B1B1B]/50">Property Details</h2>
+              {detailSections.map((section) => (
+                <div key={section.title} className="rounded-xl bg-white p-4">
+                  <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-[#1B1B1B]/60">
+                    {section.title}
+                  </h3>
+                  <div className="grid grid-cols-2 gap-x-8 gap-y-2.5 text-sm">
+                    {section.fields.map(([label, value]) => (
+                      <div key={label} className="flex justify-between gap-2">
+                        <span className="text-[#1B1B1B]/70">{label}</span>
+                        <span className="text-right text-[#1B1B1B]">
+                          {value != null && value !== "" && value !== false ? String(value) : "N/A"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
           {/* Right: sticky sidebar */}
           <div className="w-80 shrink-0">
             <div className="sticky top-24 flex flex-col gap-4">
-              <ContactForm
-                mlsNumber={property.mlsNumber}
-                address={property.address}
-              />
+              <ContactForm mlsNumber={property.mlsNumber} address={property.address} />
               <MortgageCalculator listPrice={property.listPrice} />
             </div>
           </div>
+        </div>
+
+        {/* Disclaimer — full width, centered */}
+        <div className="mt-12 text-center text-xs leading-relaxed">
+          <CrmlsDisclaimer
+            syncedAt={property.syncedAt ? property.syncedAt.toISOString() : null}
+            className="text-[#1B1B1B]/40"
+          />
         </div>
       </div>
     </div>

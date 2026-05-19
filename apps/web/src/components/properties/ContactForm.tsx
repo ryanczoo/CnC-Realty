@@ -41,16 +41,17 @@ export function ContactForm({ mlsNumber, address }: Props) {
       });
       if (!res.ok) throw new Error("Failed");
       setState("done");
-    } catch {
+    } catch (err) {
+      if (process.env.NODE_ENV !== "production") console.error("[ContactForm]", err);
       setState("error");
     }
   }
 
   if (state === "done") {
     return (
-      <div className="rounded-2xl bg-[#1a1a1a] p-6 text-center">
-        <p className="text-lg font-semibold text-white">Request sent!</p>
-        <p className="mt-2 text-sm text-white/60">
+      <div className="rounded-2xl bg-white p-6 text-center">
+        <p className="text-lg font-semibold text-[#1B1B1B]">Request sent!</p>
+        <p className="mt-2 text-sm text-[#1B1B1B]/60">
           An agent will reach out to you shortly.
         </p>
       </div>
@@ -58,11 +59,11 @@ export function ContactForm({ mlsNumber, address }: Props) {
   }
 
   const inputClass =
-    "rounded-lg bg-[#111] px-3 py-2 text-sm text-white placeholder-white/30 outline-none focus:ring-1 focus:ring-[#9E8C61]/50";
+    "rounded-lg bg-[#F2F0EF] px-3 py-2 text-sm text-[#1B1B1B] placeholder-[#1B1B1B]/30 outline-none focus:ring-1 focus:ring-[#9E8C61]/50";
 
   return (
-    <div className="rounded-2xl bg-[#1a1a1a] p-5">
-      <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-white/70">
+    <div className="rounded-2xl bg-white p-5">
+      <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-[#1B1B1B]">
         Request a Tour
       </h3>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
@@ -103,7 +104,7 @@ export function ContactForm({ mlsNumber, address }: Props) {
           className={`resize-none ${inputClass}`}
         />
         {state === "error" && (
-          <p className="text-xs text-red-400">Something went wrong. Please try again.</p>
+          <p className="text-xs text-red-600">Something went wrong. Please try again.</p>
         )}
         <button
           type="submit"

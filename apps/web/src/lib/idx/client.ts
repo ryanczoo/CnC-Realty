@@ -3,6 +3,7 @@ import { mapResoToProperty, ResoProperty } from "./field-map";
 
 const BASE_URL = "https://api-trestle.corelogic.com/trestle/odata";
 const SELECT_FIELDS = [
+  // Core listing fields
   "ListingKey", "StandardStatus", "ListPrice",
   "BedroomsTotal", "BathroomsTotalInteger", "BathroomsFull", "BathroomsHalf",
   "LivingArea", "LotSizeSquareFeet", "YearBuilt",
@@ -11,6 +12,22 @@ const SELECT_FIELDS = [
   "City", "StateOrProvince", "PostalCode", "CountyOrParish",
   "Latitude", "Longitude", "ModificationTimestamp", "ListingContractDate",
   "ListAgentFullName", "ListOfficeName", "ListAgentStateLicense",
+  // Architecture
+  "StoriesTotal", "ArchitecturalStyle", "NumberOfUnitsTotal", "Roof", "GarageSpaces",
+  // Features & amenities
+  "InteriorFeatures", "ExteriorFeatures", "FireplaceFeatures", "FireplacesTotal",
+  "Flooring", "LaundryFeatures", "PatioAndPorchFeatures",
+  "EntryLevel", "EntryLocation", "CommonWalls",
+  "ParkingFeatures", "ParkingTotal",
+  "Cooling", "Heating",
+  "PoolPrivateYN", "PoolFeatures", "SpaFeatures",
+  // Property features
+  "LotFeatures", "View", "Directions",
+  // Community
+  "MLSAreaMajor", "HighSchoolDistrict", "ElementarySchoolDistrict",
+  // HOA & financial
+  "AssociationFee", "AssociationFeeFrequency", "AssociationName",
+  "ListingTerms", "LandLeaseYN",
 ].join(",");
 
 interface ODataResponse {

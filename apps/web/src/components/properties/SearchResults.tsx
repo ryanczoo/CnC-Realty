@@ -119,7 +119,7 @@ function SearchResultsInner({ initialProperties, initialTotal }: Props) {
 
         {/* Map pane — remaining 55% */}
         <div className="flex-1">
-          <PropertyMap properties={properties} hoveredId={hoveredId} />
+          <PropertyMap properties={properties} hoveredId={hoveredId} onSelect={handleSelect} />
         </div>
       </div>
 

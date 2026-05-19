@@ -28,6 +28,44 @@ export interface ResoProperty {
   ListAgentFullName?: string;
   ListOfficeName?: string;
   ListAgentStateLicense?: string;
+  // Architecture
+  StoriesTotal?: number;
+  ArchitecturalStyle?: string;
+  NumberOfUnitsTotal?: number;
+  Roof?: string;
+  GarageSpaces?: number;
+  // Features & amenities
+  InteriorFeatures?: string;
+  ExteriorFeatures?: string;
+  FireplaceFeatures?: string;
+  FireplacesTotal?: number;
+  Flooring?: string;
+  LaundryFeatures?: string;
+  PatioAndPorchFeatures?: string;
+  EntryLevel?: number;
+  EntryLocation?: string;
+  CommonWalls?: string;
+  ParkingFeatures?: string;
+  ParkingTotal?: number;
+  Cooling?: string;
+  Heating?: string;
+  PoolPrivateYN?: boolean;
+  PoolFeatures?: string;
+  SpaFeatures?: string;
+  // Property features
+  LotFeatures?: string;
+  View?: string;
+  Directions?: string;
+  // Community
+  MLSAreaMajor?: string;
+  HighSchoolDistrict?: string;
+  ElementarySchoolDistrict?: string;
+  // HOA & financial
+  AssociationFee?: number;
+  AssociationFeeFrequency?: string;
+  AssociationName?: string;
+  ListingTerms?: string;
+  LandLeaseYN?: boolean;
   [key: string]: unknown;
 }
 

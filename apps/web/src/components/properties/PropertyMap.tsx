@@ -9,6 +9,7 @@ const PropertyMapInner = dynamic(
 interface Props {
   properties: PropertyListing[];
   hoveredId: string | null;
+  onSelect: (mlsNumber: string) => void;
 }
 
 export function PropertyMap(props: Props) {

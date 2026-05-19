@@ -3,10 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { X, BedDouble, Bath, Ruler, Calendar, User, ChevronLeft, ChevronRight, ShieldCheck, Loader2 } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { ContactForm } from "./ContactForm";
 import { MortgageCalculator } from "./MortgageCalculator";
+import { AgentAttribution } from "./AgentAttribution";
+import { CrmlsDisclaimer } from "./CrmlsDisclaimer";
+import { buildStatsFields, buildDetailSections } from "@/lib/property-ui-helpers";
 
 interface PropertyDetail {
   mlsNumber: string;
@@ -27,7 +30,7 @@ interface PropertyDetail {
   county: string | null;
   latitude: number | null;
   longitude: number | null;
-  photos: unknown;
+  photos: string[] | null;
   listedAt: string | null;
   syncedAt: string | null;
   rawData: Record<string, unknown> | null;
@@ -62,23 +65,13 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
       .catch((err) => {
         if (err.name !== "AbortError") setIsError(true);
       })
-      .finally(() => setIsLoading(false));
+      .finally(() => {
+        if (!controller.signal.aborted) setIsLoading(false);
+      });
 
     return () => controller.abort();
   }, [mlsNumber]);
 
-  const photos = Array.isArray(property?.photos) ? (property!.photos as string[]) : [];
-
-  const facts = property
-    ? [
-        property.beds != null && { icon: BedDouble, label: "Beds", value: property.beds },
-        property.baths != null && { icon: Bath, label: "Baths", value: property.baths },
-        property.sqft != null && { icon: Ruler, label: "Sq Ft", value: property.sqft.toLocaleString() },
-        property.yearBuilt != null && { icon: Calendar, label: "Year Built", value: property.yearBuilt },
-      ].filter(Boolean) as { icon: React.ComponentType<{ className?: string }>; label: string; value: string | number }[]
-    : [];
-
-  // Close on Escape key
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
@@ -87,11 +80,16 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  const photos = Array.isArray(property?.photos) ? property!.photos : [];
+  const r = property?.rawData ?? {};
+  const statsFields = property ? buildStatsFields(property) : [];
+  const detailSections = property ? buildDetailSections(r, property.lotSize) : [];
+
   return (
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-x-0 bottom-0 z-40 bg-black/50"
+        className="fixed inset-x-0 bottom-0 z-40 bg-black/40"
         style={{ top: "64px" }}
         onClick={onClose}
       />
@@ -102,11 +100,11 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
         animate={{ x: 0 }}
         exit={{ x: "100%" }}
         transition={{ type: "spring", stiffness: 320, damping: 32 }}
-        className="fixed bottom-0 right-0 z-50 flex flex-col overflow-hidden bg-[#0f0f0f] shadow-2xl"
+        className="fixed bottom-0 right-0 z-50 flex flex-col overflow-hidden bg-[#F2F0EF] shadow-2xl"
         style={{ top: "64px", width: "min(880px, 63vw)" }}
       >
         {/* Top bar */}
-        <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-5 py-3">
+        <div className="flex shrink-0 items-center justify-between bg-[#1B1B1B] px-5 py-3">
           <button
             onClick={onClose}
             className="flex items-center gap-2 rounded-full px-3 py-1.5 text-sm text-white/60 transition-colors hover:bg-white/10 hover:text-white"
@@ -119,7 +117,7 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
               href={`/properties/${property.mlsNumber}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs text-white/30 hover:text-white/60 transition-colors"
+              className="text-xs text-white/30 transition-colors hover:text-white/60"
             >
               Open full page ↗
             </Link>
@@ -135,7 +133,7 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
           )}
 
           {isError && (
-            <div className="flex h-64 items-center justify-center text-sm text-red-400">
+            <div className="flex h-64 items-center justify-center text-sm text-red-600">
               Failed to load listing. Please try again.
             </div>
           )}
@@ -143,7 +141,7 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
           {!isLoading && !isError && property && (
             <div className="pb-10">
               {/* Photo carousel */}
-              <div className="relative h-72 w-full bg-[#1a1a1a] sm:h-80 md:h-96">
+              <div className="relative h-72 w-full bg-[#1B1B1B]/10 sm:h-80 md:h-96">
                 {photos.length > 0 ? (
                   <>
                     <Image
@@ -156,12 +154,14 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
                     {photos.length > 1 && (
                       <>
                         <button
+                          aria-label="Previous photo"
                           onClick={() => setPhotoIdx((i) => (i - 1 + photos.length) % photos.length)}
                           className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-2 text-white backdrop-blur-sm transition-colors hover:bg-black/80"
                         >
                           <ChevronLeft className="h-5 w-5" />
                         </button>
                         <button
+                          aria-label="Next photo"
                           onClick={() => setPhotoIdx((i) => (i + 1) % photos.length)}
                           className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-2 text-white backdrop-blur-sm transition-colors hover:bg-black/80"
                         >
@@ -174,9 +174,8 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
                     )}
                   </>
                 ) : (
-                  <div className="flex h-full items-center justify-center text-sm text-white/30">No photos</div>
+                  <div className="flex h-full items-center justify-center text-sm text-[#1B1B1B]/50">No photos</div>
                 )}
-                {/* Status badge */}
                 <span className="absolute left-3 top-3 rounded-full bg-black/60 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm">
                   {property.status}
                 </span>
@@ -187,147 +186,89 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
                 {/* Left: main details */}
                 <div className="min-w-0 flex-1">
                   {/* Header */}
-                  <h1 className="text-2xl font-bold text-white">
+                  <h1 className="text-2xl font-bold text-[#1B1B1B]">
                     ${property.listPrice.toLocaleString()}
                   </h1>
-                  <p className="mt-1 text-base text-white/70">{property.address}</p>
-                  <p className="text-sm text-white/50">
+                  <p className="mt-1 text-base text-[#1B1B1B]/80">{property.address}</p>
+                  <p className="text-sm text-[#1B1B1B]/70">
                     {property.city}, {property.state} {property.zip}
                   </p>
 
-                  {/* Key facts */}
-                  {facts.length > 0 && (
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {facts.map(({ icon: Icon, label, value }) => (
-                        <div
-                          key={label}
-                          className="flex items-center gap-2 rounded-lg bg-[#1a1a1a] px-3 py-2"
-                        >
-                          <Icon className="h-4 w-4 text-[#9E8C61]" />
-                          <div>
-                            <p className="text-[10px] text-white/40">{label}</p>
-                            <p className="text-sm font-semibold text-white">{value}</p>
+                  {/* Stats grid */}
+                  {statsFields.length > 0 && (
+                    <div className="mt-4 overflow-hidden rounded-xl bg-white">
+                      <div className="grid grid-cols-3">
+                        {statsFields.map(({ icon: Icon, label, value }) => (
+                          <div key={label} className="flex items-center gap-2.5 px-4 py-3.5">
+                            <Icon className="h-4 w-4 shrink-0 text-[#9E8C61]" />
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-semibold text-[#1B1B1B]" title={String(value)}>{value}</p>
+                              <p className="text-[11px] text-[#1B1B1B]/60">{label}</p>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
                   )}
 
                   {/* Description */}
                   {property.description && (
                     <div className="mt-5">
-                      <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-white/50">
+                      <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-[#1B1B1B]/70">
                         About this home
                       </h2>
-                      <p className="text-sm leading-relaxed text-white/70">
+                      <p className="text-sm leading-relaxed text-[#1B1B1B]/80">
                         {property.description}
                       </p>
                     </div>
                   )}
 
-                  {/* Listing agent / brokerage attribution */}
-                  {(() => {
-                    const agent = property.rawData?.ListAgentFullName as string | undefined;
-                    const office = property.rawData?.ListOfficeName as string | undefined;
-                    const license = property.rawData?.ListAgentStateLicense as string | undefined;
-                    return (
-                      <div className="mt-4 flex items-center gap-1.5 text-xs text-white/50">
-                        <User className="h-3.5 w-3.5 shrink-0 text-[#9E8C61]/70" />
-                        {agent || office ? (
-                          <span>
-                            {agent && <span>Listed by <span className="text-white/70">{agent}</span></span>}
-                            {agent && license && <span className="text-white/30"> · DRE #{license}</span>}
-                            {office && <span>{agent ? " · " : "Listed by "}<span className="text-white/70">{office}</span></span>}
-                          </span>
-                        ) : (
-                          <span>Listing courtesy of California Regional MLS</span>
-                        )}
-                      </div>
-                    );
-                  })()}
+                  <AgentAttribution
+                    rawData={property.rawData}
+                    className="mt-4 flex items-center gap-1.5 text-xs text-[#1B1B1B]/70"
+                    iconClassName="h-3.5 w-3.5 shrink-0 text-[#9E8C61]/70"
+                  />
 
-                  {/* Details grid */}
-                  <div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-2.5 rounded-xl bg-[#1a1a1a] p-4 text-sm">
+                  {/* MLS # and Listed date */}
+                  <div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-2.5 rounded-xl bg-white p-4 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-white/50">MLS #</span>
-                      <span className="text-white">{property.mlsNumber}</span>
+                      <span className="text-[#1B1B1B]/70">MLS #</span>
+                      <span className="text-[#1B1B1B]">{property.mlsNumber}</span>
                     </div>
-                    {property.propertyType && (
-                      <div className="flex justify-between">
-                        <span className="text-white/50">Type</span>
-                        <span className="text-white">{property.propertyType}</span>
-                      </div>
-                    )}
-                    {property.lotSize != null && (
-                      <div className="flex justify-between">
-                        <span className="text-white/50">Lot Size</span>
-                        <span className="text-white">{property.lotSize.toFixed(2)} ac</span>
-                      </div>
-                    )}
-                    {property.yearBuilt != null && (
-                      <div className="flex justify-between">
-                        <span className="text-white/50">Year Built</span>
-                        <span className="text-white">{property.yearBuilt}</span>
-                      </div>
-                    )}
-                    {property.county && (
-                      <div className="flex justify-between">
-                        <span className="text-white/50">County</span>
-                        <span className="text-white">{property.county}</span>
-                      </div>
-                    )}
                     {property.listedAt && (
                       <div className="flex justify-between">
-                        <span className="text-white/50">Listed</span>
-                        <span className="text-white">
+                        <span className="text-[#1B1B1B]/70">Listed</span>
+                        <span className="text-[#1B1B1B]">
                           {new Date(property.listedAt).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
+                            month: "short", day: "numeric", year: "numeric",
                           })}
                         </span>
                       </div>
                     )}
                   </div>
 
-                  {/* MLS Compliance */}
-                  <div className="mt-6 rounded-xl border border-white/10 bg-[#1a1a1a] p-4 text-xs text-white/40">
-                    <div className="mb-2 flex items-center gap-1.5">
-                      <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-[#9E8C61]/70" />
-                      <span className="font-medium uppercase tracking-wide text-white/50">
-                        Listing Information
-                      </span>
-                    </div>
-                    <p className="leading-relaxed">
-                      <span className="font-medium text-white/50">MLS #:</span>{" "}
-                      {property.mlsNumber} &nbsp;·&nbsp;{" "}
-                      <span className="font-medium text-white/50">Status:</span>{" "}
-                      {property.status} &nbsp;·&nbsp;{" "}
-                      <span className="font-medium text-white/50">Courtesy of:</span>{" "}
-                      California Regional MLS (CRMLS)
-                    </p>
-                    <p className="mt-2 leading-relaxed">
-                      Based on information from the California Regional Multiple Listing
-                      Service (CRMLS) as of{" "}
-                      {property.syncedAt
-                        ? new Date(property.syncedAt).toLocaleDateString("en-US", {
-                            month: "long",
-                            day: "numeric",
-                            year: "numeric",
-                          })
-                        : "the date listed above"}
-                      . All data, including all measurements and calculations of area, is
-                      obtained from various sources and has not been, and will not be,
-                      verified by broker or MLS. All information should be independently
-                      reviewed and verified for accuracy.
-                    </p>
-                    <p className="mt-2 leading-relaxed">
-                      This information is provided for the consumer&apos;s personal,
-                      non-commercial use and may not be used for any purpose other than to
-                      identify prospective properties the consumer may be interested in
-                      purchasing. Any use of this data other than by a consumer to identify
-                      real property for sale or lease is strictly prohibited.
-                    </p>
+                  {/* Extended Property Details */}
+                  <div className="mt-5 space-y-3">
+                    <h2 className="text-xs font-semibold uppercase tracking-wider text-[#1B1B1B]/50">
+                      Property Details
+                    </h2>
+                    {detailSections.map((section) => (
+                      <div key={section.title} className="rounded-xl bg-white p-4">
+                        <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-[#1B1B1B]/60">
+                          {section.title}
+                        </h3>
+                        <div className="grid grid-cols-2 gap-x-6 gap-y-2.5">
+                          {section.fields.map(([label, value]) => (
+                            <div key={label} className="flex justify-between gap-2">
+                              <span className="text-sm text-[#1B1B1B]/70">{label}</span>
+                              <span className="text-right text-sm text-[#1B1B1B]">
+                                {value != null && value !== "" && value !== false ? String(value) : "N/A"}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
@@ -342,6 +283,11 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
               <div className="mt-6 flex flex-col gap-4 px-6 xl:hidden">
                 <ContactForm mlsNumber={property.mlsNumber} address={property.address} />
                 <MortgageCalculator listPrice={property.listPrice} />
+              </div>
+
+              {/* Disclaimer */}
+              <div className="mt-8 px-10 pb-6 text-center text-xs leading-relaxed">
+                <CrmlsDisclaimer syncedAt={property.syncedAt} className="text-[#1B1B1B]/50" />
               </div>
             </div>
           )}

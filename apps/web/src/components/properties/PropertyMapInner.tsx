@@ -3,12 +3,12 @@
 import { useCallback, useRef, useState } from "react";
 import Map, { Layer, LayerProps, Popup, Source, MapRef } from "react-map-gl/mapbox";
 import Image from "next/image";
-import Link from "next/link";
 import { PropertyListing } from "@/types/property";
 
 interface Props {
   properties: PropertyListing[];
   hoveredId: string | null;
+  onSelect: (mlsNumber: string) => void;
 }
 
 const TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!;
@@ -80,7 +80,7 @@ interface PopupInfo {
   photo: string | null;
 }
 
-export function PropertyMapInner({ properties, hoveredId }: Props) {
+export function PropertyMapInner({ properties, hoveredId, onSelect }: Props) {
   const mapRef = useRef<MapRef>(null);
   const [popup, setPopup] = useState<PopupInfo | null>(null);
 
@@ -215,12 +215,12 @@ export function PropertyMapInner({ properties, hoveredId }: Props) {
               <p className="mt-0.5 line-clamp-1 text-xs text-white/60">
                 {popup.address}
               </p>
-              <Link
-                href={`/properties/${popup.mlsNumber}`}
-                className="mt-2 block rounded-full bg-[#9E8C61] py-1 text-center text-xs font-medium text-white"
+              <button
+                onClick={() => { onSelect(popup.mlsNumber); setPopup(null); }}
+                className="mt-2 block w-full rounded-full bg-[#9E8C61] py-1 text-center text-xs font-medium text-white"
               >
                 View →
-              </Link>
+              </button>
             </div>
           </div>
         </Popup>
