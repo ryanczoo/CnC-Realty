@@ -1288,6 +1288,75 @@ Same as above — pick up the listing popup/drawer work.
 
 ---
 
+## Session Notes — 2026-05-19
+
+### What Was Completed This Session
+
+All changes committed as `c355492` on `claude/real-estate-website-9bdWi`.
+
+### Drawer & Detail Page — Off-White Theme
+
+Full light-theme conversion of the property drawer (`PropertyDrawer.tsx`) and full detail page (`/properties/[mlsNumber]/page.tsx`). Both now use the same off-white palette as the homepage sections.
+
+**Color decisions:**
+- Drawer/page background: `bg-[#F2F0EF]`
+- Card/box backgrounds: `bg-white`
+- Primary text: `text-[#1B1B1B]` (full black)
+- Muted text hierarchy: `/80` (address, description) → `/70` (city, field labels) → `/60` (stat sublabels, section headers) → `/50` (secondary headers, disclaimer)
+- Gold accents `#9E8C61` unchanged
+- **Top navigation bar stays dark `bg-[#1B1B1B]`** on both the drawer and the detail page — this was an explicit decision to keep contrast for the "Back to search" / "Open full page" navigation
+
+**Detail page header bar:** Added a full-width `bg-[#1B1B1B]` strip at the top of the detail page (`pt-[76px] pb-3`) that clears the fixed navbar and contains the `<BackLink />` in white text. Content starts below it with `pt-6`.
+
+**Map popup fix:** Clicking "View →" on a map pin now opens the drawer instead of navigating to a new page. Done by threading `onSelect` callback through `SearchResults` → `PropertyMap` → `PropertyMapInner`, replacing the `<Link>` with a `<button>`.
+
+### ContactForm & MortgageCalculator — Off-White Theme
+
+Both updated to match: `bg-white` card, `bg-[#F2F0EF]` inputs, `#1B1B1B` text.
+- Section headings ("Request a Tour", "Mortgage Estimate") set to full `text-[#1B1B1B]` (not muted)
+- All muted label text uses opacity variants matching the drawer
+- Mortgage calculator inactive term buttons: `bg-[#F2F0EF]` with dark text
+
+### Shared Components & Helpers Extracted (Code Review)
+
+Used `superpowers:requesting-code-review` skill — reviewer found critical duplication. Fixed:
+
+**New files:**
+- `src/lib/property-ui-helpers.ts` — `buildStatsFields()` and `buildDetailSections()` shared between drawer and detail page. Eliminates duplicated section data and HOA logic. Both functions now the single source of truth.
+- `src/components/properties/AgentAttribution.tsx` — shared agent/office/license attribution block. Accepts `rawData`, `className`, `iconClassName` props.
+- `src/components/properties/CrmlsDisclaimer.tsx` — shared CRMLS disclaimer paragraph. Accepts `syncedAt` and `className`.
+
+**Bugs fixed:**
+- `finally(() => setIsLoading(false))` in drawer fetch now guarded: `if (!controller.signal.aborted)` — prevents state update flash on fast MLS number changes
+- `photos: unknown` → `photos: string[] | null` in `PropertyDetail` interface
+- `statsFields` filter now uses a proper TypeScript type predicate instead of unsound `as` cast
+- Added `aria-label="Previous photo"` / `"Next photo"` to carousel buttons
+- Added `type="button"` to mortgage calculator 15-yr/30-yr toggle buttons
+- Added dev-mode `console.error` logging in `ContactForm` catch block
+
+### IDX Fields Expanded
+
+- `SELECT_FIELDS` in `src/lib/idx/client.ts` expanded to 40+ RESO fields (architecture, amenities, HOA, community, financial)
+- `ResoProperty` interface in `src/lib/idx/field-map.ts` updated to match
+- These fields show "N/A" in the UI until the full IDX resync runs
+
+### Pending
+
+- **Full IDX resync** — must be done after map search polish. New fields (architecture, amenities, HOA, school district, etc.) won't populate until a full sync.
+- **Map search polish** — current focus before the resync
+- **Phase 5** — transaction management, email campaigns, admin dashboard
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. Dev server starts on localhost:3000 (or next available port — check terminal)
+3. Open `/properties`, click a listing — review the off-white drawer with dark top bar
+4. Open a listing's full page (`/properties/[mlsNumber]`) — confirm dark header bar + off-white content
+5. Continue map search polish, then trigger full IDX resync once ready
+6. After resync, all property detail fields (Architecture, Amenities, HOA, etc.) will populate from real MLS data
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`
