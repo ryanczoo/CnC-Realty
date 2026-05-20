@@ -221,6 +221,7 @@ model Agent {
   leads            Lead[]
   listingFiles     ListingFile[]
   transactionFiles TransactionFile[]
+  campaigns        Campaign[]
 }
 
 model Property {
@@ -471,9 +472,11 @@ model Campaign {
   body        String?
   scheduledAt DateTime?
   sentAt      DateTime?
+  agentId     String?
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
+  agent    Agent?            @relation(fields: [agentId], references: [id])
   contacts CampaignContact[]
 }
 
