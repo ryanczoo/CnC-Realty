@@ -1,4 +1,3 @@
-// apps/web/src/app/api/campaigns/[id]/route.ts
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
@@ -12,29 +11,17 @@ const patchSchema = z.object({
   status: z.enum(["DRAFT", "SCHEDULED", "ACTIVE", "PAUSED", "COMPLETED"]).optional(),
 });
 
-async function getCampaignOrForbid(id: string, userId: string, role: string) {
-  const campaign = await prisma.campaign.findUnique({
-    where: { id },
-    include: {
-      contacts: {
-        include: {
-          lead: { select: { id: true, firstName: true, lastName: true, email: true } },
-        },
-      },
-      _count: { select: { contacts: true } },
-    },
-  });
+async function getAgentId(userId: string) {
+  const agent = await prisma.agent.findUnique({ where: { userId }, select: { id: true } });
+  return agent?.id ?? null;
+}
 
-  if (!campaign) return { campaign: null, forbidden: false };
-
-  if (role === "ADMIN") return { campaign, forbidden: false };
-
-  const agent = await prisma.agent.findUnique({ where: { userId } });
-  if (!agent || campaign.agentId !== agent.id) {
-    return { campaign: null, forbidden: true };
-  }
-
-  return { campaign, forbidden: false };
+async function checkAccess(id: string, userId: string, role: string) {
+  const campaign = await prisma.campaign.findUnique({ where: { id }, select: { id: true, agentId: true } });
+  if (!campaign) return { exists: false, forbidden: false };
+  if (role === "ADMIN") return { exists: true, forbidden: false };
+  const agentId = await getAgentId(userId);
+  return { exists: true, forbidden: agentId !== campaign.agentId };
 }
 
 export async function GET(
@@ -44,14 +31,21 @@ export async function GET(
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
-  const { campaign, forbidden } = await getCampaignOrForbid(
-    params.id,
-    session.user.id,
-    session.user.role
-  );
-
+  const { exists, forbidden } = await checkAccess(params.id, session.user.id, session.user.role);
   if (forbidden) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  if (!campaign) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!exists) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const campaign = await prisma.campaign.findUnique({
+    where: { id: params.id },
+    include: {
+      contacts: {
+        include: {
+          lead: { select: { id: true, firstName: true, lastName: true, email: true } },
+        },
+      },
+      _count: { select: { contacts: true } },
+    },
+  });
 
   return NextResponse.json(campaign);
 }
@@ -63,14 +57,9 @@ export async function PATCH(
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
-  const { campaign, forbidden } = await getCampaignOrForbid(
-    params.id,
-    session.user.id,
-    session.user.role
-  );
-
+  const { exists, forbidden } = await checkAccess(params.id, session.user.id, session.user.role);
   if (forbidden) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  if (!campaign) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!exists) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   try {
     const body = await req.json();
@@ -106,14 +95,9 @@ export async function DELETE(
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
-  const { campaign, forbidden } = await getCampaignOrForbid(
-    params.id,
-    session.user.id,
-    session.user.role
-  );
-
+  const { exists, forbidden } = await checkAccess(params.id, session.user.id, session.user.role);
   if (forbidden) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  if (!campaign) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!exists) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   await prisma.campaign.delete({ where: { id: params.id } });
   return NextResponse.json({ ok: true });

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { AdminTable } from "@/components/admin/AdminTable";
+import { formatDate } from "@/lib/utils";
 
 export const metadata = { title: "All Leads | CnC Realty Admin" };
 
@@ -101,11 +102,7 @@ export default async function AdminLeadsPage() {
                 )}
               </td>
               <td className="px-4 py-3 text-xs text-[#1B1B1B]/60">
-                {new Date(lead.createdAt).toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "short",
-                  day: "numeric",
-                })}
+                {formatDate(lead.createdAt)}
               </td>
             </tr>
           ))}

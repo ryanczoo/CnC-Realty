@@ -1,4 +1,3 @@
-// apps/web/src/app/api/webhooks/sendgrid/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -13,31 +12,38 @@ export async function POST(req: Request) {
   try {
     const events: SendGridEvent[] = await req.json();
 
-    for (const event of events) {
-      const { email, event: eventType, timestamp } = event;
+    // Batch lead lookups — one query for all unique emails
+    const emails = Array.from(new Set(events.map((e) => e.email)));
+    const leads = await prisma.lead.findMany({ where: { email: { in: emails } } });
+    const leadByEmail = new Map(leads.map((l) => [l.email, l]));
+
+    const updates = events.flatMap(({ email, event: eventType, timestamp }) => {
+      const lead = leadByEmail.get(email);
+      if (!lead) return [];
       const eventDate = new Date(timestamp * 1000);
 
-      // Find the lead by email
-      const lead = await prisma.lead.findFirst({ where: { email } });
-      if (!lead) continue;
-
       if (eventType === "open") {
-        await prisma.campaignContact.updateMany({
+        return [prisma.campaignContact.updateMany({
           where: { leadId: lead.id, status: { in: ["SENT", "PENDING"] } },
           data: { status: "OPENED", openedAt: eventDate },
-        });
-      } else if (eventType === "click") {
-        await prisma.campaignContact.updateMany({
+        })];
+      }
+      if (eventType === "click") {
+        return [prisma.campaignContact.updateMany({
           where: { leadId: lead.id, status: { not: "BOUNCED" } },
           data: { status: "CLICKED", clickedAt: eventDate },
-        });
-      } else if (eventType === "bounce" || eventType === "blocked") {
-        await prisma.campaignContact.updateMany({
+        })];
+      }
+      if (eventType === "bounce" || eventType === "blocked") {
+        return [prisma.campaignContact.updateMany({
           where: { leadId: lead.id },
           data: { status: "BOUNCED" },
-        });
+        })];
       }
-    }
+      return [];
+    });
+
+    await Promise.all(updates);
   } catch (err) {
     console.error("SendGrid webhook error:", err);
   }

@@ -32,13 +32,17 @@ export function RecipientPicker({ selectedIds, onChange }: RecipientPickerProps)
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/leads")
+    const controller = new AbortController();
+    fetch("/api/leads", { signal: controller.signal })
       .then((r) => r.json())
       .then((data) => {
         setLeads(Array.isArray(data) ? data : []);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch((err) => {
+        if (err instanceof Error && err.name !== "AbortError") setLoading(false);
+      });
+    return () => controller.abort();
   }, []);
 
   const filtered = leads.filter((l) => {

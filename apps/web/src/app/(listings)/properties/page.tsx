@@ -54,12 +54,8 @@ export default async function PropertiesPage({ searchParams }: PageProps) {
     where.propertyType = { contains: searchParams.propertyType, mode: "insensitive" };
   }
 
-  let rawProperties: Awaited<ReturnType<typeof prisma.property.findMany>> = [];
-  let total = 0;
-  let dbError = false;
-
   try {
-    [rawProperties, total] = await Promise.all([
+    const [rawProperties, total] = await Promise.all([
       prisma.property.findMany({
         where,
         orderBy: { listedAt: "desc" },
@@ -85,11 +81,20 @@ export default async function PropertiesPage({ searchParams }: PageProps) {
       }),
       prisma.property.count({ where }),
     ]);
-  } catch {
-    dbError = true;
-  }
 
-  if (dbError) {
+    const initialProperties: PropertyListing[] = rawProperties.map((p) => ({
+      ...p,
+      photos: Array.isArray(p.photos) ? (p.photos as string[]) : [],
+      listedAt: p.listedAt?.toISOString() ?? null,
+    }));
+
+    return (
+      <SearchResults
+        initialProperties={initialProperties}
+        initialTotal={total}
+      />
+    );
+  } catch {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#F2F0EF]">
         <div className="text-center">
@@ -100,16 +105,4 @@ export default async function PropertiesPage({ searchParams }: PageProps) {
     );
   }
 
-  const initialProperties: PropertyListing[] = rawProperties.map((p) => ({
-    ...p,
-    photos: Array.isArray(p.photos) ? (p.photos as string[]) : [],
-    listedAt: p.listedAt?.toISOString() ?? null,
-  }));
-
-  return (
-    <SearchResults
-      initialProperties={initialProperties}
-      initialTotal={total}
-    />
-  );
 }

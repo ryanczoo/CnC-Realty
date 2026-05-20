@@ -5,6 +5,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { AdminTable } from "@/components/admin/AdminTable";
 import { PromoteButton } from "./PromoteButton";
+import { formatDate } from "@/lib/utils";
 
 export const metadata = { title: "All Agents | CnC Realty Admin" };
 
@@ -37,6 +38,7 @@ export default async function AdminAgentsPage() {
         _count: { select: { leads: true } },
       },
       orderBy: { createdAt: "desc" },
+      take: 200,
     });
   } catch {
     // DB unreachable — show empty state
@@ -78,11 +80,7 @@ export default async function AdminAgentsPage() {
               </td>
               <td className="px-4 py-3 text-[#1B1B1B]">{agent._count.leads}</td>
               <td className="px-4 py-3 text-xs text-[#1B1B1B]/60">
-                {new Date(agent.createdAt).toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "short",
-                  day: "numeric",
-                })}
+                {formatDate(agent.createdAt)}
               </td>
               <td className="px-4 py-3">
                 <span

@@ -55,19 +55,19 @@ export default function NewCampaignPage() {
 
       const campaign = await createRes.json();
 
-      // Save body
-      await fetch(`/api/campaigns/${campaign.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ body }),
-      });
-
-      // Add recipients
-      await fetch(`/api/campaigns/${campaign.id}/contacts`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ leadIds: selectedIds }),
-      });
+      // Save body and add recipients concurrently
+      await Promise.all([
+        fetch(`/api/campaigns/${campaign.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ body }),
+        }),
+        fetch(`/api/campaigns/${campaign.id}/contacts`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ leadIds: selectedIds }),
+        }),
+      ]);
 
       // Schedule or send
       if (!sendNow && scheduledAt) {

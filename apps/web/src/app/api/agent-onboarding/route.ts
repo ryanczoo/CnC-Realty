@@ -33,7 +33,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "displayName is required" }, { status: 400 });
   }
 
-  // Generate unique slug: kebab-case displayName + base-36 timestamp
   const slug =
     displayName
       .toLowerCase()
@@ -55,17 +54,17 @@ export async function POST(req: Request) {
       linkedin: linkedinUrl ?? null,
     };
 
-    const agent = await prisma.agent.upsert({
-      where: { userId },
-      create: { userId, slug, ...agentData },
-      update: agentData,
-    });
-
-    // Promote user role to AGENT
-    await prisma.user.update({
-      where: { id: userId },
-      data: { role: "AGENT" },
-    });
+    const [agent] = await prisma.$transaction([
+      prisma.agent.upsert({
+        where: { userId },
+        create: { userId, slug, ...agentData },
+        update: agentData,
+      }),
+      prisma.user.update({
+        where: { id: userId },
+        data: { role: "AGENT" },
+      }),
+    ]);
 
     return NextResponse.json({ success: true, slug: agent.slug });
   } catch (err) {

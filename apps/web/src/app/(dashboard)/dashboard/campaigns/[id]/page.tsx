@@ -2,6 +2,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { CAMPAIGN_STATUS_COLORS, CONTACT_STATUS_COLORS } from "@/lib/campaign-ui";
+import { toTitleCase } from "@/lib/utils";
 
 interface ContactRow {
   id: string;
@@ -25,23 +27,6 @@ interface Campaign {
   _count: { contacts: number };
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  DRAFT: "bg-[#F2F0EF] text-[#1B1B1B]/50",
-  SCHEDULED: "bg-blue-50 text-blue-700",
-  ACTIVE: "bg-green-50 text-green-700",
-  PAUSED: "bg-yellow-50 text-yellow-700",
-  COMPLETED: "bg-[#9E8C61]/10 text-[#9E8C61]",
-};
-
-const CONTACT_STATUS_COLORS: Record<string, string> = {
-  PENDING: "bg-gray-100 text-gray-500",
-  SENT: "bg-blue-50 text-blue-700",
-  OPENED: "bg-green-50 text-green-700",
-  CLICKED: "bg-purple-50 text-purple-700",
-  BOUNCED: "bg-red-50 text-red-500",
-  UNSUBSCRIBED: "bg-orange-50 text-orange-600",
-};
-
 export default function CampaignDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -52,13 +37,17 @@ export default function CampaignDetailPage() {
   const [sendResult, setSendResult] = useState<{ sent: number; errors: number } | null>(null);
 
   useEffect(() => {
-    fetch(`/api/campaigns/${id}`)
+    const controller = new AbortController();
+    fetch(`/api/campaigns/${id}`, { signal: controller.signal })
       .then((r) => r.json())
       .then((data) => {
         setCampaign(data);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch((err) => {
+        if (err instanceof Error && err.name !== "AbortError") setLoading(false);
+      });
+    return () => controller.abort();
   }, [id]);
 
   const handleSend = async () => {
@@ -68,7 +57,6 @@ export default function CampaignDetailPage() {
       const res = await fetch(`/api/campaigns/${id}/send`, { method: "POST" });
       const data = await res.json();
       setSendResult(data);
-      // Refresh campaign data
       const updated = await fetch(`/api/campaigns/${id}`).then((r) => r.json());
       setCampaign(updated);
     } finally {
@@ -104,12 +92,9 @@ export default function CampaignDetailPage() {
   }
 
   const sentCount = campaign.contacts.filter((c) => c.status !== "PENDING").length;
-  const openedCount = campaign.contacts.filter((c) =>
-    ["OPENED", "CLICKED"].includes(c.status)
-  ).length;
+  const openedCount = campaign.contacts.filter((c) => ["OPENED", "CLICKED"].includes(c.status)).length;
   const clickedCount = campaign.contacts.filter((c) => c.status === "CLICKED").length;
-  const pendingCount = campaign.contacts.filter((c) => c.status === "PENDING").length;
-  const canSend = campaign.status === "DRAFT" && pendingCount > 0;
+  const canSend = campaign.status === "DRAFT" && campaign.contacts.some((c) => c.status === "PENDING");
 
   return (
     <div className="flex flex-col gap-8">
@@ -126,10 +111,10 @@ export default function CampaignDetailPage() {
             <h1 className="font-sans text-2xl font-light text-[#1B1B1B]">{campaign.name}</h1>
             <span
               className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                STATUS_COLORS[campaign.status] ?? "bg-gray-100 text-gray-600"
+                CAMPAIGN_STATUS_COLORS[campaign.status] ?? "bg-gray-100 text-gray-600"
               }`}
             >
-              {campaign.status.charAt(0) + campaign.status.slice(1).toLowerCase()}
+              {toTitleCase(campaign.status)}
             </span>
           </div>
         </div>
@@ -253,7 +238,7 @@ export default function CampaignDetailPage() {
                           CONTACT_STATUS_COLORS[contact.status] ?? "bg-gray-100 text-gray-600"
                         }`}
                       >
-                        {contact.status.charAt(0) + contact.status.slice(1).toLowerCase()}
+                        {toTitleCase(contact.status)}
                       </span>
                     </td>
                     <td className="px-6 py-4 font-sans text-sm text-[#1B1B1B]/50">
