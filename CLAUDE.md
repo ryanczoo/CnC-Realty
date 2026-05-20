@@ -1415,6 +1415,168 @@ Used `superpowers:requesting-code-review` skill — reviewer found critical dupl
 
 ---
 
+## Session Notes — 2026-05-20
+
+### What Was Completed This Session
+
+All changes committed as `30ef3ca` on `claude/real-estate-website-9bdWi`.
+
+### Auth Pages — Full UI Redesign
+
+Both `/login` and `/register` pages were redesigned to match the CnC brand.
+
+**Login page (`apps/web/src/app/(auth)/login/page.tsx`):**
+- Background: `bg-[#1B1B1B]` (dark), card: `bg-[#F2F0EF]` (off-white)
+- "Sign In" heading: `text-[#1B1B1B]` black
+- Subtitle: "Access your agent dashboard or client account."
+- All labels removed — placeholders inside inputs instead
+- Eye toggle on password field (shared `PasswordInput` component)
+- "Continue" button: gold `#9E8C61`
+- "Continue with Google" button: `#1B1B1B` black
+- Footer: "New to CnC? Create account" — "Create account" in gold
+- Role-based redirect after login: `BUYER` → `/account`, `AGENT`/`ADMIN` → `/dashboard`
+
+**Register page (`apps/web/src/app/(auth)/register/page.tsx`):**
+- Same dark bg / off-white card treatment as login
+- "Create Account" heading: `text-[#1B1B1B]` black
+- No subtitle text
+- Placeholder-only inputs: Full Name, Email, Password, Re-enter Password
+- Eye toggle on both password fields (shared `PasswordInput` component)
+- Password match validation before API call
+- "Continue" button: gold `#9E8C61`
+- Footer: "Already have an account? Sign in" — "Sign in" in `#1B1B1B` black
+
+**Shared `PasswordInput` component (`apps/web/src/components/ui/PasswordInput.tsx`):**
+- Extracted from both auth pages to eliminate duplication
+- Exports `PasswordInput` component and `inputClass` string constant
+- Each instance has its own independent show/hide state
+
+### Client Account Dashboard
+
+New `/account` route for `BUYER` role users.
+
+**Files created:**
+- `apps/web/src/app/(account)/account/page.tsx` — client dashboard
+- `apps/web/src/app/api/account/saved-properties/route.ts` — full property data for saved MLS numbers
+- `apps/web/src/app/api/account/tour-requests/route.ts` — leads matched by user email
+
+**Dashboard features:**
+- Welcome header with user name and email
+- Stats cards: Saved Properties count + Tour Requests count
+- Tab switcher: "Saved Properties" | "Tour Requests"
+- Saved Properties tab: grid of `PropertyCard` components with save/unsave working
+- Tour Requests tab: list of submitted inquiries matched by email, with status badge and date
+- Empty state component (shared between both tabs) with "Browse listings →" link
+
+**Routing decisions:**
+- `/account` is protected by middleware (redirects to `/login` if unauthenticated)
+- Agents/admins who land on `/account` are redirected to `/dashboard`
+- There is no role-selection screen on signup — all new accounts get `BUYER` role by default
+- Agent onboarding will be built separately as its own flow (Phase 5 backlog)
+
+### Navbar Fixes
+
+1. **Dark mode on light-bg pages:** Navbar stays in dark mode (black logo/buttons) on `/account`, `/dashboard`, `/admin`. All other pages keep the original transparent + white behavior. Controlled via `FORCE_DARK_ROUTES` module constant.
+2. **Client-side navigation fix:** Added `useEffect` watching `forceDark` to reset `pastHero` and `scrolled` when navigating between pages.
+3. **Role-based auth link:** Shows "My Account" → `/account` for buyers, "Dashboard" → `/dashboard` for agents/admins, "Login" for unauthenticated.
+4. **Session pre-population:** Root layout now calls `getServerSession(authOptions)` (JWT-based, no DB hit) and passes result to `SessionProvider` via `Providers`. This eliminates the `useSession()` loading flicker and the brief "Login" flash when opening new tabs.
+5. **Scroll handler optimization:** Uses functional updater pattern to bail out when `scrolled`/`pastHero` values haven't changed — prevents unnecessary re-renders at 60fps.
+
+### Key Decisions
+
+- **No role-selection at signup** — all users register as `BUYER`. Agent onboarding is a separate future feature.
+- **Agent promotion** — to become an `AGENT`, Ryan manually sets role in Prisma Studio (or future onboarding form).
+- **Tour requests matched by email** — the `Lead` model has no `userId` FK, so tour requests are matched by `session.user.email`. No schema migration needed.
+- **getServerSession in root layout** — the efficiency agent flagged this as hot-path bloat, but it uses JWT (no DB query), so the cost is just a cookie read + JWT decode on every render. Acceptable tradeoff for eliminating the Navbar loading flicker.
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. Dev server starts on `localhost:3000` (or next available port — check terminal)
+3. **Create a test account** at `/register` → check that you land on `/account`
+4. **Promote to ADMIN** via Prisma Studio (`pnpm --filter @cnc/database exec prisma studio` → `localhost:5555`) to test agent/admin dashboard
+5. **Continue Phase 5A testing** — transactions, file detail pages, admin document review
+6. **Pending: full IDX resync** — new MLS fields (architecture, amenities, HOA, etc.) won't populate until a full sync is triggered
+
+---
+
+## Session Notes — 2026-05-20 (continuation)
+
+### What Was Completed This Session
+
+All changes committed on `claude/real-estate-website-9bdWi`.
+
+### Railway Incident + DB Error Hardening
+
+Railway had a platform-wide incident (postgres-volume warning + degraded networking). Root cause was that Prisma's connection pool can't recover from mid-request wifi drops without a server restart.
+
+**Code fix committed as `f14972a`** — all 6 server components that called Prisma directly now have try/catch:
+- `/properties` page — shows "Unable to load listings" instead of unhandled error overlay
+- `/properties/[mlsNumber]` — shows "Unable to load listing" message
+- `/account` page — `finally` block ensures loading spinner always resolves (was stuck forever on error)
+- `/dashboard` (Overview) — shows zero stats on error
+- `/dashboard/leads` — shows empty Kanban board on error
+- `/dashboard/leads/[id]` — shows "Unable to load lead details" message
+
+### Phase 5B — Email Campaigns (`6ff9441`)
+
+Full email campaign system built with Tiptap rich text editor:
+
+- Schema migration: added `agentId` to `Campaign` model
+- **Tiptap installed:** `@tiptap/react`, `@tiptap/pm`, `@tiptap/starter-kit`, `@tiptap/extension-placeholder`
+- `/dashboard/campaigns` — campaign list page (Server Component)
+- `/dashboard/campaigns/new` — 4-step wizard: details → content (Tiptap) → recipients → schedule
+- `/dashboard/campaigns/[id]` — detail page with stats cards + send/delete actions
+- `TiptapEditor` component (rich text with Bold/Italic/List toolbar)
+- `RecipientPicker` component (searchable lead list with checkboxes)
+- `CampaignCard` component (status-color-coded)
+- `GET/POST /api/campaigns` — list + create (scoped to agent)
+- `GET/PATCH/DELETE /api/campaigns/[id]`
+- `POST /api/campaigns/[id]/contacts` — add leads to campaign
+- `POST /api/campaigns/[id]/send` — send via SendGrid, updates ContactStatus
+- `POST /api/webhooks/sendgrid` — open/click/bounce event handler
+
+### Phase 5B — Admin Dashboard + Agent Onboarding + Property Alerts (`a8dbbc7`)
+
+**Admin Dashboard:**
+- `/admin` — broker overview (6 StatsCards: total agents, leads, active leads, closed this month, listing files, transaction files)
+- `/admin/agents` — all agents table with role badges + `PromoteButton` (AGENT→ADMIN via POST /api/admin/agents/[id]/promote)
+- `/admin/leads` — all leads cross-agent with status badges, links to lead detail
+- `AdminTable` shared component
+- Sidebar updated: Campaigns link + Admin sub-nav (Overview, All Agents, All Leads, All Files, Checklists)
+
+**Agent Onboarding:**
+- `/join/agent` — 4-step form (Personal Info → License → Social → Review), sets role to AGENT on submit
+- `POST /api/agent-onboarding` — upsert Agent record + promote user to AGENT role
+
+**Property Alerts:**
+- `POST /api/property-alerts/run` — matches new listings (last 24h) to SavedSearches, sends one email per user via SendGrid
+- `GET/POST /api/saved-searches` — CRUD for user's saved searches
+- `DELETE /api/saved-searches/[id]`
+- `sendPropertyAlertEmail` — CnC-branded HTML email template with property list + "View Listing →" buttons
+
+### Known Schema Gaps (onboarding agent discovered)
+
+The `Agent` model is missing several fields the onboarding form collects: `displayName`, `yearsExp`, `specialties`, `licenseState`. Form collects them but only persists what the schema supports (`bio`, `phone`, `licenseNum`, `instagram`, `facebook`, `linkedin`). A schema migration to add these fields is needed before agent onboarding is fully functional.
+
+### Next Session — Start Here
+
+1. **Railway DB** — check status.railway.com before starting; restart dev server if DB was recently recovered
+2. Run `pnpm --filter web dev` and `pnpm --filter @cnc/database exec prisma studio`
+3. **Schema migration needed:** Add `displayName`, `yearsExp`, `specialties String[]`, `licenseState` to `Agent` model so `/join/agent` can persist all onboarding fields
+4. **Test Phase 5B:**
+   - Create a campaign at `/dashboard/campaigns/new`
+   - Try `/admin` (requires ADMIN role — promote via Prisma Studio first)
+   - Try `/join/agent` onboarding form
+5. **Remaining Phase 5 items:**
+   - Drip email sequence builder (DRIP type campaigns — step-based sequence editor)
+   - Agent profile pages at `/agents/[slug]` (public-facing, links from agent directory)
+   - `vercel.json` cron for property alerts: `POST /api/property-alerts/run` daily
+   - SendGrid webhook verification (verify signature header before processing)
+6. **Phase 6:** Performance (ISR, Redis caching, skeleton loaders), SEO (JSON-LD), Sentry, deploy to Vercel + Railway
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`
