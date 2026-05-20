@@ -46,7 +46,7 @@ export function Navbar() {
   const rafRef = useRef(0);
 
   useEffect(() => {
-    if (forceDark) setPastHero(true);
+    setPastHero(forceDark);
     setScrolled(false);
   }, [forceDark]);
 
@@ -73,7 +73,7 @@ export function Navbar() {
       window.removeEventListener("resize", onResize);
       cancelAnimationFrame(rafRef.current);
     };
-  }, []);
+  }, [isHomepage, forceDark]);
 
   const pillCls = cn(
     "flex h-9 items-center justify-center rounded-full px-4 text-sm font-medium transition-all duration-300",
