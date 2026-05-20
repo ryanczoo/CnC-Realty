@@ -8,15 +8,21 @@ export default async function LeadsPage() {
   const userId = (session!.user as any).id;
   const role = (session!.user as any).role;
 
-  const agent = role !== "ADMIN"
-    ? await prisma.agent.findUnique({ where: { userId } })
-    : null;
+  let leads: { id: string; firstName: string; lastName: string; email: string; phone: string | null; status: string; createdAt: Date }[] = [];
 
-  const leads = await prisma.lead.findMany({
-    where: agent ? { agentId: agent.id } : {},
-    orderBy: { createdAt: "desc" },
-    select: { id: true, firstName: true, lastName: true, email: true, phone: true, status: true, createdAt: true },
-  });
+  try {
+    const agent = role !== "ADMIN"
+      ? await prisma.agent.findUnique({ where: { userId } })
+      : null;
+
+    leads = await prisma.lead.findMany({
+      where: agent ? { agentId: agent.id } : {},
+      orderBy: { createdAt: "desc" },
+      select: { id: true, firstName: true, lastName: true, email: true, phone: true, status: true, createdAt: true },
+    });
+  } catch {
+    // Shows empty board on DB error
+  }
 
   return (
     <div>

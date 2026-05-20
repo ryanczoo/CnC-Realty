@@ -54,32 +54,51 @@ export default async function PropertiesPage({ searchParams }: PageProps) {
     where.propertyType = { contains: searchParams.propertyType, mode: "insensitive" };
   }
 
-  const [rawProperties, total] = await Promise.all([
-    prisma.property.findMany({
-      where,
-      orderBy: { listedAt: "desc" },
-      take: limit,
-      select: {
-        id: true,
-        mlsNumber: true,
-        status: true,
-        listPrice: true,
-        beds: true,
-        baths: true,
-        sqft: true,
-        propertyType: true,
-        address: true,
-        city: true,
-        state: true,
-        zip: true,
-        latitude: true,
-        longitude: true,
-        photos: true,
-        listedAt: true,
-      },
-    }),
-    prisma.property.count({ where }),
-  ]);
+  let rawProperties: Awaited<ReturnType<typeof prisma.property.findMany>> = [];
+  let total = 0;
+  let dbError = false;
+
+  try {
+    [rawProperties, total] = await Promise.all([
+      prisma.property.findMany({
+        where,
+        orderBy: { listedAt: "desc" },
+        take: limit,
+        select: {
+          id: true,
+          mlsNumber: true,
+          status: true,
+          listPrice: true,
+          beds: true,
+          baths: true,
+          sqft: true,
+          propertyType: true,
+          address: true,
+          city: true,
+          state: true,
+          zip: true,
+          latitude: true,
+          longitude: true,
+          photos: true,
+          listedAt: true,
+        },
+      }),
+      prisma.property.count({ where }),
+    ]);
+  } catch {
+    dbError = true;
+  }
+
+  if (dbError) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#F2F0EF]">
+        <div className="text-center">
+          <p className="text-lg font-light text-[#1B1B1B]">Unable to load listings right now.</p>
+          <p className="mt-2 text-sm text-[#1B1B1B]/50">Please check your connection and try again.</p>
+        </div>
+      </div>
+    );
+  }
 
   const initialProperties: PropertyListing[] = rawProperties.map((p) => ({
     ...p,

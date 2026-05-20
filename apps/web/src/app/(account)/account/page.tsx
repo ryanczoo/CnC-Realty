@@ -53,8 +53,13 @@ export default function AccountPage() {
     ]).then(([savedData, tourData]) => {
       setSavedProperties(savedData.properties ?? []);
       setTourRequests(tourData.requests ?? []);
-      setLoading(false);
-    }).catch(() => {});
+    }).catch((err) => {
+      if (err instanceof Error && err.name !== "AbortError") {
+        console.error("Account data fetch failed:", err);
+      }
+    }).finally(() => {
+      if (!controller.signal.aborted) setLoading(false);
+    });
 
     return () => controller.abort();
   }, [status, userId, role, router]);

@@ -15,10 +15,15 @@ interface PageProps {
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const property = await prisma.property.findUnique({
-    where: { mlsNumber: params.mlsNumber },
-    select: { address: true, city: true, state: true, listPrice: true, photos: true, description: true },
-  });
+  let property = null;
+  try {
+    property = await prisma.property.findUnique({
+      where: { mlsNumber: params.mlsNumber },
+      select: { address: true, city: true, state: true, listPrice: true, photos: true, description: true },
+    });
+  } catch {
+    return { title: "Property" };
+  }
 
   if (!property) return { title: "Property Not Found" };
 
@@ -37,7 +42,19 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function PropertyDetailPage({ params }: PageProps) {
-  const property = await prisma.property.findUnique({ where: { mlsNumber: params.mlsNumber } });
+  let property = null;
+  try {
+    property = await prisma.property.findUnique({ where: { mlsNumber: params.mlsNumber } });
+  } catch {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#F2F0EF]">
+        <div className="text-center">
+          <p className="text-lg font-light text-[#1B1B1B]">Unable to load this listing right now.</p>
+          <p className="mt-2 text-sm text-[#1B1B1B]/50">Please check your connection and try again.</p>
+        </div>
+      </div>
+    );
+  }
   if (!property) notFound();
 
   const photos = Array.isArray(property.photos) ? (property.photos as string[]) : [];

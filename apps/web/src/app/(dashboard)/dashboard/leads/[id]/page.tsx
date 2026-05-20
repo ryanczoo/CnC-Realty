@@ -11,10 +11,22 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export default async function LeadDetailPage({ params }: { params: { id: string } }) {
-  const lead = await prisma.lead.findUnique({
-    where: { id: params.id },
-    include: { activities: { orderBy: { createdAt: "desc" } } },
-  });
+  let lead = null;
+  try {
+    lead = await prisma.lead.findUnique({
+      where: { id: params.id },
+      include: { activities: { orderBy: { createdAt: "desc" } } },
+    });
+  } catch {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="text-center">
+          <p className="font-light text-[#1B1B1B]">Unable to load lead details right now.</p>
+          <p className="mt-2 text-sm text-[#1B1B1B]/50">Please check your connection and try again.</p>
+        </div>
+      </div>
+    );
+  }
   if (!lead) notFound();
 
   return (
