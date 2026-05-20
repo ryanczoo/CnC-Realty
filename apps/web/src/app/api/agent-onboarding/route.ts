@@ -43,26 +43,22 @@ export async function POST(req: Request) {
     Date.now().toString(36);
 
   try {
+    const agentData = {
+      bio: bio ?? null,
+      phone: phone ?? null,
+      licenseNum: licenseNum ?? null,
+      displayName: displayName.trim(),
+      yearsExp: yearsExp ?? null,
+      specialties: specialties ?? [],
+      instagram: instagramUrl ?? null,
+      facebook: facebookUrl ?? null,
+      linkedin: linkedinUrl ?? null,
+    };
+
     const agent = await prisma.agent.upsert({
       where: { userId },
-      create: {
-        userId,
-        slug,
-        bio: bio ?? null,
-        phone: phone ?? null,
-        licenseNum: licenseNum ?? null,
-        instagram: instagramUrl ?? null,
-        facebook: facebookUrl ?? null,
-        linkedin: linkedinUrl ?? null,
-      },
-      update: {
-        bio: bio ?? null,
-        phone: phone ?? null,
-        licenseNum: licenseNum ?? null,
-        instagram: instagramUrl ?? null,
-        facebook: facebookUrl ?? null,
-        linkedin: linkedinUrl ?? null,
-      },
+      create: { userId, slug, ...agentData },
+      update: agentData,
     });
 
     // Promote user role to AGENT

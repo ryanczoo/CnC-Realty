@@ -205,9 +205,13 @@ model Agent {
   id             String   @id @default(cuid())
   userId         String   @unique
   slug           String   @unique
+  displayName    String?
   bio            String?
   headshot       String?
   licenseNum     String?
+  licenseState   String?  @default("CA")
+  yearsExp       Int?
+  specialties    String[]
   phone          String?
   instagram      String?
   facebook       String?
