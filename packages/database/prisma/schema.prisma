@@ -8,6 +8,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ─── Existing enums ──────────────────────────────────────────────────────────
+
 enum UserRole {
   BUYER
   AGENT
@@ -43,14 +45,6 @@ enum ActivityType {
   DOCUMENT
 }
 
-enum TransactionStatus {
-  ACTIVE
-  PENDING
-  UNDER_CONTRACT
-  CLOSED
-  CANCELLED
-}
-
 enum CampaignType {
   EMAIL
   DRIP
@@ -73,6 +67,81 @@ enum ContactStatus {
   UNSUBSCRIBED
 }
 
+// ─── Phase 5A enums ──────────────────────────────────────────────────────────
+
+enum ListingStatus {
+  INCOMPLETE
+  COMING_SOON
+  ACTIVE
+  ACTIVE_UNDER_CONTRACT
+  EXPIRED
+  WITHDRAWN
+  CANCELED
+  CLOSED
+}
+
+enum TransactionFileStatus {
+  INCOMPLETE
+  PRE_CONTRACT
+  PENDING
+  EXPIRED
+  CLOSED
+  ARCHIVED
+  CANCELED_PENDING
+  CANCELED_APPROVED
+}
+
+enum FileType {
+  LISTING
+  TRANSACTION
+}
+
+enum ListingType {
+  RESIDENTIAL_SALE
+  RESIDENTIAL_LEASE
+  COMMERCIAL
+}
+
+enum TransactionSide {
+  BUYER_SIDE
+  SELLER_SIDE
+  DUAL
+  LEASE
+}
+
+enum FilePartyRole {
+  BUYER
+  SELLER
+  LISTING_AGENT
+  BUYERS_AGENT
+  CO_AGENT
+  TITLE_ESCROW
+  LENDER
+  TRANSACTION_COORDINATOR
+  OTHER
+}
+
+enum DocumentReviewStatus {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  NOT_SUBMITTED
+}
+
+enum FileActivityType {
+  FILE_CREATED
+  STATUS_CHANGED
+  DOCUMENT_UPLOADED
+  DOCUMENT_APPROVED
+  DOCUMENT_REJECTED
+  SUBMITTED_FOR_REVIEW
+  PARTY_ADDED
+  NOTE_ADDED
+  CONVERTED_TO_TRANSACTION
+}
+
+// ─── Auth models (unchanged) ─────────────────────────────────────────────────
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -84,11 +153,14 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts      Account[]
-  sessions      Session[]
-  agent         Agent?
-  savedSearches   SavedSearch[]
-  savedProperties SavedProperty[]
+  accounts           Account[]
+  sessions           Session[]
+  agent              Agent?
+  savedSearches      SavedSearch[]
+  savedProperties    SavedProperty[]
+  uploadedDocuments  FileDocument[]  @relation("DocumentUploader")
+  reviewedDocuments  FileDocument[]  @relation("DocumentReviewer")
+  fileActivities     FileActivity[]  @relation("FileActivityActor")
 }
 
 model Account {
@@ -127,54 +199,57 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-model Agent {
-  id          String   @id @default(cuid())
-  userId      String   @unique
-  slug        String   @unique
-  bio         String?
-  headshot    String?
-  licenseNum  String?
-  phone       String?
-  instagram   String?
-  facebook    String?
-  linkedin    String?
-  listingsClosed Int   @default(0)
-  volumeClosed   Float @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+// ─── CRM models ──────────────────────────────────────────────────────────────
 
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  leads        Lead[]
-  transactions Transaction[]
+model Agent {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  slug           String   @unique
+  bio            String?
+  headshot       String?
+  licenseNum     String?
+  phone          String?
+  instagram      String?
+  facebook       String?
+  linkedin       String?
+  listingsClosed Int      @default(0)
+  volumeClosed   Float    @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  leads            Lead[]
+  listingFiles     ListingFile[]
+  transactionFiles TransactionFile[]
 }
 
 model Property {
-  id            String   @id @default(cuid())
-  mlsNumber     String   @unique
-  status        String
-  listPrice     Float
-  beds          Int?
-  baths         Float?
-  sqft          Int?
-  lotSize       Float?
-  yearBuilt     Int?
-  propertyType  String?
-  description   String?
-  address       String
-  city          String
-  state         String
-  zip           String
-  county        String?
-  latitude      Float?
-  longitude     Float?
-  listingType   String   @default("FOR_SALE")
-  photos        Json     @default("[]")
-  rawData       Json     @default("{}")
-  listedAt      DateTime?
-  modifiedAt    DateTime?
-  syncedAt      DateTime @default(now())
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String    @id @default(cuid())
+  mlsNumber    String    @unique
+  status       String
+  listPrice    Float
+  beds         Int?
+  baths        Float?
+  sqft         Int?
+  lotSize      Float?
+  yearBuilt    Int?
+  propertyType String?
+  description  String?
+  address      String
+  city         String
+  state        String
+  zip          String
+  county       String?
+  latitude     Float?
+  longitude    Float?
+  listingType  String    @default("FOR_SALE")
+  photos       Json      @default("[]")
+  rawData      Json      @default("{}")
+  listedAt     DateTime?
+  modifiedAt   DateTime?
+  syncedAt     DateTime  @default(now())
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   alerts PropertyAlert[]
 
@@ -205,56 +280,187 @@ model Lead {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
-  agent        Agent?       @relation(fields: [agentId], references: [id])
-  activities   Activity[]
-  transactions Transaction[]
+  agent            Agent?            @relation(fields: [agentId], references: [id])
+  activities       Activity[]
+  transactionFiles TransactionFile[]
   campaignContacts CampaignContact[]
 }
 
 model Activity {
-  id            String       @id @default(cuid())
-  type          ActivityType
-  content       String
-  leadId        String?
-  transactionId String?
-  createdAt     DateTime     @default(now())
+  id                String       @id @default(cuid())
+  type              ActivityType
+  content           String
+  leadId            String?
+  transactionId     String?
+  createdAt         DateTime     @default(now())
 
-  lead        Lead?        @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  transaction Transaction? @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  lead            Lead?            @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  transactionFile TransactionFile? @relation(fields: [transactionId], references: [id], onDelete: Cascade)
 }
 
-model Transaction {
-  id              String            @id @default(cuid())
-  status          TransactionStatus @default(ACTIVE)
-  address         String
-  listPrice       Float?
-  salePrice       Float?
-  commissionRate  Float?
-  offerDate       DateTime?
-  acceptanceDate  DateTime?
-  closeDate       DateTime?
-  agentId         String
-  leadId          String?
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+// ─── Phase 5A: File models ────────────────────────────────────────────────────
 
-  agent      Agent      @relation(fields: [agentId], references: [id])
-  lead       Lead?      @relation(fields: [leadId], references: [id])
-  activities Activity[]
-  documents  Document[]
+model ListingFile {
+  id                String        @id @default(cuid())
+  agentId           String
+  propertyAddress   String
+  city              String
+  state             String        @default("CA")
+  zip               String
+  mlsNumber         String?
+  listPrice         Float
+  listingType       ListingType
+  status            ListingStatus @default(INCOMPLETE)
+  expirationDate    DateTime?
+  listDate          DateTime?
+  commissionPercent Float?
+  commissionNotes   String?
+  awaitingReview    Boolean       @default(false)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  agent              Agent               @relation(fields: [agentId], references: [id])
+  convertedFiles     TransactionFile[]
+  parties            FileParty[]
+  checklistItems     FileChecklistItem[]
+  documents          FileDocument[]
+  activities         FileActivity[]
 }
 
-model Document {
-  id            String   @id @default(cuid())
-  name          String
-  url           String
-  size          Int?
-  mimeType      String?
-  transactionId String
-  uploadedAt    DateTime @default(now())
+model TransactionFile {
+  id                   String                @id @default(cuid())
+  agentId              String
+  originatingListingId String?
+  originatingLeadId    String?
+  propertyAddress      String
+  city                 String
+  state                String                @default("CA")
+  zip                  String
+  mlsNumber            String?
+  transactionSide      TransactionSide
+  status               TransactionFileStatus @default(INCOMPLETE)
+  listPrice            Float?
+  salePrice            Float?
+  offerDate            DateTime?
+  acceptanceDate       DateTime?
+  inspectionDeadline   DateTime?
+  appraisalDeadline    DateTime?
+  loanApprovalDeadline DateTime?
+  closeOfEscrow        DateTime?
+  commissionGCI        Float?
+  commissionSplit      Float?
+  commissionNotes      String?
+  awaitingReview       Boolean               @default(false)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
 
-  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  agent              Agent             @relation(fields: [agentId], references: [id])
+  originatingListing ListingFile?      @relation(fields: [originatingListingId], references: [id])
+  originatingLead    Lead?             @relation(fields: [originatingLeadId], references: [id])
+  parties            FileParty[]
+  checklistItems     FileChecklistItem[]
+  documents          FileDocument[]
+  activities         FileActivity[]
+  crmActivities      Activity[]
 }
+
+model FileParty {
+  id                String        @id @default(cuid())
+  fileType          FileType
+  listingFileId     String?
+  transactionFileId String?
+  role              FilePartyRole
+  name              String
+  email             String?
+  phone             String?
+  company           String?
+  licenseNumber     String?
+  createdAt         DateTime      @default(now())
+
+  listingFile     ListingFile?     @relation(fields: [listingFileId], references: [id], onDelete: Cascade)
+  transactionFile TransactionFile? @relation(fields: [transactionFileId], references: [id], onDelete: Cascade)
+}
+
+model ChecklistTemplate {
+  id              String   @id @default(cuid())
+  name            String
+  fileType        FileType
+  transactionSide String   @default("ALL")
+  listingType     String   @default("ALL")
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  items ChecklistTemplateItem[]
+}
+
+model ChecklistTemplateItem {
+  id          String  @id @default(cuid())
+  templateId  String
+  name        String
+  description String?
+  order       Int
+  isRequired  Boolean @default(true)
+
+  template ChecklistTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+}
+
+model FileChecklistItem {
+  id                String   @id @default(cuid())
+  fileType          FileType
+  listingFileId     String?
+  transactionFileId String?
+  name              String
+  description       String?
+  order             Int
+  isRequired        Boolean  @default(true)
+
+  listingFile     ListingFile?     @relation(fields: [listingFileId], references: [id], onDelete: Cascade)
+  transactionFile TransactionFile? @relation(fields: [transactionFileId], references: [id], onDelete: Cascade)
+  documents       FileDocument[]
+}
+
+model FileDocument {
+  id                String               @id @default(cuid())
+  fileType          FileType
+  listingFileId     String?
+  transactionFileId String?
+  checklistItemId   String?
+  name              String
+  r2Key             String
+  r2Url             String
+  uploadedByAgentId String
+  uploadedAt        DateTime             @default(now())
+  reviewStatus      DocumentReviewStatus @default(PENDING_REVIEW)
+  reviewedByAdminId String?
+  reviewedAt        DateTime?
+  rejectionNote     String?
+
+  listingFile     ListingFile?       @relation(fields: [listingFileId], references: [id], onDelete: Cascade)
+  transactionFile TransactionFile?   @relation(fields: [transactionFileId], references: [id], onDelete: Cascade)
+  checklistItem   FileChecklistItem? @relation(fields: [checklistItemId], references: [id])
+  uploadedBy      User               @relation("DocumentUploader", fields: [uploadedByAgentId], references: [id])
+  reviewedBy      User?              @relation("DocumentReviewer", fields: [reviewedByAdminId], references: [id])
+}
+
+model FileActivity {
+  id                String          @id @default(cuid())
+  fileType          FileType
+  listingFileId     String?
+  transactionFileId String?
+  actorId           String
+  actorRole         UserRole
+  type              FileActivityType
+  payload           Json?
+  note              String?
+  createdAt         DateTime        @default(now())
+
+  listingFile     ListingFile?     @relation(fields: [listingFileId], references: [id], onDelete: Cascade)
+  transactionFile TransactionFile? @relation(fields: [transactionFileId], references: [id], onDelete: Cascade)
+  actor           User             @relation("FileActivityActor", fields: [actorId], references: [id])
+}
+
+// ─── Campaign models (unchanged) ─────────────────────────────────────────────
 
 model Campaign {
   id          String         @id @default(cuid())
@@ -287,30 +493,30 @@ model CampaignContact {
 }
 
 model SavedSearch {
-  id          String   @id @default(cuid())
-  userId      String
-  name        String?
-  minPrice    Float?
-  maxPrice    Float?
-  minBeds     Int?
-  minBaths    Float?
+  id           String   @id @default(cuid())
+  userId       String
+  name         String?
+  minPrice     Float?
+  maxPrice     Float?
+  minBeds      Int?
+  minBaths     Float?
   propertyType String?
-  cities      String[] @default([])
-  zips        String[] @default([])
-  alertsOn    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  cities       String[] @default([])
+  zips         String[] @default([])
+  alertsOn     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   user   User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   alerts PropertyAlert[]
 }
 
 model PropertyAlert {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   savedSearchId String
   propertyId    String
   notifiedAt    DateTime?
-  createdAt     DateTime @default(now())
+  createdAt     DateTime  @default(now())
 
   savedSearch SavedSearch @relation(fields: [savedSearchId], references: [id], onDelete: Cascade)
   property    Property    @relation(fields: [propertyId], references: [id], onDelete: Cascade)
