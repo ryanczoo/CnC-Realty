@@ -40,15 +40,15 @@ export function Navbar() {
   const isHomepage = pathname === "/";
   const forceDark = FORCE_DARK_ROUTES.some((r) => pathname.startsWith(r));
   const [scrolled, setScrolled] = useState(false);
-  const [pastHero, setPastHero] = useState(forceDark);
+  const [pastHero, setPastHero] = useState(forceDark || !isHomepage);
   const [menuOpen, setMenuOpen] = useState(false);
   const heroHeightRef = useRef(0);
   const rafRef = useRef(0);
 
   useEffect(() => {
-    setPastHero(forceDark);
+    setPastHero(forceDark || !isHomepage);
     setScrolled(false);
-  }, [forceDark]);
+  }, [forceDark, isHomepage]);
 
   useEffect(() => {
     heroHeightRef.current = window.innerHeight;
