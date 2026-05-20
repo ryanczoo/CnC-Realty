@@ -7,6 +7,9 @@ import { signOut, useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
+
+const FORCE_DARK_ROUTES = ["/account", "/dashboard", "/admin"];
 
 const NAV_LINKS = [
   { href: "/buy", label: "Buy" },
@@ -33,11 +36,19 @@ function BurgerIcon() {
 
 export function Navbar() {
   const { data: session } = useSession();
+  const pathname = usePathname();
+  const isHomepage = pathname === "/";
+  const forceDark = FORCE_DARK_ROUTES.some((r) => pathname.startsWith(r));
   const [scrolled, setScrolled] = useState(false);
-  const [pastHero, setPastHero] = useState(false);
+  const [pastHero, setPastHero] = useState(forceDark);
   const [menuOpen, setMenuOpen] = useState(false);
   const heroHeightRef = useRef(0);
   const rafRef = useRef(0);
+
+  useEffect(() => {
+    if (forceDark) setPastHero(true);
+    setScrolled(false);
+  }, [forceDark]);
 
   useEffect(() => {
     heroHeightRef.current = window.innerHeight;
@@ -48,8 +59,11 @@ export function Navbar() {
       cancelAnimationFrame(rafRef.current);
       rafRef.current = requestAnimationFrame(() => {
         const y = window.scrollY;
-        setScrolled(y > 30);
-        setPastHero(y > heroHeightRef.current * 0.85);
+        setScrolled((prev) => { const next = y > 30; return prev === next ? prev : next; });
+        if (isHomepage && !forceDark) {
+          const next = y > heroHeightRef.current * 0.85;
+          setPastHero((prev) => prev === next ? prev : next);
+        }
       });
     };
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -68,9 +82,13 @@ export function Navbar() {
       : "border border-white/60 text-white hover:border-white hover:bg-white hover:text-black"
   );
 
-  const authLink = session
-    ? { href: "/dashboard", label: "Dashboard" }
-    : { href: "/login", label: "Login" };
+  function getAuthLink() {
+    if (!session) return { href: "/login", label: "Login" };
+    return session.user.role === "BUYER"
+      ? { href: "/account", label: "My Account" }
+      : { href: "/dashboard", label: "Dashboard" };
+  }
+  const authLink = getAuthLink();
 
   return (
     <>
@@ -100,11 +118,13 @@ export function Navbar() {
           </Link>
 
           <div className="flex items-center gap-3">
-            <motion.div whileHover={{ scale: 1.15 }} transition={{ type: "spring", stiffness: 300, damping: 20 }}>
-              <Link href={authLink.href}>
-                <span className={pillCls}>{authLink.label}</span>
-              </Link>
-            </motion.div>
+            {authLink && (
+              <motion.div whileHover={{ scale: 1.15 }} transition={{ type: "spring", stiffness: 300, damping: 20 }}>
+                <Link href={authLink.href}>
+                  <span className={pillCls}>{authLink.label}</span>
+                </Link>
+              </motion.div>
+            )}
 
             <motion.button
               onClick={() => setMenuOpen((o) => !o)}

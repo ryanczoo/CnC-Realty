@@ -4,6 +4,8 @@ import { Providers } from "@/components/Providers";
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 import localFont from "next/font/local";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import "./globals.css";
 
 const googleSansFlex = localFont({
@@ -33,11 +35,13 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://cncrealtygroup.com"),
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const session = await getServerSession(authOptions);
+
   return (
     <html lang="en" className={`${googleSansFlex.variable} ${inter.variable} ${cormorant.variable} dark`}>
       <body className="antialiased">
-        <Providers>
+        <Providers session={session}>
           <Navbar />
           <main className="relative z-10">{children}</main>
           <Footer />

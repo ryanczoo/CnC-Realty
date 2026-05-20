@@ -1,7 +1,8 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { signIn } from "next-auth/react";
+import { PasswordInput, inputClass } from "@/components/ui/PasswordInput";
+import { signIn, getSession } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -18,12 +19,7 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
-    const res = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
-
+    const res = await signIn("credentials", { email, password, redirect: false });
     setLoading(false);
 
     if (res?.error) {
@@ -31,44 +27,36 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/dashboard");
+    const session = await getSession();
+    router.push(session?.user?.role === "BUYER" ? "/account" : "/dashboard");
   }
 
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-md">
-        <h1 className="mb-2 text-2xl font-bold" style={{ color: "var(--brand-navy)" }}>
-          Sign In
-        </h1>
-        <p className="mb-6 text-sm text-gray-500">Access your agent dashboard or buyer account.</p>
+    <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center bg-[#1B1B1B] px-4">
+      <div className="w-full max-w-md rounded-xl bg-[#F2F0EF] p-8 shadow-md">
+        <h1 className="mb-2 text-2xl font-bold text-[#1B1B1B]">Sign In</h1>
+        <p className="mb-6 text-sm text-[#1B1B1B]/60">Access your agent dashboard or client account.</p>
 
         {error && (
           <div className="mb-4 rounded bg-red-50 px-4 py-2 text-sm text-red-700">{error}</div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">Email</label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-navy)]"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">Password</label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-navy)]"
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <Link href="/forgot-password" className="text-xs text-gray-500 hover:underline">
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <input
+            type="email"
+            required
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className={inputClass}
+          />
+          <PasswordInput
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <div className="flex justify-end">
+            <Link href="/forgot-password" className="text-xs text-[#1B1B1B]/60 hover:underline">
               Forgot password?
             </Link>
           </div>
@@ -76,30 +64,31 @@ export default function LoginPage() {
             type="submit"
             disabled={loading}
             className="w-full"
-            style={{ backgroundColor: "var(--brand-navy)", color: "white" }}
+            style={{ backgroundColor: "#9E8C61", color: "white" }}
           >
-            {loading ? "Signing in…" : "Sign In"}
+            {loading ? "Signing in…" : "Continue"}
           </Button>
         </form>
 
         <div className="my-4 flex items-center gap-3">
-          <div className="h-px flex-1 bg-gray-200" />
-          <span className="text-xs text-gray-400">or</span>
-          <div className="h-px flex-1 bg-gray-200" />
+          <div className="h-px flex-1 bg-[#1B1B1B]/20" />
+          <span className="text-xs text-[#1B1B1B]/40">or</span>
+          <div className="h-px flex-1 bg-[#1B1B1B]/20" />
         </div>
 
         <Button
           variant="outline"
-          className="w-full"
+          className="w-full border-0"
+          style={{ backgroundColor: "#1B1B1B", color: "white" }}
           onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
         >
           Continue with Google
         </Button>
 
-        <p className="mt-6 text-center text-sm text-gray-500">
-          Don&apos;t have an account?{" "}
-          <Link href="/register" className="font-medium text-[var(--brand-navy)] hover:underline">
-            Create one free
+        <p className="mt-6 text-center text-sm text-[#1B1B1B]/60">
+          New to CnC?{" "}
+          <Link href="/register" className="font-medium text-[#9E8C61] hover:underline">
+            Create account
           </Link>
         </p>
       </div>
