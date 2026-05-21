@@ -42,7 +42,7 @@ export default function ContactPage() {
           Get in touch.
         </h1>
         <p className="mb-12 font-sans text-base text-[#1B1B1B]/50">
-          Send us a message and a CnC agent will reach out within 24 hours.
+          We're super responsive!
         </p>
 
         {status === "success" ? (

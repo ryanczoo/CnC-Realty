@@ -2,7 +2,7 @@ import sgMail from "@sendgrid/mail";
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
 
-const FROM = "noreply@cncrealtygroup.com";
+export const FROM = "noreply@cncrealtygroup.com";
 const NOTIFY = "info@cncrealtygroup.com";
 
 export async function sendLeadNotification(lead: {

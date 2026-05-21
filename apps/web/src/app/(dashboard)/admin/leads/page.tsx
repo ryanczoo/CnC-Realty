@@ -1,28 +1,15 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { AdminTable } from "@/components/admin/AdminTable";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { formatDate } from "@/lib/utils";
+import { requireAdminPage } from "@/lib/server-utils";
+import { LEAD_STATUS_COLORS } from "@/lib/campaign-ui";
 
 export const metadata = { title: "All Leads | CnC Realty Admin" };
 
-const STATUS_BADGE: Record<string, string> = {
-  NEW: "bg-blue-100 text-blue-700",
-  CONTACTED: "bg-yellow-100 text-yellow-700",
-  QUALIFIED: "bg-green-100 text-green-700",
-  SHOWING: "bg-purple-100 text-purple-700",
-  OFFER: "bg-orange-100 text-orange-700",
-  UNDER_CONTRACT: "bg-indigo-100 text-indigo-700",
-  CLOSED: "bg-[#9E8C61]/15 text-[#9E8C61]",
-  LOST: "bg-[#1B1B1B]/10 text-[#1B1B1B]/50",
-};
-
 export default async function AdminLeadsPage() {
-  const session = await getServerSession(authOptions);
-  const role = (session!.user as any).role;
-  if (role !== "ADMIN") redirect("/dashboard");
+  await requireAdminPage();
 
   type LeadRow = {
     id: string;
@@ -65,9 +52,7 @@ export default async function AdminLeadsPage() {
       </div>
 
       {leads.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-[#1B1B1B]/20 py-16 text-center">
-          <p className="text-[#1B1B1B]/40">No leads yet</p>
-        </div>
+        <EmptyState message="No leads yet" />
       ) : (
         <AdminTable
           headers={["Lead Name", "Email", "Status", "Source", "Agent", "Created"]}
@@ -88,7 +73,7 @@ export default async function AdminLeadsPage() {
               <td className="px-4 py-3 text-[#1B1B1B]/70">{lead.email}</td>
               <td className="px-4 py-3">
                 <span
-                  className={`rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_BADGE[lead.status] ?? STATUS_BADGE.NEW}`}
+                  className={`rounded-full px-2.5 py-1 text-xs font-medium ${LEAD_STATUS_COLORS[lead.status] ?? LEAD_STATUS_COLORS.NEW}`}
                 >
                   {lead.status.replace(/_/g, " ")}
                 </span>

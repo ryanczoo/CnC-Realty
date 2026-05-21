@@ -75,6 +75,7 @@ export async function POST(req: Request) {
       // Find matching properties created in last 24h
       const matchingProperties = await prisma.property.findMany({
         where,
+        take: 50,
         select: {
           id: true,
           mlsNumber: true,

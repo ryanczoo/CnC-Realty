@@ -94,7 +94,6 @@ export default function NewCampaignPage() {
   return (
     <div className="flex min-h-[calc(100vh-4rem)] items-start justify-center bg-[#F2F0EF] py-10">
       <div className="w-full max-w-2xl rounded-2xl bg-white p-8 shadow-sm">
-        {/* Progress bar */}
         <div className="mb-8">
           <div className="mb-3 flex justify-between">
             {STEPS.map((label, i) => (
@@ -116,7 +115,6 @@ export default function NewCampaignPage() {
           </div>
         </div>
 
-        {/* Step 1: Details */}
         {step === 1 && (
           <div className="flex flex-col gap-5">
             <h2 className="font-sans text-xl font-light text-[#1B1B1B]">Campaign Details</h2>
@@ -161,7 +159,6 @@ export default function NewCampaignPage() {
           </div>
         )}
 
-        {/* Step 2: Content */}
         {step === 2 && (
           <div className="flex flex-col gap-5">
             <h2 className="font-sans text-xl font-light text-[#1B1B1B]">Email Content</h2>
@@ -169,7 +166,6 @@ export default function NewCampaignPage() {
           </div>
         )}
 
-        {/* Step 3: Recipients */}
         {step === 3 && (
           <div className="flex flex-col gap-5">
             <h2 className="font-sans text-xl font-light text-[#1B1B1B]">Select Recipients</h2>
@@ -177,7 +173,6 @@ export default function NewCampaignPage() {
           </div>
         )}
 
-        {/* Step 4: Schedule */}
         {step === 4 && (
           <div className="flex flex-col gap-5">
             <h2 className="font-sans text-xl font-light text-[#1B1B1B]">Schedule</h2>
@@ -225,7 +220,6 @@ export default function NewCampaignPage() {
           </div>
         )}
 
-        {/* Navigation */}
         <div className="mt-8 flex items-center justify-between">
           <button
             type="button"

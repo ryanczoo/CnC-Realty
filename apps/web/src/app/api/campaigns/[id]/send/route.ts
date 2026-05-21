@@ -1,8 +1,8 @@
-// apps/web/src/app/api/campaigns/[id]/send/route.ts
 import { NextResponse } from "next/server";
 import sgMail from "@sendgrid/mail";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/api-auth";
+import { FROM } from "@/lib/email";
 
 if (process.env.SENDGRID_API_KEY) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
@@ -50,24 +50,34 @@ export async function POST(
   let errors = 0;
   const now = new Date();
 
-  for (const contact of campaign.contacts) {
-    try {
+  const results = await Promise.allSettled(
+    campaign.contacts.map(async (contact) => {
       await sgMail.send({
         to: contact.lead.email,
-        from: "noreply@cncrealtygroup.com",
-        subject: campaign.subject,
-        html: campaign.body,
+        from: FROM,
+        subject: campaign.subject!,
+        html: campaign.body!,
       });
+      return contact.id;
+    })
+  );
 
-      await prisma.campaignContact.update({
-        where: { id: contact.id },
-        data: { status: "SENT", sentAt: now },
-      });
+  const successIds: string[] = [];
+  for (const result of results) {
+    if (result.status === "fulfilled") {
       sent++;
-    } catch (err) {
-      console.error(`Failed to send to ${contact.lead.email}:`, err);
+      successIds.push(result.value);
+    } else {
+      console.error("Failed to send email:", result.reason);
       errors++;
     }
+  }
+
+  if (successIds.length > 0) {
+    await prisma.campaignContact.updateMany({
+      where: { id: { in: successIds } },
+      data: { status: "SENT", sentAt: now },
+    });
   }
 
   await prisma.campaign.update({

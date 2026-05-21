@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Search } from "lucide-react";
+import { LEAD_STATUS_COLORS } from "@/lib/campaign-ui";
 
 interface Lead {
   id: string;
@@ -14,17 +15,6 @@ interface RecipientPickerProps {
   selectedIds: string[];
   onChange: (ids: string[]) => void;
 }
-
-const STATUS_COLORS: Record<string, string> = {
-  NEW: "bg-blue-100 text-blue-700",
-  CONTACTED: "bg-yellow-100 text-yellow-700",
-  QUALIFIED: "bg-purple-100 text-purple-700",
-  SHOWING: "bg-orange-100 text-orange-700",
-  OFFER: "bg-pink-100 text-pink-700",
-  UNDER_CONTRACT: "bg-indigo-100 text-indigo-700",
-  CLOSED: "bg-green-100 text-green-700",
-  LOST: "bg-gray-100 text-gray-500",
-};
 
 export function RecipientPicker({ selectedIds, onChange }: RecipientPickerProps) {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -134,10 +124,10 @@ export function RecipientPicker({ selectedIds, onChange }: RecipientPickerProps)
               </div>
               <span
                 className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
-                  STATUS_COLORS[lead.status] ?? "bg-gray-100 text-gray-500"
+                  LEAD_STATUS_COLORS[lead.status] ?? "bg-gray-100 text-gray-500"
                 }`}
               >
-                {lead.status.replace("_", " ")}
+                {lead.status.replace(/_/g, " ")}
               </span>
             </label>
           ))}

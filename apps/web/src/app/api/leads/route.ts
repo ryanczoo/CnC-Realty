@@ -45,6 +45,7 @@ export async function GET() {
     const leads = await prisma.lead.findMany({
       include: { agent: { include: { user: { select: { name: true } } } } },
       orderBy: { createdAt: "desc" },
+      take: 200,
     });
     return NextResponse.json(leads);
   }

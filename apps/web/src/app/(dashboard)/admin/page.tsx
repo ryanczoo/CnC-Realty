@@ -1,16 +1,12 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { StatsCard } from "@/components/dashboard/StatsCard";
+import { requireAdminPage } from "@/lib/server-utils";
 
 export const metadata = { title: "Broker Overview | CnC Realty" };
 
 export default async function AdminOverviewPage() {
-  const session = await getServerSession(authOptions);
-  const role = (session!.user as any).role;
-  if (role !== "ADMIN") redirect("/dashboard");
+  await requireAdminPage();
 
   const startOfMonth = new Date();
   startOfMonth.setDate(1);

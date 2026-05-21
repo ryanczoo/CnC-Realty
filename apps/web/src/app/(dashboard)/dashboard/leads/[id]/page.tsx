@@ -35,7 +35,6 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
         ← Back to Leads
       </Link>
 
-      {/* Lead header */}
       <div className="mb-8 rounded-2xl bg-white p-6">
         <div className="flex items-start justify-between">
           <div>
@@ -60,13 +59,11 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
         </p>
       </div>
 
-      {/* Add note */}
       <div className="mb-6 rounded-2xl bg-white p-6">
         <h2 className="mb-4 font-sans text-sm font-medium text-[#1B1B1B]">Add Activity</h2>
         <AddNoteForm leadId={lead.id} />
       </div>
 
-      {/* Activity feed */}
       <div className="rounded-2xl bg-white p-6">
         <h2 className="mb-4 font-sans text-sm font-medium text-[#1B1B1B]">Activity</h2>
         <ActivityFeed

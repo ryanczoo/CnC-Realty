@@ -1,11 +1,10 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { AdminTable } from "@/components/admin/AdminTable";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { PromoteButton } from "./PromoteButton";
 import { formatDate } from "@/lib/utils";
+import { requireAdminPage } from "@/lib/server-utils";
 
 export const metadata = { title: "All Agents | CnC Realty Admin" };
 
@@ -16,9 +15,7 @@ const ROLE_BADGE: Record<string, string> = {
 };
 
 export default async function AdminAgentsPage() {
-  const session = await getServerSession(authOptions);
-  const role = (session!.user as any).role;
-  if (role !== "ADMIN") redirect("/dashboard");
+  await requireAdminPage();
 
   type AgentRow = {
     id: string;
@@ -57,9 +54,7 @@ export default async function AdminAgentsPage() {
       </div>
 
       {agents.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-[#1B1B1B]/20 py-16 text-center">
-          <p className="text-[#1B1B1B]/40">No agents yet</p>
-        </div>
+        <EmptyState message="No agents yet" />
       ) : (
         <AdminTable
           headers={["Agent Name", "Email", "License", "Leads", "Joined", "Role", "Actions"]}
