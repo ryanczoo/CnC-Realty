@@ -1577,6 +1577,108 @@ The `Agent` model is missing several fields the onboarding form collects: `displ
 
 ---
 
+## Session Notes — 2026-05-21
+
+### What Was Completed This Session
+
+All changes committed on `claude/real-estate-website-9bdWi`.
+
+### Railway DB Incident + Dev Server Recovery
+
+- Railway had a platform-wide incident (postgres volume degraded) — DB was TCP-reachable but the PostgreSQL handshake was unresponsive
+- Dev server had a stale webpack chunk (`Cannot find module './8541.js'`) — cleared `.next` directory and restarted; server came up on port 3001
+- Once Railway resolved the incident, ran `prisma migrate deploy` to apply any pending migrations
+- Verified `/properties` and `/dashboard` loaded correctly post-recovery
+
+### Navbar Bug Fixes (`f09182c`, `5d1895e`)
+
+Two commits to fix navbar state on non-homepage routes:
+
+**Fix 1 (`f09182c`) — stale closure reset:**
+- `useEffect` watching `forceDark` was calling `setPastHero(forceDark)` but the scroll listener had a stale closure — `pastHero` wasn't resetting when navigating between routes
+- Fixed: `setPastHero(forceDark || !isHomepage)` in effect, deps `[forceDark, isHomepage]`
+
+**Fix 2 (`5d1895e`) — dark nav on all non-homepage pages:**
+- Root cause: `pastHero` initialized to `forceDark` only — on pages like `/contact` (not in `FORCE_DARK_ROUTES` and not homepage), navbar started transparent with white text, making logo/buttons invisible against a light background
+- Fix: `useState(forceDark || !isHomepage)` as the initial value + effect uses same expression
+- **Rule established:** homepage = transparent white nav (transitions dark on scroll past hero); all other pages = always dark nav from the start
+
+### Contact Page Subtitle Update
+
+- Changed subtitle on `/contact` from "Send us a message and a CnC agent will reach out within 24 hours." → **"We're super responsive!"**
+- File: `apps/web/src/app/(marketing)/contact/page.tsx`
+
+### Simplify Skill — Pass 1 (`28e38a6`)
+
+Ran `superpowers:simplify` across all Phase 5 code (campaigns, admin, API routes). Three parallel agents reviewed for reuse, quality, and efficiency.
+
+**New shared utilities created:**
+- `src/lib/utils.ts` — added `toTitleCase(s)` and `formatDate(d)` helpers
+- `src/lib/email.ts` — exported `FROM` constant (`"noreply@cncrealtygroup.com"`) so API routes don't hardcode it
+- `src/lib/campaign-ui.ts` — created with `CAMPAIGN_TYPE_COLORS`, `CAMPAIGN_STATUS_COLORS`, `CONTACT_STATUS_COLORS`
+
+**API routes refactored:**
+- `campaigns/[id]/route.ts` — split into lightweight `checkAccess()` (no eager-load) for PATCH/DELETE vs full fetch for GET only; extracted `getAgentId()` helper
+- `webhooks/sendgrid/route.ts` — fixed N+1: single `findMany` batch lookup + concurrent `updateMany` via `Promise.all`
+- `agent-onboarding/route.ts` — wrapped agent upsert + user role update in `prisma.$transaction`
+- `admin/agents/[id]/promote/route.ts` — replaced manual `getServerSession` + role check with `requireAuth("ADMIN")`
+
+**UI components / pages refactored:**
+- `CampaignCard.tsx`, `campaigns/[id]/page.tsx` — imported from `campaign-ui.ts` and `utils.ts`; removed local duplicate constants
+- `RecipientPicker.tsx` — added `AbortController` to fetch `useEffect`
+- `campaigns/new/page.tsx` — PATCH body and POST contacts now run concurrently with `Promise.all`
+- `admin/agents/page.tsx` — added `take: 200`, used `formatDate()`
+- `admin/leads/page.tsx` — used `formatDate()`
+- `properties/page.tsx` — removed redundant `dbError` boolean
+
+### Simplify Skill — Pass 2 (`20c7f67`)
+
+Second pass applying remaining findings.
+
+**New shared components/helpers:**
+- `src/lib/server-utils.ts` — `requireAdminPage()`: gets session, redirects non-ADMIN to `/dashboard`, returns session. Replaces 3× duplicated boilerplate across admin pages.
+- `src/components/ui/EmptyState.tsx` — shared dashed-border empty state component used in admin pages.
+- `src/lib/campaign-ui.ts` — added `LEAD_STATUS_COLORS` map at top.
+
+**Files updated to use new shared code:**
+- `/admin/page.tsx`, `/admin/agents/page.tsx`, `/admin/leads/page.tsx` — all now use `requireAdminPage()` and `EmptyState`
+- `admin/leads/page.tsx` — removed local `STATUS_BADGE` map; uses `LEAD_STATUS_COLORS` from `campaign-ui.ts`
+- `RecipientPicker.tsx` — imports `LEAD_STATUS_COLORS` from `campaign-ui.ts` (removed local duplicate); fixed `replace("_", " ")` → `replace(/_/g, " ")` (global regex, was only replacing first underscore)
+
+**Campaign send route batched:**
+- Replaced sequential `for` loop (one DB write per contact) with `Promise.allSettled` (all emails fire concurrently) + single `prisma.campaignContact.updateMany` for all successful sends
+- Imported `FROM` from `@/lib/email` (removed hardcoded string)
+
+**Query limits added:**
+- `GET /api/leads` admin path: `take: 200`
+- `property-alerts/run` match query: `take: 50` per saved search
+
+**Comments removed:**
+- `{/* Step 1: Details */}`, `{/* Step 2: Content */}` etc. from campaigns/new wizard
+- `{/* Lead header */}`, `{/* Add note */}`, `{/* Activity feed */}` from leads/[id] page
+
+### Commits This Session
+
+| Hash | Description |
+|---|---|
+| `28e38a6` | refactor: simplify pass 1 — dedup, efficiency, and cleanup |
+| `f09182c` | fix: navbar pastHero state not resetting when leaving dark routes |
+| `5d1895e` | fix: navbar shows white text on light-background pages like /contact |
+| `20c7f67` | refactor: simplify pass 2 — shared utils, batched sends, admin pages cleanup |
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. Dev server starts on `localhost:3000` (or next available port — check terminal)
+3. **Remaining Phase 5 items to build:**
+   - Public agent profile pages at `/agents/[slug]` — linked from agent directory and admin table
+   - Drip campaign sequence editor (DRIP type — step-based delay/send sequences)
+   - `vercel.json` cron entry for property alerts: `POST /api/property-alerts/run` daily
+   - SendGrid webhook signature verification (verify `X-Twilio-Email-Event-Webhook-Signature` header)
+4. **Phase 6** (after Phase 5 complete): ISR on property pages, Redis caching, skeleton loaders, JSON-LD SEO, Sentry, Vercel + Railway deploy
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`
