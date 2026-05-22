@@ -1,5 +1,7 @@
 import { EventWebhook } from '@sendgrid/eventwebhook';
 
+const ew = new EventWebhook();
+
 export function verifyWebhookSignature(
   publicKey: string,
   rawBody: string,
@@ -8,8 +10,7 @@ export function verifyWebhookSignature(
 ): boolean {
   if (!publicKey) return false;
   try {
-    const ew = new EventWebhook();
-    const ecPublicKey = ew.convertPublicKeyToECDH(publicKey);
+    const ecPublicKey = ew.convertPublicKeyToECDSA(publicKey);
     return ew.verifySignature(ecPublicKey, Buffer.from(rawBody), signature, timestamp);
   } catch {
     return false;

@@ -59,6 +59,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ processed: updates.length });
   } catch (err) {
     console.error("SendGrid webhook error:", err);
-    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+    // Return 200 so SendGrid does not retry — a 5xx would trigger repeated delivery
+    // of the same payload and flood the queue on persistent errors.
+    return NextResponse.json({ error: "Internal error" }, { status: 200 });
   }
 }
