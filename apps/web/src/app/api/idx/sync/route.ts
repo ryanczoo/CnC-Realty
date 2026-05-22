@@ -51,14 +51,10 @@ export async function GET(req: Request) {
   }
 }
 
-// Manual POST trigger
+// Manual POST trigger — returns 202 immediately; sync runs in background
 export async function POST(req: Request) {
   if (!isAuthorized(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const type = new URL(req.url).searchParams.get("type") ?? "delta";
-  try {
-    const result = await runSync(type);
-    return NextResponse.json(result);
-  } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
-  }
+  runSync(type).catch(console.error);
+  return NextResponse.json({ status: "started", type }, { status: 202 });
 }

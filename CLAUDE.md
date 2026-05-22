@@ -1679,6 +1679,87 @@ Second pass applying remaining findings.
 
 ---
 
+## Session Notes — 2026-05-22
+
+### What Was Completed This Session
+
+All changes committed on `claude/real-estate-website-9bdWi`. **Phase 5 is now complete ✅**
+
+### Phase 5 — Remaining Items (All Done)
+
+#### 1. Property Alert Cron (`99b6611`)
+- Added daily cron entry to `vercel.json`: `POST /api/property-alerts/run` at 9am daily
+- File: `vercel.json`
+
+#### 2. SendGrid Webhook Signature Verification (`99f71cf`, `c992bda`)
+- Installed `@sendgrid/eventwebhook` package (ECDSA-based verification)
+- New file: `apps/web/src/app/api/webhooks/sendgrid/verify.ts` — exports `verifyWebhookSignature()` helper
+- `EventWebhook` instance hoisted to module level (not re-created per request)
+- Webhook route: returns `200` (not `500`) on internal errors so SendGrid doesn't retry permanently
+- **Bug fixed:** method was incorrectly called with ECDH — corrected to ECDSA (`verify` method name on `EventWebhook`)
+- Test file: `apps/web/src/__tests__/webhooks/sendgrid-verify.test.ts`
+
+#### 3. Public Agent Profile Pages (`2717329`, `ef4b47f`)
+- New SSR page: `apps/web/src/app/(agents)/agents/[slug]/page.tsx`
+- New component: `apps/web/src/components/agents/AgentProfileHero.tsx` — agent photo, name, title, bio, stats, social links
+- New component: `apps/web/src/components/agents/AgentContactForm.tsx` — contact form on agent's public page
+- New API route: `apps/web/src/app/api/agents/[slug]/contact/route.ts`
+  - `POST` creates a `Lead` in DB + sends email notification to the agent
+  - Returns `404` if agent slug not found
+  - Agent query deduped (was fetching agent twice — fixed to single query)
+- Test file: `apps/web/src/__tests__/api/agents-contact.test.ts` (404 + 200 cases)
+
+#### 4. Drip Campaign Sequence Editor (`333e0c2`, `8937ef8`)
+- New Prisma model: `DripStep` — fields: `id`, `campaignId`, `stepNumber`, `delayDays`, `subject`, `body`, `createdAt`
+- Migration: `packages/database/prisma/migrations/20260522064153_add_drip_steps/migration.sql`
+- New API route: `apps/web/src/app/api/campaigns/[id]/drip-steps/route.ts`
+  - `GET` returns all steps for a campaign (requires AGENT auth, ownership check)
+  - `POST` atomically replaces all steps via `prisma.$transaction` (delete all + createMany)
+  - Returns `404` if campaign not found, `403` if not owner (ADMIN bypasses)
+  - Returns `400` on malformed JSON
+  - Uses `requireAuth("AGENT")` + `checkCampaignAccess()` helper
+- New component: `apps/web/src/components/dashboard/DripSequenceEditor.tsx` — step-based sequence UI (add/remove/reorder steps, delay days, subject, body per step)
+- Campaign wizard (`/dashboard/campaigns/new`) updated: DRIP type campaigns now show `DripSequenceEditor` in the content step
+- Test file: `apps/web/src/__tests__/api/drip-steps.test.ts` (auth, CRUD, 403 ownership, 400 malformed JSON)
+
+**⚠️ Drip execution engine NOT built** — steps are saved to DB but not sent on schedule. Execution engine (cron that reads `DripStep` records and sends emails at the right delay) is deferred to Phase 6 or a dedicated session.
+
+### Phase 5 Status
+
+| Item | Status |
+|---|---|
+| Transaction management | ✅ Complete (Phase 5A) |
+| Email campaigns (Tiptap, SendGrid) | ✅ Complete (Phase 5B) |
+| SendGrid webhook verification | ✅ Complete |
+| Admin dashboard | ✅ Complete (Phase 5B) |
+| Agent onboarding form | ✅ Complete (Phase 5B) |
+| Property alert cron | ✅ Complete |
+| Public agent profile pages | ✅ Complete |
+| Drip sequence editor (UI + DB) | ✅ Complete |
+| Drip execution engine | ❌ Not yet built |
+
+### Next Session — Start Here (Phase 6)
+
+**Phase 6: Polish & Launch**
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. **Trigger full IDX resync** (still pending from Phase 4B — new fields won't populate until done):
+   ```powershell
+   $token = "7f3a9c2e8b1d4f6a0e5c7b3d9f2a8e1c4b6d0f3a9c2e8b1d4f6a0e5c7b3d9f2"
+   Invoke-RestMethod -Uri "http://localhost:3000/api/idx/sync?type=full" -Method POST -Headers @{ Authorization = "Bearer $token" } -TimeoutSec 300
+   ```
+3. **Phase 6 items:**
+   - Performance: ISR on property pages (`revalidate: 300`), Redis caching for search, skeleton loaders
+   - SEO: JSON-LD structured data (RealEstateListing, Person schemas), auto sitemap
+   - Security: Upstash rate limiting on public forms, Zod validation on all API routes
+   - Error monitoring: Sentry on both apps
+   - Analytics: PostHog or GA4
+   - Deploy: Vercel (web) + Railway (CRM API + Postgres)
+4. **Also pending:** Drip execution engine (send drip steps on schedule)
+5. **Contact page** — Ryan explicitly requested; was deferred until after Phase 5. Now it's time.
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`

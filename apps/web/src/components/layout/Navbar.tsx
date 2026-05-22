@@ -9,8 +9,6 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 
-const FORCE_DARK_ROUTES = ["/account", "/dashboard", "/admin"];
-
 const NAV_LINKS = [
   { href: "/buy", label: "Buy" },
   { href: "/sell", label: "Sell" },
@@ -38,17 +36,16 @@ export function Navbar() {
   const { data: session } = useSession();
   const pathname = usePathname();
   const isHomepage = pathname === "/";
-  const forceDark = FORCE_DARK_ROUTES.some((r) => pathname.startsWith(r));
   const [scrolled, setScrolled] = useState(false);
-  const [pastHero, setPastHero] = useState(forceDark || !isHomepage);
+  const [pastHero, setPastHero] = useState(!isHomepage);
   const [menuOpen, setMenuOpen] = useState(false);
   const heroHeightRef = useRef(0);
   const rafRef = useRef(0);
 
   useEffect(() => {
-    setPastHero(forceDark || !isHomepage);
+    setPastHero(!isHomepage);
     setScrolled(false);
-  }, [forceDark, isHomepage]);
+  }, [isHomepage]);
 
   useEffect(() => {
     heroHeightRef.current = window.innerHeight;
@@ -60,7 +57,7 @@ export function Navbar() {
       rafRef.current = requestAnimationFrame(() => {
         const y = window.scrollY;
         setScrolled((prev) => { const next = y > 30; return prev === next ? prev : next; });
-        if (isHomepage && !forceDark) {
+        if (isHomepage) {
           const next = y > heroHeightRef.current * 0.85;
           setPastHero((prev) => prev === next ? prev : next);
         }
@@ -73,11 +70,15 @@ export function Navbar() {
       window.removeEventListener("resize", onResize);
       cancelAnimationFrame(rafRef.current);
     };
-  }, [isHomepage, forceDark]);
+  }, [isHomepage]);
+
+  // Dark logo + dark pills only on homepage after scrolling past the hero section.
+  // All other pages use white elements on a solid dark background.
+  const useLightElements = isHomepage && pastHero;
 
   const pillCls = cn(
     "flex h-9 items-center justify-center rounded-full px-4 text-sm font-medium transition-all duration-300",
-    pastHero
+    useLightElements
       ? "border border-[#1B1B1B]/60 text-[#1B1B1B] hover:border-[#1B1B1B] hover:bg-[#1B1B1B] hover:text-white"
       : "border border-white/60 text-white hover:border-white hover:bg-white hover:text-black"
   );
@@ -95,8 +96,9 @@ export function Navbar() {
       <header
         className={cn(
           "fixed top-0 z-50 w-full transition-all duration-300",
-          scrolled && !pastHero && "bg-black/10 backdrop-blur-md border-b border-white/10",
-          pastHero && "bg-[#F2F0EF]/60 backdrop-blur-md border-b border-[#1B1B1B]/10"
+          !isHomepage && "bg-[#0f0f0f]",
+          isHomepage && scrolled && !pastHero && "bg-black/10 backdrop-blur-md border-b border-white/10",
+          isHomepage && pastHero && "bg-[#F2F0EF]/60 backdrop-blur-md border-b border-[#1B1B1B]/10"
         )}
       >
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -111,7 +113,7 @@ export function Navbar() {
                 height={19}
                 width={65}
                 className="object-contain transition-[filter] duration-300"
-                style={pastHero ? { filter: "invert(1)" } : undefined}
+                style={useLightElements ? { filter: "invert(1)" } : undefined}
                 priority
               />
             </motion.div>
@@ -133,7 +135,7 @@ export function Navbar() {
               transition={{ type: "spring", stiffness: 300, damping: 20 }}
               className={cn(
                 "flex h-9 w-9 items-center justify-center rounded-full transition-all duration-300",
-                pastHero
+                useLightElements
                   ? "border border-[#1B1B1B]/60 text-[#1B1B1B] hover:border-[#1B1B1B] hover:bg-[#1B1B1B] hover:text-white"
                   : "border border-white/60 text-white hover:border-white hover:bg-white hover:text-black"
               )}
