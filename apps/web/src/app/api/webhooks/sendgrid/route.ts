@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { verifyWebhookSignature } from "./verify";
 
 interface SendGridEvent {
   email: string;
@@ -8,11 +9,22 @@ interface SendGridEvent {
   [key: string]: unknown;
 }
 
-export async function POST(req: Request) {
-  try {
-    const events: SendGridEvent[] = await req.json();
+const SENDGRID_PUBLIC_KEY = process.env.SENDGRID_WEBHOOK_PUBLIC_KEY ?? "";
 
-    // Batch lead lookups — one query for all unique emails
+export async function POST(req: Request) {
+  const rawBody = await req.text();
+
+  if (SENDGRID_PUBLIC_KEY) {
+    const signature = req.headers.get("X-Twilio-Email-Event-Webhook-Signature") ?? "";
+    const timestamp = req.headers.get("X-Twilio-Email-Event-Webhook-Timestamp") ?? "";
+    if (!verifyWebhookSignature(SENDGRID_PUBLIC_KEY, rawBody, signature, timestamp)) {
+      return NextResponse.json({ error: "Invalid signature" }, { status: 403 });
+    }
+  }
+
+  try {
+    const events: SendGridEvent[] = JSON.parse(rawBody);
+
     const emails = Array.from(new Set(events.map((e) => e.email)));
     const leads = await prisma.lead.findMany({ where: { email: { in: emails } } });
     const leadByEmail = new Map(leads.map((l) => [l.email, l]));
@@ -44,10 +56,9 @@ export async function POST(req: Request) {
     });
 
     await Promise.all(updates);
+    return NextResponse.json({ processed: updates.length });
   } catch (err) {
     console.error("SendGrid webhook error:", err);
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
-
-  // Always return 200 — SendGrid retries on non-200
-  return NextResponse.json({ ok: true });
 }
