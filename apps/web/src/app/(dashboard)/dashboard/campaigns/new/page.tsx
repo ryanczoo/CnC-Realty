@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { TiptapEditor } from "@/components/campaigns/TiptapEditor";
 import { RecipientPicker } from "@/components/campaigns/RecipientPicker";
+import { DripSequenceEditor, type DripStepData } from "@/components/dashboard/DripSequenceEditor";
 
 type CampaignType = "EMAIL" | "DRIP";
 
@@ -14,24 +15,23 @@ export default function NewCampaignPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Step 1
   const [name, setName] = useState("");
   const [type, setType] = useState<CampaignType>("EMAIL");
   const [subject, setSubject] = useState("");
-
-  // Step 2
   const [body, setBody] = useState("");
-
-  // Step 3
+  const [dripSteps, setDripSteps] = useState<DripStepData[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-
-  // Step 4
   const [sendNow, setSendNow] = useState(true);
   const [scheduledAt, setScheduledAt] = useState("");
 
   const canNext = () => {
-    if (step === 1) return name.trim().length > 0 && subject.trim().length > 0;
-    if (step === 2) return body.trim().length > 0 && body !== "<p></p>";
+    if (step === 1) return name.trim().length > 0 && (type === "DRIP" || subject.trim().length > 0);
+    if (step === 2) {
+      if (type === "DRIP") {
+        return dripSteps.length > 0 && dripSteps.every((s) => s.subject.trim() && s.body.trim());
+      }
+      return body.trim().length > 0 && body !== "<p></p>";
+    }
     if (step === 3) return selectedIds.length > 0;
     return true;
   };
@@ -39,29 +39,33 @@ export default function NewCampaignPage() {
   const handleFinish = async () => {
     setError(null);
     setSubmitting(true);
-
     try {
-      // Create the campaign
       const createRes = await fetch("/api/campaigns", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, type, subject }),
+        body: JSON.stringify({ name, type, subject: type === "DRIP" ? "" : subject }),
       });
-
       if (!createRes.ok) {
         const data = await createRes.json();
         throw new Error(data.error ?? "Failed to create campaign");
       }
-
       const campaign = await createRes.json();
 
-      // Save body and add recipients concurrently
+      const contentSave =
+        type === "DRIP"
+          ? fetch(`/api/campaigns/${campaign.id}/drip-steps`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(dripSteps),
+            })
+          : fetch(`/api/campaigns/${campaign.id}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ body }),
+            });
+
       await Promise.all([
-        fetch(`/api/campaigns/${campaign.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ body }),
-        }),
+        contentSave,
         fetch(`/api/campaigns/${campaign.id}/contacts`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -69,7 +73,6 @@ export default function NewCampaignPage() {
         }),
       ]);
 
-      // Schedule or send
       if (!sendNow && scheduledAt) {
         await fetch(`/api/campaigns/${campaign.id}`, {
           method: "PATCH",
@@ -79,7 +82,7 @@ export default function NewCampaignPage() {
             status: "SCHEDULED",
           }),
         });
-      } else if (sendNow) {
+      } else if (sendNow && type === "EMAIL") {
         await fetch(`/api/campaigns/${campaign.id}/send`, { method: "POST" });
       }
 
@@ -99,9 +102,7 @@ export default function NewCampaignPage() {
             {STEPS.map((label, i) => (
               <span
                 key={label}
-                className={`font-sans text-xs font-medium ${
-                  i + 1 <= step ? "text-[#1B1B1B]" : "text-[#1B1B1B]/30"
-                }`}
+                className={`font-sans text-xs font-medium ${i + 1 <= step ? "text-[#1B1B1B]" : "text-[#1B1B1B]/30"}`}
               >
                 {label}
               </span>
@@ -146,23 +147,37 @@ export default function NewCampaignPage() {
                 ))}
               </div>
             </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="font-sans text-sm text-[#1B1B1B]/60">Subject Line</label>
-              <input
-                type="text"
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                placeholder="Enter email subject..."
-                className="rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-4 py-2.5 font-sans text-sm text-[#1B1B1B] outline-none focus:border-[#9E8C61] placeholder:text-[#1B1B1B]/30"
-              />
-            </div>
+            {type === "EMAIL" && (
+              <div className="flex flex-col gap-1.5">
+                <label className="font-sans text-sm text-[#1B1B1B]/60">Subject Line</label>
+                <input
+                  type="text"
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  placeholder="Enter email subject..."
+                  className="rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-4 py-2.5 font-sans text-sm text-[#1B1B1B] outline-none focus:border-[#9E8C61] placeholder:text-[#1B1B1B]/30"
+                />
+              </div>
+            )}
           </div>
         )}
 
-        {step === 2 && (
+        {step === 2 && type === "EMAIL" && (
           <div className="flex flex-col gap-5">
             <h2 className="font-sans text-xl font-light text-[#1B1B1B]">Email Content</h2>
             <TiptapEditor value={body} onChange={setBody} />
+          </div>
+        )}
+
+        {step === 2 && type === "DRIP" && (
+          <div className="flex flex-col gap-5">
+            <div>
+              <h2 className="font-sans text-xl font-light text-[#1B1B1B]">Drip Sequence</h2>
+              <p className="mt-1 font-sans text-xs text-[#1B1B1B]/50">
+                Each step is sent after the specified delay. Step 1 goes out on day 0 (immediately after enrollment).
+              </p>
+            </div>
+            <DripSequenceEditor steps={dripSteps} onChange={setDripSteps} />
           </div>
         )}
 
@@ -186,9 +201,13 @@ export default function NewCampaignPage() {
                   className="accent-[#9E8C61]"
                 />
                 <div>
-                  <p className="font-sans text-sm font-medium text-[#1B1B1B]">Send Now</p>
+                  <p className="font-sans text-sm font-medium text-[#1B1B1B]">
+                    {type === "DRIP" ? "Start Now" : "Send Now"}
+                  </p>
                   <p className="font-sans text-xs text-[#1B1B1B]/50">
-                    Campaign will be sent immediately after you click Finish.
+                    {type === "DRIP"
+                      ? "Sequence begins immediately after you click Finish."
+                      : "Campaign will be sent immediately after you click Finish."}
                   </p>
                 </div>
               </label>
@@ -225,7 +244,7 @@ export default function NewCampaignPage() {
             type="button"
             onClick={() => setStep((s) => s - 1)}
             disabled={step === 1}
-            className="rounded-full border border-[#1B1B1B]/20 px-5 py-2.5 font-sans text-sm text-[#1B1B1B]/60 hover:border-[#1B1B1B]/40 hover:text-[#1B1B1B] disabled:opacity-0 disabled:pointer-events-none transition-colors"
+            className="rounded-full border border-[#1B1B1B]/20 px-5 py-2.5 font-sans text-sm text-[#1B1B1B]/60 transition-colors hover:border-[#1B1B1B]/40 hover:text-[#1B1B1B] disabled:pointer-events-none disabled:opacity-0"
           >
             ← Back
           </button>
@@ -234,7 +253,7 @@ export default function NewCampaignPage() {
               type="button"
               onClick={() => setStep((s) => s + 1)}
               disabled={!canNext()}
-              className="rounded-full bg-[#1B1B1B] px-5 py-2.5 font-sans text-sm text-white hover:bg-[#1B1B1B]/80 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+              className="rounded-full bg-[#1B1B1B] px-5 py-2.5 font-sans text-sm text-white transition-colors hover:bg-[#1B1B1B]/80 disabled:pointer-events-none disabled:opacity-40"
             >
               Next →
             </button>
@@ -243,9 +262,13 @@ export default function NewCampaignPage() {
               type="button"
               onClick={handleFinish}
               disabled={submitting}
-              className="rounded-full bg-[#9E8C61] px-5 py-2.5 font-sans text-sm text-white hover:bg-[#9E8C61]/80 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+              className="rounded-full bg-[#9E8C61] px-5 py-2.5 font-sans text-sm text-white transition-colors hover:bg-[#9E8C61]/80 disabled:pointer-events-none disabled:opacity-40"
             >
-              {submitting ? "Saving…" : sendNow ? "Send Campaign" : "Schedule Campaign"}
+              {submitting
+                ? "Saving…"
+                : sendNow
+                  ? type === "DRIP" ? "Start Sequence" : "Send Campaign"
+                  : "Schedule Campaign"}
             </button>
           )}
         </div>

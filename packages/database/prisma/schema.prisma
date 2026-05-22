@@ -482,6 +482,7 @@ model Campaign {
 
   agent    Agent?            @relation(fields: [agentId], references: [id])
   contacts CampaignContact[]
+  steps    DripStep[]
 }
 
 model CampaignContact {
@@ -497,6 +498,18 @@ model CampaignContact {
   lead     Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
   @@unique([campaignId, leadId])
+}
+
+model DripStep {
+  id         String   @id @default(cuid())
+  campaignId String
+  stepOrder  Int
+  delayDays  Int      @default(0)
+  subject    String
+  body       String
+  createdAt  DateTime @default(now())
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 }
 
 model SavedSearch {
