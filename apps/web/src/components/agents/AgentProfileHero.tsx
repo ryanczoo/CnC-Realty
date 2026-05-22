@@ -90,7 +90,7 @@ export function AgentProfileHero(props: AgentProfileHeroProps) {
         <div className="mt-10 grid grid-cols-3 gap-4 border-t border-[#1B1B1B]/5 pt-8">
           {[
             { label: "Listings Closed", value: listingsClosed.toString() },
-            { label: "Volume Closed", value: volumeFormatted },
+            { label: "Volume Closed", value: volumeClosed > 0 ? volumeFormatted : "—" },
             { label: "Years Experience", value: yearsExp !== null ? yearsExp.toString() : "—" },
           ].map(({ label, value }) => (
             <div key={label} className="text-center">

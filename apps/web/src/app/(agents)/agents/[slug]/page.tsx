@@ -1,13 +1,18 @@
+import { cache } from "react";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { AgentProfileHero } from "@/components/agents/AgentProfileHero";
 import { AgentContactForm } from "@/components/agents/AgentContactForm";
 import type { Metadata } from "next";
 
+const getAgent = cache((slug: string) =>
+  prisma.agent.findUnique({ where: { slug } })
+);
+
 type Props = { params: { slug: string } };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const agent = await prisma.agent.findUnique({ where: { slug: params.slug } });
+  const agent = await getAgent(params.slug);
   if (!agent) return { title: "Agent Not Found | CnC Realty" };
   return {
     title: `${agent.displayName ?? agent.slug} | CnC Realty Group`,
@@ -17,7 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function AgentProfilePage({ params }: Props) {
-  const agent = await prisma.agent.findUnique({ where: { slug: params.slug } });
+  const agent = await getAgent(params.slug);
   if (!agent) notFound();
 
   return (
