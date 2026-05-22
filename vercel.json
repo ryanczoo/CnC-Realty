@@ -3,6 +3,10 @@
     {
       "path": "/api/idx/sync?type=delta",
       "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/property-alerts/run",
+      "schedule": "0 9 * * *"
     }
   ]
 }
