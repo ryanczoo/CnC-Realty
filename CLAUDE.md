@@ -1952,10 +1952,20 @@ SkySlope separates file management into two distinct flows:
    ```
    curl -X POST http://localhost:3000/api/idx/sync -H "x-cron-secret: 7f3a9c2e8b1d4f6a0e5c7b3d9f2a8e1c4b6d0f3a9c2e8b1d4f6a0e5c7b3d9f2"
    ```
-3. **Review the rebuilt transaction wizard** at `/dashboard/transactions/new-transaction` — walk through all 6 steps
-4. **Review the new-listing flow** at `/dashboard/transactions/new-listing`
-5. **Build shell pages** for `/buy`, `/sell`, `/rent`, `/manage`, `/join`
-6. **Continue Phase 6** tasks
+
+3. **BUILD THESE FIRST — File detail page (SkySlope parity):**
+   All 4 items are on the file detail page at `/dashboard/transactions/[fileType]/[id]`
+
+   a. **Overview tab** (~10 min) — add missing fields: propertyType, yearBuilt, escrowNumber, acceptanceDate, inspectionDeadline, appraisalDeadline, loanApprovalDeadline, saleCommissionPct, listingCommissionPct, otherDeductions
+
+   b. **Commission tab** (~15 min) — new tab showing full breakdown: sale commission %, listing commission %, other deductions, net to agent calculation (same logic as wizard Step 5)
+
+   c. **Documents tab** (~15 min) — flat list of all uploaded documents across all checklist items for the file; shows name, checklist item it belongs to, review status, upload date, download link
+
+   d. **Tasks tab** (~45 min) — needs new `Task` DB model + migration + API routes + UI; per-file tasks with title, due date, assignee, complete/incomplete toggle
+
+4. **Build shell pages** for `/buy`, `/sell`, `/rent`, `/manage`, `/join`
+5. **Continue Phase 6** tasks
 
 ---
 
