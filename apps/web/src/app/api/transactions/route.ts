@@ -27,11 +27,24 @@ export async function POST(req: Request) {
   if (!agent) return NextResponse.json({ error: "Agent not found" }, { status: 404 });
 
   const body = await req.json();
-  const { propertyAddress, city, state, zip, mlsNumber, transactionSide, listPrice, salePrice, offerDate, acceptanceDate, inspectionDeadline, appraisalDeadline, loanApprovalDeadline, closeOfEscrow, commissionGCI, commissionSplit, commissionNotes, originatingLeadId } = body;
+  const {
+    propertyAddress, city, state, zip,
+    mlsNumber, propertyType, yearBuilt, escrowNumber,
+    transactionSide, stage,
+    listPrice, salePrice,
+    offerDate, acceptanceDate,
+    inspectionDeadline, appraisalDeadline, loanApprovalDeadline, closeOfEscrow,
+    commissionGCI, saleCommissionPct, listingCommissionPct, otherDeductions,
+    commissionSplit, commissionNotes,
+    originatingLeadId,
+    parties = [],
+  } = body;
 
   if (!propertyAddress || !city || !zip || !transactionSide) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
+
+  const initialStatus = stage === "PRE_CONTRACT" ? "PRE_CONTRACT" : "INCOMPLETE";
 
   const template = await prisma.checklistTemplate.findFirst({
     where: { fileType: "TRANSACTION", isActive: true, OR: [{ transactionSide }, { transactionSide: "ALL" }] },
@@ -42,9 +55,13 @@ export async function POST(req: Request) {
     data: {
       agentId: agent.id,
       propertyAddress, city, state: state ?? "CA", zip,
-      mlsNumber: mlsNumber ?? null,
+      mlsNumber: mlsNumber || null,
+      propertyType: propertyType || null,
+      yearBuilt: yearBuilt ? parseInt(yearBuilt) : null,
+      escrowNumber: escrowNumber || null,
       transactionSide,
-      originatingLeadId: originatingLeadId ?? null,
+      status: initialStatus,
+      originatingLeadId: originatingLeadId || null,
       listPrice: listPrice ? parseFloat(listPrice) : null,
       salePrice: salePrice ? parseFloat(salePrice) : null,
       offerDate: offerDate ? new Date(offerDate) : null,
@@ -54,8 +71,24 @@ export async function POST(req: Request) {
       loanApprovalDeadline: loanApprovalDeadline ? new Date(loanApprovalDeadline) : null,
       closeOfEscrow: closeOfEscrow ? new Date(closeOfEscrow) : null,
       commissionGCI: commissionGCI ? parseFloat(commissionGCI) : null,
+      saleCommissionPct: saleCommissionPct ? parseFloat(saleCommissionPct) : null,
+      listingCommissionPct: listingCommissionPct ? parseFloat(listingCommissionPct) : null,
+      otherDeductions: otherDeductions ? parseFloat(otherDeductions) : null,
       commissionSplit: commissionSplit ? parseFloat(commissionSplit) : null,
-      commissionNotes: commissionNotes ?? null,
+      commissionNotes: commissionNotes || null,
+      parties: parties.length > 0 ? {
+        create: parties
+          .filter((p: { name?: string }) => p.name)
+          .map((p: { role: string; name: string; email?: string; phone?: string; company?: string; licenseNumber?: string }) => ({
+            fileType: "TRANSACTION" as const,
+            role: p.role,
+            name: p.name,
+            email: p.email || null,
+            phone: p.phone || null,
+            company: p.company || null,
+            licenseNumber: p.licenseNumber || null,
+          })),
+      } : undefined,
       checklistItems: template ? {
         create: template.items.map((item) => ({
           fileType: "TRANSACTION" as const,
@@ -65,7 +98,14 @@ export async function POST(req: Request) {
           isRequired: item.isRequired,
         })),
       } : undefined,
-      activities: { create: { fileType: "TRANSACTION" as const, actorId: session.user.id, actorRole: "AGENT" as const, type: "FILE_CREATED" as const } },
+      activities: {
+        create: {
+          fileType: "TRANSACTION" as const,
+          actorId: session.user.id,
+          actorRole: "AGENT" as const,
+          type: "FILE_CREATED" as const,
+        },
+      },
     },
   });
 

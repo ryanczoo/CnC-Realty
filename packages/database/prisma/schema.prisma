@@ -342,6 +342,9 @@ model TransactionFile {
   state                String                @default("CA")
   zip                  String
   mlsNumber            String?
+  propertyType         String?
+  yearBuilt            Int?
+  escrowNumber         String?
   transactionSide      TransactionSide
   status               TransactionFileStatus @default(INCOMPLETE)
   listPrice            Float?
@@ -353,6 +356,9 @@ model TransactionFile {
   loanApprovalDeadline DateTime?
   closeOfEscrow        DateTime?
   commissionGCI        Float?
+  saleCommissionPct    Float?
+  listingCommissionPct Float?
+  otherDeductions      Float?
   commissionSplit      Float?
   commissionNotes      String?
   awaitingReview       Boolean               @default(false)
