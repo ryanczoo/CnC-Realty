@@ -1858,6 +1858,107 @@ Ran `superpowers:requesting-code-review` — fixed all Critical and Important is
 
 ---
 
+## Session Notes — 2026-05-23
+
+### What Was Completed This Session
+
+All changes committed and pushed to `claude/real-estate-website-9bdWi` (commits: `d6923be`, `df7bfec`).
+
+### SkySlope Research Summary (read all 18 articles via Puppeteer MCP)
+
+SkySlope separates file management into two distinct flows:
+
+**Transaction Files** (buyer-side):
+- 6-step wizard: File Type → Property → Transaction Details → Parties → Commission → (Checklist auto-generated)
+- Representation types: Purchase (buyer), Listing (seller), Both Purchase & Listing (dual agency), Lease Tenant, Lease Landlord, Referral, BPO, Other
+- Stage: Pre-Contract (no signed agreement) vs Under Contract (signed purchase agreement)
+- Parties: Buyers (multi), Sellers (multi), Listing Agent, Buyer's Agent, Co-Agent, Title/Escrow/Attorney, Loan Officer, Transaction Coordinator
+- Commission: Sale commission % + Listing commission % (or flat $), other deductions, auto-calculates net to agent
+- Checklist: Required compliance docs set by brokerage admin; agents upload and submit for review; statuses: Pending → In Review → Approved/Rejected
+
+**Listing Files** (seller-side):
+- Separate creation flow from transaction files
+- Has its own checklist (listing agreement, disclosures, etc.)
+- Can be "converted to transaction" when offer is accepted → creates a linked Transaction File
+
+**Document Management**:
+- 4 upload methods: computer, drag-and-drop, email forwarding, fax
+- Split & Assign: auto-splits multi-page PDFs and assigns pages to checklist items
+- Documents go through review workflow: agent submits → broker/TC reviews → approved or rejected with note
+
+**Tasks & Reminders**:
+- Per-file tasks with due dates and assignees
+- Reusable Task Templates (brokerage-wide)
+- Reminder emails sent automatically
+
+**Key architectural insight**: Transaction Files and Listing Files are separate models with separate checklists. A Listing File can optionally "convert" to a Transaction File when under contract.
+
+### What Was Built This Session
+
+1. **Transaction wizard rebuilt to match SkySlope** (`d6923be`)
+   - 6 steps: File Type → Property → Details → Parties → Commission → Review
+   - Step 1: Representation type cards (Purchase, Both, Lease, Referral) + Stage (Under Contract / Pre-Contract)
+   - Step 2: Address, city, state, zip, property type dropdown, MLS#, year built
+   - Step 3: List/sale price, key dates, escrow #, inspection/appraisal/loan deadlines
+   - Step 4: Dynamic buyers/sellers (add/remove), listing agent, title/escrow toggle, optional loan officer + TC
+   - Step 5: Sale commission % or $, listing commission % or $, other deductions, auto-calculated net to agent
+   - Step 6: Full sectioned review summary
+   - Schema: added propertyType, yearBuilt, escrowNumber, saleCommissionPct, listingCommissionPct, otherDeductions
+   - Note: "Listing" (seller-side) is intentionally NOT in this wizard — it lives in New Listing (`/dashboard/transactions/new-listing`)
+
+2. **rawData removed from Property model** (`df7bfec`)
+   - Root cause of Railway DB crash: 80k properties × ~50KB raw JSON = 4GB disk fill
+   - rawData dropped; 3 agent attribution fields promoted to proper columns: listAgentName, listAgentLicense, listOfficeName
+   - IDX sync updated to save these 3 fields individually instead of storing full JSON
+   - AgentAttribution component, PropertyDrawer, property detail page all updated
+
+3. **Account Settings tab** (`df7bfec`)
+   - Buyers: new "Settings" tab on `/account` — display name edit, reset password link, sign out
+   - Agents: new `/dashboard/settings` page — same + "Edit Public Profile" link
+   - API: `PATCH /api/account/profile` for display name updates
+
+4. **Railway DB recreated from scratch**
+   - Old DB crashed (100% disk from rawData)
+   - Deleted Postgres service + both volumes
+   - Created fresh Postgres on Railway
+   - New DATABASE_URL: `postgresql://postgres:eAVMklDXFYiLwGPTVgBLQwLWHoefXEpJ@kodama.proxy.rlwy.net:51294/railway`
+   - All 10 migrations applied cleanly
+   - Admin account recreated: `ryanchong@cncrealty.com` / `Fakeaccount1!` (role: ADMIN)
+
+### Still Pending
+
+1. **Shell pages** — all currently 404:
+   - `/buy` — Buy page
+   - `/sell` — Sell page
+   - `/rent` — Rent/Lease page
+   - `/manage` — Property Management page
+   - `/join` — Join CnC landing page (links to `/join/agent` form)
+
+2. **IDX resync** — DB is fresh/empty; trigger sync to repopulate 80k properties:
+   ```
+   curl -X POST http://localhost:3000/api/idx/sync -H "x-cron-secret: 7f3a9c2e8b1d4f6a0e5c7b3d9f2a8e1c4b6d0f3a9c2e8b1d4f6a0e5c7b3d9f2"
+   ```
+
+3. **Transaction file detail page** — after creating a transaction, the file detail view needs document checklist UI, tasks, and activity timeline
+
+4. **Listing file detail page** — same as above for listing files
+
+5. **Phase 6 tasks** from `docs/superpowers/plans/2026-05-22-phase-6-launch.md`
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. **Trigger IDX sync** to repopulate properties (DB is empty after Railway reset):
+   ```
+   curl -X POST http://localhost:3000/api/idx/sync -H "x-cron-secret: 7f3a9c2e8b1d4f6a0e5c7b3d9f2a8e1c4b6d0f3a9c2e8b1d4f6a0e5c7b3d9f2"
+   ```
+3. **Review the rebuilt transaction wizard** at `/dashboard/transactions/new-transaction` — walk through all 6 steps
+4. **Review the new-listing flow** at `/dashboard/transactions/new-listing`
+5. **Build shell pages** for `/buy`, `/sell`, `/rent`, `/manage`, `/join`
+6. **Continue Phase 6** tasks
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`
