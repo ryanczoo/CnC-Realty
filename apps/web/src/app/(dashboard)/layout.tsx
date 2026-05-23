@@ -27,7 +27,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const isAdmin = role === "ADMIN";
 
   return (
-    <div className="flex min-h-screen bg-[#F2F0EF]">
+    <div className="flex min-h-screen bg-[#F2F0EF] pt-16">
       {/* Sidebar */}
       <aside className="flex w-56 flex-shrink-0 flex-col border-r border-[#1B1B1B]/10 bg-white px-4 py-6">
         <Link href="/" className="mb-8 block">

@@ -78,9 +78,8 @@ export default function AccountPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-light text-[#1B1B1B]">
             Welcome back,{" "}
-            <span className="font-medium">{session?.user.name ?? "there"}</span>
+            <span className="font-medium text-[#9E8C61]">{session?.user.name ?? "there"}</span>
           </h1>
-          <p className="mt-1 text-sm text-[#1B1B1B]/50">{session?.user.email}</p>
         </div>
 
         <div className="mb-8 grid grid-cols-2 gap-4">
