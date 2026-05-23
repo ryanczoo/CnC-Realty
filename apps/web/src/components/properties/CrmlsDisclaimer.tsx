@@ -16,11 +16,6 @@ export function CrmlsDisclaimer({ syncedAt, className }: Props) {
         hour12: true,
       })
     : null;
-
-  const dateOnly = syncedAt
-    ? new Date(syncedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
-    : "the date listed above";
-
   return (
     <div className={className}>
       <div className="mb-2 flex items-center gap-3">
@@ -40,8 +35,8 @@ export function CrmlsDisclaimer({ syncedAt, className }: Props) {
       </div>
       <p>
         The multiple listing data appearing on this website is owned and copyrighted by California Regional Multiple
-        Listing Service, Inc. (&quot;CRMLS&quot;) and is protected by all applicable copyright laws. Based on
-        information from CRMLS as of {dateOnly}. This information is for your personal, non-commercial use and may not be
+        Listing Service, Inc. (&quot;CRMLS&quot;) and is protected by all applicable copyright laws. This information
+        is for your personal, non-commercial use and may not be
         used for any purpose other than to identify prospective properties you may be interested in purchasing. All
         listing data, including but not limited to square footage and lot size, is believed to be accurate but is not
         guaranteed by the listing Agent, listing Broker, or CRMLS. Buyers are responsible for verifying the accuracy of
