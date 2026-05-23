@@ -32,9 +32,11 @@ interface PropertyDetail {
   latitude: number | null;
   longitude: number | null;
   photos: string[] | null;
+  listAgentName: string | null;
+  listAgentLicense: string | null;
+  listOfficeName: string | null;
   listedAt: string | null;
   syncedAt: string | null;
-  rawData: Record<string, unknown> | null;
 }
 
 interface Props {
@@ -83,9 +85,8 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
 
   const { savedSet, toggle } = useSavedProperties();
   const photos = Array.isArray(property?.photos) ? property!.photos : [];
-  const r = property?.rawData ?? {};
   const statsFields = property ? buildStatsFields(property) : [];
-  const detailSections = property ? buildDetailSections(r, property.lotSize) : [];
+  const detailSections = property ? buildDetailSections({}, property.lotSize) : [];
 
   return (
     <>
@@ -237,7 +238,9 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
                   )}
 
                   <AgentAttribution
-                    rawData={property.rawData}
+                    listAgentName={property.listAgentName}
+                    listAgentLicense={property.listAgentLicense}
+                    listOfficeName={property.listOfficeName}
                     className="mt-4 flex items-center gap-1.5 text-xs text-[#1B1B1B]/70"
                     iconClassName="h-3.5 w-3.5 shrink-0 text-[#9E8C61]/70"
                   />

@@ -58,10 +58,8 @@ export default async function PropertyDetailPage({ params }: PageProps) {
   if (!property) notFound();
 
   const photos = Array.isArray(property.photos) ? (property.photos as string[]) : [];
-  const r = (property.rawData ?? {}) as Record<string, unknown>;
-
   const statsFields = buildStatsFields(property);
-  const detailSections = buildDetailSections(r, property.lotSize);
+  const detailSections = buildDetailSections({}, property.lotSize);
 
   return (
     <div className="min-h-screen bg-[#F2F0EF] pb-20 text-[#1B1B1B]">
@@ -118,7 +116,11 @@ export default async function PropertyDetailPage({ params }: PageProps) {
               </div>
             )}
 
-            <AgentAttribution rawData={r} />
+            <AgentAttribution
+              listAgentName={property.listAgentName}
+              listAgentLicense={property.listAgentLicense}
+              listOfficeName={property.listOfficeName}
+            />
 
             {/* MLS # and Listed date */}
             <div className="mt-5 grid grid-cols-2 gap-x-8 gap-y-2.5 rounded-xl bg-white p-4 text-sm">

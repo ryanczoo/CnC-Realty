@@ -247,10 +247,12 @@ model Property {
   county       String?
   latitude     Float?
   longitude    Float?
-  listingType  String    @default("FOR_SALE")
-  photos       Json      @default("[]")
-  rawData      Json      @default("{}")
-  listedAt     DateTime?
+  listingType        String    @default("FOR_SALE")
+  photos             Json      @default("[]")
+  listAgentName      String?
+  listAgentLicense   String?
+  listOfficeName     String?
+  listedAt           DateTime?
   modifiedAt   DateTime?
   syncedAt     DateTime  @default(now())
   createdAt    DateTime  @default(now())

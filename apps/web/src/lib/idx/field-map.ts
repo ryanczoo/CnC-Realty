@@ -105,7 +105,9 @@ export function mapResoToProperty(raw: ResoProperty) {
     latitude: raw.Latitude ?? null,
     longitude: raw.Longitude ?? null,
     photos: photos,
-    rawData: raw as object,
+    listAgentName: raw.ListAgentFullName ?? null,
+    listAgentLicense: raw.ListAgentStateLicense ?? null,
+    listOfficeName: raw.ListOfficeName ?? null,
     modifiedAt: raw.ModificationTimestamp ? new Date(raw.ModificationTimestamp) : null,
     listedAt: raw.ListingContractDate ? new Date(raw.ListingContractDate) : null,
   };

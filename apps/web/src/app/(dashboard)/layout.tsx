@@ -9,6 +9,7 @@ const AGENT_NAV = [
   { href: "/dashboard/leads", label: "Leads" },
   { href: "/dashboard/transactions", label: "Transactions" },
   { href: "/dashboard/campaigns", label: "Campaigns" },
+  { href: "/dashboard/settings", label: "Settings" },
 ];
 
 const ADMIN_NAV = [
