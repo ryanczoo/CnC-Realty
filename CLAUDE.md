@@ -1969,6 +1969,78 @@ SkySlope separates file management into two distinct flows:
 
 ---
 
+## Session Notes — 2026-05-23 (continuation 2)
+
+### What Was Completed This Session
+
+All changes committed as `53c6847` on `claude/real-estate-website-9bdWi`.
+
+### File Detail Page — 3 New Tabs + Overview Fix
+
+**Overview tab updated:**
+- Added Key Dates card (transaction only): Offer Date, Acceptance Date, Inspection Deadline, Appraisal Deadline, Loan Approval, Close of Escrow
+- Added missing Property Detail fields: Property Type, Year Built, Escrow #
+- `TransactionFileDetail` and `ListingFileDetail` types both now include the missing fields + `tasks: FileTaskRecord[]`
+
+**Commission tab (NEW — transaction files only):**
+- Shows: Sale Price, Sale Commission %, Sale Commission $, Listing Commission %, Listing Commission $, Other Deductions
+- Net-to-agent calculation card: Gross Commission → Deductions → Net to Agent (gold highlight)
+- Hidden for listing files
+
+**Documents tab (NEW):**
+- Flat table: Document name, Checklist item (or "Unattached"), Review status badge, Upload date, Download ↗
+
+**Tasks tab (NEW):**
+- New `FileTask` Prisma model (`20260523161739_add_file_task`) — title, dueDate, assigneeName, done
+- API routes: `GET/POST /api/file-tasks`, `PATCH/DELETE /api/file-tasks/[taskId]`
+- UI: pending tasks + completed tasks (dimmed/strikethrough), overdue dates in red, optimistic toggle, delete
+- Tab badge shows pending count
+
+### Shell Pages Built
+
+All 5 were previously 404:
+- `/buy` — hero + How It Works (4 steps) + dark CTA
+- `/sell` — hero + Why Sell With CnC (4 items) + dark CTA
+- `/rent` — hero + 3 perk cards + dark CTA
+- `/manage` — hero + What We Handle (6 items) + dark CTA
+- `/join` — full recruitment page: hero, 6 benefits, FAQ, dark CTA linking to `/join/agent`
+
+Note: `/join` is public — middleware only protects `/dashboard`, `/admin`, `/account`.
+
+### Checklist Template System — Confirmed Already Fully Built
+
+The entire checklist template system was already implemented. Ryan just needs to create templates at `/admin/settings/checklists`. The auto-apply logic in both `/api/transactions` POST and `/api/listings` POST is already live.
+
+**Standard CA documents to create (for guidance):**
+- **CA Purchase — Buyer Side**: RPA, Agency Disclosure, AVID, Proof of Funds, Loan Pre-Approval, SBSA, TDS, NHD
+- **CA Purchase — Seller Side**: Listing Agreement, TDS, SBSA, NHD, Agency Disclosure, Seller's Net Sheet
+- **CA Lease — Tenant Side**: Residential Lease Agreement, Agency Disclosure, Move-in Inspection
+
+### IDX Resync — Still Pending
+
+Safe to do (rawData removed). Trigger with dev server running:
+```powershell
+$token = "7f3a9c2e8b1d4f6a0e5c7b3d9f2a8e1c4b6d0f3a9c2e8b1d4f6a0e5c7b3d9f2"
+Invoke-RestMethod -Uri "http://localhost:3000/api/idx/sync?type=full" -Method POST -Headers @{ Authorization = "Bearer $token" } -TimeoutSec 300
+```
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. **Trigger IDX resync** (DB still empty after Railway reset) — use command above
+3. **Create checklist templates** at `/admin/settings/checklists`:
+   - CA Purchase — Buyer Side: RPA, Agency Disclosure, AVID, Proof of Funds, Loan Pre-Approval, SBSA, TDS, NHD
+   - CA Purchase — Seller Side: Listing Agreement, TDS, SBSA, NHD, Agency Disclosure
+   - CA Lease — Tenant Side: Lease Agreement, Agency Disclosure, Move-in Inspection
+4. **Phase 6 tasks** (`docs/superpowers/plans/2026-05-22-phase-6-launch.md`):
+   - ISR on property pages (`revalidate: 300`), Redis caching, skeleton loaders
+   - JSON-LD structured data (RealEstateListing, Person schemas)
+   - Upstash rate limiting on public forms
+   - Sentry error monitoring, PostHog/GA4 analytics
+   - Deploy to Vercel + Railway production
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`
