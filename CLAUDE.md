@@ -1760,6 +1760,104 @@ All changes committed on `claude/real-estate-website-9bdWi`. **Phase 5 is now co
 
 ---
 
+## Session Notes — 2026-05-22 (Phase 6 Visual Review)
+
+### What Was Completed This Session
+
+All changes committed and pushed to `claude/real-estate-website-9bdWi` (4 commits: `bbf0939`, `bb29da3`, `8531a7e`, `84110ee`).
+
+### Bug Fixes
+
+1. **Navbar background on non-homepage pages (`bbf0939`)**
+   - Removed `FORCE_DARK_ROUTES` array approach — it was a growing allowlist that broke on any new route
+   - Introduced `useLightElements = isHomepage && pastHero` boolean
+   - All non-homepage pages now get `bg-[#0f0f0f]` dark background automatically
+   - Light elements (inverted logo, dark pills) only apply on homepage after hero fold
+   - File: `apps/web/src/components/layout/Navbar.tsx`
+
+2. **IDX sync fire-and-forget (`bbf0939`)**
+   - `POST /api/idx/sync` previously awaited full sync — HTTP disconnect killed the job
+   - Now returns `202` immediately and runs `runSync().catch(console.error)` in background
+   - GET (Vercel Cron) remains synchronous so cron logs capture the result
+   - Comment added to clarify `maxDuration = 300` only applies to GET
+   - File: `apps/web/src/app/api/idx/sync/route.ts`
+
+3. **Dashboard sidebar logo clipped (`bb29da3`)**
+   - Layout had no top offset — fixed navbar (64px) was covering the CnC logo
+   - Added `pt-16` to the outer flex div in the dashboard layout
+   - File: `apps/web/src/app/(dashboard)/layout.tsx`
+
+4. **Prisma Studio connection (`packages/database/.env` created)**
+   - Prisma Studio was failing with "Unable to run script" — no DATABASE_URL in packages/database
+   - Created `packages/database/.env` with the Railway DATABASE_URL
+   - Studio now works at `localhost:5555`
+
+### UI Polish
+
+5. **Contact page (`bb29da3`)**
+   - Heading changed: "Get in touch." → "Let's chat"
+   - Added "I am a" custom dropdown (Home Buyer, Home Seller, Home Owner, Renter, Landlord, Property Manager)
+   - Dropdown styled to match navbar panel exactly (dark, rounded-xl, backdrop-blur)
+   - Message field made required (asterisk + `required` attribute)
+   - Send Message button: spring scale animation matching all other site buttons
+   - File: `apps/web/src/app/(marketing)/contact/page.tsx`
+
+6. **Account page (`bb29da3`)**
+   - Removed email display from "Welcome back" header (moves to Settings tab later)
+   - User name colored gold `#9E8C61` to match homepage accent
+   - File: `apps/web/src/app/(account)/account/page.tsx`
+
+7. **Transaction wizard redesign (`84110ee`)**
+   - Full redesign to match Ryan's mockup screenshot
+   - Header: "New Transaction" (text-4xl) stacked above "← Back" — top-left
+   - Step bar: centered `max-w-4xl`, dot indicator (no numbers), lines as flat flex siblings so they render correctly, `text-lg` labels
+   - Content card: centered `max-w-2xl`, larger padding (`p-10`)
+   - Option cards: bigger padding (`p-7`), `text-base` labels
+   - Next/Create buttons: homepage-style pill (`px-7 py-3.5`, spring scale 1.1)
+   - File: `apps/web/src/app/(dashboard)/dashboard/transactions/new-transaction/page.tsx`
+
+### Code Quality (Superpowers Review — `8531a7e`)
+
+Ran `superpowers:requesting-code-review` — fixed all Critical and Important issues:
+
+- **`lib/motion.ts`** — added `NAV_PANEL_CLS` and `NAV_ITEM_CLS` shared constants; both Navbar and contact dropdown now reference the same source so panel style stays in sync
+- **`hooks/useClickOutside.ts`** — new shared hook replacing hand-rolled `mousedown` listener
+- **`idx/sync/route.ts`** — clarifying comment on `maxDuration`
+
+### IDX Sync Status
+
+- Full sync was triggered at session start via the fixed fire-and-forget POST route
+- At last check: **79,989 properties** in DB (up from 28,856 before session)
+- Sync may still be running — check dev server terminal for `[idx-sync] done` log line
+- No need to re-trigger next session unless the log never appeared
+
+### Puppeteer MCP Server Installed
+
+- Installed official `@modelcontextprotocol/server-puppeteer` via `claude mcp add`
+- Config written to `C:\Users\hey_r\.claude.json` (project scope)
+- **Requires Claude Code restart to activate**
+- Purpose: browse SkySlope support docs (their site blocks automated HTTP requests)
+
+### Decisions Made
+
+- **Account settings tab** — not yet built; email/profile info will live there; both buyers AND agents need it
+- **Buy, Sell, Rent, Property Management, Join CnC pages** — all currently 404; need to be built
+- **Transaction wizard** — needs to be rebuilt to match SkySlope's process after reading their docs via Puppeteer
+- **Dashboard slowness** — caused by Railway DB latency + dev server overhead; will improve in production + Prisma Accelerate (Phase 6)
+- **Ryan's role** — promoted to ADMIN via Prisma Studio; can access `/dashboard` and `/admin`
+
+### Next Session — Start Here
+
+1. Restart Claude Code to activate the Puppeteer MCP server
+2. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+3. **Use Puppeteer to read SkySlope's transaction docs** — browse `https://support.skyslope.com/support/solutions/156000559647`, find "Transaction Files" and "Resources for Listings & Transactions" sections, read all relevant articles
+4. **Rebuild the transaction wizard** to match SkySlope's process exactly — add Parties step, proper commission breakdown, document checklist
+5. **Build account Settings tab** for both buyers (`/account`) and agents (`/dashboard`) — name editing, notification preferences, password change link
+6. **Build shell pages** for Buy, Sell, Rent, Property Management, Join CnC (currently all 404)
+7. **Continue Phase 6** tasks from `docs/superpowers/plans/2026-05-22-phase-6-launch.md`
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`
