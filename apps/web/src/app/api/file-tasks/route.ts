@@ -12,6 +12,10 @@ export async function GET(req: Request) {
   const fileId = searchParams.get("fileId");
   if (!fileType || !fileId) return NextResponse.json({ error: "fileType and fileId required" }, { status: 400 });
 
+  if (fileType !== "listing" && fileType !== "transaction") {
+    return NextResponse.json({ error: "fileType must be 'listing' or 'transaction'" }, { status: 400 });
+  }
+
   const tasks = await prisma.fileTask.findMany({
     where: fileType === "listing" ? { listingFileId: fileId } : { transactionFileId: fileId },
     orderBy: { createdAt: "asc" },
@@ -28,8 +32,11 @@ export async function POST(req: Request) {
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
 
   const { fileType, fileId, title, dueDate, assigneeName } = body;
-  if (!fileType || !fileId || !title?.trim()) {
+  if (!fileId || !title?.trim()) {
     return NextResponse.json({ error: "fileType, fileId, and title are required" }, { status: 400 });
+  }
+  if (fileType !== "listing" && fileType !== "transaction") {
+    return NextResponse.json({ error: "fileType must be 'listing' or 'transaction'" }, { status: 400 });
   }
 
   const task = await prisma.fileTask.create({

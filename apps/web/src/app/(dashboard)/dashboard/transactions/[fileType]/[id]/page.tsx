@@ -149,8 +149,8 @@ export default function FileDetailPage() {
             className={`whitespace-nowrap rounded-lg px-4 py-1.5 text-sm font-medium transition-colors ${tab === t.key ? "bg-white text-[#1B1B1B] shadow-sm" : "text-[#1B1B1B]/50 hover:text-[#1B1B1B]"}`}
           >
             {t.label}
-            {t.key === "tasks" && tasks.length > 0 && (
-              <span className="ml-1.5 rounded-full bg-[#1B1B1B]/10 px-1.5 py-0.5 text-xs">{tasks.filter(tk => !tk.done).length || tasks.length}</span>
+            {t.key === "tasks" && tasks.some((tk) => !tk.done) && (
+              <span className="ml-1.5 rounded-full bg-[#1B1B1B]/10 px-1.5 py-0.5 text-xs">{tasks.filter((tk) => !tk.done).length}</span>
             )}
           </button>
         ))}
@@ -303,8 +303,8 @@ function CommissionTab({ transaction }: { transaction: TransactionFileDetail }) 
   const totalGross = saleCommissionDollar + listingCommissionDollar;
   const netToAgent = totalGross - deductions;
 
-  const fmt = (n: number) => n > 0 ? `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—";
-  const fmtPct = (n: number) => n > 0 ? `${n}%` : "—";
+  const fmt = (n: number) => n !== 0 ? `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—";
+  const fmtPct = (n: number) => n !== 0 ? `${n}%` : "—";
 
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -438,33 +438,40 @@ function TasksTab({
     e.preventDefault();
     if (!form.title.trim()) return;
     setAdding(true);
-    const res = await fetch("/api/file-tasks", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fileType, fileId, ...form }),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      onTasksChanged([...tasks, data.task]);
-      setForm({ title: "", dueDate: "", assigneeName: "" });
-      setShowForm(false);
+    try {
+      const res = await fetch("/api/file-tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileType, fileId, ...form }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        onTasksChanged([...tasks, data.task]);
+        setForm({ title: "", dueDate: "", assigneeName: "" });
+        setShowForm(false);
+      }
+    } finally {
+      setAdding(false);
     }
-    setAdding(false);
   }
 
   async function toggleTask(task: FileTaskRecord) {
+    const previous = tasks;
     const optimistic = tasks.map((t) => t.id === task.id ? { ...t, done: !t.done } : t);
     onTasksChanged(optimistic);
-    await fetch(`/api/file-tasks/${task.id}`, {
+    const res = await fetch(`/api/file-tasks/${task.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ done: !task.done }),
     });
+    if (!res.ok) onTasksChanged(previous);
   }
 
   async function deleteTask(taskId: string) {
+    const previous = tasks;
     onTasksChanged(tasks.filter((t) => t.id !== taskId));
-    await fetch(`/api/file-tasks/${taskId}`, { method: "DELETE" });
+    const res = await fetch(`/api/file-tasks/${taskId}`, { method: "DELETE" });
+    if (!res.ok) onTasksChanged(previous);
   }
 
   const pending = tasks.filter((t) => !t.done);
