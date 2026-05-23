@@ -332,6 +332,7 @@ model ListingFile {
   checklistItems     FileChecklistItem[]
   documents          FileDocument[]
   activities         FileActivity[]
+  tasks              FileTask[]
 }
 
 model TransactionFile {
@@ -375,6 +376,23 @@ model TransactionFile {
   documents          FileDocument[]
   activities         FileActivity[]
   crmActivities      Activity[]
+  tasks              FileTask[]
+}
+
+model FileTask {
+  id                String    @id @default(cuid())
+  fileType          FileType
+  listingFileId     String?
+  transactionFileId String?
+  title             String
+  dueDate           DateTime?
+  assigneeName      String?
+  done              Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  listingFile     ListingFile?     @relation(fields: [listingFileId], references: [id], onDelete: Cascade)
+  transactionFile TransactionFile? @relation(fields: [transactionFileId], references: [id], onDelete: Cascade)
 }
 
 model FileParty {

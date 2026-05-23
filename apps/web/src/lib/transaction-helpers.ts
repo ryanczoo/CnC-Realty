@@ -19,6 +19,7 @@ export const FILE_DETAIL_INCLUDE = {
     include: { actor: { select: { name: true, email: true } } },
     orderBy: { createdAt: "desc" as const },
   },
+  tasks: { orderBy: { createdAt: "asc" as const } },
 } as const;
 
 const AGENT_LISTING_TRANSITIONS: Record<ListingStatus, ListingStatus[]> = {

@@ -56,6 +56,7 @@ export interface ListingFileDetail {
   checklistItems: FileChecklistItemWithDocs[];
   documents: FileDocumentRecord[];
   activities: FileActivityRecord[];
+  tasks: FileTaskRecord[];
 }
 
 export interface TransactionFileDetail {
@@ -68,6 +69,9 @@ export interface TransactionFileDetail {
   state: string;
   zip: string;
   mlsNumber: string | null;
+  propertyType: string | null;
+  yearBuilt: number | null;
+  escrowNumber: string | null;
   transactionSide: TransactionSide;
   status: TransactionFileStatus;
   listPrice: number | null;
@@ -79,6 +83,9 @@ export interface TransactionFileDetail {
   loanApprovalDeadline: string | null;
   closeOfEscrow: string | null;
   commissionGCI: number | null;
+  saleCommissionPct: number | null;
+  listingCommissionPct: number | null;
+  otherDeductions: number | null;
   commissionSplit: number | null;
   commissionNotes: string | null;
   awaitingReview: boolean;
@@ -88,6 +95,16 @@ export interface TransactionFileDetail {
   checklistItems: FileChecklistItemWithDocs[];
   documents: FileDocumentRecord[];
   activities: FileActivityRecord[];
+  tasks: FileTaskRecord[];
+}
+
+export interface FileTaskRecord {
+  id: string;
+  title: string;
+  dueDate: string | null;
+  assigneeName: string | null;
+  done: boolean;
+  createdAt: string;
 }
 
 export interface FileContextProps {
