@@ -1,18 +1,12 @@
 import Link from "next/link";
 import { Metadata } from "next";
 import { JoinFaq } from "@/components/join/JoinFaq";
+import { StatsBar } from "@/components/join/StatsBar";
 
 export const metadata: Metadata = {
   title: "Join CnC Realty | Agent Opportunities",
   description: "100% commission, AI-driven CRM, and real mentorship. Join CnC Realty and build the real estate career you've always wanted.",
 };
-
-const STATS = [
-  { value: "100%", label: "Commission Kept" },
-  { value: "$0", label: "Desk Fees" },
-  { value: "100K+", label: "MLS Listings" },
-  { value: "24 hrs", label: "Transfer Approval" },
-];
 
 const BENEFITS = [
   {
@@ -74,7 +68,8 @@ export default function JoinPage() {
   return (
     <main>
       {/* ── Hero ── */}
-      <section className="relative flex h-screen items-center justify-center overflow-hidden">
+      <section className="relative h-[95vh] overflow-hidden bg-black">
+        {/* Video — full brightness so clouds read clearly through the text */}
         <video
           autoPlay
           muted
@@ -84,51 +79,68 @@ export default function JoinPage() {
           className="absolute inset-0 h-full w-full object-cover object-center"
           src="/videos/join-hero.mp4"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/75" />
 
-        <div className="relative z-10 px-8 text-center">
-          <p className="mb-5 font-sans text-xs font-medium uppercase tracking-[0.4em] text-[#9E8C61]">
-            CnC Realty Group
-          </p>
-          <h1 className="font-sans text-[5.5rem] font-black leading-none tracking-tight text-white lg:text-[10rem]">
-            BE CnC.
-          </h1>
-          <p className="mx-auto mt-7 mb-10 max-w-lg font-sans text-lg font-light text-white/65">
-            100% commission. No desk fees. AI-powered tools. Built for California agents who mean business.
-          </p>
-          <div className="flex flex-wrap justify-center gap-4">
-            <Link
-              href="/join/agent"
-              className="inline-flex items-center gap-2 rounded-full bg-[#9E8C61] px-8 py-3.5 font-sans text-sm font-medium text-white transition-opacity hover:opacity-85"
-            >
-              Start Your Application →
-            </Link>
-            <Link
-              href="/contact"
-              className="inline-flex items-center gap-2 rounded-full border border-white/30 px-8 py-3.5 font-sans text-sm font-medium text-white transition-colors hover:border-white/70"
-            >
-              Talk to Us First
-            </Link>
-          </div>
+        {/*
+          SVG mask: a near-black rectangle covers the whole screen.
+          The text shape is punched out (luminance=0 in the mask),
+          making the overlay transparent there — revealing the video
+          (and moving clouds) through the letter outlines.
+        */}
+        <svg
+          className="absolute inset-0 h-full w-full"
+          viewBox="0 0 1920 1080"
+          preserveAspectRatio="xMidYMid slice"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <defs>
+            <mask id="be-cnc-mask">
+              <rect width="1920" height="1080" fill="white" />
+              <text
+                x="860"
+                y="400"
+                textAnchor="end"
+                dominantBaseline="middle"
+                fontSize="320"
+                fill="black"
+                style={{ fontFamily: "var(--font-sans), ui-sans-serif, system-ui, sans-serif", fontWeight: 300 }}
+              >
+                Be
+              </text>
+              <text
+                x="860"
+                y="680"
+                textAnchor="start"
+                dominantBaseline="middle"
+                fontSize="320"
+                fill="black"
+                style={{ fontFamily: "var(--font-sans), ui-sans-serif, system-ui, sans-serif", fontWeight: 300 }}
+              >
+                CnC
+              </text>
+            </mask>
+          </defs>
+          <rect width="1920" height="1080" fill="black" fillOpacity="0.72" mask="url(#be-cnc-mask)" />
+        </svg>
+
+        <div className="absolute bottom-16 left-0 right-0 flex justify-center gap-4">
+          <Link
+            href="/join/agent"
+            className="inline-flex items-center rounded-full bg-[#9E8C61] px-8 py-3.5 font-sans text-sm font-medium text-white transition-transform hover:scale-105"
+          >
+            Apply
+          </Link>
+          <Link
+            href="/contact"
+            className="inline-flex items-center gap-2 rounded-full border border-white/30 px-8 py-3.5 font-sans text-sm font-medium text-white transition-transform hover:scale-105"
+          >
+            Message
+          </Link>
         </div>
 
-        <div className="absolute bottom-10 left-1/2 flex -translate-x-1/2 flex-col items-center gap-2">
-          <span className="font-sans text-[10px] uppercase tracking-[0.3em] text-white/30">Scroll</span>
-          <div className="h-10 w-px bg-gradient-to-b from-white/30 to-transparent" />
-        </div>
       </section>
 
       {/* ── Stats bar ── */}
-      <section className="bg-[#9E8C61]">
-        <div className="mx-auto flex max-w-5xl flex-wrap justify-around gap-8 px-8 py-10">
-          {STATS.map((stat) => (
-            <div key={stat.label} className="text-center">
-              <p className="font-sans text-3xl font-bold text-white">{stat.value}</p>
-              <p className="mt-1 font-sans text-xs font-light uppercase tracking-widest text-white/70">{stat.label}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      <StatsBar />
 
       {/* ── Benefits ── */}
       <section className="bg-[#111111] px-8 py-28 lg:px-20">

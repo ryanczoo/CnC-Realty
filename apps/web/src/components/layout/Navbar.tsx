@@ -37,6 +37,8 @@ export function Navbar() {
   const { data: session } = useSession();
   const pathname = usePathname();
   const isHomepage = pathname === "/";
+  const hasVideoHero = pathname === "/join";
+  const isTransparent = isHomepage || hasVideoHero;
   const [scrolled, setScrolled] = useState(false);
   const [pastHero, setPastHero] = useState(!isHomepage);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -97,8 +99,8 @@ export function Navbar() {
       <header
         className={cn(
           "fixed top-0 z-50 w-full transition-all duration-300",
-          !isHomepage && "bg-[#0f0f0f]",
-          isHomepage && scrolled && !pastHero && "bg-black/10 backdrop-blur-md border-b border-white/10",
+          !isTransparent && "bg-[#0f0f0f]",
+          isTransparent && scrolled && !pastHero && "bg-black/10 backdrop-blur-md border-b border-white/10",
           isHomepage && pastHero && "bg-[#F2F0EF]/60 backdrop-blur-md border-b border-[#1B1B1B]/10"
         )}
       >
