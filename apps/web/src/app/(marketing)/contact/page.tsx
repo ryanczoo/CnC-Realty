@@ -1,6 +1,8 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { motion } from "motion/react";
+import { useClickOutside } from "@/hooks/useClickOutside";
+import { NAV_PANEL_CLS, NAV_ITEM_CLS, SPRING_HOVER } from "@/lib/motion";
 
 const ROLE_OPTIONS = [
   "Home Buyer",
@@ -17,15 +19,7 @@ export default function ContactPage() {
   const [roleOpen, setRoleOpen] = useState(false);
   const roleRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    function onClickOutside(e: MouseEvent) {
-      if (roleRef.current && !roleRef.current.contains(e.target as Node)) {
-        setRoleOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", onClickOutside);
-    return () => document.removeEventListener("mousedown", onClickOutside);
-  }, []);
+  useClickOutside(roleRef, useCallback(() => setRoleOpen(false), []));
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -81,7 +75,6 @@ export default function ContactPage() {
             {field("email", "Email", "email", true)}
             {field("phone", "Phone (optional)")}
 
-            {/* Custom "I am a" dropdown — styled to match navbar panel */}
             <div className="flex flex-col gap-1.5" ref={roleRef}>
               <label className="font-sans text-sm text-[#1B1B1B]/60">I am a</label>
               <button
@@ -103,15 +96,13 @@ export default function ContactPage() {
 
               {roleOpen && (
                 <div className="relative z-50">
-                  <div className="absolute left-0 top-1 w-52 overflow-hidden rounded-xl border border-white/10 bg-zinc-900/95 shadow-2xl backdrop-blur-md">
+                  <div className={`absolute left-0 top-1 w-52 ${NAV_PANEL_CLS}`}>
                     {ROLE_OPTIONS.map((opt) => (
                       <button
                         key={opt}
                         type="button"
                         onClick={() => { setForm((f) => ({ ...f, role: opt })); setRoleOpen(false); }}
-                        className={`block w-full px-6 py-3 text-center text-sm font-medium transition-colors hover:bg-white/5 hover:text-[#c9a84c] ${
-                          form.role === opt ? "text-[#c9a84c]" : "text-white/80"
-                        }`}
+                        className={`${NAV_ITEM_CLS} ${form.role === opt ? "text-[#c9a84c]" : "text-white/80"}`}
                       >
                         {opt}
                       </button>
@@ -138,7 +129,7 @@ export default function ContactPage() {
               type="submit"
               disabled={status === "loading"}
               whileHover={{ scale: 1.15 }}
-              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              transition={SPRING_HOVER}
               className="self-start rounded-full bg-[#1B1B1B] px-8 py-3.5 font-sans text-sm font-medium text-white disabled:opacity-40"
             >
               {status === "loading" ? "Sending…" : "Send Message"}

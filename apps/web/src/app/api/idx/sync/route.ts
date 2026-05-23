@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { fetchProperties } from "@/lib/idx/client";
 
+// maxDuration applies to GET (Vercel Cron, awaits full sync).
+// POST returns 202 immediately — the background runSync() is not bound by this limit.
 export const maxDuration = 300;
 
 async function runSync(type: string) {

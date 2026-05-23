@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { NAV_PANEL_CLS, NAV_ITEM_CLS } from "@/lib/motion";
 import { AnimatePresence, motion } from "motion/react";
 import { X } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
@@ -165,7 +166,7 @@ export function Navbar() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -6, scale: 0.98 }}
               transition={{ duration: 0.18, ease: "easeOut" }}
-              className="fixed right-4 top-[4.5rem] z-50 w-56 overflow-hidden rounded-xl border border-white/10 bg-zinc-900/95 shadow-2xl backdrop-blur-md sm:right-6 lg:right-8"
+              className={`fixed right-4 top-[4.5rem] z-50 w-56 sm:right-6 lg:right-8 ${NAV_PANEL_CLS}`}
             >
               <nav className="py-3">
                 {NAV_LINKS.map((link) => (
@@ -173,7 +174,7 @@ export function Navbar() {
                     key={link.href}
                     href={link.href}
                     onClick={() => setMenuOpen(false)}
-                    className="block px-6 py-3 text-center text-sm font-medium text-white/80 transition-colors hover:bg-white/5 hover:text-[#c9a84c]"
+                    className={`${NAV_ITEM_CLS} text-white/80`}
                   >
                     {link.label}
                   </Link>
