@@ -2041,6 +2041,81 @@ Invoke-RestMethod -Uri "http://localhost:3000/api/idx/sync?type=full" -Method PO
 
 ---
 
+## Session Notes — 2026-05-24
+
+### What Was Completed This Session
+
+All changes committed to `claude/real-estate-website-9bdWi` (7 commits: `4236838`, `d848a2a`, `7a97af9`, `199903b`, `423f79c`, `e92874c`, `677c4ad`). **13 commits are local only — not yet pushed to GitHub.**
+
+### CRMLS Disclaimer — Logo + Timestamp (`4236838`, `d848a2a`)
+
+- CRMLS logo image added: `apps/web/public/images/crmls-logo.png`
+- `CrmlsDisclaimer.tsx` updated: logo displayed inline left of disclaimer text, "Last updated: [date]" timestamp shown
+- Redundant date sentence removed from disclaimer body text (was duplicating the timestamp)
+- File: `apps/web/src/components/properties/CrmlsDisclaimer.tsx`
+
+### Code Review Fixes (`7a97af9`)
+
+Auth, validation, and UX issues found and fixed across the codebase.
+
+### Navbar Dropdown — Solid Black Restored (`199903b`)
+
+Nav dropdown was showing as transparent — restored to solid black background.
+File: `apps/web/src/components/layout/Navbar.tsx`
+
+### /join Page — Full Redesign (`423f79c`, `e92874c`, `677c4ad`)
+
+The `/join` page was completely rebuilt. It was previously at `(agents)/join/page.tsx` — moved to `(marketing)/join/page.tsx`.
+
+**New files:**
+- `apps/web/src/components/join/StatsBar.tsx` — gold stats bar with scroll-triggered scramble animation
+- `apps/web/src/components/join/JoinFaq.tsx` — accordion FAQ component
+- `apps/web/public/videos/join-hero.mp4` — landscape clip for hero background
+
+**Page structure (top to bottom):**
+1. **Hero** — 95vh full-bleed video background; SVG mask punches "Be / CnC" letterforms out of a near-black overlay so moving clouds show through the text outlines; two buttons at bottom: "Apply" (gold pill → `/join/agent`) + "Message" (ghost pill → `/contact`)
+2. **Stats bar** — gold `#9E8C61` background; 4 stats: 100% Commission Kept, $0 Monthly Fees, 24/7 Broker Support, 30+ Resources
+3. **Benefits grid** — dark `#111111` bg; 6 numbered benefit cards (2-col/3-col responsive grid with gap-px lines); hover brightens cell + turns title gold
+4. **FAQ** — dark `#0f0f0f` bg; 5 Q&As in expandable accordion (`JoinFaq` component)
+5. **CTA** — gold `#9E8C61` bg; "Ready to make the move?" headline + "Start Your Application →" white pill button → `/join/agent`
+
+**Stats bar animation (all stats scroll-triggered simultaneously, lock in one at a time):**
+- All 4 stats start scrambling together the moment the bar enters view
+- Lock-in timing (via staggered `duration` prop): `duration = 700 + i * 600`
+  - 100% Commission → locks at 700ms
+  - $0 Monthly Fees → locks at 1300ms
+  - 24/7 Broker Support → locks at 1900ms
+  - 30+ Resources → locks at 2500ms
+- Scramble mechanic: `setInterval` at 40ms, last 300ms eases into final value via quadratic `progress²`
+- File: `apps/web/src/components/join/StatsBar.tsx`
+
+**Font note (action needed next session):**
+- Stats bar number values (`100%`, `$0`, `24/7`, `30+`) currently use `font-sans` (GoogleSansFlex) — same font as the rest of the site
+- Ryan confirmed this and said **"we are going to have to change that in the next session"** — the numbers should use a different font (serif or display) to distinguish them visually
+- Line: `StatsBar.tsx:67` — `className="font-sans text-3xl font-bold tabular-nums text-white"`
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. **FIRST: Change the stats bar number font** — open `apps/web/src/components/join/StatsBar.tsx` line 67, change `font-sans` to a different font (e.g. `font-display` for Cormorant Garamond serif — test it, or try another). Ryan will decide on the look.
+3. **Trigger IDX resync** (DB is empty after Railway reset from the 2026-05-23 session):
+   ```powershell
+   $token = "7f3a9c2e8b1d4f6a0e5c7b3d9f2a8e1c4b6d0f3a9c2e8b1d4f6a0e5c7b3d9f2"
+   Invoke-RestMethod -Uri "http://localhost:3000/api/idx/sync?type=full" -Method POST -Headers @{ Authorization = "Bearer $token" } -TimeoutSec 300
+   ```
+4. **Create checklist templates** at `/admin/settings/checklists`:
+   - CA Purchase — Buyer Side: RPA, Agency Disclosure, AVID, Proof of Funds, Loan Pre-Approval, SBSA, TDS, NHD
+   - CA Purchase — Seller Side: Listing Agreement, TDS, SBSA, NHD, Agency Disclosure
+   - CA Lease — Tenant Side: Lease Agreement, Agency Disclosure, Move-in Inspection
+5. **Phase 6 tasks** (`docs/superpowers/plans/2026-05-22-phase-6-launch.md`):
+   - ISR on property pages (`revalidate: 300`), Redis caching, skeleton loaders
+   - JSON-LD structured data (RealEstateListing, Person schemas)
+   - Upstash rate limiting on public forms
+   - Sentry error monitoring, PostHog/GA4 analytics
+   - Deploy to Vercel + Railway production
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`
