@@ -2116,6 +2116,39 @@ The `/join` page was completely rebuilt. It was previously at `(agents)/join/pag
 
 ---
 
+## Session Notes — 2026-05-25
+
+### What Was Completed This Session
+
+All changes committed as `a38a0e8`.
+
+1. **IDX resync** — triggered full resync against new Railway DB. DB was empty after 2026-05-23 reset; sync ran during the session and populated 50k+ properties (still running at session end — will continue in background as long as dev server stays up).
+
+2. **StatsBar font** — stat number values (`100%`, `$0`, `24/7`, `30+`) changed from `font-sans` (Google Sans Flex) to `font-chopin` (Inter) for visual distinction. File: `apps/web/src/components/join/StatsBar.tsx:67`
+
+3. **Navbar scroll transparency — /join fix** — `pastHero` was always `true` on the join page because the scroll handler only tracked it for the homepage. Fixed by extending the logic to all `isTransparent` pages. Past-hero on /join now uses `backdrop-blur-md border-b border-white/10` (no color tint — pure frosted glass). File: `apps/web/src/components/layout/Navbar.tsx`
+
+4. **FounderQuote section** — new component between StatsBar and Benefits on /join page. Off-white `#F2F0EF` background. Quote split word-by-word; each word starts as warm grey (`#C4BFB8`) and transitions to near-black (`#1B1B1B`) as it crosses the 58% viewport threshold on scroll. Attribution row: Ryan's headshot (`public/images/ryan-chong.png` — transparent bg PNG) + "Founder / Ryan Chong" label. Files: `apps/web/src/components/join/FounderQuote.tsx`, `apps/web/src/app/(marketing)/join/page.tsx`
+
+5. **Ryan's headshot** — `RV Smooth 3.png` (already had transparent background) copied to `apps/web/public/images/ryan-chong.png`.
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. **Check IDX resync status** — query `http://localhost:3000/api/properties?limit=1` and check `.total`. Target is ~80k. If not done, re-trigger with the PowerShell command in the 2026-05-23 session notes.
+3. **Create checklist templates** at `/admin/settings/checklists`:
+   - CA Purchase — Buyer Side: RPA, Agency Disclosure, AVID, Proof of Funds, Loan Pre-Approval, SBSA, TDS, NHD
+   - CA Purchase — Seller Side: Listing Agreement, TDS, SBSA, NHD, Agency Disclosure
+   - CA Lease — Tenant Side: Lease Agreement, Agency Disclosure, Move-in Inspection
+4. **Phase 6 tasks** (`docs/superpowers/plans/2026-05-22-phase-6-launch.md`):
+   - ISR on property pages (`revalidate: 300`), Redis caching, skeleton loaders
+   - JSON-LD structured data (RealEstateListing, Person schemas)
+   - Upstash rate limiting on public forms
+   - Sentry error monitoring, PostHog/GA4 analytics
+   - Deploy to Vercel + Railway production
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`
