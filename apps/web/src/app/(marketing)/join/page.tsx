@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Metadata } from "next";
 import { JoinFaq } from "@/components/join/JoinFaq";
 import { StatsBar } from "@/components/join/StatsBar";
+import { FounderQuote } from "@/components/join/FounderQuote";
 
 export const metadata: Metadata = {
   title: "Join CnC Realty | Agent Opportunities",
@@ -141,6 +142,9 @@ export default function JoinPage() {
 
       {/* ── Stats bar ── */}
       <StatsBar />
+
+      {/* ── Founder quote ── */}
+      <FounderQuote />
 
       {/* ── Benefits ── */}
       <section className="bg-[#111111] px-8 py-28 lg:px-20">

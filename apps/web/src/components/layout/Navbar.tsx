@@ -40,15 +40,15 @@ export function Navbar() {
   const hasVideoHero = pathname === "/join";
   const isTransparent = isHomepage || hasVideoHero;
   const [scrolled, setScrolled] = useState(false);
-  const [pastHero, setPastHero] = useState(!isHomepage);
+  const [pastHero, setPastHero] = useState(!isTransparent);
   const [menuOpen, setMenuOpen] = useState(false);
   const heroHeightRef = useRef(0);
   const rafRef = useRef(0);
 
   useEffect(() => {
-    setPastHero(!isHomepage);
+    setPastHero(!isTransparent);
     setScrolled(false);
-  }, [isHomepage]);
+  }, [isTransparent]);
 
   useEffect(() => {
     heroHeightRef.current = window.innerHeight;
@@ -60,7 +60,7 @@ export function Navbar() {
       rafRef.current = requestAnimationFrame(() => {
         const y = window.scrollY;
         setScrolled((prev) => { const next = y > 30; return prev === next ? prev : next; });
-        if (isHomepage) {
+        if (isTransparent) {
           const next = y > heroHeightRef.current * 0.85;
           setPastHero((prev) => prev === next ? prev : next);
         }
@@ -73,7 +73,7 @@ export function Navbar() {
       window.removeEventListener("resize", onResize);
       cancelAnimationFrame(rafRef.current);
     };
-  }, [isHomepage]);
+  }, [isTransparent]);
 
   // Dark logo + dark pills only on homepage after scrolling past the hero section.
   // All other pages use white elements on a solid dark background.
@@ -101,7 +101,8 @@ export function Navbar() {
           "fixed top-0 z-50 w-full transition-all duration-300",
           !isTransparent && "bg-[#0f0f0f]",
           isTransparent && scrolled && !pastHero && "bg-black/10 backdrop-blur-md border-b border-white/10",
-          isHomepage && pastHero && "bg-[#F2F0EF]/60 backdrop-blur-md border-b border-[#1B1B1B]/10"
+          isHomepage && pastHero && "bg-[#F2F0EF]/60 backdrop-blur-md border-b border-[#1B1B1B]/10",
+          hasVideoHero && pastHero && "backdrop-blur-md border-b border-white/10"
         )}
       >
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">

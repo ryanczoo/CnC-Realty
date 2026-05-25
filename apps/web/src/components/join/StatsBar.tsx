@@ -64,7 +64,7 @@ function AnimatedStat({
 
   return (
     <div className="text-center">
-      <p className="font-sans text-3xl font-bold tabular-nums text-white">{displayed}</p>
+      <p className="font-chopin text-3xl font-bold tabular-nums text-white">{displayed}</p>
       <p className="mt-1 font-sans text-xs font-light uppercase tracking-widest text-white/70">{label}</p>
     </div>
   );
