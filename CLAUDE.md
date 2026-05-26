@@ -2149,6 +2149,77 @@ All changes committed as `a38a0e8`.
 
 ---
 
+## Session Notes — 2026-05-26
+
+### What Was Completed This Session
+
+All changes committed as `0359d9b`.
+
+### IDX Resync — Confirmed Complete
+- Queried `http://localhost:3000/api/properties?limit=1` → **82,143 total properties** ✅
+- Sync that was triggered at the end of the 2026-05-25 session finished overnight in the background.
+
+### FounderQuote Section — Full Polish (`apps/web/src/components/join/FounderQuote.tsx`)
+
+**Scroll-driven word reveal:**
+- Words animate grey (`#C4BFB8`) → near-black (`#1B1B1B`) as user scrolls past the section
+- Progress formula: `(vh - rect.top) / (vh * 1.0)` — starts when section enters viewport, completes within one viewport height of scroll
+- Speed multiplier is `1.0` (tuned through session: 0.5 too fast, 1.5 too slow, 1.25 slightly slow, 1.1 close, settled on 1.0)
+- No sticky/pinning — section is natural height, scroll effect is purely visual
+
+**Gold "need" words:**
+- All 3 instances of the word `"need"` in the quote reveal as gold `#9E8C61` instead of near-black
+- Logic: `word === "need" ? "#9E8C61" : "#1B1B1B"` applied per-word when lit
+
+**Layout — float-based (like eXp Realty):**
+- Photo (`h-32`, `float-left`, `mr-10`) sits left of quote text on first 2–3 lines, text wraps underneath
+- "Founder" label + "Ryan Chong" name stacked below the photo
+- Photo src: `/images/ryan-chong.png` (transparent background PNG)
+- No circular crop — natural cutout
+
+**Sizing:**
+- Section: `bg-cnc-bg px-8 py-16 lg:px-20` (natural height, not full-screen)
+- Background: `bg-cnc-bg` (CSS variable `--cnc-bg: #F2F0EF`)
+
+### Sitewide Off-White Background Consistency
+
+Replaced `bg-white` → `bg-cnc-bg` (`#F2F0EF`) on all public-facing section and content-card backgrounds:
+
+| File | Element |
+|------|---------|
+| `components/agents/AgentProfileHero.tsx` | Agent profile wrapper |
+| `app/(agents)/agents/[slug]/page.tsx` | Agent listings section |
+| `components/home/FeaturedListings.tsx` | Property listing cards |
+| `app/(marketing)/contact/page.tsx` | Success message card |
+| `app/(marketing)/rent/page.tsx` | "Why rent with CnC" feature cards |
+| `components/properties/MortgageCalculator.tsx` | Calculator card |
+| `components/properties/ContactForm.tsx` | Confirmation card |
+| `app/(listings)/properties/[mlsNumber]/page.tsx` | Stats/details sections |
+| `components/properties/PropertyDrawer.tsx` | Stats/details in drawer |
+
+**Left white intentionally:** Testimonial cards, dashboard UI, inputs, buttons, auth forms, nav dropdowns.
+
+### Design Decisions Made
+- Testimonial cards stay white (user reverted after initial change)
+- FounderQuote section must NOT take up the full viewport — natural height only
+- No sticky scroll for FounderQuote — scroll effect only, no pinning
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. **Create checklist templates** at `/admin/settings/checklists`:
+   - CA Purchase — Buyer Side: RPA, Agency Disclosure, AVID, Proof of Funds, Loan Pre-Approval, SBSA, TDS, NHD
+   - CA Purchase — Seller Side: Listing Agreement, TDS, SBSA, NHD, Agency Disclosure
+   - CA Lease — Tenant Side: Lease Agreement, Agency Disclosure, Move-in Inspection
+3. **Phase 6 tasks** (`docs/superpowers/plans/2026-05-22-phase-6-launch.md`):
+   - ISR on property pages (`revalidate: 300`), Redis caching, skeleton loaders
+   - JSON-LD structured data (RealEstateListing, Person schemas)
+   - Upstash rate limiting on public forms
+   - Sentry error monitoring, PostHog/GA4 analytics
+   - Deploy to Vercel + Railway production
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`
