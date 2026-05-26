@@ -62,7 +62,7 @@ export default function ContactPage() {
         </p>
 
         {status === "success" ? (
-          <div className="rounded-2xl bg-white p-8 text-center">
+          <div className="rounded-2xl bg-cnc-bg p-8 text-center">
             <p className="font-sans text-lg font-light text-[#1B1B1B]">Message received.</p>
             <p className="mt-2 font-sans text-sm text-[#1B1B1B]/50">We&apos;ll be in touch soon.</p>
           </div>

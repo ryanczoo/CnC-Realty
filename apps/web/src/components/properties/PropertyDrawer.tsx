@@ -210,7 +210,7 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
 
                   {/* Stats grid */}
                   {statsFields.length > 0 && (
-                    <div className="mt-4 overflow-hidden rounded-xl bg-white">
+                    <div className="mt-4 overflow-hidden rounded-xl bg-cnc-bg">
                       <div className="grid grid-cols-3">
                         {statsFields.map(({ icon: Icon, label, value }) => (
                           <div key={label} className="flex items-center gap-2.5 px-4 py-3.5">
@@ -246,7 +246,7 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
                   />
 
                   {/* MLS # and Listed date */}
-                  <div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-2.5 rounded-xl bg-white p-4 text-sm">
+                  <div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-2.5 rounded-xl bg-cnc-bg p-4 text-sm">
                     <div className="flex justify-between">
                       <span className="text-[#1B1B1B]/70">MLS #</span>
                       <span className="text-[#1B1B1B]">{property.mlsNumber}</span>
@@ -269,7 +269,7 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
                       Property Details
                     </h2>
                     {detailSections.map((section) => (
-                      <div key={section.title} className="rounded-xl bg-white p-4">
+                      <div key={section.title} className="rounded-xl bg-cnc-bg p-4">
                         <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-[#1B1B1B]/60">
                           {section.title}
                         </h3>

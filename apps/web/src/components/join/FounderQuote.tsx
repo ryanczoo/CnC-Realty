@@ -7,62 +7,54 @@ const WORDS =
     .split(" ");
 
 export function FounderQuote() {
-  const wordRefs = useRef<(HTMLSpanElement | null)[]>([]);
-  const [lit, setLit] = useState<boolean[]>(() => new Array(WORDS.length).fill(false));
+  const sectionRef = useRef<HTMLElement>(null);
+  const [litCount, setLitCount] = useState(0);
 
   useEffect(() => {
-    let threshold = window.innerHeight * 0.58;
-    const onResize = () => { threshold = window.innerHeight * 0.58; };
-
     const onScroll = () => {
-      setLit(
-        wordRefs.current.map((el) =>
-          el ? el.getBoundingClientRect().top < threshold : false
-        )
-      );
+      const section = sectionRef.current;
+      if (!section) return;
+      const rect = section.getBoundingClientRect();
+      const vh = window.innerHeight;
+      // 0 when section enters viewport bottom, 1 when section exits viewport top
+      const progress = Math.max(0, Math.min(1, (vh - rect.top) / (vh * 1.0)));
+      setLitCount(Math.round(progress * WORDS.length));
     };
-
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onResize);
     onScroll();
-
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onResize);
-    };
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   return (
-    <section className="bg-[#F2F0EF] px-8 py-28 lg:px-20">
-      <div className="mx-auto max-w-5xl">
+    <section ref={sectionRef} className="bg-cnc-bg px-8 py-16 lg:px-20">
+      <div className="overflow-hidden">
 
-        {/* Attribution */}
-        <div className="mb-12 flex items-center gap-4">
-          <div className="h-14 w-14 shrink-0 overflow-hidden rounded-full bg-[#1B1B1B]/10">
-            <img
-              src="/images/ryan-chong.jpg"
-              alt="Ryan Chong"
-              className="h-full w-full object-cover"
-              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-            />
-          </div>
-          <div>
-            <p className="font-sans text-[10px] font-medium uppercase tracking-[0.2em] text-[#9E8C61]">Founder</p>
-            <p className="font-sans text-sm font-medium text-[#1B1B1B]">Ryan Chong</p>
-          </div>
+        {/* Floated left: photo then labels below */}
+        <div className="float-left mr-10 mb-4">
+          <img
+            src="/images/ryan-chong.png"
+            alt="Ryan Chong"
+            className="h-32 w-auto object-contain object-top"
+            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+          />
+          <p className="mt-2 font-sans text-[10px] font-medium uppercase tracking-[0.2em] text-[#9E8C61]">Founder</p>
+          <p className="font-sans text-sm font-medium text-[#1B1B1B]">Ryan Chong</p>
         </div>
 
-        {/* Quote */}
-        <p className="font-sans text-[2rem] font-light leading-[1.25] sm:text-[2.5rem] lg:text-[3.25rem]">
+        {/* Quote flows right of photo then wraps under */}
+        <p className="break-words font-sans text-[2rem] font-light leading-[1.25] sm:text-[2.5rem] lg:text-[3.25rem]">
           {WORDS.map((word, i) => (
             <span
               key={i}
-              ref={(el) => { wordRefs.current[i] = el; }}
               className="transition-colors duration-300"
-              style={{ color: lit[i] ? "#1B1B1B" : "#C4BFB8" }}
+              style={{
+                color: i < litCount
+                  ? (word === "need" ? "#9E8C61" : "#1B1B1B")
+                  : "#C4BFB8",
+              }}
             >
               {word}
-              {i < WORDS.length - 1 ? " " : ""}
+              {i < WORDS.length - 1 ? " " : ""}
             </span>
           ))}
         </p>

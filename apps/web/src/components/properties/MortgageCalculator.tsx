@@ -22,7 +22,7 @@ export function MortgageCalculator({ listPrice }: Props) {
         (Math.pow(1 + monthlyRate, n) - 1);
 
   return (
-    <div className="rounded-2xl bg-white p-5">
+    <div className="rounded-2xl bg-cnc-bg p-5">
       <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-[#1B1B1B]">
         Mortgage Estimate
       </h3>

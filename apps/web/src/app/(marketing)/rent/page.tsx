@@ -55,7 +55,7 @@ export default function RentPage() {
           <h2 className="mb-16 font-sans text-[2rem] font-light text-[#1B1B1B]">Why rent with CnC</h2>
           <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
             {PERKS.map((item) => (
-              <div key={item.title} className="rounded-xl border border-[#1B1B1B]/8 bg-white p-8">
+              <div key={item.title} className="rounded-xl border border-[#1B1B1B]/8 bg-cnc-bg p-8">
                 <h3 className="mb-3 font-sans text-base font-semibold text-[#1B1B1B]">{item.title}</h3>
                 <p className="font-sans text-sm font-light leading-relaxed text-[#1B1B1B]/60">{item.body}</p>
               </div>

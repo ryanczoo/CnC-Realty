@@ -29,7 +29,7 @@ export function AgentProfileHero(props: AgentProfileHeroProps) {
       : `$${volumeClosed.toLocaleString()}`;
 
   return (
-    <div className="bg-white">
+    <div className="bg-cnc-bg">
       <div className="mx-auto max-w-5xl px-6 py-16">
         <div className="flex flex-col items-center gap-8 md:flex-row md:items-start">
           {/* Headshot */}

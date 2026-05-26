@@ -43,7 +43,7 @@ export default async function AgentProfilePage({ params }: Props) {
         volumeClosed={agent.volumeClosed}
       />
 
-      <section className="bg-white py-16">
+      <section className="bg-cnc-bg py-16">
         <div className="mx-auto max-w-xl px-6">
           <h2 className="mb-2 font-sans text-2xl font-light text-[#1B1B1B]">Get in Touch</h2>
           <p className="mb-8 font-sans text-sm text-[#1B1B1B]/60">

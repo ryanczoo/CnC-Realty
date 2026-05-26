@@ -89,7 +89,7 @@ export function FeaturedListings({ listings: propListings }: Props) {
               <Link
                 key={`${i}-${listing.address}`}
                 href={href}
-                className="group w-72 flex-shrink-0 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm transition-all duration-300 hover:border-[#c9a84c]/60 hover:shadow-md"
+                className="group w-72 flex-shrink-0 overflow-hidden rounded-xl border border-zinc-200 bg-cnc-bg shadow-sm transition-all duration-300 hover:border-[#c9a84c]/60 hover:shadow-md"
                 style={{ transform: `translateY(${cardOffset(i, source.length)}px)` }}
               >
                 <div className="relative h-48 overflow-hidden">
