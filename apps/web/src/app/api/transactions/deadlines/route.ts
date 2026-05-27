@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import { TransactionFileStatus } from "@prisma/client";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -9,12 +10,17 @@ export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const role = (session.user as { role?: string }).role;
+  if (role !== "AGENT" && role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const now = new Date();
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() + DEADLINE_WINDOW_DAYS);
 
   const where = {
-    status: { not: "CLOSED" as const },
+    status: { not: TransactionFileStatus.CLOSED },
     OR: [
       { closeOfEscrow: { gte: now, lte: cutoff } },
       { inspectionDeadline: { gte: now, lte: cutoff } },
@@ -36,8 +42,7 @@ export async function GET() {
       loanApprovalDeadline: true,
       agent: { select: { user: { select: { name: true, email: true } } } },
     },
-    orderBy: { closeOfEscrow: "asc" },
-    take: 50,
+    take: 200,
   });
 
   const deadlines = files.flatMap((t) =>
@@ -58,6 +63,8 @@ export async function GET() {
         daysOut: Math.ceil((d.date!.getTime() - Date.now()) / 86_400_000),
       }))
   );
+
+  deadlines.sort((a, b) => a.daysOut - b.daysOut);
 
   return NextResponse.json({ deadlines });
 }

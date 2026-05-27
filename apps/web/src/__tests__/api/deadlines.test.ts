@@ -3,6 +3,18 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 vi.mock('@/lib/prisma', () => ({ prisma: { transactionFile: { findMany: vi.fn() } } }));
 vi.mock('next-auth', () => ({ getServerSession: vi.fn() }));
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
+vi.mock('@prisma/client', () => ({
+  TransactionFileStatus: {
+    INCOMPLETE: 'INCOMPLETE',
+    PRE_CONTRACT: 'PRE_CONTRACT',
+    PENDING: 'PENDING',
+    EXPIRED: 'EXPIRED',
+    CLOSED: 'CLOSED',
+    ARCHIVED: 'ARCHIVED',
+    CANCELED_PENDING: 'CANCELED_PENDING',
+    CANCELED_APPROVED: 'CANCELED_APPROVED',
+  },
+}));
 
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
@@ -17,6 +29,12 @@ describe('GET /api/transactions/deadlines', () => {
     vi.mocked(getServerSession).mockResolvedValue(null);
     const res = await GET(new Request('http://localhost/api/transactions/deadlines'));
     expect(res.status).toBe(401);
+  });
+
+  it('returns 403 for BUYER role', async () => {
+    vi.mocked(getServerSession).mockResolvedValue(mockSession('BUYER', 'buyer-1') as any);
+    const res = await GET(new Request('http://localhost/api/transactions/deadlines'));
+    expect(res.status).toBe(403);
   });
 
   it('returns deadlines scoped to agent userId', async () => {
@@ -37,6 +55,7 @@ describe('GET /api/transactions/deadlines', () => {
     const body = await res.json();
     expect(res.status).toBe(200);
     expect(body.deadlines).toHaveLength(1);
+    expect(body.deadlines[0]).toMatchObject({ transactionId: 't1', label: 'Close of Escrow', daysOut: expect.any(Number) });
     expect(prisma.transactionFile.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: expect.objectContaining({ agentId: 'user-1' }) })
     );
@@ -45,7 +64,8 @@ describe('GET /api/transactions/deadlines', () => {
   it('returns deadlines for ALL agents when ADMIN', async () => {
     vi.mocked(getServerSession).mockResolvedValue(mockSession('ADMIN', 'admin-1') as any);
     vi.mocked(prisma.transactionFile.findMany).mockResolvedValue([] as any);
-    await GET(new Request('http://localhost/api/transactions/deadlines'));
+    const res = await GET(new Request('http://localhost/api/transactions/deadlines'));
+    expect(res.status).toBe(200);
     expect(prisma.transactionFile.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: expect.not.objectContaining({ agentId: expect.anything() }) })
     );
