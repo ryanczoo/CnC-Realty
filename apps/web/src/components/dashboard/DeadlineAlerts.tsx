@@ -15,9 +15,14 @@ export function DeadlineAlerts() {
   const [deadlines, setDeadlines] = useState<Deadline[]>([]);
 
   useEffect(() => {
-    fetch("/api/transactions/deadlines")
+    const controller = new AbortController();
+    fetch("/api/transactions/deadlines", { signal: controller.signal })
       .then((r) => r.json())
-      .then((data) => setDeadlines(data.deadlines ?? []));
+      .then((data) => setDeadlines(data.deadlines ?? []))
+      .catch((e) => {
+        if (e.name !== "AbortError") console.error("Failed to load deadline alerts:", e);
+      });
+    return () => controller.abort();
   }, []);
 
   if (deadlines.length === 0) return null;
@@ -27,9 +32,9 @@ export function DeadlineAlerts() {
 
   return (
     <div className="mb-6 space-y-2">
-      {urgent.map((d, i) => (
+      {urgent.map((d) => (
         <Link
-          key={i}
+          key={d.transactionId}
           href={`/dashboard/transactions/${d.transactionId}`}
           className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 transition-opacity hover:opacity-80"
         >
@@ -41,9 +46,9 @@ export function DeadlineAlerts() {
           <span className="ml-4 shrink-0 text-xs text-red-500">View →</span>
         </Link>
       ))}
-      {upcoming.map((d, i) => (
+      {upcoming.map((d) => (
         <Link
-          key={i}
+          key={d.transactionId}
           href={`/dashboard/transactions/${d.transactionId}`}
           className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 transition-opacity hover:opacity-80"
         >
