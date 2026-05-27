@@ -2220,6 +2220,106 @@ Replaced `bg-white` → `bg-cnc-bg` (`#F2F0EF`) on all public-facing section and
 
 ---
 
+## Session Notes — 2026-05-27
+
+### What Was Completed This Session
+
+All changes committed as `23e69c9` on `claude/real-estate-website-9bdWi`.
+
+### Bug Fixes
+
+1. **ChunkLoadError for PropertyMapInner.tsx**
+   - Corrupted `.next` webpack cache caused `Cannot find module './PropertyMapInner'` at runtime
+   - Fix: deleted `.next` directory and restarted dev server
+
+2. **ContactForm + MortgageCalculator — reverted to `bg-white` cards**
+   - Both had been changed to `bg-cnc-bg` (`#F2F0EF`) for consistency, but this made inputs invisible (same color as card background)
+   - Reverted: card wrapper → `bg-white`, inputs stay `bg-[#F2F0EF]` for contrast
+   - Files: `components/properties/ContactForm.tsx`, `components/properties/MortgageCalculator.tsx`
+
+3. **Property Details all showing N/A**
+   - Root cause: expanded RESO fields (architecture, amenities, HOA, etc.) were fetched by the IDX client and mapped but never saved to DB — no schema column existed
+   - Fix: added `details Json?` column to Property model (migration `20260526233629_add_property_details_json`)
+   - Updated `mapResoToProperty` in `field-map.ts` to populate a `details` JSON blob with 33 RESO fields
+   - Updated `PropertyDrawer.tsx` and property detail page to pass `(property.details as Record<string, unknown>) ?? {}` to `buildDetailSections` (was passing empty `{}`)
+   - Added `details: Record<string, unknown> | null` to `PropertyDetail` interface in `PropertyDrawer.tsx`
+   - Triggered full IDX resync to populate details for all 82,143 properties — running in background, will complete overnight
+
+### /join Page — WhyCnCStacked Section (NEW)
+
+New file: `apps/web/src/components/join/WhyCnCStacked.tsx`
+
+**3 sticky stacking rows:**
+1. **Dare to Dream** — cloud-based brokerage / freedom to work anywhere. Photo right (`unsplash` house exterior). Text bg: `#1B1B1B` (dark). Photo bg: `#F2F0EF`.
+2. **Tools for Success** — fully-custom CRM with lead tracking + Kanban board FREE. CRM screenshot left (`/images/join-crm.png`). Text bg: `#FFFFFF`. Section bg: `#ECEAE7`.
+3. **Beyond the Brand** — community + mentorship. Team high-five photo right (`/images/join-community.jpg`). Text bg: `#1B1B1B`. Section bg: `#1B1B1B`.
+
+**Key decisions:**
+- All 3 rows same height: `height: "52vh"` — user explicitly rejected progressive sizing (`calc(52vh - i*88px)` made rows 2 and 3 progressively shorter)
+- `<G>` gold span component for inline highlights — `body` typed as `ReactNode` (not `string`)
+- Heading "For Agents, By Agents" right-aligned (`text-right`), "Agents" in gold, no "Why CnC" label
+- Grey `h-px` divider between FounderQuote and WhyCnCStacked
+- Sticky stacking: each row has `position: sticky`, `top: 80 + i * 88px`, `paddingBottom: 100px` on container
+
+### /join Page — HowToJoin Section (NEW)
+
+New file: `apps/web/src/components/join/HowToJoin.tsx`
+
+**Layout modeled after FIND Real Estate (`findrealestate.com/join`):**
+- Left column (45% width): sticky heading + "Apply Now →" button
+- Right column: step list (numbered 01–04) + photo beside steps
+- `gap-24` between columns, `bg-cnc-bg` background
+
+**4 steps:** Apply Online → Schedule a Call → Sign Your Contract → Start Earning
+
+**Heading:** "How to" (2.5rem, font-light, black) / "Join **CnC**" (3.5rem, font-light, black + gold "CnC")
+- Title format is "How to" / "Join CnC" on two lines — do NOT change this split
+- "CnC" is gold (`text-[#9E8C61]`) and font-light (unbold)
+- "to" and "Join" are both plain black
+
+**Button:** "Apply Now →", black pill (`bg-[#1B1B1B]`, `rounded-full`), spring scale hover (`whileHover: { scale: 1.1 }`)
+
+**Photo:** unsplash professional woman photo, `h-[380px] w-full object-cover`, sharp corners (no `rounded-*`)
+
+### StatsBar Updates
+
+- "Commission Kept" → "Commission" (label text shortened)
+- "30+" → "20+" for Resources stat
+- File: `apps/web/src/components/join/StatsBar.tsx`
+
+### New Images Added
+
+- `apps/web/public/images/join-community.jpg` — team high-five photo (used in WhyCnCStacked row 3)
+- `apps/web/public/images/join-crm.png` — CRM dashboard screenshot (used in WhyCnCStacked row 2)
+- Note: unused images (fist-bump variation) were NOT saved to public/ — only active images live there
+
+### IDX Resync
+
+- Triggered full resync (fire-and-forget POST → 202) to populate the new `details` field for all 82,143 properties
+- Resync was still running at session end — will complete in the background
+- No need to re-trigger next session; check `/api/properties?limit=1` to confirm `.total` is still ~82k
+
+### Commit
+
+- `23e69c9` feat: /join page WhyCnCStacked + HowToJoin sections, property details JSON column, drawer polish
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. **Verify property details are now populated** — open any listing in the drawer or detail page, check that Property Details section shows real values (not all N/A). If still N/A, check that the IDX resync completed (the fire-and-forget POST was triggered last session — it should have finished overnight).
+3. **Create checklist templates** at `/admin/settings/checklists`:
+   - CA Purchase — Buyer Side: RPA, Agency Disclosure, AVID, Proof of Funds, Loan Pre-Approval, SBSA, TDS, NHD
+   - CA Purchase — Seller Side: Listing Agreement, TDS, SBSA, NHD, Agency Disclosure
+   - CA Lease — Tenant Side: Lease Agreement, Agency Disclosure, Move-in Inspection
+4. **Phase 6 tasks** (`docs/superpowers/plans/2026-05-22-phase-6-launch.md`):
+   - ISR on property pages (`revalidate: 300`), Redis caching, skeleton loaders
+   - JSON-LD structured data (RealEstateListing, Person schemas)
+   - Upstash rate limiting on public forms
+   - Sentry error monitoring, PostHog/GA4 analytics
+   - Deploy to Vercel + Railway production
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`
