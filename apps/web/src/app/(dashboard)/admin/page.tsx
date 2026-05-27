@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { TransactionFileStatus } from "@prisma/client";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { requireAdminPage } from "@/lib/server-utils";
 
@@ -40,6 +41,31 @@ export default async function AdminOverviewPage() {
   } catch {
     // DB unreachable — show zeros
   }
+
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() + 7);
+
+  const openTransactionsWithDeadlines = await prisma.transactionFile.findMany({
+    where: {
+      status: { not: TransactionFileStatus.CLOSED },
+      OR: [
+        { closeOfEscrow: { gte: new Date(), lte: cutoff } },
+        { inspectionDeadline: { gte: new Date(), lte: cutoff } },
+        { appraisalDeadline: { gte: new Date(), lte: cutoff } },
+        { loanApprovalDeadline: { gte: new Date(), lte: cutoff } },
+      ],
+    },
+    select: {
+      id: true,
+      propertyAddress: true,
+      closeOfEscrow: true,
+      inspectionDeadline: true,
+      appraisalDeadline: true,
+      loanApprovalDeadline: true,
+      agent: { select: { user: { select: { name: true, email: true } } } },
+    },
+    take: 100,
+  }).catch(() => []);
 
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -83,6 +109,67 @@ export default async function AdminOverviewPage() {
         >
           View All Files →
         </Link>
+      </div>
+
+      {/* Broker Supervision — Upcoming Deadlines */}
+      <div className="mt-10">
+        <h2 className="mb-4 text-lg font-medium text-[#1B1B1B]">Upcoming Deadlines (Next 7 Days)</h2>
+        {openTransactionsWithDeadlines.length === 0 ? (
+          <p className="text-sm text-[#1B1B1B]/50">No deadlines in the next 7 days.</p>
+        ) : (
+          <div className="overflow-hidden rounded-xl border border-[#1B1B1B]/10">
+            <table className="w-full text-sm">
+              <thead className="bg-[#F2F0EF] text-left text-xs uppercase tracking-wider text-[#1B1B1B]/50">
+                <tr>
+                  <th className="px-4 py-3">Property</th>
+                  <th className="px-4 py-3">Agent</th>
+                  <th className="px-4 py-3">Deadline</th>
+                  <th className="px-4 py-3">Type</th>
+                  <th className="px-4 py-3">Days Out</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#1B1B1B]/5 bg-white">
+                {openTransactionsWithDeadlines.flatMap((t) =>
+                  [
+                    { label: "Close of Escrow", date: t.closeOfEscrow },
+                    { label: "Inspection", date: t.inspectionDeadline },
+                    { label: "Appraisal", date: t.appraisalDeadline },
+                    { label: "Loan Approval", date: t.loanApprovalDeadline },
+                  ]
+                    .filter((d) => d.date && d.date >= new Date() && d.date <= cutoff)
+                    .map((d, idx) => {
+                      const daysOut = Math.ceil((d.date!.getTime() - Date.now()) / 86_400_000);
+                      return (
+                        <tr key={`${t.id}-${idx}`} className="hover:bg-[#F2F0EF]/50">
+                          <td className="px-4 py-3 font-medium text-[#1B1B1B]">
+                            <a href={`/admin/transactions/transaction/${t.id}`} className="hover:underline">
+                              {t.propertyAddress ?? "—"}
+                            </a>
+                          </td>
+                          <td className="px-4 py-3 text-[#1B1B1B]/70">
+                            {t.agent?.user?.name ?? "—"}
+                          </td>
+                          <td className="px-4 py-3 text-[#1B1B1B]/70">
+                            {d.date!.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                          </td>
+                          <td className="px-4 py-3 text-[#1B1B1B]/70">{d.label}</td>
+                          <td className="px-4 py-3">
+                            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                              daysOut <= 1 ? "bg-red-100 text-red-700" :
+                              daysOut <= 3 ? "bg-amber-100 text-amber-700" :
+                              "bg-green-100 text-green-700"
+                            }`}>
+                              {daysOut === 0 ? "Today" : daysOut === 1 ? "Tomorrow" : `${daysOut} days`}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
