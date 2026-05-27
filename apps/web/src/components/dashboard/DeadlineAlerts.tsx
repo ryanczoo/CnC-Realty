@@ -9,6 +9,8 @@ interface Deadline {
   label: string;
   date: string;
   daysOut: number;
+  agentName: string | null;
+  agentEmail: string | null;
 }
 
 export function DeadlineAlerts() {
