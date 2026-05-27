@@ -45,14 +45,17 @@ export default async function AdminOverviewPage() {
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() + 7);
 
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+
   const openTransactionsWithDeadlines = await prisma.transactionFile.findMany({
     where: {
       status: { not: TransactionFileStatus.CLOSED },
       OR: [
-        { closeOfEscrow: { gte: new Date(), lte: cutoff } },
-        { inspectionDeadline: { gte: new Date(), lte: cutoff } },
-        { appraisalDeadline: { gte: new Date(), lte: cutoff } },
-        { loanApprovalDeadline: { gte: new Date(), lte: cutoff } },
+        { closeOfEscrow: { gte: startOfToday, lte: cutoff } },
+        { inspectionDeadline: { gte: startOfToday, lte: cutoff } },
+        { appraisalDeadline: { gte: startOfToday, lte: cutoff } },
+        { loanApprovalDeadline: { gte: startOfToday, lte: cutoff } },
       ],
     },
     select: {
@@ -65,7 +68,10 @@ export default async function AdminOverviewPage() {
       agent: { select: { user: { select: { name: true, email: true } } } },
     },
     take: 100,
-  }).catch(() => []);
+  }).catch((err) => {
+    console.error("[admin] Failed to load upcoming deadlines:", err);
+    return [];
+  });
 
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -129,43 +135,53 @@ export default async function AdminOverviewPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#1B1B1B]/5 bg-white">
-                {openTransactionsWithDeadlines.flatMap((t) =>
-                  [
-                    { label: "Close of Escrow", date: t.closeOfEscrow },
-                    { label: "Inspection", date: t.inspectionDeadline },
-                    { label: "Appraisal", date: t.appraisalDeadline },
-                    { label: "Loan Approval", date: t.loanApprovalDeadline },
-                  ]
-                    .filter((d) => d.date && d.date >= new Date() && d.date <= cutoff)
-                    .map((d, idx) => {
-                      const daysOut = Math.ceil((d.date!.getTime() - Date.now()) / 86_400_000);
-                      return (
-                        <tr key={`${t.id}-${idx}`} className="hover:bg-[#F2F0EF]/50">
-                          <td className="px-4 py-3 font-medium text-[#1B1B1B]">
-                            <a href={`/admin/transactions/transaction/${t.id}`} className="hover:underline">
-                              {t.propertyAddress ?? "—"}
-                            </a>
-                          </td>
-                          <td className="px-4 py-3 text-[#1B1B1B]/70">
-                            {t.agent?.user?.name ?? "—"}
-                          </td>
-                          <td className="px-4 py-3 text-[#1B1B1B]/70">
-                            {d.date!.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                          </td>
-                          <td className="px-4 py-3 text-[#1B1B1B]/70">{d.label}</td>
-                          <td className="px-4 py-3">
-                            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                              daysOut <= 1 ? "bg-red-100 text-red-700" :
-                              daysOut <= 3 ? "bg-amber-100 text-amber-700" :
-                              "bg-green-100 text-green-700"
-                            }`}>
-                              {daysOut === 0 ? "Today" : daysOut === 1 ? "Tomorrow" : `${daysOut} days`}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })
-                )}
+                {openTransactionsWithDeadlines
+                  .flatMap((t) =>
+                    [
+                      { label: "Close of Escrow", date: t.closeOfEscrow },
+                      { label: "Inspection", date: t.inspectionDeadline },
+                      { label: "Appraisal", date: t.appraisalDeadline },
+                      { label: "Loan Approval", date: t.loanApprovalDeadline },
+                    ]
+                      .filter((d) => d.date && d.date >= startOfToday && d.date <= cutoff)
+                      .map((d) => ({
+                        id: t.id,
+                        address: t.propertyAddress,
+                        agentName: t.agent?.user?.name,
+                        date: d.date!,
+                        label: d.label,
+                      }))
+                  )
+                  .sort((a, b) => a.date.getTime() - b.date.getTime())
+                  .map((row, idx) => {
+                    const daysOut = Math.ceil((row.date.getTime() - Date.now()) / 86_400_000);
+                    return (
+                      <tr key={`${row.id}-${idx}`} className="hover:bg-[#F2F0EF]/50">
+                        <td className="px-4 py-3 font-medium text-[#1B1B1B]">
+                          <a href={`/admin/transactions/transaction/${row.id}`} className="hover:underline">
+                            {row.address ?? "—"}
+                          </a>
+                        </td>
+                        <td className="px-4 py-3 text-[#1B1B1B]/70">
+                          {row.agentName ?? "—"}
+                        </td>
+                        <td className="px-4 py-3 text-[#1B1B1B]/70">
+                          {row.date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                        </td>
+                        <td className="px-4 py-3 text-[#1B1B1B]/70">{row.label}</td>
+                        <td className="px-4 py-3">
+                          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                            daysOut <= 1 ? "bg-red-100 text-red-700" :
+                            daysOut <= 3 ? "bg-amber-100 text-amber-700" :
+                            "bg-green-100 text-green-700"
+                          }`}>
+                            {daysOut === 0 ? "Today" : daysOut === 1 ? "Tomorrow" : `${daysOut} days`}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })
+                }
               </tbody>
             </table>
           </div>
