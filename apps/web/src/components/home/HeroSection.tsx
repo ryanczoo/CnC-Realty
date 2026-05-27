@@ -49,7 +49,7 @@ export function HeroSection() {
   };
 
   return (
-    <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden">
+    <section data-navbar-theme="dark" className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden">
       <video
         ref={videoRef}
         autoPlay

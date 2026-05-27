@@ -47,7 +47,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
     property = await prisma.property.findUnique({ where: { mlsNumber: params.mlsNumber } });
   } catch {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F2F0EF]">
+      <div data-navbar-theme="light" className="flex min-h-screen items-center justify-center bg-[#F2F0EF]">
         <div className="text-center">
           <p className="text-lg font-light text-[#1B1B1B]">Unable to load this listing right now.</p>
           <p className="mt-2 text-sm text-[#1B1B1B]/50">Please check your connection and try again.</p>
@@ -59,12 +59,12 @@ export default async function PropertyDetailPage({ params }: PageProps) {
 
   const photos = Array.isArray(property.photos) ? (property.photos as string[]) : [];
   const statsFields = buildStatsFields(property);
-  const detailSections = buildDetailSections({}, property.lotSize);
+  const detailSections = buildDetailSections((property.details as Record<string, unknown>) ?? {}, property.lotSize);
 
   return (
-    <div className="min-h-screen bg-[#F2F0EF] pb-20 text-[#1B1B1B]">
+    <div data-navbar-theme="light" className="min-h-screen bg-[#F2F0EF] pb-20 text-[#1B1B1B]">
       {/* Dark header bar */}
-      <div className="bg-[#1B1B1B] pb-3 pt-[76px]">
+      <div data-navbar-theme="dark" className="bg-[#1B1B1B] pb-3 pt-[76px]">
         <div className="mx-auto max-w-7xl px-4">
           <BackLink />
         </div>

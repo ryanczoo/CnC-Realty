@@ -252,6 +252,7 @@ model Property {
   listAgentName      String?
   listAgentLicense   String?
   listOfficeName     String?
+  details            Json?
   listedAt           DateTime?
   modifiedAt   DateTime?
   syncedAt     DateTime  @default(now())

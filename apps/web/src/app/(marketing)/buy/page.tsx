@@ -31,7 +31,7 @@ const STEPS = [
 
 export default function BuyPage() {
   return (
-    <main className="min-h-screen bg-[#F2F0EF]">
+    <main data-navbar-theme="light" className="min-h-screen bg-[#F2F0EF]">
       <section className="px-8 pb-24 pt-40 lg:px-20">
         <div className="mx-auto max-w-5xl">
           <p className="mb-4 font-sans text-sm font-medium uppercase tracking-widest text-[#9E8C61]">Buy</p>

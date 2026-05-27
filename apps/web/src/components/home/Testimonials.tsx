@@ -44,7 +44,7 @@ export function Testimonials() {
   }, []);
 
   return (
-    <section className="relative bg-[#F2F0EF]">
+    <section data-navbar-theme="light" className="relative bg-[#F2F0EF]">
 
       {/* Sticky headline — stays fixed while content scrolls over it */}
       <div className="sticky top-[32vh] z-0 px-4 text-center">

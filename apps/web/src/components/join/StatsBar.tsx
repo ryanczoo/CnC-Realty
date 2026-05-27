@@ -3,10 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 
 const STATS = [
-  { value: "100%", label: "Commission Kept" },
+  { value: "100%", label: "Commission" },
   { value: "$0", label: "Monthly Fees" },
   { value: "24/7", label: "Broker Support" },
-  { value: "30+", label: "Resources" },
+  { value: "20+", label: "Resources" },
 ];
 
 const DIGITS = "0123456789";

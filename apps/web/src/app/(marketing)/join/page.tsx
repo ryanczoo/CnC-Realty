@@ -3,44 +3,13 @@ import { Metadata } from "next";
 import { JoinFaq } from "@/components/join/JoinFaq";
 import { StatsBar } from "@/components/join/StatsBar";
 import { FounderQuote } from "@/components/join/FounderQuote";
+import { WhyCnCStacked } from "@/components/join/WhyCnCStacked";
+import { HowToJoin } from "@/components/join/HowToJoin";
 
 export const metadata: Metadata = {
   title: "Join CnC Realty | Agent Opportunities",
   description: "100% commission, AI-driven CRM, and real mentorship. Join CnC Realty and build the real estate career you've always wanted.",
 };
-
-const BENEFITS = [
-  {
-    number: "01",
-    title: "100% Commission",
-    body: "Keep every dollar you earn — no desk fees, no commission splits, no surprises. Plain and simple.",
-  },
-  {
-    number: "02",
-    title: "AI-Driven CRM",
-    body: "Our custom platform handles lead tracking, follow-ups, transaction management, and campaign automation — built specifically for CnC agents.",
-  },
-  {
-    number: "03",
-    title: "Training & Mentorship",
-    body: "New agents are paired with a senior mentor. Every agent gets unlimited access to our video library and market guides.",
-  },
-  {
-    number: "04",
-    title: "CRMLS Access",
-    body: "Full MLS access through CRMLS — California's largest MLS with over 100,000 active listings across the state.",
-  },
-  {
-    number: "05",
-    title: "Build Your Brand",
-    body: "Your public agent profile, your listings, your team. CnC provides the infrastructure — you build the business.",
-  },
-  {
-    number: "06",
-    title: "Instant Approval",
-    body: "Guaranteed approval for all licensed California real estate agents. Transfer your license in days, not weeks.",
-  },
-];
 
 const FAQS = [
   {
@@ -69,7 +38,7 @@ export default function JoinPage() {
   return (
     <main>
       {/* ── Hero ── */}
-      <section className="relative h-[95vh] overflow-hidden bg-black">
+      <section data-navbar-theme="dark" className="relative h-[95vh] overflow-hidden bg-black">
         {/* Video — full brightness so clouds read clearly through the text */}
         <video
           autoPlay
@@ -140,38 +109,21 @@ export default function JoinPage() {
 
       </section>
 
-      {/* ── Stats bar ── */}
-      <StatsBar />
-
-      {/* ── Founder quote ── */}
-      <FounderQuote />
-
-      {/* ── Benefits ── */}
-      <section className="bg-[#111111] px-8 py-28 lg:px-20">
-        <div className="mx-auto max-w-5xl">
-          <p className="mb-3 font-sans text-xs font-medium uppercase tracking-widest text-[#9E8C61]">Why CnC</p>
-          <h2 className="mb-16 font-sans text-[2.5rem] font-light leading-tight text-white">
-            Everything you need to thrive.
-          </h2>
-          <div className="grid grid-cols-1 gap-px bg-white/5 md:grid-cols-2 lg:grid-cols-3">
-            {BENEFITS.map((item) => (
-              <div
-                key={item.number}
-                className="group bg-[#111111] p-8 transition-colors duration-200 hover:bg-white/5"
-              >
-                <p className="mb-3 font-sans text-xs font-medium text-[#9E8C61]">{item.number}</p>
-                <h3 className="mb-2 font-sans text-base font-semibold text-white transition-colors duration-200 group-hover:text-[#9E8C61]">
-                  {item.title}
-                </h3>
-                <p className="font-sans text-sm font-light leading-relaxed text-white/40">{item.body}</p>
-              </div>
-            ))}
-          </div>
+      {/* ── Light sections: stats, founder quote, why CnC ── */}
+      <div data-navbar-theme="light">
+        <StatsBar />
+        <FounderQuote />
+        <div className="bg-cnc-bg px-16 py-10">
+          <div className="h-px w-full bg-[#1B1B1B]/10" />
         </div>
-      </section>
+        <WhyCnCStacked />
+      </div>
+
+      {/* ── How to Join ── */}
+      <HowToJoin />
 
       {/* ── FAQ ── */}
-      <section className="bg-[#0f0f0f] px-8 py-28 lg:px-20">
+      <section data-navbar-theme="dark" className="bg-[#0f0f0f] px-8 py-28 lg:px-20">
         <div className="mx-auto max-w-3xl">
           <p className="mb-3 font-sans text-xs font-medium uppercase tracking-widest text-[#9E8C61]">Got questions?</p>
           <h2 className="mb-12 font-sans text-[2rem] font-light text-white">Common questions</h2>
@@ -180,7 +132,7 @@ export default function JoinPage() {
       </section>
 
       {/* ── Final CTA ── */}
-      <section className="bg-[#9E8C61] px-8 py-28 lg:px-20">
+      <section data-navbar-theme="dark" className="bg-[#9E8C61] px-8 py-28 lg:px-20">
         <div className="mx-auto max-w-3xl text-center">
           <h2 className="mb-4 font-sans text-[2.5rem] font-light leading-tight text-white">
             Ready to make the move?

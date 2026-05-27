@@ -74,7 +74,7 @@ export default function AgentOnboardingPage() {
 
   if (status === "loading") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F2F0EF]">
+      <div data-navbar-theme="light" className="flex min-h-screen items-center justify-center bg-[#F2F0EF]">
         <p className="text-[#1B1B1B]/60">Loading…</p>
       </div>
     );
@@ -136,7 +136,7 @@ export default function AgentOnboardingPage() {
 
   if (success) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F2F0EF]">
+      <div data-navbar-theme="light" className="flex min-h-screen items-center justify-center bg-[#F2F0EF]">
         <div className="rounded-2xl bg-white px-10 py-12 text-center shadow-sm max-w-sm w-full mx-4">
           <p className="text-xl font-light text-[#1B1B1B]">Profile created!</p>
           <p className="mt-2 text-[#1B1B1B]/60 text-sm">Redirecting to dashboard…</p>
@@ -151,7 +151,7 @@ export default function AgentOnboardingPage() {
   const labelClass = "mb-1 block text-xs font-medium text-[#1B1B1B]/60 uppercase tracking-wide";
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#F2F0EF] px-4 py-16">
+    <div data-navbar-theme="light" className="flex min-h-screen items-center justify-center bg-[#F2F0EF] px-4 py-16">
       <div className="w-full max-w-lg rounded-2xl bg-white px-8 py-10 shadow-sm">
         {/* Progress bar */}
         <div className="mb-8">

@@ -274,7 +274,7 @@ export function ServicesSection() {
   const yValues = [y0, y1, y2, y3];
 
   return (
-    <section ref={sectionRef} className="relative bg-[#F2F0EF]" style={{ minHeight: "108vh" }}>
+    <section data-navbar-theme="light" ref={sectionRef} className="relative bg-[#F2F0EF]" style={{ minHeight: "108vh" }}>
       {/* Heading — top right */}
       <motion.div
         className="absolute right-[8%] top-[14%] text-right"

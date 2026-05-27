@@ -7,7 +7,7 @@ import { X } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 
 const NAV_LINKS = [
@@ -37,18 +37,46 @@ export function Navbar() {
   const { data: session } = useSession();
   const pathname = usePathname();
   const isHomepage = pathname === "/";
-  const hasVideoHero = pathname === "/join";
-  const isTransparent = isHomepage || hasVideoHero;
+  // Transparent on all marketing pages; solid on dashboard/auth/admin
+  const isTransparent =
+    !pathname.startsWith("/dashboard") &&
+    !pathname.startsWith("/admin") &&
+    !pathname.startsWith("/account") &&
+    pathname !== "/login" &&
+    pathname !== "/register" &&
+    pathname !== "/forgot-password";
   const [scrolled, setScrolled] = useState(false);
   const [pastHero, setPastHero] = useState(!isTransparent);
   const [menuOpen, setMenuOpen] = useState(false);
+  // null = no data-navbar-theme found on page, use fallback logic
+  const [navTheme, setNavTheme] = useState<"light" | "dark" | null>(null);
   const heroHeightRef = useRef(0);
   const rafRef = useRef(0);
 
   useEffect(() => {
     setPastHero(!isTransparent);
     setScrolled(false);
-  }, [isTransparent]);
+    setNavTheme(null);
+  }, [isTransparent, pathname]);
+
+  const detectNavTheme = useCallback(() => {
+    const sections = document.querySelectorAll<HTMLElement>("[data-navbar-theme]");
+    if (!sections.length) return;
+    // Walk all marked sections, last one covering y=32 wins (DOM order = paint order)
+    let matched: "light" | "dark" | null = null;
+    for (const section of sections) {
+      const rect = section.getBoundingClientRect();
+      if (rect.top <= 32 && rect.bottom >= 32) {
+        matched = section.dataset.navbarTheme as "light" | "dark";
+      }
+    }
+    setNavTheme((prev) => (prev === matched ? prev : matched));
+  }, []);
+
+  // Run once on mount / page change to set initial theme
+  useEffect(() => {
+    detectNavTheme();
+  }, [detectNavTheme, pathname]);
 
   useEffect(() => {
     heroHeightRef.current = window.innerHeight;
@@ -64,6 +92,7 @@ export function Navbar() {
           const next = y > heroHeightRef.current * 0.85;
           setPastHero((prev) => prev === next ? prev : next);
         }
+        detectNavTheme();
       });
     };
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -73,11 +102,12 @@ export function Navbar() {
       window.removeEventListener("resize", onResize);
       cancelAnimationFrame(rafRef.current);
     };
-  }, [isTransparent]);
+  }, [isTransparent, detectNavTheme]);
 
-  // Dark logo + dark pills only on homepage after scrolling past the hero section.
-  // All other pages use white elements on a solid dark background.
-  const useLightElements = isHomepage && pastHero;
+  // When data-navbar-theme sections exist, use them. Otherwise fall back to homepage logic.
+  const useLightElements = navTheme !== null
+    ? navTheme === "light"
+    : (isHomepage && pastHero);
 
   const pillCls = cn(
     "flex h-9 items-center justify-center rounded-full px-4 text-sm font-medium transition-all duration-300",
@@ -100,9 +130,8 @@ export function Navbar() {
         className={cn(
           "fixed top-0 z-50 w-full transition-all duration-300",
           !isTransparent && "bg-[#0f0f0f]",
-          isTransparent && scrolled && !pastHero && "bg-black/10 backdrop-blur-md border-b border-white/10",
-          isHomepage && pastHero && "bg-[#F2F0EF]/60 backdrop-blur-md border-b border-[#1B1B1B]/10",
-          hasVideoHero && pastHero && "backdrop-blur-md border-b border-white/10"
+          isTransparent && scrolled && useLightElements && "bg-[#F2F0EF]/80 backdrop-blur-md border-b border-[#1B1B1B]/10",
+          isTransparent && scrolled && !useLightElements && "bg-black/15 backdrop-blur-md border-b border-white/10"
         )}
       >
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">

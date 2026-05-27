@@ -26,7 +26,7 @@ export default async function AgentProfilePage({ params }: Props) {
   if (!agent) notFound();
 
   return (
-    <main>
+    <main data-navbar-theme="light">
       <AgentProfileHero
         displayName={agent.displayName}
         headshot={agent.headshot}

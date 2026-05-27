@@ -10,7 +10,7 @@ const MotionLink = motion(Link);
 
 export function JoinCnCCTA() {
   return (
-    <section className="relative h-[60vh] w-full overflow-hidden">
+    <section data-navbar-theme="dark" className="relative h-[60vh] w-full overflow-hidden">
       <Image
         src="/images/cta-bg.jpg"
         alt="Keys to your new home"

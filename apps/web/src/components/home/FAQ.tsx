@@ -28,7 +28,7 @@ const FAQS = [
 
 export function FAQ() {
   return (
-    <section className="bg-[#F2F0EF] px-8 pb-20 pt-16 lg:px-20">
+    <section data-navbar-theme="light" className="bg-[#F2F0EF] px-8 pb-20 pt-16 lg:px-20">
       <motion.h2
         className="mb-6 font-sans text-[2.8rem] font-light leading-[1.0] xl:text-[3.5rem]"
         initial={{ opacity: 0, y: 24 }}

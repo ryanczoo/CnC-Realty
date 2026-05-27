@@ -119,6 +119,7 @@ export function WhyCnC() {
 
   return (
     <div
+      data-navbar-theme="light"
       ref={containerRef}
       style={{ height: `${ITEMS.length * 100}vh` }}
       className="relative"

@@ -35,6 +35,7 @@ interface PropertyDetail {
   listAgentName: string | null;
   listAgentLicense: string | null;
   listOfficeName: string | null;
+  details: Record<string, unknown> | null;
   listedAt: string | null;
   syncedAt: string | null;
 }
@@ -86,7 +87,7 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
   const { savedSet, toggle } = useSavedProperties();
   const photos = Array.isArray(property?.photos) ? property!.photos : [];
   const statsFields = property ? buildStatsFields(property) : [];
-  const detailSections = property ? buildDetailSections({}, property.lotSize) : [];
+  const detailSections = property ? buildDetailSections((property.details as Record<string, unknown>) ?? {}, property.lotSize) : [];
 
   return (
     <>

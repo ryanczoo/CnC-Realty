@@ -48,7 +48,7 @@ export function FeaturedListings({ listings: propListings }: Props) {
   const doubled = [...source, ...source];
 
   return (
-    <section className="overflow-hidden bg-[#F2F0EF] py-10">
+    <section data-navbar-theme="light" className="overflow-hidden bg-[#F2F0EF] py-10">
       <div className="mb-12 px-4 text-center">
         <h2 className="font-sans text-[2.5rem] font-light xl:text-[3rem]">
           <RevealText>Exclusive Listings</RevealText>
