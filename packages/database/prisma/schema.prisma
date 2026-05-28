@@ -366,6 +366,7 @@ model TransactionFile {
   commissionSplit      Float?
   commissionNotes      String?
   awaitingReview       Boolean               @default(false)
+  tcFeeEnabled         Boolean               @default(false)
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
 
