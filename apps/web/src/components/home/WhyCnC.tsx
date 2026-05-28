@@ -22,7 +22,7 @@ const ITEMS: { title: TitlePart[]; description: string; imgFront?: string; imgFr
   {
     title: [{ text: "AI-DRIVEN TECH" }],
     description:
-      "Predictive lead scoring, automated follow-ups, and real-time market insights powered by AI. Combined with our custom CRM integrated software to provide you with all the tools to succeed.",
+      "Predictive lead scoring, automated transaction alerts, creative email campaigns, real-time marketing analysis all powered by AI and FREE for CnC Agents. Combined with our custom CRM software, you have all the tools to succeed.",
     videoBack: "/videos/ai-tech-back.mp4",
     imgFront: "/images/ai-tech-front.jpg",
   },
