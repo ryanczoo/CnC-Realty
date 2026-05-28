@@ -2513,6 +2513,98 @@ Drafted full CnC ICA at `docs/cnc-ica-draft.md`. Structure modeled on REeBroker 
 
 ---
 
+## Session Notes — 2026-05-28
+
+### What Was Completed This Session
+
+All changes committed on `claude/real-estate-website-9bdWi` (commits `0e47f67`, `5a3259a`).
+
+---
+
+### SkySlope vs. CnC CRM — Full Audit (Complete)
+
+Ran Puppeteer through all 85+ SkySlope KB articles and produced a full feature-by-feature comparison. Key findings:
+
+**CnC has parity on all core compliance workflows:**
+- Transaction File + Listing File wizards (6-step)
+- Convert Listing → Transaction
+- Dual agency: 2 transaction records required (per ICA), fee charged twice
+- Document checklists: admin templates, auto-apply, agent upload, broker approve/reject with note
+- Broker review queue (`/api/admin/audit-queue`)
+- File status lifecycle management
+- Deadline tracking + automated email reminders (3-day, 1-day via Vercel Cron + SendGrid)
+- In-app deadline alert banners + broker supervision view in `/admin`
+- Per-file tasks (`/api/file-tasks`)
+- Commission tracking, net-to-agent calc, TC fee toggle
+- Parties management
+- File notes + lead activity log
+- MLS integration (83k CRMLS properties)
+
+**CnC has features SkySlope does NOT have:**
+- Email campaigns (Tiptap editor, drip sequences, SendGrid webhooks)
+- Lead pipeline Kanban board
+- Property search (IDX)
+- Property alerts for saved searches
+
+**Intentionally excluded (not gaps):** DigiSign, SkySlope Forms, Breeze AI, SkySight AI, PDF Split & Assign, email-to-file inbox forwarding, NHD/home warranty integrations.
+
+**Post-Phase 6 gaps to build (noted in CLAUDE.md):**
+Pre-contract file stage, task templates, CDA generator PDF, cancellation approval workflow, document bundles (Send to Escrow), immutable audit trail, Excel/CSV broker reports.
+
+---
+
+### Join Page — HowToJoin Steps (Complete ✅)
+
+**File:** `apps/web/src/components/join/HowToJoin.tsx`
+
+Updated all four steps with new copy:
+| # | Title | Body |
+|---|---|---|
+| 01 | Apply | Fill out an application and review the Independent Contractor Agreement |
+| 02 | Approval | Get your guaranteed approval to join the team within 24 hours |
+| 03 | Onboarding | A team member will welcome and prep you for your new journey |
+| 04 | Win | Hit the ground running with full access to all our tools and network |
+
+---
+
+### Join Page — House Photo (Complete ✅)
+
+**File:** `apps/web/public/images/join-house.jpg`
+
+Replaced the old join-house.jpg with a white Victorian-style house photo (from `pexels-josh-hild-1270765-17145685.jpg`). No code change needed — component already referenced `/images/join-house.jpg`.
+
+---
+
+### Sell Page — Stacked Cards Animation (WIP ⚠️)
+
+**Files:**
+- `apps/web/src/components/sell/SellStackedCards.tsx` — new component
+- `apps/web/src/app/(marketing)/sell/page.tsx` — replaced WHY grid with `<SellStackedCards />`
+
+**Goal:** Vorszk-inspired scroll-driven stacked cards (https://www.vorszk.com — their "expertises" section with Mining, Real Estate, etc.)
+
+**Vorszk's mechanism (researched via Puppeteer + fetching JS chunks):**
+- All cards: `position: sticky; top: [same value]` — they all stick at the same viewport y
+- Cards are in a flat container with `margin-top: -[totalHeight - oneCardHeight]` — this pulls all cards close together in the DOM so the scroll distance between cards is very short (~73px in Vorszk)
+- As you scroll past a card, GSAP ScrollTrigger drives: `scale(0.9)` from `transformOrigin: "50% 100%"`, inner opacity → 0.1
+- The NEXT card slides up from below the current card's bottom edge and covers it
+- Card height: `clamp(450px, 162px + 37.5vw, 882px)` — fills most of the viewport
+
+**What's been tried (all 3 iterations):**
+1. Per-card wrappers (680px tall) + cards with incremental `top` values → wrappers too tall, cards never overlap, incremental top made later cards lower on screen (wrong)
+2. Flat container, same `top: 88px`, negative `marginBottom`, section-level `scrollYProgress` → fade started too early (at section enter) before next card arrived; negative margins caused card 1 to overlap card 0 mid-viewport instead of from below
+3. Per-card wrappers where `wrapper height = card height = calc(100vh - 88px)` → correct theory (next card sits at viewport bottom when wrapper starts), but visual result still not matching Vorszk
+
+**The correct theory (confirmed):** wrapper height = card height = `100vh - STICKY_TOP`. At `progress=0` (wrapper top = viewport top), next card's top is at the viewport bottom — it peeks. As `progress` goes 0→1, next card rises from viewport bottom to `STICKY_TOP`, covering current card. Current card scales 1→0.9 and fades 1→0.1.
+
+**Current issue:** Despite correct theory, visual result is still off — card sizing/timing doesn't match Vorszk. Needs debugging in next session. Ryan confirmed the fade direction is correct but cards aren't showing fully before next one appears.
+
+**Approach for next session:**
+- Re-examine with Puppeteer on Vorszk to get exact card height, sticky top, and scroll distance values at the current viewport
+- May need to re-examine `useScroll` offset values or add a spacer at the top of the section to give the first card "dwell time" before the next starts rising
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`
