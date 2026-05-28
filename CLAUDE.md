@@ -2488,8 +2488,13 @@ Drafted full CnC ICA at `docs/cnc-ica-draft.md`. Structure modeled on REeBroker 
 
 ### Next Session — Start Here
 
-1. **Review CnC ICA draft** (`docs/cnc-ica-draft.md`) — Ryan to review, note any changes or additions before attorney review
-2. **Create checklist templates** at `/admin/settings/checklists`:
+1. **Fix sell page stacked cards animation** (`apps/web/src/components/sell/SellStackedCards.tsx`):
+   - Cards should fill most of the viewport (like Vorszk) — the current card is fully visible before the next one comes up from below
+   - Next card slides up from below the current card's bottom edge, covering it as current card scales to 0.9 and fades
+   - Reference: https://www.vorszk.com — their "expertises" section (Mining, Real Estate, etc.)
+   - Current issue: card sizing/timing still off — needs a fresh look in next session
+2. **Review CnC ICA draft** (`docs/cnc-ica-draft.md`) — Ryan to review, note any changes or additions before attorney review
+3. **Create checklist templates** at `/admin/settings/checklists`:
    - CA Purchase — Buyer Side: RPA, Agency Disclosure, AVID, Proof of Funds, Loan Pre-Approval, SBSA, TDS, NHD
    - CA Purchase — Seller Side: Listing Agreement, TDS, SBSA, NHD, Agency Disclosure
    - CA Lease — Tenant Side: Lease Agreement, Agency Disclosure, Move-in Inspection
