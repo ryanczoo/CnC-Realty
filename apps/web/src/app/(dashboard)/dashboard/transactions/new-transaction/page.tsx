@@ -36,6 +36,9 @@ export default function NewTransactionPage() {
     listing: "pct",
   });
 
+  const TC_FEE = 350;
+  const [tcFeeEnabled, setTcFeeEnabled] = useState(false);
+
   const [form, setForm] = useState({
     transactionSide: "",
     stage: "UNDER_CONTRACT",
@@ -73,7 +76,7 @@ export default function NewTransactionPage() {
       : parseFloat(form.listingCommission) || 0;
   const otherDeductionsAmt = parseFloat(form.otherDeductions) || 0;
   const totalGci = saleCommissionAmt + listingCommissionAmt;
-  const netToAgent = totalGci - otherDeductionsAmt;
+  const netToAgent = totalGci - otherDeductionsAmt - (tcFeeEnabled ? TC_FEE : 0);
 
   const canAdvance = useMemo(() => {
     if (step === 0) return !!form.transactionSide;
@@ -99,6 +102,7 @@ export default function NewTransactionPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...form,
+        tcFeeEnabled,
         commissionGCI: totalGci || null,
         saleCommissionPct: commissionMode.sale === "pct" ? parseFloat(form.saleCommission) || null : null,
         listingCommissionPct: commissionMode.listing === "pct" ? parseFloat(form.listingCommission) || null : null,
@@ -348,6 +352,24 @@ export default function NewTransactionPage() {
               onChange={(v) => set("otherDeductions", v)}
               placeholder="TC fees, referral, other deductions…"
             />
+            {/* TC Fee toggle */}
+            <div className="flex items-center justify-between rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-4 py-3">
+              <div>
+                <p className="text-sm font-medium text-[#1B1B1B]">CnC TC Service</p>
+                <p className="text-xs text-[#1B1B1B]/40">In-house transaction coordinator — $350</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setTcFeeEnabled((v) => !v)}
+                className={`relative h-6 w-11 rounded-full transition-colors ${tcFeeEnabled ? "bg-[#9E8C61]" : "bg-[#1B1B1B]/20"}`}
+              >
+                <span
+                  className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                    tcFeeEnabled ? "translate-x-5" : "translate-x-0.5"
+                  }`}
+                />
+              </button>
+            </div>
             <div>
               <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">Commission Notes</label>
               <textarea
@@ -374,6 +396,9 @@ export default function NewTransactionPage() {
                 />
                 {otherDeductionsAmt > 0 && (
                   <BdRow label="Other Deductions" value={`−$${otherDeductionsAmt.toLocaleString()}`} muted />
+                )}
+                {tcFeeEnabled && (
+                  <BdRow label="CnC TC Service" value="−$350" muted />
                 )}
                 <div className="border-t border-[#1B1B1B]/10 pt-2">
                   <div className="flex justify-between font-semibold text-[#1B1B1B]">
@@ -420,6 +445,7 @@ export default function NewTransactionPage() {
             <ReviewSection title="Commission">
               {totalGci > 0 && <ReviewRow label="Total GCI" value={`$${Math.round(totalGci).toLocaleString()}`} />}
               {otherDeductionsAmt > 0 && <ReviewRow label="Deductions" value={`$${otherDeductionsAmt.toLocaleString()}`} />}
+              {tcFeeEnabled && <ReviewRow label="CnC TC Service" value="$350" />}
               {netToAgent > 0 && <ReviewRow label="Net to Agent" value={`$${Math.round(netToAgent).toLocaleString()}`} />}
             </ReviewSection>
           </div>
