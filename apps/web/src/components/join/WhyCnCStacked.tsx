@@ -20,7 +20,7 @@ const ROWS: Row[] = [
   {
     label: "Dare to Dream",
     body: <>Our cloud-based brokerage system is how we are able to provide <G>everything</G> you need, and <G>nothing</G> you don't. Become the master of your domain wherever and whenever you go by not being bound by an office area location.</>,
-    img: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=1200&q=80",
+    img: "/images/join-agent.jpg",
     imgSide: "right",
     bg: "#F2F0EF",
     textBg: "#1B1B1B",

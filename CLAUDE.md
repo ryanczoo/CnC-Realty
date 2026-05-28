@@ -156,6 +156,12 @@ Full Prisma schema with all enums (`LeadStatus`, `TransactionStatus`, `CampaignT
 
 ### Phase 5 — Full CRM (Week 9–11)
 - Transaction management: create from lead, timeline view, document upload (R2), status progression
+- **AI-assisted transaction coordinator (TC) automation:**
+  - Deadline tracking: inspection, appraisal, loan approval, COE auto-calculated from transaction dates (already stored on `Transaction` model)
+  - Automated deadline email reminders: Vercel Cron reads upcoming deadlines daily → sends agent reminders via SendGrid (3 days out, 1 day out)
+  - In-app dashboard alerts: deadline notification banner on agent dashboard when logged in (no new service — pure Next.js)
+  - Broker supervision view: `/admin` shows all open transactions with upcoming deadlines across all agents — fulfills broker's legal DRE supervision obligation
+  - No new third-party services required — runs entirely on existing Railway (DB), Vercel Cron, and SendGrid
 - Email campaigns: rich text editor (Tiptap), recipient selection, SendGrid delivery
 - Drip email sequence builder
 - SendGrid webhook handlers to update `CampaignContact` stats
@@ -2311,12 +2317,127 @@ New file: `apps/web/src/components/join/HowToJoin.tsx`
    - CA Purchase — Buyer Side: RPA, Agency Disclosure, AVID, Proof of Funds, Loan Pre-Approval, SBSA, TDS, NHD
    - CA Purchase — Seller Side: Listing Agreement, TDS, SBSA, NHD, Agency Disclosure
    - CA Lease — Tenant Side: Lease Agreement, Agency Disclosure, Move-in Inspection
-4. **Phase 6 tasks** (`docs/superpowers/plans/2026-05-22-phase-6-launch.md`):
+4. **AI-assisted transaction coordinator** (`docs/superpowers/plans/2026-05-27-ai-transaction-coordinator.md`):
+   - Automated deadline email reminders via SendGrid + Vercel Cron (3-day and 1-day warnings)
+   - In-app dashboard deadline alerts banner on agent dashboard
+   - Broker supervision view in `/admin` showing all open transactions with upcoming deadlines
+5. **Phase 6 tasks** (`docs/superpowers/plans/2026-05-22-phase-6-launch.md`):
    - ISR on property pages (`revalidate: 300`), Redis caching, skeleton loaders
    - JSON-LD structured data (RealEstateListing, Person schemas)
    - Upstash rate limiting on public forms
    - Sentry error monitoring, PostHog/GA4 analytics
    - Deploy to Vercel + Railway production
+
+---
+
+## Session Notes — 2026-05-27 (continuation 2)
+
+### What Was Completed This Session
+
+All changes committed on `claude/real-estate-website-9bdWi` (commits: `16609c9` through `c062150`). **1 commit is local-only — not yet pushed to GitHub.**
+
+### AI Transaction Coordinator — All Tasks Complete ✅
+
+Implemented the full AI-assisted TC plan from `docs/superpowers/plans/2026-05-27-ai-transaction-coordinator.md`.
+
+**Files created/modified:**
+
+| File | What It Does |
+|---|---|
+| `apps/web/src/app/api/transactions/deadlines/route.ts` | GET endpoint — upcoming deadlines scoped by role (BUYER→403, AGENT→own files, ADMIN→all) |
+| `apps/web/src/lib/deadline-email.ts` | `sendDeadlineReminder()` via SendGrid with XSS-safe HTML template |
+| `apps/web/src/app/api/cron/deadline-reminders/route.ts` | POST endpoint — daily cron, sends reminders 1 and 3 days out via `Promise.allSettled` |
+| `apps/web/src/components/dashboard/DeadlineAlerts.tsx` | Client component — red/amber alert banners on agent dashboard for urgent/upcoming deadlines |
+| `apps/web/src/app/(dashboard)/dashboard/page.tsx` | Added `<DeadlineAlerts />` at top of agent dashboard |
+| `apps/web/src/app/(dashboard)/admin/page.tsx` | Added broker supervision table — all open transactions with upcoming deadlines across all agents |
+| `vercel.json` | Added cron entry: `POST /api/cron/deadline-reminders` at `0 16 * * *` (9am PT) |
+
+**Key bugs found and fixed during code review:**
+- **Agent.id vs User.id**: deadlines endpoint was using `session.user.id` as `agentId` — wrong, `TransactionFile.agentId` is FK to `Agent.id` not `User.id`. Fixed by looking up `Agent` record first via `prisma.agent.findUnique({ where: { userId: session.user.id } })`.
+- **404 links in DeadlineAlerts**: `href=/dashboard/transactions/${id}` was missing the `[fileType]` segment. Fixed to `/dashboard/transactions/transaction/${id}`.
+- **Duplicate React keys**: `key={d.transactionId}` reused when one transaction has multiple deadlines. Fixed to `key={`${d.transactionId}-${d.label}`}`.
+- **XSS in email**: `agentName` and `address` interpolated unescaped into HTML. Fixed with `escapeHtml()` helper.
+- **No AbortController**: `useEffect` fetch had no cleanup. Fixed with AbortController pattern.
+- **Silent admin DB errors**: `.catch(() => [])` swallowed errors. Fixed with `console.error`.
+- **Unsorted admin rows**: No orderBy on Prisma query. Fixed with JS sort after flatMap.
+- **Same-day deadline gap**: Used `new Date()` (current time) as lower bound. Fixed with `startOfToday` (midnight).
+
+### TC Fee Option — $350 Optional Toggle ✅
+
+Implemented from `docs/superpowers/plans/2026-05-27-tc-fee-option.md`.
+
+**Fee structure decision:** CnC will offer an optional $350 in-house TC service — same price as Rise Realty. Ryan's mom (experienced agent) will be the designated TC once licensed.
+
+**Files modified:**
+
+| File | Change |
+|---|---|
+| `packages/database/prisma/schema.prisma` | Added `tcFeeEnabled Boolean @default(false)` to `TransactionFile` |
+| Migration `20260528020639_add_tc_fee_enabled` | Auto-generated |
+| `apps/web/src/app/(dashboard)/dashboard/transactions/new-transaction/page.tsx` | `TC_FEE = 350` constant, `tcFeeEnabled` state, pill toggle in Commission step, `BdRow` in breakdown, `ReviewRow` in review step, passed in submit |
+| `apps/web/src/app/api/transactions/route.ts` | `tcFeeEnabled = false` in destructuring, `tcFeeEnabled: !!tcFeeEnabled` in create data |
+| `apps/web/src/types/transaction.ts` | Added `tcFeeEnabled: boolean` to `TransactionFileDetail` |
+| `apps/web/src/app/(dashboard)/dashboard/transactions/[fileType]/[id]/page.tsx` | `TC_FEE = 350`, `tcFee` in net calculation, conditional `InfoRow` and deduction row in CommissionTab |
+
+**Architecture:** `tcFeeEnabled` stored as boolean — dollar amount ($350) is a constant in code, not the DB. Brokerage-wide fee change = one-line code edit, no migration.
+
+### WhyCnC — AI-Driven Tech Copy Updated
+
+- File: `apps/web/src/components/home/WhyCnC.tsx`
+- New copy: "Predictive lead scoring, automated transaction alerts, creative email campaigns, real-time marketing analysis all powered by AI and FREE for CnC Agents. Combined with our custom CRM software, you have all the tools to succeed."
+
+### IDX Sync — Confirmed Complete
+
+- Queried Railway DB: **83,052 total properties** ✅
+- DB storage: ~3GB on Railway Hobby plan (5GB volume) — ~2GB headroom for launch
+- Listing photos (JSON) are the main storage driver — intentionally kept (important for clients)
+- No need to re-trigger sync
+
+### ICA Research — West Shores Realty (Complete)
+
+Read the full West Shores Realty ICA (Ryan's previous brokerage). Key TC section findings:
+
+**Section 4.c — TC clause:**
+- TC is **recommended** (optional, not mandatory) on all transactions
+- Their in-house TC: Jodi Pestello, fees **$500–$750 per transaction** (variable scope)
+- Paid from agent's commission through escrow
+- Outside TC requires broker approval + SkySlope access + active real estate license
+- If agent can't comply with file checklists, broker can force-assign TC and deduct fee from commission
+
+**West Shores fee structure (for reference when drafting CnC ICA):**
+- Broker transaction fee: $900 per transaction
+- Monthly: $95/mo (Key Plan) or variable (Desk Plan)
+- TC: $500–$750 (optional)
+- E&O: $1M coverage, $5K deductible split with agent
+- Referral fee: $250 or 10% whichever is greater
+
+**CnC's positioning vs West Shores:** $0/mo, $950 flat broker fee, optional $350 TC (cheaper and simpler than WSR's $500–$750 variable)
+
+### ICA Research — REeBroker + VRG (Blocked — Needs Puppeteer)
+
+- REeBroker's site (`reebroker.com`) returns HTTP 403 on all pages including their ICA and fee schedule
+- Virtual Realty Group's ICA is behind DigiSigner authentication — can't read without a browser
+- **Puppeteer MCP server** was installed at end of the 2026-05-22 session but requires a Claude Code restart to activate
+- Ryan confirmed: closing and reopening Claude Code is safe — all work is saved, git history preserved, CLAUDE.md carries context forward
+
+### Next Session — Start Here
+
+1. **Restart Claude Code** to activate the Puppeteer MCP server (was installed but requires restart)
+2. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+3. **Use Puppeteer to open and read:**
+   - REeBroker ICA: `https://reebroker.com/ica.aspx?agentname=`
+   - Virtual Realty Group ICA: `https://www.thevirtualrealtygroup.com/join-ca` → click "Independent Contractor Agreement" link (goes to DigiSigner)
+4. **Draft CnC ICA** — based on West Shores template + competitive positioning:
+   - Fee structure: $950 flat broker fee + E&O tiers, $0 monthly, optional $350 CnC TC Service
+   - TC section: optional, recommended, paid through escrow, broker can mandate if agent non-compliant
+5. **Create checklist templates** at `/admin/settings/checklists`:
+   - CA Purchase — Buyer Side: RPA, Agency Disclosure, AVID, Proof of Funds, Loan Pre-Approval, SBSA, TDS, NHD
+   - CA Purchase — Seller Side: Listing Agreement, TDS, SBSA, NHD, Agency Disclosure
+   - CA Lease — Tenant Side: Lease Agreement, Agency Disclosure, Move-in Inspection
+6. **Phase 6 tasks** (`docs/superpowers/plans/2026-05-22-phase-6-launch.md`):
+   - ISR on property pages, Redis caching, skeleton loaders
+   - JSON-LD structured data, Upstash rate limiting
+   - Sentry, PostHog/GA4, deploy to Vercel + Railway production
 
 ---
 
