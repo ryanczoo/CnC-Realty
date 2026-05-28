@@ -88,6 +88,7 @@ export interface TransactionFileDetail {
   otherDeductions: number | null;
   commissionSplit: number | null;
   commissionNotes: string | null;
+  tcFeeEnabled: boolean;
   awaitingReview: boolean;
   createdAt: string;
   updatedAt: string;

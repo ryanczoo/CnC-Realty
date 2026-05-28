@@ -36,6 +36,7 @@ export async function POST(req: Request) {
     inspectionDeadline, appraisalDeadline, loanApprovalDeadline, closeOfEscrow,
     commissionGCI, saleCommissionPct, listingCommissionPct, otherDeductions,
     commissionSplit, commissionNotes,
+    tcFeeEnabled = false,
     originatingLeadId,
     parties = [],
   } = body;
@@ -76,6 +77,7 @@ export async function POST(req: Request) {
       otherDeductions: otherDeductions ? parseFloat(otherDeductions) : null,
       commissionSplit: commissionSplit ? parseFloat(commissionSplit) : null,
       commissionNotes: commissionNotes || null,
+      tcFeeEnabled: !!tcFeeEnabled,
       parties: parties.length > 0 ? {
         create: parties
           .filter((p: { name?: string }) => p.name)
