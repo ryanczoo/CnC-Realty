@@ -36,8 +36,8 @@ export function DeadlineAlerts() {
     <div className="mb-6 space-y-2">
       {urgent.map((d) => (
         <Link
-          key={d.transactionId}
-          href={`/dashboard/transactions/${d.transactionId}`}
+          key={`${d.transactionId}-${d.label}`}
+          href={`/dashboard/transactions/transaction/${d.transactionId}`}
           className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 transition-opacity hover:opacity-80"
         >
           <span>
@@ -50,8 +50,8 @@ export function DeadlineAlerts() {
       ))}
       {upcoming.map((d) => (
         <Link
-          key={d.transactionId}
-          href={`/dashboard/transactions/${d.transactionId}`}
+          key={`${d.transactionId}-${d.label}`}
+          href={`/dashboard/transactions/transaction/${d.transactionId}`}
           className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 transition-opacity hover:opacity-80"
         >
           <span>
