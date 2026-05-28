@@ -5,23 +5,23 @@ import { motion } from "motion/react";
 const STEPS = [
   {
     number: "01",
-    title: "Apply Online",
-    body: "Submit an application to begin your journey with CnC.",
+    title: "Apply",
+    body: "Fill out an application and review the Independent Contractor Agreement.",
   },
   {
     number: "02",
-    title: "Schedule a Call",
-    body: "Speak with a team member to discuss your goals and how we can support them.",
+    title: "Approval",
+    body: "Get your guaranteed approval to join the team within 24 hours.",
   },
   {
     number: "03",
-    title: "Sign Your Contract",
-    body: "Complete our onboarding process to ensure you're equipped for success.",
+    title: "Onboarding",
+    body: "A team member will welcome and prep you for your new journey.",
   },
   {
     number: "04",
-    title: "Start Earning",
-    body: "Hit the ground running with full access to our CRM, tools, and mentorship network from day one.",
+    title: "Win",
+    body: "Hit the ground running with full access to all our tools and network.",
   },
 ];
 

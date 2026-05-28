@@ -2441,6 +2441,73 @@ Read the full West Shores Realty ICA (Ryan's previous brokerage). Key TC section
 
 ---
 
+## Session Notes — 2026-05-27 (ICA Research Complete)
+
+### ICA Research — REeBroker (Complete via Puppeteer)
+
+Puppeteer MCP confirmed active after restart. Full REeBroker ICA text extracted.
+
+**Key REeBroker terms:**
+- Risk-management fee (E&O equivalent) deducted from commission per Fee Schedule (not shown in ICA)
+- Agent can receive commission directly from escrow if file submitted 2+ business days before COE
+- Trust funds: must go to escrow/title within 3 business days — agent cannot touch earnest money
+- San Diego County jurisdiction
+- At-will termination by either party
+- Agent responsible for all expenses (no office, supplies, or marketing provided)
+
+### ICA Research — VRG (Complete via Puppeteer / DigiSigner)
+
+VRG ICA accessed via DigiSigner public template link — no authentication required with Puppeteer. All 16 pages read.
+
+**Key VRG terms:**
+- **Flat fee plan (CA): $695 per transaction** + bump-up fees: over $1M add $599, over $1.5M add $699, over $2M add $1,500
+- Park Your License plan: 85%-15% split (VRG keeps 15%)
+- Brand New Agent plan: 75%-25% split (VRG keeps 25%), must close 4 deals before switching
+- Unlimited plan: $899/month for unlimited residential deals
+- Plan change fee: $200 (waived for brand new agents until after 4 sales)
+- E&O: Covered under VRG broker policy ($1M per claim / $1M aggregate). Agent pays deductible only. No separate per-transaction E&O charge.
+- Referral bonus: $100 per closed deal by recruited agent
+- TC system compliance: $500 fee if agent closes without first entering transaction in VRG's system
+- Referrals/leases/rentals: 10% to VRG
+- Commercial: 90%-10% split or $1,000 min
+- No monthly fee on Flat Fee or Park Your License plans
+- Jurisdiction: laws of the state where licensee is licensed
+
+### CnC ICA Draft — Complete
+
+Drafted full CnC ICA at `docs/cnc-ica-draft.md`. Structure modeled on REeBroker + VRG, with CnC's own fee structure:
+- $950 flat fee ($0–$999,999) with E&O included in fee
+- E&O tiers for higher-priced transactions (up to $2,550 for $4M+)
+- $0 monthly fee
+- Optional $350 CnC TC Service (recommended, paid through escrow; broker can mandate if non-compliant)
+- $500 non-compliance fee for closing without creating TC record
+- 100% commission to agent after flat fee
+- CA jurisdiction
+
+**⚠️ Needs attorney review before use as a binding legal document.**
+
+### Next Session — Start Here
+
+1. **Review CnC ICA draft** (`docs/cnc-ica-draft.md`) — Ryan to review, note any changes or additions before attorney review
+2. **Create checklist templates** at `/admin/settings/checklists`:
+   - CA Purchase — Buyer Side: RPA, Agency Disclosure, AVID, Proof of Funds, Loan Pre-Approval, SBSA, TDS, NHD
+   - CA Purchase — Seller Side: Listing Agreement, TDS, SBSA, NHD, Agency Disclosure
+   - CA Lease — Tenant Side: Lease Agreement, Agency Disclosure, Move-in Inspection
+3. **Phase 6 tasks** (`docs/superpowers/plans/2026-05-22-phase-6-launch.md`):
+   - ISR on property pages, Redis caching, skeleton loaders
+   - JSON-LD structured data, Upstash rate limiting
+   - Sentry, PostHog/GA4, deploy to Vercel + Railway production
+4. **Post-Phase 6 CRM gaps** (SkySlope parity — build after launch):
+   - **Pre-contract file stage** — allow agents to start a transaction file before going under contract (stage selector in wizard step 1)
+   - **Task templates** — brokerage-wide reusable task lists that auto-apply to new files (similar to checklist templates but for tasks/reminders)
+   - **CDA generator** — auto-generate a Commission Disbursement Authorization PDF from transaction data (agent name, address, commission amounts, broker signature block)
+   - **Cancellation approval workflow** — route cancelled files through broker approval instead of direct status change (submit cancellation → broker approves/rejects with note)
+   - **Document bundles** — "Send to Escrow" button that emails all approved docs in a transaction as a zip or bundle to a specified email (title/escrow officer)
+   - **Audit trail** — immutable system-generated event log per file (who uploaded, who approved, when status changed, who added a party) — separate from agent notes; required for DRE supervision
+   - **Excel/CSV reports** — broker-level reports: agent production (closed volume, GCI, transaction count), commission summary by period, open pipeline by agent
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`
