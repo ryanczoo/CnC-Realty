@@ -5,6 +5,7 @@ import { StatsBar } from "@/components/join/StatsBar";
 import { FounderQuote } from "@/components/join/FounderQuote";
 import { WhyCnCStacked } from "@/components/join/WhyCnCStacked";
 import { HowToJoin } from "@/components/join/HowToJoin";
+import { JoinStepsSlider } from "@/components/join/JoinStepsSlider";
 
 export const metadata: Metadata = {
   title: "Join CnC Realty | Agent Opportunities",
@@ -121,6 +122,9 @@ export default function JoinPage() {
 
       {/* ── How to Join ── */}
       <HowToJoin />
+
+      {/* ── Steps Slider ── */}
+      <JoinStepsSlider />
 
       {/* ── FAQ ── */}
       <section data-navbar-theme="dark" className="bg-[#0f0f0f] px-8 py-28 lg:px-20">
