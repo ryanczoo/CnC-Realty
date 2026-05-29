@@ -2738,6 +2738,119 @@ Nothing new committed beyond `c2d8a60` this session.
 
 ---
 
+## Session Notes — 2026-05-29
+
+### What Was Completed This Session
+
+All changes committed on `claude/real-estate-website-9bdWi` (commits `c2d8a60` through `c9d5ebf`).
+
+Dev server ran on **localhost:3001** this session.
+
+---
+
+### JoinCnCCTA Homepage Section — Final State ✅
+
+**File:** `apps/web/src/components/home/JoinCnCCTA.tsx`
+
+- Two-layer heading reveal: dim base layer (gray) always visible, bright overlay masked left-to-right in 1.2s
+- "meant" reveals in gold `#9E8C61` as one unified sweep using CSS mask on container
+- Outer `motion.div`: fade-up matching FAQ heading animation
+- "Be CnC" solid white (removed `opacity-60`), "Join Now" solid white button (no arrow)
+- Sticky container at `top: calc(100vh - 65vh)` — image bottom flush with viewport, no gap before footer
+- EASE_OUT_EXPO shared constant used across `motion.ts`, `reveal-text.tsx`, `JoinCnCCTA.tsx`
+
+---
+
+### JoinStepsSlider — New Section on Join Page ✅
+
+**File:** `apps/web/src/components/join/JoinStepsSlider.tsx`
+**Placed:** Between `<HowToJoin />` and FAQ on `apps/web/src/app/(marketing)/join/page.tsx`
+
+**Layout:**
+- Section: `300vh` tall, `bg-white`, sticky panel inset `1.5rem` from sides/bottom, `top: 5.5rem` (below navbar)
+- **Left panel** (text): `bg-[#DAD4D2]`, `width: 35%`, `order-1` — progress bars at top, body text vertically centered (`flex-1 items-center`)
+- **Right panel** (images): `flex-1`, `order-2`, `-ml-6` (overlaps left panel slightly), `object-contain` images
+- `gap-3` between panels (white bg shows through)
+
+**3 slides:**
+| Slide | Image | Body |
+|---|---|---|
+| 1 | `/images/join-slide-crm.png` | Custom CRM — AI-powered lead/transaction/campaign management |
+| 2 | `/images/join-slide-agent.png` | Agent Profile — live profile page on cncrealtygroup.com |
+| 3 | `/images/join-slide-campaign.png` | Email Campaigns — branded drip sequences, no third-party tools |
+
+**Mechanics:**
+- `useScroll` + `useMotionValueEvent` → `activeStep` (0–2), `barWidths` (3 values)
+- 3 progress bars at top of left panel: each fills top-to-bottom per scroll range (0–⅓, ⅓–⅔, ⅔–1)
+- `AnimatePresence mode="wait"` on image crossfade and body text
+- No numbers, no titles, no buttons in slides
+
+**Design decisions:**
+- Panels swapped (text left, images right) after initial build
+- `object-contain` chosen over `object-cover` to avoid cropping dashboard screenshots
+- Images replaced multiple times as Ryan cropped better versions
+
+---
+
+### WhyCnC Homepage — Progress Bar Updated ✅
+
+**File:** `apps/web/src/components/home/WhyCnC.tsx`
+
+Replaced the single vertical pill (`3px wide, 220px tall, grows top-to-bottom`) with a **4-segment vertical bar**:
+- `2px` wide × `220px` tall container, `flex-col gap-1`
+- 4 equal `flex-1` segments, each fills top-to-bottom via `height %` as its panel scrolls through
+- Same position: `absolute left-14 top-1/2 -translate-y-1/2`
+- Matches the segmented style of JoinStepsSlider's progress bars for visual consistency
+
+---
+
+### FAQ Homepage — Gold "s" ✅
+
+**File:** `apps/web/src/components/home/FAQ.tsx`
+
+- The lowercase "s" in "FAQs" heading is now gold `#9E8C61` via `<span style={{ color: "#9E8C61" }}>s</span>` inside `RevealText`
+
+---
+
+### Agent Profile Page — Dark Navbar ✅
+
+**File:** `apps/web/src/components/layout/Navbar.tsx`
+
+- Added `!pathname.startsWith("/agents/")` to the `isTransparent` exclusion list
+- All agent profile pages (`/agents/[slug]`) now show the solid `bg-[#0f0f0f]` dark navbar
+
+---
+
+### Section Status
+
+| Section / Page | Status |
+|---|---|
+| Homepage — Hero | ✅ Approved |
+| Homepage — Exclusive Listings | ✅ Approved |
+| Homepage — Why CnC | ✅ Approved (new segmented progress bar) |
+| Homepage — Services | ✅ Approved |
+| Homepage — Testimonials | ✅ Approved |
+| Homepage — Join CnC CTA | ✅ Approved |
+| Homepage — FAQ | ✅ Approved (gold "s") |
+| Homepage — Footer | ✅ Approved |
+| Join Page — JoinStepsSlider | 🔄 Built and iterated — needs final review next session |
+| Agent Profile Page | ✅ Dark navbar fixed |
+
+---
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. Open `localhost:3000` (or 3001 if occupied)
+3. **Review JoinStepsSlider** on `/join` — confirm final look (text left/images right, overlap, progress bars, body text centered)
+4. **Review JoinCnCCTA** on homepage — confirm heading reveal, footer gap, solid white text
+5. Continue with remaining work:
+   - CnC ICA draft review (`docs/cnc-ica-draft.md`)
+   - Checklist templates at `/admin/settings/checklists`
+   - Phase 6 tasks (`docs/superpowers/plans/2026-05-22-phase-6-launch.md`)
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`
