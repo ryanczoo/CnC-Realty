@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Metadata } from "next";
-import { SellStackedCards } from "@/components/sell/SellStackedCards";
 
 export const metadata: Metadata = {
   title: "Sell Your Home | CnC Realty",
@@ -27,8 +26,6 @@ export default function SellPage() {
           </Link>
         </div>
       </section>
-
-      <SellStackedCards />
 
       <section className="px-8 pb-24 pt-16 lg:px-20">
         <div className="mx-auto max-w-5xl rounded-2xl bg-[#1B1B1B] px-10 py-14 text-center">

@@ -2605,6 +2605,49 @@ Replaced the old join-house.jpg with a white Victorian-style house photo (from `
 
 ---
 
+## Session Notes — 2026-05-28 (Part 2)
+
+### Sell Page — Stacked Cards REMOVED
+
+- Deleted `apps/web/src/components/sell/SellStackedCards.tsx` entirely — could not get the stacking/overlap animation to match Vorszk correctly after multiple iterations
+- Removed import and usage from `apps/web/src/app/(marketing)/sell/page.tsx`
+- Sell page now goes straight from hero to the valuation CTA section
+
+### JoinCnCCTA — Mersi-style Expanding Image (Complete ✅)
+
+**File:** `apps/web/src/components/home/JoinCnCCTA.tsx`
+
+Rebuilt to match the image-expansion effect from `mersi-architecture.com/agence`:
+
+**Mechanism:**
+- Section: `200vh` tall (scroll space), `bg-[#F2F0EF]`
+- Sticky inner: `65vh`, `top: calc((100vh - 65vh) / 2)` — centered in the viewport at all times
+- `useScroll` offset: `["start start", "end end"]` — progress 0 when section top hits viewport top (sticky locks in)
+- Image: `position: absolute, top: 50%, left: 50%, translate(-50%, -50%)` — always centered in sticky area
+
+**Animation sequence:**
+1. Section scrolls into view from below naturally (no animation yet)
+2. Section top hits viewport top → sticky locks in, small image (52% × 42vh) is visible centered
+3. User scrolls → image expands from 52%×42vh → 100%×65vh (fills section) over progress [0.1, 0.88]
+4. "Be the agent you're meant to be." sits at `bottom: 1.5rem` inside sticky, `text-[2rem] lg:text-[2.5rem] font-light text-[#1B1B1B]` — matches section heading style
+5. Heading fades out progress [0.65, 0.85]
+6. "Be CnC." + "Join Now →" button fade IN on the image at progress [0.85, 0.95] — only appears after heading is fully gone
+7. Section ends → footer appears with no gap
+
+**Puppeteer note:** Puppeteer should only be used for external websites Ryan sends, NOT for screenshotting localhost.
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. Open `localhost:3000`
+3. Review JoinCnCCTA expanding image animation on homepage — approved or needs tweaks
+4. Continue with remaining work:
+   - CnC ICA draft review (`docs/cnc-ica-draft.md`)
+   - Checklist templates at `/admin/settings/checklists`
+   - Phase 6 tasks (`docs/superpowers/plans/2026-05-22-phase-6-launch.md`)
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`
