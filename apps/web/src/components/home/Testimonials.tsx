@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "motion/react";
 import Image from "next/image";
 import { memo, useEffect, useState } from "react";
 
-const WORDS = ["trust.", "results.", "futures.", "homes.", "teams."];
+const WORDS = ["trust", "results", "futures", "homes", "teams"];
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 40 },

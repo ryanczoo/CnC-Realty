@@ -11,7 +11,7 @@ export function fadeUp(delay = 0, y = 40) {
   return {
     initial: { opacity: 0, y },
     whileInView: { opacity: 1, y: 0 },
-    transition: { duration: 0.9, ease: [0.16, 1, 0.3, 1] as const, delay },
+    transition: { duration: 0.9, ease: EASE_OUT_EXPO as [number, number, number, number], delay },
     viewport: { once: true, margin: "-8%" } as const,
   };
 }

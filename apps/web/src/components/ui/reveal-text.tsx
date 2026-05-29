@@ -2,19 +2,21 @@
 import { useRef } from "react";
 import { useInView } from "motion/react";
 import { cn } from "@/lib/utils";
+import { EASE_OUT_EXPO } from "@/lib/motion";
 
 interface RevealTextProps {
   children: React.ReactNode;
   className?: string;
   delay?: number;
   onDark?: boolean;
+  color?: string;
 }
 
-export function RevealText({ children, className, delay = 0, onDark = false }: RevealTextProps) {
+export function RevealText({ children, className, delay = 0, onDark = false, color: colorProp }: RevealTextProps) {
   const ref = useRef<HTMLSpanElement>(null);
   const isInView = useInView(ref, { once: true, margin: "-8%" });
 
-  const color = onDark ? "#ffffff" : "#1B1B1B";
+  const color = colorProp ?? (onDark ? "#ffffff" : "#1B1B1B");
   const dimColor = onDark ? "rgba(255,255,255,0.18)" : "rgba(27,27,27,0.18)";
 
   return (
@@ -31,7 +33,7 @@ export function RevealText({ children, className, delay = 0, onDark = false }: R
         transitionProperty: "background-position",
         transitionDuration: "1.2s",
         transitionDelay: `${delay}s`,
-        transitionTimingFunction: "cubic-bezier(0.16, 1, 0.3, 1)",
+        transitionTimingFunction: `cubic-bezier(${EASE_OUT_EXPO.join(",")})`,
       }}
     >
       {children}
