@@ -5,7 +5,6 @@ import {
   motion,
   useMotionValueEvent,
   useScroll,
-  useTransform,
 } from "motion/react";
 import { useRef, useState } from "react";
 
@@ -98,6 +97,7 @@ function ShutterImage({ imgSrc }: { imgSrc: string }) {
 export function WhyCnC() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeIdx, setActiveIdx] = useState(0);
+  const [barWidths, setBarWidths] = useState(ITEMS.map(() => 0));
   const lastIdxRef = useRef(0);
 
   const { scrollYProgress } = useScroll({
@@ -105,14 +105,21 @@ export function WhyCnC() {
     offset: ["start start", "end end"],
   });
 
-  const fillPct = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
-
-  useMotionValueEvent(scrollYProgress, "change", (latest) => {
-    const next = Math.min(Math.floor(latest * ITEMS.length), ITEMS.length - 1);
+  useMotionValueEvent(scrollYProgress, "change", (p) => {
+    const next = Math.min(Math.floor(p * ITEMS.length), ITEMS.length - 1);
     if (next !== lastIdxRef.current) {
       lastIdxRef.current = next;
       setActiveIdx(next);
     }
+    setBarWidths(
+      ITEMS.map((_, i) => {
+        const start = i / ITEMS.length;
+        const end = (i + 1) / ITEMS.length;
+        if (p <= start) return 0;
+        if (p >= end) return 100;
+        return ((p - start) / (1 / ITEMS.length)) * 100;
+      })
+    );
   });
 
   const active = ITEMS[activeIdx];
@@ -129,20 +136,23 @@ export function WhyCnC() {
 
           {/* Left: text panel */}
           <div className="relative flex w-[42%] flex-col justify-center pl-28 pr-16">
-            {/* Pill-shaped scroll progress indicator */}
+            {/* Segmented vertical progress — 4 equal segments, each fills top-to-bottom */}
             <div
-              className="absolute left-14 top-1/2 -translate-y-1/2"
-              style={{ width: 20, height: 220 }}
+              className="absolute left-14 top-1/2 flex -translate-y-1/2 flex-col gap-1"
+              style={{ width: 2, height: 220 }}
             >
-              {/* Track — full height, always visible */}
-              <div className="absolute left-1/2 top-0 h-full w-[1px] -translate-x-1/2 rounded-full bg-[#1B1B1B]/20" />
-              {/* Fill — grows with scroll */}
-              <div className="absolute inset-0 overflow-hidden rounded-full">
-                <motion.div
-                  className="absolute left-1/2 top-0 w-[3px] -translate-x-1/2 rounded-full bg-[#1B1B1B]"
-                  style={{ height: fillPct }}
-                />
-              </div>
+              {ITEMS.map((_, i) => (
+                <div
+                  key={i}
+                  className="flex-1 overflow-hidden"
+                  style={{ backgroundColor: "rgba(27,27,27,0.12)" }}
+                >
+                  <div
+                    className="w-full bg-[#1B1B1B]"
+                    style={{ height: `${barWidths[i]}%`, transition: "height 0.05s linear" }}
+                  />
+                </div>
+              ))}
             </div>
 
             <AnimatePresence mode="wait">

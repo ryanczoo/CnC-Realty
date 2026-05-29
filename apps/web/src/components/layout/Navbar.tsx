@@ -42,6 +42,7 @@ export function Navbar() {
     !pathname.startsWith("/dashboard") &&
     !pathname.startsWith("/admin") &&
     !pathname.startsWith("/account") &&
+    !pathname.startsWith("/agents/") &&
     pathname !== "/login" &&
     pathname !== "/register" &&
     pathname !== "/forgot-password";

@@ -3,33 +3,23 @@
 import { useRef, useState } from "react";
 import { motion, useScroll, useMotionValueEvent, AnimatePresence } from "motion/react";
 import Image from "next/image";
-import Link from "next/link";
-import { EASE_OUT_EXPO, SPRING_HOVER } from "@/lib/motion";
+import { EASE_OUT_EXPO } from "@/lib/motion";
 
 const STEPS = [
   {
-    number: "01",
-    title: "Apply",
-    body: "Fill out an application and review the Independent Contractor Agreement.",
-    image: "/images/join-house.jpg",
+    title: "Custom CRM",
+    body: "Manage your leads, transactions, and campaigns all in one place with our AI-powered CRM built exclusively for CnC agents.",
+    image: "/images/join-slide-crm.png",
   },
   {
-    number: "02",
-    title: "Approval",
-    body: "Get your guaranteed approval to join the team within 24 hours.",
-    image: "/images/join-house.jpg",
+    title: "Agent Profile",
+    body: "Your own professional profile page with stats, listings, and a contact form — all live on cncrealtygroup.com the moment you join.",
+    image: "/images/join-slide-agent.png",
   },
   {
-    number: "03",
-    title: "Onboarding",
-    body: "A team member will welcome and prep you for your new journey.",
-    image: "/images/join-house.jpg",
-  },
-  {
-    number: "04",
-    title: "Win",
-    body: "Hit the ground running with full access to all our tools and network.",
-    image: "/images/join-house.jpg",
+    title: "Email Campaigns",
+    body: "Send branded email campaigns and drip sequences to your leads directly from the CnC platform. No third-party tools needed.",
+    image: "/images/join-slide-campaign.png",
   },
 ];
 
@@ -38,7 +28,7 @@ const EASE = EASE_OUT_EXPO as [number, number, number, number];
 export function JoinStepsSlider() {
   const sectionRef = useRef<HTMLElement>(null);
   const [activeStep, setActiveStep] = useState(0);
-  const [barWidths, setBarWidths] = useState([0, 0, 0, 0]);
+  const [barWidths, setBarWidths] = useState([0, 0, 0]);
 
   const { scrollYProgress } = useScroll({
     target: sectionRef,
@@ -46,15 +36,15 @@ export function JoinStepsSlider() {
   });
 
   useMotionValueEvent(scrollYProgress, "change", (p) => {
-    const step = p < 0.25 ? 0 : p < 0.5 ? 1 : p < 0.75 ? 2 : 3;
+    const step = p < 1 / 3 ? 0 : p < 2 / 3 ? 1 : 2;
     setActiveStep(step);
     setBarWidths(
       STEPS.map((_, i) => {
-        const start = i * 0.25;
-        const end = start + 0.25;
+        const start = i / STEPS.length;
+        const end = (i + 1) / STEPS.length;
         if (p <= start) return 0;
         if (p >= end) return 100;
-        return ((p - start) / 0.25) * 100;
+        return ((p - start) / (1 / STEPS.length)) * 100;
       })
     );
   });
@@ -63,16 +53,21 @@ export function JoinStepsSlider() {
     <section
       ref={sectionRef}
       data-navbar-theme="light"
-      className="bg-[#F2F0EF]"
-      style={{ height: "400vh" }}
+      className="bg-white"
+      style={{ height: "300vh" }}
     >
-      {/* Sticky full-viewport container */}
+      {/* Sticky panel — inset 1.5rem from sides and bottom, below navbar */}
       <div
-        className="flex overflow-hidden"
-        style={{ position: "sticky", top: 0, height: "100vh" }}
+        className="flex gap-3 overflow-hidden"
+        style={{
+          position: "sticky",
+          top: "5.5rem",
+          height: "calc(100vh - 7.5rem)",
+          margin: "0 1.5rem 1.5rem",
+        }}
       >
-        {/* Left — full-height image, crossfades on step change */}
-        <div className="relative" style={{ width: "65%" }}>
+        {/* Right — full-height image, crossfades on step change */}
+        <div className="relative order-2 flex-1 -ml-6">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeStep}
@@ -86,7 +81,7 @@ export function JoinStepsSlider() {
                 src={STEPS[activeStep].image}
                 alt={STEPS[activeStep].title}
                 fill
-                className="object-cover object-center"
+                className="object-contain object-center"
                 priority
               />
             </motion.div>
@@ -95,7 +90,7 @@ export function JoinStepsSlider() {
 
         {/* Right — step content panel */}
         <div
-          className="flex flex-col bg-[#F2F0EF]"
+          className="order-1 flex h-full flex-col bg-[#DAD4D2]"
           style={{ width: "35%", padding: "3rem" }}
         >
           {/* Progress bars */}
@@ -117,31 +112,8 @@ export function JoinStepsSlider() {
             ))}
           </div>
 
-          {/* Step number + total counter */}
-          <div className="mt-10 flex items-start justify-between">
-            <AnimatePresence mode="wait">
-              <motion.span
-                key={`num-${activeStep}`}
-                initial={{ opacity: 0, y: 24 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -24 }}
-                transition={{ duration: 0.4, ease: EASE }}
-                className="font-sans font-light leading-none text-[#1B1B1B]"
-                style={{ fontSize: "clamp(5rem, 8vw, 9rem)" }}
-              >
-                {STEPS[activeStep].number}
-              </motion.span>
-            </AnimatePresence>
-            <span
-              className="font-sans text-sm text-[#1B1B1B]/30"
-              style={{ paddingTop: "0.5rem" }}
-            >
-              / 04
-            </span>
-          </div>
-
           {/* Step title + body — animates on step change */}
-          <div className="mb-12 mt-auto">
+          <div className="flex flex-1 items-center">
             <AnimatePresence mode="wait">
               <motion.div
                 key={`content-${activeStep}`}
@@ -150,15 +122,9 @@ export function JoinStepsSlider() {
                 exit={{ opacity: 0, y: -16 }}
                 transition={{ duration: 0.4, ease: EASE }}
               >
-                <h3
-                  className="mb-4 font-sans font-light text-[#1B1B1B]"
-                  style={{ fontSize: "clamp(1.4rem, 2vw, 2rem)" }}
-                >
-                  {STEPS[activeStep].title}
-                </h3>
                 <p
                   className="font-sans text-sm leading-relaxed text-[#1B1B1B]/45"
-                  style={{ maxWidth: "28ch" }}
+                  style={{ maxWidth: "42ch" }}
                 >
                   {STEPS[activeStep].body}
                 </p>
@@ -166,18 +132,6 @@ export function JoinStepsSlider() {
             </AnimatePresence>
           </div>
 
-          {/* Apply Now button — full-width border style matching aircenter */}
-          <motion.div whileHover={{ scale: 1.03 }} transition={SPRING_HOVER}>
-            <Link
-              href="/join/agent"
-              className="flex w-full items-center justify-between border border-[#1B1B1B]/15 px-6 py-4 font-sans transition-colors hover:border-[#1B1B1B]/40"
-            >
-              <span className="text-xs font-light uppercase tracking-widest text-[#1B1B1B]">
-                Apply Now
-              </span>
-              <span className="text-lg font-light text-[#1B1B1B]">+</span>
-            </Link>
-          </motion.div>
         </div>
       </div>
     </section>

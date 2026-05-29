@@ -36,7 +36,7 @@ export function FAQ() {
         transition={{ duration: 0.8, ease: "easeOut" }}
         viewport={{ once: true }}
       >
-        <RevealText>FAQs</RevealText>
+        <RevealText>FAQ<span style={{ color: "#9E8C61" }}>s</span></RevealText>
       </motion.h2>
 
       <div>
