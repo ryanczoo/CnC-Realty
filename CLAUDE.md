@@ -2648,6 +2648,96 @@ Rebuilt to match the image-expansion effect from `mersi-architecture.com/agence`
 
 ---
 
+## Session Notes — 2026-05-28 (Part 3)
+
+### What Was Completed This Session
+
+All changes committed on `claude/real-estate-website-9bdWi` (commit `c2d8a60`).
+
+Dev server ran on **localhost:3001** this session (port 3000 was already in use).
+
+---
+
+### JoinCnCCTA — Full Polish (Complete ✅)
+
+**File:** `apps/web/src/components/home/JoinCnCCTA.tsx`
+
+Complete redesign of the CTA section. Final state:
+
+**Layout:**
+- Section: `200vh` tall, `bg-[#F2F0EF]`
+- Sticky container: `top: calc(100vh - 65vh)` (= 35vh) — anchored so image bottom is flush with viewport bottom when fully expanded. This eliminates the off-white gap between the expanded image and the footer.
+- Small image: `52% × 42vh`, centered in sticky area
+- Fully expanded image: `100% × 65vh`, fills sticky container
+
+**"Be the agent you're meant to be" heading:**
+- Positioned at `top: 1.5rem` within sticky container (ABOVE the image, not below)
+- Two-layer approach (matches RevealText behavior exactly):
+  - **Dim base layer** (`aria-hidden`): always visible in gray `rgba(27,27,27,0.18)` + dim gold `rgba(158,140,97,0.18)` — the "gray" state
+  - **Bright overlay**: same text in full `#1B1B1B` / `#9E8C61`, CSS mask sweeps left-to-right in 1.2s — exactly matching FAQ RevealText speed/easing
+- Outer `motion.div` wrapper: fade-up (opacity 0→1, y 24→0, 0.8s easeOut) matching FAQ heading animation
+- "meant" reveals in gold `#9E8C61` matching the ServicesSection accent color
+- No trailing period
+
+**"Be CnC" + "Join Now" button:**
+- Appear inside image at scroll progress [0.85, 0.95] via `overlayOpacity`
+- "Be CnC": `text-white` — solid white (removed `opacity-60`)
+- "Join Now": `bg-white` pill, `text-cnc-dark` — solid white button
+- No trailing period on "Be CnC", no arrow on "Join Now"
+
+**Key decisions made:**
+- `overflow: hidden` removed from sticky container — it was blocking IntersectionObserver, preventing RevealText from firing
+- Heading moved from `bottom: 1.5rem` to `top: 1.5rem` so it sits above the image and gets covered as image expands downward
+- `headingOpacity` scroll animation removed entirely — heading is always visible until physically covered by expanding image
+- Three separate RevealText instances rejected — each sweeps independently within its own bounds, not one unified sweep
+- CSS mask on container chosen over RevealText for the heading because it allows mixed colors (dark + gold) in one unified left-to-right sweep
+
+**RevealText component updates:**
+- Added `color?: string` prop for custom reveal colors
+- `EASE_OUT_EXPO` from `motion.ts` now used in `transitionTimingFunction` (was hardcoded string)
+
+**Code cleanup (simplify skill):**
+- Removed local `EASING` constant — now uses shared `EASE_OUT_EXPO` from `motion.ts`
+- `motion.ts` `fadeUp` uses `EASE_OUT_EXPO as [number, number, number, number]` (cast needed for Framer Motion type compatibility — `readonly` tuple not assignable to mutable tuple)
+- Pre-existing TypeScript errors in `Testimonials.tsx`, `Navbar.tsx`, and test files are NOT from these changes
+
+**Testimonials:**
+- Periods removed from `WORDS` cycling array: `["trust", "results", "futures", "homes", "teams"]`
+
+**Superpowers discipline note:** Skills must be invoked BEFORE every action — not just when the user asks. The correct flow is: task arrives → invoke relevant skill → then act.
+
+---
+
+### Section Status
+
+| Section | Status |
+|---|---|
+| Hero | ✅ Approved |
+| Exclusive Listings | ✅ Approved |
+| Why CnC | ✅ Approved |
+| Services | ✅ Approved |
+| Testimonials | ✅ Approved |
+| Join CnC CTA | 🔄 Built and polished — needs final review next session |
+| FAQ | ✅ Approved |
+| Footer | ✅ Approved |
+
+Nothing new committed beyond `c2d8a60` this session.
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. Open `localhost:3000` (or `localhost:3001` if 3000 is occupied)
+3. **Review JoinCnCCTA** — confirm:
+   - "Be the agent you're meant to be" heading: gray first → left-to-right reveal → black/gold, fade-up on enter
+   - Image expands to fill viewport bottom with no gap before footer
+   - "Be CnC" solid white, "Join Now" solid white button
+4. Once approved → move to remaining work:
+   - CnC ICA draft review (`docs/cnc-ica-draft.md`)
+   - Checklist templates at `/admin/settings/checklists`
+   - Phase 6 tasks (`docs/superpowers/plans/2026-05-22-phase-6-launch.md`)
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`
