@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Metadata } from "next";
+import { RevealText } from "@/components/ui/reveal-text";
 import { JoinFaq } from "@/components/join/JoinFaq";
 import { StatsBar } from "@/components/join/StatsBar";
 import { FounderQuote } from "@/components/join/FounderQuote";
@@ -130,7 +131,7 @@ export default function JoinPage() {
       <section data-navbar-theme="dark" className="bg-[#0f0f0f] px-8 py-28 lg:px-20">
         <div className="mx-auto max-w-3xl">
           <p className="mb-3 font-sans text-xs font-medium uppercase tracking-widest text-[#9E8C61]">Got questions?</p>
-          <h2 className="mb-12 font-sans text-[2rem] font-light text-white">Common questions</h2>
+          <h2 className="mb-12 font-sans text-[2rem] font-light"><RevealText onDark>Common questions</RevealText></h2>
           <JoinFaq faqs={FAQS} />
         </div>
       </section>
@@ -138,8 +139,8 @@ export default function JoinPage() {
       {/* ── Final CTA ── */}
       <section data-navbar-theme="dark" className="bg-[#9E8C61] px-8 py-28 lg:px-20">
         <div className="mx-auto max-w-3xl text-center">
-          <h2 className="mb-4 font-sans text-[2.5rem] font-light leading-tight text-white">
-            Ready to make the move?
+          <h2 className="mb-4 font-sans text-[2.5rem] font-light leading-tight">
+            <RevealText onDark>Ready to make the move?</RevealText>
           </h2>
           <p className="mb-2 font-sans text-base text-white/70">
             Instant guaranteed approval for all licensed California agents.

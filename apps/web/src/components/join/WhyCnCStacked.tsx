@@ -1,6 +1,8 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useRef, useState, useEffect } from "react";
+import { motion, useScroll, useTransform } from "motion/react";
+import { RevealLine } from "@/components/ui/reveal-text";
 
 const G = ({ children }: { children: ReactNode }) => (
   <span style={{ color: "#9E8C61" }}>{children}</span>
@@ -46,59 +48,115 @@ const ROWS: Row[] = [
   },
 ];
 
-export function WhyCnCStacked() {
+// Pixel offset between stacked cards and top of first card (clears the navbar)
+const BASE = 80;
+const OFFSET = 88;
+
+function CardContent({ row }: { row: Row }) {
   return (
-    <section className="bg-cnc-bg">
-      {/* heading above the stack */}
+    <div className="flex h-full" style={{ backgroundColor: row.bg }}>
+      {row.imgSide === "left" && (
+        <div className="relative w-1/2 overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={row.img} alt={row.label} className="absolute inset-0 h-full w-full object-cover" />
+        </div>
+      )}
+      <div
+        className="flex w-1/2 flex-col justify-between p-10 lg:p-16"
+        style={{ backgroundColor: row.textBg }}
+      >
+        <h3
+          className="font-sans text-[2.5rem] font-semibold uppercase tracking-widest leading-tight"
+          style={{ color: row.textColor }}
+        >
+          {row.label}
+        </h3>
+        <p
+          className="max-w-lg font-sans text-[1.25rem] font-light leading-relaxed"
+          style={{ color: row.textColor }}
+        >
+          {row.body}
+        </p>
+      </div>
+      {row.imgSide === "right" && (
+        <div className="relative w-1/2 overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={row.img} alt={row.label} className="absolute inset-0 h-full w-full object-cover" />
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function WhyCnCStacked() {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [vh, setVh] = useState(800);
+
+  useEffect(() => {
+    const update = () => setVh(window.innerHeight);
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  const { scrollYProgress } = useScroll({
+    target: scrollRef,
+    offset: ["start start", "end end"],
+  });
+
+  const cardH = vh * 0.52; // card height in px (matches height: "52vh")
+
+  // Both cards start the same distance below their stacked position:
+  // exactly at the bottom edge of the card above them once stacked.
+  const slideDistance = cardH - OFFSET; // e.g. 416 - 88 = 328px
+
+  // Phase 1 [0 → 0.5]: card 2 slides up from just below card 1's stacked bottom
+  const card2Y = useTransform(scrollYProgress, [0, 0.5], [slideDistance, 0]);
+
+  // Card 3 follows card 2's bottom during phase 1, then stacks over card 2 in phase 2
+  const card3Y = useTransform(scrollYProgress, [0, 0.5, 1.0], [slideDistance * 2, slideDistance, 0]);
+
+  return (
+    <section className="bg-cnc-bg" style={{ marginBottom: "-110px" }}>
+      {/* Heading — normal scroll flow, above the sticky area */}
       <div className="px-8 pt-20 pb-10 text-right lg:px-24">
-        <h2 className="font-sans font-light leading-[1.0] text-[#1B1B1B]">
-          <span className="block text-[2.5rem] xl:text-[3rem]">For Agents,</span>
-          <span className="block text-[3.5rem] xl:text-[4.2rem]">By <span className="text-[#9E8C61]">Agents</span></span>
+        <h2 className="font-sans font-light leading-[1.0]">
+          <span className="block text-[2.5rem] xl:text-[3rem]"><RevealLine>For Agents,</RevealLine></span>
+          <span className="block text-[3.5rem] xl:text-[4.2rem]"><RevealLine delay={0.15}>By <span className="text-[#9E8C61]">Agents</span></RevealLine></span>
         </h2>
       </div>
 
-      <div className="relative" style={{ paddingBottom: "100px" }}>
-        {ROWS.map((row, i) => (
-          <div
-            key={i}
-            className="sticky bg-cnc-bg px-[24px]"
-            style={{ top: `${80 + i * 88}px`, height: "52vh" }}
-          >
-            <div className="flex h-full overflow-hidden" style={{ backgroundColor: row.bg }}>
-              {row.imgSide === "left" && (
-                <div className="relative w-1/2 overflow-hidden">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={row.img} alt={row.label} className="absolute inset-0 h-full w-full object-cover" />
-                </div>
-              )}
+      {/* Scroll driver — 200vh: 100vh per stacking phase, no exit animation */}
+      <div ref={scrollRef} style={{ height: "200vh" }}>
+        <div className="sticky top-0 h-screen overflow-hidden bg-cnc-bg">
+          <div className="relative h-full">
 
-              <div
-                className="flex w-1/2 flex-col justify-between p-10 lg:p-16"
-                style={{ backgroundColor: row.textBg }}
-              >
-                <h3
-                  className="font-sans text-[2.5rem] font-semibold uppercase tracking-widest leading-tight"
-                  style={{ color: row.textColor }}
-                >
-                  {row.label}
-                </h3>
-                <p
-                  className="max-w-lg font-sans text-[1.25rem] font-light leading-relaxed"
-                  style={{ color: row.textColor }}
-                >
-                  {row.body}
-                </p>
-              </div>
-
-              {row.imgSide === "right" && (
-                <div className="relative w-1/2 overflow-hidden">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={row.img} alt={row.label} className="absolute inset-0 h-full w-full object-cover" />
-                </div>
-              )}
+            {/* Card 1 — fixed at base position */}
+            <div
+              className="absolute left-6 right-6 overflow-hidden rounded-2xl"
+              style={{ top: BASE, height: "52vh" }}
+            >
+              <CardContent row={ROWS[0]} />
             </div>
+
+            {/* Card 2 — slides up from below card 1 during phase 1 */}
+            <motion.div
+              className="absolute left-6 right-6 overflow-hidden rounded-2xl"
+              style={{ top: BASE + OFFSET, y: card2Y, height: "52vh" }}
+            >
+              <CardContent row={ROWS[1]} />
+            </motion.div>
+
+            {/* Card 3 — follows card 2's bottom in phase 1, stacks in phase 2 */}
+            <motion.div
+              className="absolute left-6 right-6 overflow-hidden rounded-2xl"
+              style={{ top: BASE + OFFSET * 2, y: card3Y, height: "52vh" }}
+            >
+              <CardContent row={ROWS[2]} />
+            </motion.div>
+
           </div>
-        ))}
+        </div>
       </div>
     </section>
   );

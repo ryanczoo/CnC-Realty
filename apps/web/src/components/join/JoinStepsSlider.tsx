@@ -8,7 +8,7 @@ import { EASE_OUT_EXPO } from "@/lib/motion";
 const STEPS = [
   {
     title: "Custom CRM",
-    body: "Manage your leads, transactions, and campaigns all in one place with our AI-powered CRM built exclusively for CnC agents.",
+    body: "Manage your leads, transactions, and analytics all in one place with our custom CRM built exclusively for CnC agents.",
     image: "/images/join-slide-crm.png",
   },
   {
@@ -123,7 +123,7 @@ export function JoinStepsSlider() {
                 transition={{ duration: 0.4, ease: EASE }}
               >
                 <p
-                  className="font-sans text-sm leading-relaxed text-[#1B1B1B]/45"
+                  className="font-sans text-sm leading-relaxed text-[#1B1B1B]"
                   style={{ maxWidth: "42ch" }}
                 >
                   {STEPS[activeStep].body}

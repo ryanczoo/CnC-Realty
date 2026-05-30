@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
+import { RevealText, RevealLine } from "@/components/ui/reveal-text";
 
 const STEPS = [
   {
@@ -27,7 +28,7 @@ const STEPS = [
 
 export function HowToJoin() {
   return (
-    <section data-navbar-theme="light" className="bg-cnc-bg px-8 py-28 lg:px-20">
+    <section data-navbar-theme="light" className="bg-cnc-bg px-8 pt-6 pb-28 lg:px-20">
       <div className="mx-auto max-w-7xl">
         <div className="flex gap-24">
 
@@ -35,8 +36,8 @@ export function HowToJoin() {
           <div className="w-[45%] shrink-0">
             <div className="sticky top-28">
               <h2 className="font-sans leading-[1.1]">
-                <span className="block text-[2.5rem] font-light text-[#1B1B1B]">How to</span>
-                <span className="block text-[3.5rem] font-light text-[#1B1B1B]">Join <span className="text-[#9E8C61]">CnC</span></span>
+                <span className="block text-[2.5rem] font-light"><RevealText>How to</RevealText></span>
+                <span className="block text-[3.5rem] font-light"><RevealLine delay={0.15}>Join <span className="text-[#9E8C61]">CnC</span></RevealLine></span>
               </h2>
               <motion.a
                 href="/join/agent"

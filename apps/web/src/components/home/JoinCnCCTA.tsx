@@ -95,6 +95,7 @@ export function JoinCnCCTA() {
             width: imgWidth,
             height: imgHeight,
             overflow: "hidden",
+            borderRadius: "1rem",
             zIndex: 2,
           }}
         >

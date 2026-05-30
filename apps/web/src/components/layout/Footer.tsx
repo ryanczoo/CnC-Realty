@@ -161,13 +161,13 @@ export function Footer() {
             <div className="flex items-center gap-7">
               {[
                 {
-                  href: "https://facebook.com", label: "Facebook", icon: <FacebookIcon />,
+                  href: "https://www.facebook.com/CnCRealtyGroup", label: "Facebook", icon: <FacebookIcon />,
                 },
                 {
-                  href: "https://instagram.com", label: "Instagram", icon: <InstagramIcon />,
+                  href: "https://www.instagram.com/cncrealty", label: "Instagram", icon: <InstagramIcon />,
                 },
                 {
-                  href: "https://youtube.com", label: "YouTube", icon: <YoutubeIcon />,
+                  href: "https://www.youtube.com/@CnCRealtyGroup", label: "YouTube", icon: <YoutubeIcon />,
                 },
               ].map(({ href, label, icon }) => (
                 <motion.a

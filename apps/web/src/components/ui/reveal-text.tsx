@@ -12,6 +12,42 @@ interface RevealTextProps {
   color?: string;
 }
 
+// Use RevealLine for headings with mixed colors (dark text + gold accent).
+// clipPath inset() is used instead of mask so the animation is reliable across browsers,
+// and negative inset values extend the clip region past the border box to capture descenders.
+export function RevealLine({ children, delay = 0, className }: {
+  children: React.ReactNode;
+  delay?: number;
+  className?: string;
+}) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const isInView = useInView(ref, { once: true, margin: "-8%" });
+
+  const easing = `cubic-bezier(${EASE_OUT_EXPO.join(",")})`;
+
+  return (
+    <span ref={ref} className={cn("relative inline-block", className)} style={{ color: "#1B1B1B" }}>
+      {/* Dim base — always visible, sets layout dimensions */}
+      <span aria-hidden style={{ opacity: 0.18 }}>{children}</span>
+      {/* Bright overlay — revealed left-to-right via clip-path */}
+      <span
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: "-0.25em",
+          // negative top/bottom captures ascenders + descenders; negative left prevents left-edge clipping
+          clipPath: isInView ? "inset(-10% 0% -10% -5%)" : "inset(-10% 100% -10% -5%)",
+          transition: `clip-path 1.2s ${easing} ${delay}s`,
+        } as React.CSSProperties}
+      >
+        {children}
+      </span>
+    </span>
+  );
+}
+
 export function RevealText({ children, className, delay = 0, onDark = false, color: colorProp }: RevealTextProps) {
   const ref = useRef<HTMLSpanElement>(null);
   const isInView = useInView(ref, { once: true, margin: "-8%" });

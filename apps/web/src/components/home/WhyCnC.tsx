@@ -233,7 +233,7 @@ export function WhyCnC() {
 
             {/* Back media — venetian blind for images, crossfade for video */}
             <div
-              className="absolute overflow-hidden"
+              className="absolute overflow-hidden rounded-2xl"
               style={{ right: "12%", top: "13%", width: "60%", height: "80%" }}
             >
               <AnimatePresence>
@@ -265,7 +265,7 @@ export function WhyCnC() {
             <AnimatePresence>
               <motion.div
                 key={`front-${activeIdx}`}
-                className="absolute z-10 overflow-hidden"
+                className="absolute z-10 overflow-hidden rounded-2xl"
                 style={{ left: "2%", top: "25%", width: "40%", height: "52%" }}
                 initial={{ opacity: 0, y: 36 }}
                 animate={{ opacity: 1, y: 0 }}

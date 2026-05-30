@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Metadata } from "next";
+import { RevealText } from "@/components/ui/reveal-text";
 
 export const metadata: Metadata = {
   title: "Buy a Home | CnC Realty",
@@ -35,8 +36,9 @@ export default function BuyPage() {
       <section className="px-8 pb-24 pt-40 lg:px-20">
         <div className="mx-auto max-w-5xl">
           <p className="mb-4 font-sans text-sm font-medium uppercase tracking-widest text-[#9E8C61]">Buy</p>
-          <h1 className="mb-6 font-sans text-[3.5rem] font-light leading-tight text-[#1B1B1B] lg:text-[5rem]">
-            Find your<br />next home.
+          <h1 className="mb-6 font-sans text-[3.5rem] font-light leading-tight lg:text-[5rem]">
+            <span className="block"><RevealText>Find your</RevealText></span>
+            <span className="block"><RevealText delay={0.15}>next home.</RevealText></span>
           </h1>
           <p className="mb-10 max-w-xl font-sans text-lg font-light text-[#1B1B1B]/60">
             Thousands of California listings updated directly from CRMLS. Expert agents. Zero pressure.
@@ -60,7 +62,7 @@ export default function BuyPage() {
 
       <section className="border-t border-[#1B1B1B]/8 px-8 py-24 lg:px-20">
         <div className="mx-auto max-w-5xl">
-          <h2 className="mb-16 font-sans text-[2rem] font-light text-[#1B1B1B]">How it works</h2>
+          <h2 className="mb-16 font-sans text-[2rem] font-light"><RevealText>How it works</RevealText></h2>
           <div className="grid grid-cols-1 gap-px bg-[#1B1B1B]/8 md:grid-cols-2 lg:grid-cols-4">
             {STEPS.map((step) => (
               <div key={step.number} className="bg-[#F2F0EF] p-8">
@@ -75,7 +77,7 @@ export default function BuyPage() {
 
       <section className="px-8 pb-24 lg:px-20">
         <div className="mx-auto max-w-5xl rounded-2xl bg-[#1B1B1B] px-10 py-14 text-center">
-          <h2 className="mb-4 font-sans text-[2rem] font-light text-white">Ready to start looking?</h2>
+          <h2 className="mb-4 font-sans text-[2rem] font-light"><RevealText onDark>Ready to start looking?</RevealText></h2>
           <p className="mb-8 font-sans text-base text-white/50">Browse live CRMLS listings — no account required.</p>
           <Link
             href="/properties"

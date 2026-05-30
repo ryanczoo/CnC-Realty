@@ -10,7 +10,7 @@ import {
 } from "motion/react";
 import type { CSSProperties } from "react";
 import { useRef, useState } from "react";
-import { RevealText } from "@/components/ui/reveal-text";
+import { RevealText, RevealLine } from "@/components/ui/reveal-text";
 
 const CARDS = [
   {
@@ -121,7 +121,7 @@ function ServiceCard({
       {/* Entry animation wrapper */}
       <motion.div
         ref={cardRef}
-        className="relative aspect-[3/4] w-full"
+        className="relative aspect-[3/4] w-full rounded-2xl"
         initial={{ opacity: 0, y: 52 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay }}
@@ -150,11 +150,13 @@ function ServiceCard({
             width: "100%",
             height: "100%",
             position: "relative",
+            borderRadius: "1rem",
+            backgroundColor: "#1B1B1B",
           }}
         >
           {/* Front */}
           <motion.div
-            className="absolute inset-0 overflow-hidden"
+            className="absolute inset-0 overflow-hidden rounded-2xl"
             style={BACKFACE_HIDDEN}
             whileHover={flipped ? undefined : "zoom"}
             onClick={() => !flipped && setFlipped(true)}
@@ -184,7 +186,7 @@ function ServiceCard({
 
           {/* Back */}
           <div
-            className="absolute inset-0 flex flex-col bg-[#F2F0EF] p-6 ring-1 ring-[#1B1B1B]/15"
+            className="absolute inset-0 flex flex-col overflow-hidden rounded-2xl bg-[#F2F0EF] p-6 ring-1 ring-[#1B1B1B]/15"
             style={{ ...BACKFACE_HIDDEN, transform: "rotateY(180deg)" }}
           >
             <div className="mb-6 h-px w-6 bg-[#1B1B1B]/40" />
@@ -286,7 +288,7 @@ export function ServicesSection() {
         <h2 className="font-sans font-light leading-[1.0]">
           <span className="block text-[2.5rem] xl:text-[3rem]"><RevealText>See the difference,</RevealText></span>
           <span className="block text-[3.5rem] xl:text-[4.2rem]">
-            <RevealText delay={0.1}><span className="text-[2.5rem] xl:text-[3rem]">with </span><span style={{ color: "#9E8C61" }}>CnC</span></RevealText>
+            <RevealLine delay={0.1}><span className="text-[2.5rem] xl:text-[3rem]">with </span><span style={{ color: "#9E8C61" }}>CnC</span></RevealLine>
           </span>
         </h2>
         <motion.button

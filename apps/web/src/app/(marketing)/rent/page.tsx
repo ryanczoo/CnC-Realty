@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Metadata } from "next";
+import { RevealText } from "@/components/ui/reveal-text";
 
 export const metadata: Metadata = {
   title: "Rent | CnC Realty",
@@ -27,8 +28,9 @@ export default function RentPage() {
       <section className="px-8 pb-24 pt-40 lg:px-20">
         <div className="mx-auto max-w-5xl">
           <p className="mb-4 font-sans text-sm font-medium uppercase tracking-widest text-[#9E8C61]">Rent</p>
-          <h1 className="mb-6 font-sans text-[3.5rem] font-light leading-tight text-[#1B1B1B] lg:text-[5rem]">
-            Find the right<br />place to live.
+          <h1 className="mb-6 font-sans text-[3.5rem] font-light leading-tight lg:text-[5rem]">
+            <span className="block"><RevealText>Find the right</RevealText></span>
+            <span className="block"><RevealText delay={0.15}>place to live.</RevealText></span>
           </h1>
           <p className="mb-10 max-w-xl font-sans text-lg font-light text-[#1B1B1B]/60">
             Live CRMLS rental listings across Southern California. Expert tenant representation at no cost to you.
@@ -52,7 +54,7 @@ export default function RentPage() {
 
       <section className="border-t border-[#1B1B1B]/8 px-8 py-24 lg:px-20">
         <div className="mx-auto max-w-5xl">
-          <h2 className="mb-16 font-sans text-[2rem] font-light text-[#1B1B1B]">Why rent with CnC</h2>
+          <h2 className="mb-16 font-sans text-[2rem] font-light"><RevealText>Why rent with CnC</RevealText></h2>
           <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
             {PERKS.map((item) => (
               <div key={item.title} className="rounded-xl border border-[#1B1B1B]/8 bg-cnc-bg p-8">
@@ -66,7 +68,7 @@ export default function RentPage() {
 
       <section className="px-8 pb-24 lg:px-20">
         <div className="mx-auto max-w-5xl rounded-2xl bg-[#1B1B1B] px-10 py-14 text-center">
-          <h2 className="mb-4 font-sans text-[2rem] font-light text-white">Need help finding a rental?</h2>
+          <h2 className="mb-4 font-sans text-[2rem] font-light"><RevealText onDark>Need help finding a rental?</RevealText></h2>
           <p className="mb-8 font-sans text-base text-white/50">A CnC agent will work on your behalf — at no cost to you.</p>
           <Link
             href="/contact"
