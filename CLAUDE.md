@@ -2851,6 +2851,108 @@ Replaced the single vertical pill (`3px wide, 220px tall, grows top-to-bottom`) 
 
 ---
 
+## Session Notes — 2026-05-30
+
+### What Was Completed This Session
+
+All changes committed as `66d6891` on `claude/real-estate-website-9bdWi`. Branch is now 10 commits ahead of origin (not yet pushed).
+
+---
+
+### WhyCnCStacked — Rebuilt with Framer-Motion Scroll-Driven Stacking
+
+**File:** `apps/web/src/components/join/WhyCnCStacked.tsx`
+
+The previous implementation used simple CSS `position: sticky` with `paddingBottom: 100px` — cards just sat at their stacked positions with no entrance animation. Rebuilt to use a proper scroll-driven stacking animation:
+
+- **200vh scroll driver** with `useScroll` + `useTransform` to drive card entrance
+- Card 1 fixed at `top: BASE (80px)`, height `52vh`
+- Card 2 slides up from `slideDistance` below → 0 over scroll progress [0, 0.5]
+- Card 3 follows card 2's bottom in phase 1, then stacks over card 2 in phase 2 [0, 0.5, 1.0]
+- `slideDistance = cardH - OFFSET = (vh * 0.52) - 88` (card bottom aligns with next card's initial top)
+- Heading ("For Agents, / By Agents") now uses `RevealLine` component
+- All 3 cards get `rounded-2xl`
+- Added `marginBottom: "-110px"` on section to close gap to HowToJoin (see below)
+
+---
+
+### RevealLine — New Component in reveal-text.tsx
+
+**File:** `apps/web/src/components/ui/reveal-text.tsx`
+
+New `RevealLine` component for headings that contain mixed colors (dark text + gold `<span>`). Uses `clipPath inset()` animation instead of a mask — more reliable across browsers. Pattern:
+- Dim base layer (`opacity: 0.18`, `aria-hidden`) always visible — sets layout dimensions
+- Bright overlay with `clipPath: inset(-10% 100% -10% -5%)` → `inset(-10% 0% -10% -5%)` on scroll enter
+- Negative inset values extend clip region past border box to capture ascenders/descenders
+- `once: true` + `margin: "-8%"` for scroll trigger
+
+Now used in: `WhyCnCStacked` heading, `HowToJoin` heading.
+
+---
+
+### HowToJoin — Gap Fix + Heading Polish
+
+**File:** `apps/web/src/components/join/HowToJoin.tsx`
+
+- Top padding changed: `py-28` → `pt-6 pb-28` (reduces top padding from 112px to 24px)
+- Heading now uses `RevealText` / `RevealLine` (was plain static text)
+
+**Gap fix decisions (important for future sessions):**
+- The gap between card 3 and HowToJoin had two sources: (1) ~136px empty off-white space below card 3 inside the sticky container, and (2) HowToJoin's top padding
+- First attempt: reduce `py-28` → `pt-14` — user didn't notice the difference
+- Second attempt: increased card heights from `52vh` to `calc(100vh - 280px)` to fill the sticky container + reduced padding to `pt-6` — gap looked good
+- **Ryan's feedback:** "why did you make the cards taller? I didn't tell you to change the size of the cards" — revert card height, only fix what was asked
+- **Final solution:** Reverted cards to `52vh`, added `marginBottom: "-110px"` on `WhyCnCStacked` section, kept `pt-6` on HowToJoin. Net visual gap ≈ 50px.
+- **Rule established:** Do not change component dimensions/sizes as a side-effect of a spacing fix. Use negative margins or padding to close gaps instead.
+
+---
+
+### Other Polish (same commit)
+
+- **WhyCnC.tsx** — Added `rounded-2xl` to back media container and front image overlay
+- **JoinCnCCTA.tsx** — Added `borderRadius: "1rem"` to the expanding image container
+- **JoinStepsSlider.tsx** — Minor polish
+- **ServicesSection.tsx** — Minor polish
+- **Footer.tsx** — Minor polish
+- **Marketing pages** (buy, contact, join, manage, rent, sell) — Minor copy/layout polish
+
+---
+
+### Section Status
+
+| Section / Page | Status |
+|---|---|
+| Homepage — Hero | ✅ Approved |
+| Homepage — Exclusive Listings | ✅ Approved |
+| Homepage — Why CnC | ✅ Approved (rounded-2xl on media) |
+| Homepage — Services | ✅ Approved |
+| Homepage — Testimonials | ✅ Approved |
+| Homepage — Join CnC CTA | ✅ Approved (borderRadius on expanding image) |
+| Homepage — FAQ | ✅ Approved |
+| Homepage — Footer | ✅ Approved |
+| Join Page — StatsBar | ✅ Approved |
+| Join Page — FounderQuote | ✅ Approved |
+| Join Page — WhyCnCStacked | ✅ Approved (scroll-driven stacking, gap fixed) |
+| Join Page — HowToJoin | ✅ Approved (gap fixed, RevealLine heading) |
+| Join Page — JoinStepsSlider | 🔄 Needs final review next session |
+| Join Page — FAQ | ✅ Approved |
+| Join Page — CTA | ✅ Approved |
+
+---
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. Open `localhost:3000` (or 3001 if occupied)
+3. **Review JoinStepsSlider** on `/join` — confirm final look (text left / images right, progress bars, body text)
+4. **Push branch** to GitHub (10 commits are local-only): `git push`
+5. Continue with remaining work:
+   - CnC ICA draft review (`docs/cnc-ica-draft.md`)
+   - Checklist templates at `/admin/settings/checklists`
+   - Phase 6 tasks (`docs/superpowers/plans/2026-05-22-phase-6-launch.md`)
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`
