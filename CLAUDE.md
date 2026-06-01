@@ -3080,6 +3080,76 @@ DB has ~6,000+ active commercial listings (CommercialSale, Office, Retail, Indus
 
 ---
 
+## Session Notes — 2026-06-01
+
+### What Was Completed This Session
+
+All changes committed as `c3a15f6` on `claude/real-estate-website-9bdWi`.
+
+### Sell Page — Our Process Section (`SellProcess.tsx`)
+
+**Root cause investigation (via Puppeteer on fluid.glass/approach):**
+
+Used Puppeteer to inspect Fluid's actual HTML/CSS instead of guessing. Key findings:
+- Fluid's `.scroll` is `display: inline-flex` — all panels side by side
+- Panels are **NOT 100vw** — intro: 55vw, photos: 93.8vw, text slides: 91.9vw
+- This is what creates the "photo appears on the right side" split — adjacent panels always peek into the viewport
+- The `objectPosition` approach was wrong — the effect is purely architectural (panel widths)
+
+**Panel widths implemented (matching Fluid):**
+
+| Panel | Width |
+|---|---|
+| Intro | 55vw |
+| Full-bleed photo | 93vw |
+| Slide (overlapping photos) | 46vw |
+| Step text | 40vw |
+
+- `TOTAL_VW` and `TRAVEL_VW` calculated dynamically from panel counts
+- Section height stays 900vh
+
+**Process slide panel (step 01 only):**
+- Inserted between Photo 01 (sell-10.jpg) and Valuation text
+- Two overlapping photos: `sell-slide-top.jpg` (Spanish house w/ palms) and `sell-slide-bottom.jpg` (person on couch)
+- Exact Fluid dimensions (converted from px to vw):
+  - Top photo: `18.8vw × 23.3vw`, `transform: translateX(20%)`
+  - Bottom photo: `14.8vw × 18.4vw`, `position: absolute`, `left: 16.1vw`, `top: 16.3vw`, `z-index: 1`
+- Both photos have `rounded-2xl` corners
+
+**Other polish decisions:**
+- `sell-08.jpg` (Listing photo): `objectPosition: left center` — buildings are on the left of the image, anchor them so they show first as the panel scrolls in
+- Ghost step number watermark (faint `01`/`02` etc.) — **removed** from all text panels
+- Dash line next to step number — **removed** from all text panels
+- `TEXT_VW` tuned from 92 → 65 → 52 → 40 based on user feedback ("tighter, tighter, tighter")
+- `SLIDE_VW` tuned from 92 → 55 → 46
+
+**Key architectural rule (do NOT regress):**
+> Fluid's split effect comes ENTIRELY from panel widths being smaller than 100vw. Never set panels back to `w-screen`. The `objectPosition` and `leftGap` approaches were both wrong — panel width is the only correct approach.
+
+**Superpowers discipline reinforced:**
+- Always use Puppeteer to inspect reference sites before guessing at implementation
+- Always invoke the relevant skill before taking action
+- The systematic-debugging skill was used to find the root cause before writing any fix code
+
+### Section Status
+
+| Section | Status |
+|---|---|
+| Sell Page — Hero | ✅ Approved (from prior session) |
+| Sell Page — Our Process | 🔄 Built this session, needs Ryan's full review next session |
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. Open `localhost:3000/sell`
+3. **Review Our Process section** — scroll through all 4 steps, check photo/slide/text transitions
+4. Continue with remaining work if Process approved:
+   - CnC ICA draft review (`docs/cnc-ica-draft.md`)
+   - Checklist templates at `/admin/settings/checklists`
+   - Phase 6 tasks (`docs/superpowers/plans/2026-05-22-phase-6-launch.md`)
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`
