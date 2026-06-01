@@ -1,8 +1,3 @@
-import Link from "next/link";
-import { motion } from "motion/react";
-import { SPRING_HOVER } from "@/lib/motion";
-
-const MotionLink = motion(Link);
 import { Metadata } from "next";
 import { RevealText, RevealLine } from "@/components/ui/reveal-text";
 import { DownArrow } from "@/components/ui/DownArrow";
@@ -12,6 +7,7 @@ import { WhyCnCStacked } from "@/components/join/WhyCnCStacked";
 import { HowToJoin } from "@/components/join/HowToJoin";
 import { JoinStepsSlider } from "@/components/join/JoinStepsSlider";
 import { CTALineArt } from "@/components/join/CTALineArt";
+import { JoinCTAButtons } from "@/components/join/JoinCTAButtons";
 
 export const metadata: Metadata = {
   title: "Join CnC Realty | Agent Opportunities",
@@ -107,24 +103,7 @@ export default function JoinPage() {
           <p className="mb-10 font-sans text-base text-[#1B1B1B]/60">
             Be CnC
           </p>
-<div className="flex justify-center gap-4">
-            <MotionLink
-              href="/join/agent"
-              whileHover={{ scale: 1.05 }}
-              transition={SPRING_HOVER}
-              className="inline-flex items-center rounded-full bg-[#9E8C61] px-8 py-3.5 font-sans text-sm font-medium text-white"
-            >
-              Join
-            </MotionLink>
-            <MotionLink
-              href="/contact"
-              whileHover={{ scale: 1.05 }}
-              transition={SPRING_HOVER}
-              className="inline-flex items-center rounded-full border border-[#1B1B1B]/20 px-8 py-3.5 font-sans text-sm font-medium text-[#1B1B1B]"
-            >
-              Message
-            </MotionLink>
-          </div>
+<JoinCTAButtons />
         </div>
       </section>
     </main>

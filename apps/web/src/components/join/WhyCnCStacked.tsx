@@ -30,7 +30,7 @@ const ROWS: Row[] = [
   },
   {
     label: "Tools for Success",
-    body: <>In this era of technology, you either utilize its potential to your advantage or get left behind. CnC has created a <G>fully-custom CRM</G> built by AI and real estate experts to provide lead tracking with automatic scoring, activity feed by potential clients, and a pipeline Kanban board <G>FREE</G> for agents. We also have an integrated transaction management software and email campaigns available for every CnC agent.</>,
+    body: <>With the help of AI, CnC has created a <G>full transaction management system</G> to provide agents with the ability to track the lifespan of their real estate deals and a <G>custom CRM software</G> to show lead tracking with automatic scoring, activity feed by potential clients, and a pipeline Kanban board – <G>FREE!</G></>,
     img: "/images/join-crm.png",
     imgSide: "left",
     bg: "#ECEAE7",
