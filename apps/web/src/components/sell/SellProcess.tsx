@@ -1,0 +1,237 @@
+"use client";
+
+import { useRef } from "react";
+import { Fragment } from "react";
+import { motion, useScroll, useTransform } from "motion/react";
+import { RevealLine } from "@/components/ui/reveal-text";
+import Image from "next/image";
+
+const STEPS = [
+  {
+    num: "01",
+    title: "Valuation",
+    body: "We analyze your home's market value using live CRMLS data, recent comparable sales, and local expertise to price your property for maximum return.",
+    photo: "/images/sell/sell-10.jpg",
+    // Two overlapping photos shown in a slide panel before the text panel
+    slideTop: "/images/sell/sell-slide-top.jpg",
+    slideBottom: "/images/sell/sell-slide-bottom.jpg",
+  },
+  {
+    num: "02",
+    title: "Listing",
+    body: "Professional photography, a compelling listing description, and immediate CRMLS exposure puts your home in front of every active buyer in Southern California.",
+    photo: "/images/sell/sell-08.jpg",
+    photoPos: "left center", // buildings on left — anchor to show them first
+    slideTop: undefined,
+    slideBottom: undefined,
+  },
+  {
+    num: "03",
+    title: "Offers",
+    body: "We present every offer clearly, walk you through the terms, and negotiate on your behalf to secure the best possible price and conditions.",
+    photo: "/images/sell/sell-14.jpg",
+    slideTop: undefined,
+    slideBottom: undefined,
+  },
+  {
+    num: "04",
+    title: "Closing",
+    body: "From escrow coordination to final paperwork, we manage every detail so you can sign with confidence and close on time.",
+    photo: "/images/sell/sell-09.jpg",
+    slideTop: undefined,
+    slideBottom: undefined,
+  },
+];
+
+// Panel widths (vw) — narrower than 100vw so adjacent panels always peek,
+// replicating Fluid's side-peek split effect.
+const INTRO_VW = 55;
+const PHOTO_VW = 93;
+const TEXT_VW = 40;
+const SLIDE_VW = 46; // narrow — photos fill most of the panel width
+
+// Total: intro + (photo + slide + text) for step 01 + (photo + text) × 3
+// = 55 + (93+92+92) + 3×(93+92) = 55 + 277 + 555 = 887vw
+const STEPS_WITH_SLIDE = STEPS.filter((s) => s.slideTop).length;
+const STEPS_WITHOUT_SLIDE = STEPS.length - STEPS_WITH_SLIDE;
+const TOTAL_VW =
+  INTRO_VW +
+  STEPS_WITH_SLIDE * (PHOTO_VW + SLIDE_VW + TEXT_VW) +
+  STEPS_WITHOUT_SLIDE * (PHOTO_VW + TEXT_VW);
+const TRAVEL_VW = TOTAL_VW - 100;
+
+export function SellProcess() {
+  const sectionRef = useRef<HTMLElement>(null);
+
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ["start start", "end end"],
+  });
+
+  const x = useTransform(scrollYProgress, [0, 1], ["0vw", `-${TRAVEL_VW}vw`]);
+
+  // 4 equal segments across the full scroll range (one per step)
+  const seg1 = useTransform(scrollYProgress, [0.00, 0.25], [0, 1]);
+  const seg2 = useTransform(scrollYProgress, [0.25, 0.50], [0, 1]);
+  const seg3 = useTransform(scrollYProgress, [0.50, 0.75], [0, 1]);
+  const seg4 = useTransform(scrollYProgress, [0.75, 1.00], [0, 1]);
+  const SEG_FILLS = [seg1, seg2, seg3, seg4];
+
+  return (
+    <section
+      ref={sectionRef}
+      data-navbar-theme="dark"
+      className="relative bg-[#1B1B1B]"
+      style={{ height: "900vh" }}
+    >
+      <div className="sticky top-0 h-screen overflow-hidden">
+
+        {/* Segmented progress bar */}
+        <div className="absolute left-16 right-16 top-[5.25rem] z-20 flex gap-1">
+          {SEG_FILLS.map((fill, i) => (
+            <div
+              key={i}
+              className="flex-1 overflow-hidden"
+              style={{ height: "1px", backgroundColor: "rgba(255,255,255,0.2)" }}
+            >
+              <motion.div
+                className="h-full origin-left bg-white"
+                style={{ scaleX: fill }}
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* Our Process label */}
+        <div className="absolute left-16 top-[6.25rem] z-20">
+          <h2 className="font-sans text-[2.5rem] font-light xl:text-[3rem]">
+            <RevealLine onDark>
+              <span className="text-[1.9rem] xl:text-[2.2rem]">Our </span>
+              <span style={{ color: "#9E8C61" }}>Process</span>
+            </RevealLine>
+          </h2>
+        </div>
+
+        {/* Horizontal scroll row */}
+        <motion.div
+          className="flex h-full"
+          style={{ x, width: `${TOTAL_VW}vw` }}
+        >
+          {/* Intro panel — 55vw */}
+          <div
+            className="flex h-full flex-col items-start justify-center px-16 lg:px-28"
+            style={{ width: `${INTRO_VW}vw` }}
+          >
+            <h2 className="mb-6 max-w-2xl font-sans text-[3rem] font-light leading-tight text-white lg:text-[4.5rem]">
+              We handle everything,<br />start to close.
+            </h2>
+            <p className="max-w-md font-sans text-base font-light leading-relaxed text-white/40">
+              From the first market analysis to the final signature, CnC manages every step of your sale.
+            </p>
+          </div>
+
+          {/* Photo + optional slide + text panels × 4 */}
+          {STEPS.map((step) => (
+            <Fragment key={step.num}>
+
+              {/* Full-bleed photo panel — 93vw */}
+              <div
+                className="relative h-full overflow-hidden"
+                style={{ width: `${PHOTO_VW}vw` }}
+              >
+                <div className="absolute inset-0 scale-110">
+                  <Image
+                    src={step.photo}
+                    alt={step.title}
+                    fill
+                    sizes={`${PHOTO_VW}vw`}
+                    className="object-cover"
+                    style={step.photoPos ? { objectPosition: step.photoPos } : undefined}
+                    priority={step.num === "01"}
+                  />
+                </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-black/20" />
+              </div>
+
+              {/* Slide panel — two overlapping photos (Fluid process-slide style) */}
+              {step.slideTop && step.slideBottom && (
+                <div
+                  className="relative flex h-full items-center justify-center"
+                  style={{ width: `${SLIDE_VW}vw` }}
+                >
+                  {/*
+                    Dimensions mirror Fluid's photo column (444×498px at 1440vw),
+                    converted to vw units:
+                    - column: 30.8vw wide × 34.6vw tall
+                    - top photo: 18.8vw × 23.3vw, shifted right 20%
+                    - bottom photo: 14.8vw × 18.4vw, absolute at left 16.1vw / top 16.3vw
+                  */}
+                  <div className="relative" style={{ width: "30.8vw", height: "34.6vw" }}>
+
+                    {/* Top photo — portrait, nudged right by 20% of its own width */}
+                    <div
+                      className="relative overflow-hidden rounded-2xl"
+                      style={{
+                        width: "18.8vw",
+                        height: "23.3vw",
+                        transform: "translateX(20%)",
+                      }}
+                    >
+                      <Image
+                        src={step.slideTop}
+                        alt={`${step.title} top`}
+                        fill
+                        sizes="18.8vw"
+                        className="object-cover"
+                      />
+                    </div>
+
+                    {/* Bottom photo — overlapping the lower-right of the top photo */}
+                    <div
+                      className="absolute overflow-hidden rounded-2xl"
+                      style={{
+                        width: "14.8vw",
+                        height: "18.4vw",
+                        left: "16.1vw",
+                        top: "16.3vw",
+                        zIndex: 1,
+                      }}
+                    >
+                      <Image
+                        src={step.slideBottom}
+                        alt={`${step.title} bottom`}
+                        fill
+                        sizes="14.8vw"
+                        className="object-cover"
+                      />
+                    </div>
+
+                  </div>
+                </div>
+              )}
+
+              {/* Step text panel — 92vw */}
+              <div
+                className="relative flex h-full items-center"
+                style={{ width: `${TEXT_VW}vw` }}
+              >
+                <div className="relative z-10 px-16 lg:px-28">
+                  <div className="mb-10">
+                    <span className="font-sans text-sm font-medium text-[#9E8C61]">{step.num}</span>
+                  </div>
+                  <h3 className="mb-6 font-sans text-[2.8rem] font-light leading-tight text-white lg:text-[3.8rem]">
+                    {step.title}
+                  </h3>
+                  <p className="max-w-sm font-sans text-base font-light leading-relaxed text-white/50">
+                    {step.body}
+                  </p>
+                </div>
+              </div>
+
+            </Fragment>
+          ))}
+        </motion.div>
+      </div>
+    </section>
+  );
+}

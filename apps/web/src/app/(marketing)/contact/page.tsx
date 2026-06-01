@@ -18,12 +18,14 @@ export default function ContactPage() {
   const [form, setForm] = useState({ firstName: "", lastName: "", email: "", phone: "", role: "", notes: "" });
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [roleOpen, setRoleOpen] = useState(false);
+  const [roleError, setRoleError] = useState(false);
   const roleRef = useRef<HTMLDivElement>(null);
 
   useClickOutside(roleRef, useCallback(() => setRoleOpen(false), []));
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!form.role) { setRoleError(true); return; }
     setStatus("loading");
     try {
       const res = await fetch("/api/leads", {
@@ -77,12 +79,12 @@ export default function ContactPage() {
             {field("phone", "Phone (optional)")}
 
             <div className="flex flex-col gap-1.5" ref={roleRef}>
-              <label className="font-sans text-sm text-[#1B1B1B]/60">I am a</label>
+              <label className={`font-sans text-sm ${roleError ? "text-red-500" : "text-[#1B1B1B]/60"}`}>I am a *</label>
               <button
                 type="button"
-                onClick={() => setRoleOpen((o) => !o)}
-                className="flex items-center justify-between border-b border-[#1B1B1B]/20 py-2 font-sans text-base transition-colors focus:outline-none"
-                style={{ borderColor: roleOpen ? "rgba(27,27,27,0.6)" : undefined }}
+                onClick={() => { setRoleOpen((o) => !o); setRoleError(false); }}
+                className="flex items-center justify-between border-b py-2 font-sans text-base transition-colors focus:outline-none"
+                style={{ borderColor: roleError ? "rgb(239,68,68)" : roleOpen ? "rgba(27,27,27,0.6)" : "rgba(27,27,27,0.2)" }}
               >
                 <span className={form.role ? "text-[#1B1B1B]" : "text-[#1B1B1B]/30"}>
                   {form.role || "Select one…"}
