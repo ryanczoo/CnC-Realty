@@ -15,3 +15,14 @@ export function fadeUp(delay = 0, y = 40) {
     viewport: { once: true, margin: "-8%" } as const,
   };
 }
+
+// Returns fill % (0–100) for each of n equal scroll segments given progress p.
+export function computeSegmentProgress(p: number, n: number): number[] {
+  return Array.from({ length: n }, (_, i) => {
+    const start = i / n;
+    const end = (i + 1) / n;
+    if (p <= start) return 0;
+    if (p >= end) return 100;
+    return (p - start) * n * 100;
+  });
+}

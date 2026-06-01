@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { buildStatsFields, buildDetailSections } from "@/lib/property-ui-helpers";
+import { formatPropertyStatus } from "@/types/property";
 import { PhotoGallery } from "@/components/properties/PhotoGallery";
 import { MortgageCalculator } from "@/components/properties/MortgageCalculator";
 import { ContactForm } from "@/components/properties/ContactForm";
@@ -86,7 +87,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
               <div className="flex shrink-0 items-center gap-2">
                 <SaveButton mlsNumber={property.mlsNumber} />
                 <span className="rounded-full bg-[#9E8C61]/20 px-3 py-1 text-sm text-[#9E8C61]">
-                  {property.status}
+                  {formatPropertyStatus(property.status)}
                 </span>
               </div>
             </div>

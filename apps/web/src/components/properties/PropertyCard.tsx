@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { Heart } from "lucide-react";
-import { PropertyListing } from "@/types/property";
+import { PropertyListing, formatPropertyStatus } from "@/types/property";
 
 interface Props {
   property: PropertyListing;
@@ -59,7 +59,7 @@ export function PropertyCard({ property, isSaved, onToggleSave, onHover, onSelec
 
         {/* Status badge */}
         <span className="absolute left-2.5 top-2.5 rounded-full bg-black/60 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur-sm">
-          {property.status}
+          {formatPropertyStatus(property.status)}
         </span>
 
         {/* Heart button */}

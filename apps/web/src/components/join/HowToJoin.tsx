@@ -28,7 +28,7 @@ const STEPS = [
 
 export function HowToJoin() {
   return (
-    <section data-navbar-theme="light" className="bg-cnc-bg px-8 pt-6 pb-28 lg:px-20">
+    <section data-navbar-theme="light" className="relative z-10 bg-cnc-bg px-8 pt-6 pb-28 lg:px-20">
       <div className="mx-auto max-w-7xl">
         <div className="flex gap-24">
 
@@ -66,12 +66,14 @@ export function HowToJoin() {
 
             {/* Photo — sits beside the first two steps */}
             <div className="w-72 shrink-0 pt-10">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/images/join-house.jpg"
-                alt="Join CnC"
-                className="h-[380px] w-full object-cover"
-              />
+              <div className="h-[380px] w-full overflow-hidden rounded-2xl shadow-lg">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/images/join-house.jpg"
+                  alt="Join CnC"
+                  className="h-full w-full object-cover"
+                />
+              </div>
             </div>
 
           </div>

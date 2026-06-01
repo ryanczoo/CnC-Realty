@@ -32,10 +32,7 @@ export function useProperties(
 
   const fetchPage = useCallback(async (f: SearchFilters, page: number) => {
     const params = new URLSearchParams();
-    if (f.query) {
-      if (/^\d{5}$/.test(f.query)) params.set("zip", f.query);
-      else params.set("city", f.query);
-    }
+    if (f.query) params.set("query", f.query);
     if (f.minPrice) params.set("minPrice", f.minPrice);
     if (f.maxPrice) params.set("maxPrice", f.maxPrice);
     if (f.minBeds) params.set("minBeds", f.minBeds);

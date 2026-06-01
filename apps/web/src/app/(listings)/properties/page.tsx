@@ -27,15 +27,19 @@ export default async function PropertiesPage({ searchParams }: PageProps) {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const where: Record<string, any> = {
-    status: { in: ["Active", "Coming Soon"] },
+    status: { in: ["Active", "ComingSoon", "ActiveUnderContract"] },
     listingType,
   };
 
-  if (searchParams.query) {
-    if (/^\d{5}$/.test(searchParams.query)) {
-      where.zip = searchParams.query;
+  if (searchParams.query?.trim()) {
+    const q = searchParams.query.trim();
+    if (/^\d{5}$/.test(q)) {
+      where.zip = q;
     } else {
-      where.city = { contains: searchParams.query, mode: "insensitive" };
+      where.OR = [
+        { city: { contains: q, mode: "insensitive" } },
+        { address: { contains: q, mode: "insensitive" } },
+      ];
     }
   }
 
@@ -50,7 +54,9 @@ export default async function PropertiesPage({ searchParams }: PageProps) {
   const minBaths = parseFloat(searchParams.minBaths ?? "");
   if (!Number.isNaN(minBeds)) where.beds = { gte: minBeds };
   if (!Number.isNaN(minBaths)) where.baths = { gte: minBaths };
-  if (searchParams.propertyType) {
+  if (searchParams.propertyType === "MultiFamily") {
+    where.propertyType = { in: ["Duplex", "Triplex", "Quadruplex", "MultiFamily", "Apartment", "ResidentialIncome"] };
+  } else if (searchParams.propertyType) {
     where.propertyType = { contains: searchParams.propertyType, mode: "insensitive" };
   }
 

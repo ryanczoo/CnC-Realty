@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
-import { RevealText } from "@/components/ui/reveal-text";
+import { RevealLine } from "@/components/ui/reveal-text";
 
 const FAQS = [
   {
@@ -36,7 +36,7 @@ export function FAQ() {
         transition={{ duration: 0.8, ease: "easeOut" }}
         viewport={{ once: true }}
       >
-        <RevealText>FAQ<span style={{ color: "#9E8C61" }}>s</span></RevealText>
+        <RevealLine>FAQ<span style={{ color: "#9E8C61" }}>s</span></RevealLine>
       </motion.h2>
 
       <div>

@@ -7,6 +7,7 @@ import {
   useScroll,
 } from "motion/react";
 import { useRef, useState } from "react";
+import { computeSegmentProgress } from "@/lib/motion";
 
 const ITEMS: { title: TitlePart[]; description: string; imgFront?: string; imgFrontPosition?: string; imgBack?: string; videoBack?: string; videoBackPosition?: string; showButton?: boolean }[] = [
   {
@@ -97,8 +98,11 @@ function ShutterImage({ imgSrc }: { imgSrc: string }) {
 export function WhyCnC() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeIdx, setActiveIdx] = useState(0);
+  const [scrollDir, setScrollDir] = useState<"down" | "up">("down");
   const [barWidths, setBarWidths] = useState(ITEMS.map(() => 0));
   const lastIdxRef = useRef(0);
+  const lastBarRef = useRef<number[]>([]);
+  const lastScrollRef = useRef(0);
 
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -106,20 +110,19 @@ export function WhyCnC() {
   });
 
   useMotionValueEvent(scrollYProgress, "change", (p) => {
+    const dir = p >= lastScrollRef.current ? "down" : "up";
+    lastScrollRef.current = p;
     const next = Math.min(Math.floor(p * ITEMS.length), ITEMS.length - 1);
     if (next !== lastIdxRef.current) {
       lastIdxRef.current = next;
       setActiveIdx(next);
+      setScrollDir(dir);
     }
-    setBarWidths(
-      ITEMS.map((_, i) => {
-        const start = i / ITEMS.length;
-        const end = (i + 1) / ITEMS.length;
-        if (p <= start) return 0;
-        if (p >= end) return 100;
-        return ((p - start) / (1 / ITEMS.length)) * 100;
-      })
-    );
+    const nextWidths = computeSegmentProgress(p, ITEMS.length);
+    if (nextWidths.some((w, i) => Math.round(w) !== Math.round(lastBarRef.current[i] ?? -1))) {
+      lastBarRef.current = nextWidths;
+      setBarWidths(nextWidths);
+    }
   });
 
   const active = ITEMS[activeIdx];
@@ -261,16 +264,16 @@ export function WhyCnC() {
               </AnimatePresence>
             </div>
 
-            {/* Front image — fade up */}
-            <AnimatePresence>
+            {/* Front image — scroll-direction wipe */}
+            <AnimatePresence mode="wait">
               <motion.div
                 key={`front-${activeIdx}`}
                 className="absolute z-10 overflow-hidden rounded-2xl"
                 style={{ left: "2%", top: "25%", width: "40%", height: "52%" }}
-                initial={{ opacity: 0, y: 36 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -18 }}
-                transition={{ duration: 0.65, ease: "easeOut", delay: 0.18 }}
+                initial={{ clipPath: scrollDir === "down" ? "inset(100% 0 0 0)" : "inset(0 0 100% 0)" }}
+                animate={{ clipPath: "inset(0 0 0 0)" }}
+                exit={{ opacity: 0, transition: { duration: 0.15 } }}
+                transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1] }}
               >
                 <img
                   src={active.imgFront ?? ""}

@@ -27,6 +27,12 @@ export interface SearchFilters {
   propertyType: string;
 }
 
+export function formatPropertyStatus(status: string): string {
+  if (status === "ComingSoon") return "Coming Soon";
+  if (status === "ActiveUnderContract") return "Under Contract";
+  return status;
+}
+
 export const DEFAULT_FILTERS: SearchFilters = {
   query: "",
   listingType: "FOR_SALE",

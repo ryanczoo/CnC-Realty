@@ -2,8 +2,9 @@
 
 import { useRef, useState } from "react";
 import { motion, useScroll, useMotionValueEvent, AnimatePresence } from "motion/react";
-import Image from "next/image";
-import { EASE_OUT_EXPO } from "@/lib/motion";
+import { EASE_OUT_EXPO, computeSegmentProgress } from "@/lib/motion";
+
+const EASE = EASE_OUT_EXPO as [number, number, number, number];
 
 const STEPS = [
   {
@@ -23,12 +24,14 @@ const STEPS = [
   },
 ];
 
-const EASE = EASE_OUT_EXPO as [number, number, number, number];
-
 export function JoinStepsSlider() {
   const sectionRef = useRef<HTMLElement>(null);
   const [activeStep, setActiveStep] = useState(0);
+  const [scrollDir, setScrollDir] = useState<"down" | "up">("down");
   const [barWidths, setBarWidths] = useState([0, 0, 0]);
+  const lastStepRef = useRef(0);
+  const lastBarRef = useRef<number[]>([]);
+  const lastScrollRef = useRef(0);
 
   const { scrollYProgress } = useScroll({
     target: sectionRef,
@@ -36,17 +39,19 @@ export function JoinStepsSlider() {
   });
 
   useMotionValueEvent(scrollYProgress, "change", (p) => {
-    const step = p < 1 / 3 ? 0 : p < 2 / 3 ? 1 : 2;
-    setActiveStep(step);
-    setBarWidths(
-      STEPS.map((_, i) => {
-        const start = i / STEPS.length;
-        const end = (i + 1) / STEPS.length;
-        if (p <= start) return 0;
-        if (p >= end) return 100;
-        return ((p - start) / (1 / STEPS.length)) * 100;
-      })
-    );
+    const dir = p >= lastScrollRef.current ? "down" : "up";
+    lastScrollRef.current = p;
+    const step = Math.min(Math.floor(p * STEPS.length), STEPS.length - 1);
+    if (step !== lastStepRef.current) {
+      lastStepRef.current = step;
+      setActiveStep(step);
+      setScrollDir(dir);
+    }
+    const next = computeSegmentProgress(p, STEPS.length);
+    if (next.some((w, i) => Math.round(w) !== Math.round(lastBarRef.current[i] ?? -1))) {
+      lastBarRef.current = next;
+      setBarWidths(next);
+    }
   });
 
   return (
@@ -66,31 +71,28 @@ export function JoinStepsSlider() {
           margin: "0 1.5rem 1.5rem",
         }}
       >
-        {/* Right — full-height image, crossfades on step change */}
-        <div className="relative order-2 flex-1 -ml-6">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeStep}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.6, ease: EASE }}
-              className="absolute inset-0"
-            >
-              <Image
-                src={STEPS[activeStep].image}
-                alt={STEPS[activeStep].title}
-                fill
-                className="object-contain object-center"
-                priority
-              />
-            </motion.div>
-          </AnimatePresence>
+        {/* Image — aspect-video box fills to corners so rounded-2xl is visible */}
+        <div className="order-2 flex-1 min-w-0 flex items-center p-4">
+          <div className="relative w-full aspect-video overflow-hidden rounded-2xl shadow-[0_24px_60px_rgba(0,0,0,0.18),0_8px_20px_rgba(0,0,0,0.10)]">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeStep}
+                initial={{ clipPath: scrollDir === "down" ? "inset(100% 0 0 0)" : "inset(0 0 100% 0)" }}
+                animate={{ clipPath: "inset(0 0 0 0)" }}
+                exit={{ opacity: 0, transition: { duration: 0.15 } }}
+                transition={{ duration: 1.4, ease: EASE }}
+                className="absolute inset-0"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={STEPS[activeStep].image} alt={STEPS[activeStep].title} className="w-full h-full object-cover" />
+              </motion.div>
+            </AnimatePresence>
+          </div>
         </div>
 
         {/* Right — step content panel */}
         <div
-          className="order-1 flex h-full flex-col bg-[#DAD4D2]"
+          className="order-1 flex h-full flex-col rounded-2xl bg-[#DAD4D2]"
           style={{ width: "35%", padding: "3rem" }}
         >
           {/* Progress bars */}
@@ -123,7 +125,7 @@ export function JoinStepsSlider() {
                 transition={{ duration: 0.4, ease: EASE }}
               >
                 <p
-                  className="font-sans text-sm leading-relaxed text-[#1B1B1B]"
+                  className="font-sans text-base leading-relaxed text-[#1B1B1B]"
                   style={{ maxWidth: "42ch" }}
                 >
                   {STEPS[activeStep].body}

@@ -10,6 +10,7 @@ import { MortgageCalculator } from "./MortgageCalculator";
 import { AgentAttribution } from "./AgentAttribution";
 import { CrmlsDisclaimer } from "./CrmlsDisclaimer";
 import { buildStatsFields, buildDetailSections } from "@/lib/property-ui-helpers";
+import { formatPropertyStatus } from "@/types/property";
 import { useSavedProperties } from "@/hooks/useSavedProperties";
 
 interface PropertyDetail {
@@ -181,7 +182,7 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
                   <div className="flex h-full items-center justify-center text-sm text-[#1B1B1B]/50">No photos</div>
                 )}
                 <span className="absolute left-3 top-3 rounded-full bg-black/60 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm">
-                  {property.status}
+                  {formatPropertyStatus(property.status)}
                 </span>
                 <button
                   onClick={() => toggle(property.mlsNumber)}

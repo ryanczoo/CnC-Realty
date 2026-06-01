@@ -37,10 +37,10 @@ const BATH_OPTIONS = [
 
 const TYPE_OPTIONS = [
   { label: "Any Type", value: "" },
-  { label: "Single Family", value: "Residential" },
+  { label: "Single Family", value: "SingleFamilyResidence" },
   { label: "Condo", value: "Condominium" },
   { label: "Townhouse", value: "Townhouse" },
-  { label: "Multi-Family", value: "Multi-Family" },
+  { label: "Multi-Family", value: "MultiFamily" },
   { label: "Land", value: "Land" },
 ];
 

@@ -21,18 +21,26 @@ export async function GET(req: Request) {
   const minBedsVal = rawMinBeds ? parseInt(rawMinBeds) : null;
   const minBathsVal = rawMinBaths ? parseFloat(rawMinBaths) : null;
 
-  const city = searchParams.get("city");
-  const zip = searchParams.get("zip");
+  const query = searchParams.get("query");
   const propertyType = searchParams.get("propertyType");
   const listingType = searchParams.get("listingType") ?? "FOR_SALE";
 
   const where: Prisma.PropertyWhereInput = {
-    status: { in: ["Active", "Coming Soon"] },
+    status: { in: ["Active", "ComingSoon", "ActiveUnderContract"] },
     listingType,
   };
 
-  if (city) where.city = { contains: city, mode: "insensitive" };
-  if (zip) where.zip = zip;
+  if (query?.trim()) {
+    const q = query.trim();
+    if (/^\d{5}$/.test(q)) {
+      where.zip = q;
+    } else {
+      where.OR = [
+        { city: { contains: q, mode: "insensitive" } },
+        { address: { contains: q, mode: "insensitive" } },
+      ];
+    }
+  }
 
   // Fix 2: Typed listPrice filter (no as object cast)
   const priceFilter: Prisma.FloatFilter = {};
@@ -44,7 +52,11 @@ export async function GET(req: Request) {
   if (minBedsVal !== null && !Number.isNaN(minBedsVal)) where.beds = { gte: minBedsVal };
   if (minBathsVal !== null && !Number.isNaN(minBathsVal)) where.baths = { gte: minBathsVal };
 
-  if (propertyType) where.propertyType = { contains: propertyType, mode: "insensitive" };
+  if (propertyType === "MultiFamily") {
+    where.propertyType = { in: ["Duplex", "Triplex", "Quadruplex", "MultiFamily", "Apartment", "ResidentialIncome"] };
+  } else if (propertyType) {
+    where.propertyType = { contains: propertyType, mode: "insensitive" };
+  }
 
   // Fix 3: Wrap DB query in try/catch
   try {

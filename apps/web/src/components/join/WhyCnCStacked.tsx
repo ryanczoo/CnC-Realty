@@ -119,7 +119,7 @@ export function WhyCnCStacked() {
   return (
     <section className="bg-cnc-bg" style={{ marginBottom: "-110px" }}>
       {/* Heading — normal scroll flow, above the sticky area */}
-      <div className="px-8 pt-20 pb-10 text-right lg:px-24">
+      <div className="relative z-10 px-8 pt-20 pb-0 text-right lg:px-24">
         <h2 className="font-sans font-light leading-[1.0]">
           <span className="block text-[2.5rem] xl:text-[3rem]"><RevealLine>For Agents,</RevealLine></span>
           <span className="block text-[3.5rem] xl:text-[4.2rem]"><RevealLine delay={0.15}>By <span className="text-[#9E8C61]">Agents</span></RevealLine></span>
@@ -127,7 +127,7 @@ export function WhyCnCStacked() {
       </div>
 
       {/* Scroll driver — 200vh: 100vh per stacking phase, no exit animation */}
-      <div ref={scrollRef} style={{ height: "200vh" }}>
+      <div ref={scrollRef} style={{ height: "200vh", marginTop: "-48px" }}>
         <div className="sticky top-0 h-screen overflow-hidden bg-cnc-bg">
           <div className="relative h-full">
 
