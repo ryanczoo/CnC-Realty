@@ -2953,6 +2953,133 @@ Now used in: `WhyCnCStacked` heading, `HowToJoin` heading.
 
 ---
 
+## Session Notes — 2026-05-31
+
+### What Was Completed This Session
+
+All changes are uncommitted (dev server was running, no git commit made this session).
+
+---
+
+### CTALineArt — Scroll Effect Fixed ✅
+
+**File:** `apps/web/src/components/join/CTALineArt.tsx` (untracked — new file, not yet committed)
+
+**Root cause of broken scroll effect:** SVG was `w-[40%]` which rendered at 638px tall, but the CTA section is only 431px tall. The SVG overflowed 103px above and 104px below the section, clipping the roof and bottom of walls via `overflow-hidden`. At that size, `strokeWidth="1"` also rendered sub-pixel (0.71px), making lines nearly invisible against `#F2F0EF`.
+
+**Fixes applied:**
+- `w-[40%]` → `w-[25%]` — SVG now 356×399px, fits within 431px section
+- `right-[-4%]` → `right-[2%]` — no longer bleeds past right edge
+- `strokeWidth="1"` → `strokeWidth="1.5"` — compensates for smaller size
+- `opacity: 0.14` → `opacity: 0.22` — visible against off-white bg
+- Roof diagonal `len: 269` → `len: 277` — corrected actual path length
+- Parallax values `50/25/12` → `80/40/20` SVG units — preserves same screen-pixel travel at smaller size
+
+**Both effects confirmed working:**
+- **Draw animation:** lines draw staggered (0.08s between each of 14 paths, 1.4s each) when section enters viewport (`useInView` + CSS `stroke-dashoffset` transitions)
+- **Parallax scroll:** roof moves at 2× walls, walls at 2× details (scroll listener + `setAttribute` on SVG `<g>` groups)
+
+**Still needs:** final visual review on `/join` — Ryan hasn't seen it in its fixed state yet.
+
+---
+
+### Property Search — Three Bug Fixes ✅
+
+#### 1. Status filter corrected
+
+**Files:** `apps/web/src/app/api/properties/route.ts`, `apps/web/src/app/(listings)/properties/page.tsx`
+
+Old filter: `["Active", "Coming Soon"]` — wrong on two counts.
+New filter: `["Active", "ComingSoon", "ActiveUnderContract"]`
+
+- `"Coming Soon"` → `"ComingSoon"` — the space variant never existed in DB (1,095 listings were invisible)
+- Added `"ActiveUnderContract"` — 8,610 listings were invisible
+- Removed `"Active Under Contract"` (spaced) — doesn't exist in DB at all
+
+**Confirmed via DB query:** only statuses in the DB are `Active`, `Pending`, `ActiveUnderContract`, `ComingSoon`, `Closed`.
+
+#### 2. Address search added
+
+**Files:** `route.ts`, `properties/page.tsx`, `apps/web/src/hooks/useProperties.ts`
+
+Old behavior: query sent as `city=` OR `zip=` (client-side detection), only matched city field.
+New behavior: query sent as `query=`, API handles detection:
+- 5-digit → exact zip match
+- anything else → `OR [city contains, address contains]` (case-insensitive)
+
+Tested with TDD — test file: `apps/web/src/__tests__/api/properties-search.test.ts` (7 tests, all pass).
+
+#### 3. Status badge display
+
+**File:** `apps/web/src/types/property.ts` — added `formatPropertyStatus()` function:
+- `"ComingSoon"` → `"Coming Soon"`
+- `"ActiveUnderContract"` → `"Under Contract"`
+
+Used in: `PropertyCard.tsx`, `PropertyDrawer.tsx`, `properties/[mlsNumber]/page.tsx`
+
+---
+
+### Property Search — Type Filter Fixed ✅
+
+**Files:** `apps/web/src/components/properties/FilterBar.tsx`, `route.ts`, `properties/page.tsx`
+
+Old TYPE_OPTIONS values didn't match DB strings — `"Residential"` and `"Multi-Family"` matched nothing.
+
+| Label | Old value (broken) | New value | DB types matched |
+|---|---|---|---|
+| Single Family | `"Residential"` | `"SingleFamilyResidence"` | SingleFamilyResidence (48,544) |
+| Condo | `"Condominium"` | unchanged | Condominium (17,528) |
+| Townhouse | `"Townhouse"` | unchanged | Townhouse (4,320) |
+| Multi-Family | `"Multi-Family"` | `"MultiFamily"` + OR | Duplex, Triplex, Quadruplex, MultiFamily, Apartment, ResidentialIncome (~8,300 combined) |
+| Land | `"Land"` | unchanged | Land + UnimprovedLand (17,859) |
+
+Multi-Family uses `{ in: [...] }` in the API instead of `contains` to cover all multi-unit sub-types.
+
+---
+
+### Deferred — Commercial Listings
+
+DB has ~6,000+ active commercial listings (CommercialSale, Office, Retail, Industrial, Warehouse, etc.) mixed into search results. Ryan wants to filter these out eventually but deferred to a later session. Note for when we do this: add a blocklist at the API/SSR level — no UI changes needed.
+
+---
+
+### Section Status
+
+| Section / Page | Status |
+|---|---|
+| Homepage — All sections | ✅ Approved |
+| Join Page — StatsBar | ✅ Approved |
+| Join Page — FounderQuote | ✅ Approved |
+| Join Page — WhyCnCStacked | ✅ Approved |
+| Join Page — HowToJoin | ✅ Approved |
+| Join Page — JoinStepsSlider | 🔄 Needs final review |
+| Join Page — FAQ | ✅ Approved |
+| Join Page — CTA (text + buttons) | ✅ Approved |
+| Join Page — CTALineArt (house SVG) | 🔄 Fixed this session, needs first visual review |
+| Property Search | ✅ Fixes applied (status, address, type filter) |
+
+---
+
+### Session Notes — 2026-05-31
+
+#### Join Page — Complete ✅
+- **CTALineArt** rebuilt from scratch: isometric 3D house, scroll-linked draw via Framer Motion `useScroll` + `useTransform` → `pathLength` on each `motion.path`. No CSS transitions — raw scroll follower. Front face (roof gable, walls, window, door) draws first, then left roof slope, then side face bleeds off-screen right.
+- **CTA copy**: "Ready to make the move?" → "Your Journey Begins Here" (gold "Here" via `RevealLine`), subtext → "Be CnC", button "Apply" → "Join", removed "Together, we are CnC."
+- **JoinStepsSlider** | ✅ Approved (text left / images right, progress bars, body text centered)
+
+----
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. Open `localhost:3000` (or 3001 if occupied)
+3. Continue with remaining work:
+   - CnC ICA draft review (`docs/cnc-ica-draft.md`)
+   - Checklist templates at `/admin/settings/checklists`
+   - Phase 6 tasks (`docs/superpowers/plans/2026-05-22-phase-6-launch.md`)
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`
