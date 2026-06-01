@@ -1,13 +1,8 @@
 "use client";
 
-import {
-  AnimatePresence,
-  motion,
-  useMotionValueEvent,
-  useScroll,
-} from "motion/react";
-import { useRef, useState } from "react";
-import { computeSegmentProgress } from "@/lib/motion";
+import { AnimatePresence, motion, useScroll } from "motion/react";
+import { useRef } from "react";
+import { useScrollStepper } from "@/hooks/useScrollStepper";
 
 const ITEMS: { title: TitlePart[]; description: string; imgFront?: string; imgFrontPosition?: string; imgBack?: string; videoBack?: string; videoBackPosition?: string; showButton?: boolean }[] = [
   {
@@ -97,33 +92,12 @@ function ShutterImage({ imgSrc }: { imgSrc: string }) {
 
 export function WhyCnC() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [activeIdx, setActiveIdx] = useState(0);
-  const [scrollDir, setScrollDir] = useState<"down" | "up">("down");
-  const [barWidths, setBarWidths] = useState(ITEMS.map(() => 0));
-  const lastIdxRef = useRef(0);
-  const lastBarRef = useRef<number[]>([]);
-  const lastScrollRef = useRef(0);
-
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ["start start", "end end"],
   });
 
-  useMotionValueEvent(scrollYProgress, "change", (p) => {
-    const dir = p >= lastScrollRef.current ? "down" : "up";
-    lastScrollRef.current = p;
-    const next = Math.min(Math.floor(p * ITEMS.length), ITEMS.length - 1);
-    if (next !== lastIdxRef.current) {
-      lastIdxRef.current = next;
-      setActiveIdx(next);
-      setScrollDir(dir);
-    }
-    const nextWidths = computeSegmentProgress(p, ITEMS.length);
-    if (nextWidths.some((w, i) => Math.round(w) !== Math.round(lastBarRef.current[i] ?? -1))) {
-      lastBarRef.current = nextWidths;
-      setBarWidths(nextWidths);
-    }
-  });
+  const { activeIdx, scrollDirRef, barWidths } = useScrollStepper(scrollYProgress, ITEMS.length);
 
   const active = ITEMS[activeIdx];
 
@@ -270,7 +244,7 @@ export function WhyCnC() {
                 key={`front-${activeIdx}`}
                 className="absolute z-10 overflow-hidden rounded-2xl"
                 style={{ left: "2%", top: "25%", width: "40%", height: "52%" }}
-                initial={{ clipPath: scrollDir === "down" ? "inset(100% 0 0 0)" : "inset(0 0 100% 0)" }}
+                initial={{ clipPath: scrollDirRef.current === "down" ? "inset(100% 0 0 0)" : "inset(0 0 100% 0)" }}
                 animate={{ clipPath: "inset(0 0 0 0)" }}
                 exit={{ opacity: 0, transition: { duration: 0.15 } }}
                 transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1] }}

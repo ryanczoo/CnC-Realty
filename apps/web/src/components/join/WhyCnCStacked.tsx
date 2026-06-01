@@ -54,13 +54,14 @@ const OFFSET = 88;
 
 function CardContent({ row }: { row: Row }) {
   return (
-    <div className="flex h-full" style={{ backgroundColor: row.bg }}>
-      {row.imgSide === "left" && (
-        <div className="relative w-1/2 overflow-hidden">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={row.img} alt={row.label} className="absolute inset-0 h-full w-full object-cover" />
-        </div>
-      )}
+    <div
+      className="flex h-full"
+      style={{ backgroundColor: row.bg, flexDirection: row.imgSide === "left" ? "row" : "row-reverse" }}
+    >
+      <div className="relative w-1/2 overflow-hidden">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={row.img} alt={row.label} className="absolute inset-0 h-full w-full object-cover" />
+      </div>
       <div
         className="flex w-1/2 flex-col justify-between p-10 lg:p-16"
         style={{ backgroundColor: row.textBg }}
@@ -78,12 +79,6 @@ function CardContent({ row }: { row: Row }) {
           {row.body}
         </p>
       </div>
-      {row.imgSide === "right" && (
-        <div className="relative w-1/2 overflow-hidden">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={row.img} alt={row.label} className="absolute inset-0 h-full w-full object-cover" />
-        </div>
-      )}
     </div>
   );
 }

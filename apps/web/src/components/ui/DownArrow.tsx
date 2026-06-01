@@ -1,11 +1,12 @@
 "use client";
 
 import { motion } from "motion/react";
+import { cn } from "@/lib/utils";
 
 export function DownArrow({ className }: { className?: string }) {
   return (
     <motion.div
-      className={`absolute bottom-8 left-1/2 -translate-x-1/2 text-white/50 ${className ?? ""}`}
+      className={cn("absolute bottom-8 left-1/2 -translate-x-1/2 text-white/50", className)}
       animate={{ y: [0, 8, 0] }}
       transition={{ repeat: Infinity, duration: 1.6, ease: "easeInOut" }}
     >

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
+import { MULTIFAMILY_TYPES } from "@/types/property";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -53,7 +54,7 @@ export async function GET(req: Request) {
   if (minBathsVal !== null && !Number.isNaN(minBathsVal)) where.baths = { gte: minBathsVal };
 
   if (propertyType === "MultiFamily") {
-    where.propertyType = { in: ["Duplex", "Triplex", "Quadruplex", "MultiFamily", "Apartment", "ResidentialIncome"] };
+    where.propertyType = { in: [...MULTIFAMILY_TYPES] };
   } else if (propertyType) {
     where.propertyType = { contains: propertyType, mode: "insensitive" };
   }

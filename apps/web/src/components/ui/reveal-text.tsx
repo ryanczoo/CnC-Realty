@@ -4,6 +4,8 @@ import { useInView } from "motion/react";
 import { cn } from "@/lib/utils";
 import { EASE_OUT_EXPO } from "@/lib/motion";
 
+const EASE_CSS = `cubic-bezier(${EASE_OUT_EXPO.join(",")})`;
+
 interface RevealTextProps {
   children: React.ReactNode;
   className?: string;
@@ -23,8 +25,6 @@ export function RevealLine({ children, delay = 0, className }: {
   const ref = useRef<HTMLSpanElement>(null);
   const isInView = useInView(ref, { once: true, margin: "-8%" });
 
-  const easing = `cubic-bezier(${EASE_OUT_EXPO.join(",")})`;
-
   return (
     <span ref={ref} className={cn("relative inline-block", className)} style={{ color: "#1B1B1B" }}>
       {/* Dim base — always visible, sets layout dimensions */}
@@ -39,7 +39,7 @@ export function RevealLine({ children, delay = 0, className }: {
           bottom: "-0.25em",
           // negative top/bottom captures ascenders + descenders; negative left prevents left-edge clipping
           clipPath: isInView ? "inset(-10% 0% -10% -5%)" : "inset(-10% 100% -10% -5%)",
-          transition: `clip-path 1.2s ${easing} ${delay}s`,
+          transition: `clip-path 1.2s ${EASE_CSS} ${delay}s`,
         } as React.CSSProperties}
       >
         {children}

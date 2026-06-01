@@ -27,6 +27,8 @@ export interface SearchFilters {
   propertyType: string;
 }
 
+export const MULTIFAMILY_TYPES = ["Duplex", "Triplex", "Quadruplex", "MultiFamily", "Apartment", "ResidentialIncome"] as const;
+
 export function formatPropertyStatus(status: string): string {
   if (status === "ComingSoon") return "Coming Soon";
   if (status === "ActiveUnderContract") return "Under Contract";

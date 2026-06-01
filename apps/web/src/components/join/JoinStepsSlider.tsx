@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { motion, useScroll, useMotionValueEvent, AnimatePresence } from "motion/react";
-import { EASE_OUT_EXPO, computeSegmentProgress } from "@/lib/motion";
+import { useRef } from "react";
+import { motion, useScroll, AnimatePresence } from "motion/react";
+import { EASE_OUT_EXPO } from "@/lib/motion";
+import { useScrollStepper } from "@/hooks/useScrollStepper";
 
 const EASE = EASE_OUT_EXPO as [number, number, number, number];
 
@@ -26,33 +27,12 @@ const STEPS = [
 
 export function JoinStepsSlider() {
   const sectionRef = useRef<HTMLElement>(null);
-  const [activeStep, setActiveStep] = useState(0);
-  const [scrollDir, setScrollDir] = useState<"down" | "up">("down");
-  const [barWidths, setBarWidths] = useState([0, 0, 0]);
-  const lastStepRef = useRef(0);
-  const lastBarRef = useRef<number[]>([]);
-  const lastScrollRef = useRef(0);
-
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ["start start", "end end"],
   });
 
-  useMotionValueEvent(scrollYProgress, "change", (p) => {
-    const dir = p >= lastScrollRef.current ? "down" : "up";
-    lastScrollRef.current = p;
-    const step = Math.min(Math.floor(p * STEPS.length), STEPS.length - 1);
-    if (step !== lastStepRef.current) {
-      lastStepRef.current = step;
-      setActiveStep(step);
-      setScrollDir(dir);
-    }
-    const next = computeSegmentProgress(p, STEPS.length);
-    if (next.some((w, i) => Math.round(w) !== Math.round(lastBarRef.current[i] ?? -1))) {
-      lastBarRef.current = next;
-      setBarWidths(next);
-    }
-  });
+  const { activeIdx: activeStep, scrollDirRef, barWidths } = useScrollStepper(scrollYProgress, STEPS.length);
 
   return (
     <section
@@ -77,7 +57,7 @@ export function JoinStepsSlider() {
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeStep}
-                initial={{ clipPath: scrollDir === "down" ? "inset(100% 0 0 0)" : "inset(0 0 100% 0)" }}
+                initial={{ clipPath: scrollDirRef.current === "down" ? "inset(100% 0 0 0)" : "inset(0 0 100% 0)" }}
                 animate={{ clipPath: "inset(0 0 0 0)" }}
                 exit={{ opacity: 0, transition: { duration: 0.15 } }}
                 transition={{ duration: 1.4, ease: EASE }}
