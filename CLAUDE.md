@@ -3150,6 +3150,107 @@ Used Puppeteer to inspect Fluid's actual HTML/CSS instead of guessing. Key findi
 
 ---
 
+## Session Notes — 2026-06-02
+
+### What Was Completed This Session
+
+All changes committed and pushed to `claude/real-estate-website-9bdWi`.
+
+---
+
+### Sell Page — Our Process ✅ Approved
+
+No changes needed — Ryan reviewed and approved the Fluid-style horizontal scroll section built last session.
+
+---
+
+### Transaction Fee Structure — Research & Decisions
+
+Conducted full competitive research on 4 brokerages using Puppeteer + web search:
+
+**Competitors:**
+
+| Brokerage | Base Fee | E&O Supplement | Monthly | Dual Agency |
+|---|---|---|---|---|
+| West Shores | $900/transaction | None | $95/mo | Not disclosed |
+| Rise Realty | $199–$999 scaled (capped) | $150/500k over $1.5M | None | Not disclosed |
+| REeBroker ($500 Plan) | $500 broker + $200 risk mgmt | $120/100k over $1M | None | 25% of commission (30% if dual + relative-owned) |
+| CnC (new) | $990 flat | $175/500k over $1M | None | (flat fee + E&O supplement) × 2 |
+
+**Key REeBroker findings from agent tools audit:**
+- REeBroker charges $349/transaction separately for TC services — CnC includes this free (SkySlope-equivalent built in)
+- REeBroker charges $99 for checklist management — CnC includes free
+- REeBroker has: revenue sharing ($100/referred agent close), active lead gen (Opcity/PrimeStreet, 30% referral fee), regional team leaders, monthly webinars
+- Rise Realty has: Lofty AI CRM (optional, paid add-on), live transfer leads (Opcity/PrimeStreet)
+- CnC gap vs both: no agent lead generation program yet
+
+**Agreed CnC fee structure (PENDING one item):**
+- Flat transaction fee: **$990** (changed from $950)
+- E&O included through **$1M** sale price
+- E&O supplement: **$175 per $500k over $1M**
+- Dual agency: **(flat fee + applicable E&O supplement) × 2**
+- Dual agency + agent-relative-owned sale: ⏳ **PENDING** — Ryan calling Rise Realty on 2026-06-02 to check their policy before deciding. REeBroker charges 30% of commission for this case; West Shores and Rise do not publicly disclose a policy.
+
+**Once Rise call is done:** Update `docs/cnc-ica-draft.md` and the Join page fee display.
+
+---
+
+### JoinStepsSlider — Slide Titles Added ✅
+
+**File:** `apps/web/src/components/join/JoinStepsSlider.tsx`
+
+- Added two-line titles to each slide, displayed below progress bars in upper-left of left panel
+- Line 1 (smaller, dark): "Full" / "Personal" / "Custom"
+- Line 2 (larger, gold `#9E8C61`): "Transaction Management" / "webpage" / "CRM & Email"
+- Style matches HowToJoin heading: line1 `clamp(1.2rem, 1.6vw, 1.5rem) font-light`, line2 `clamp(1.7rem, 2.3vw, 2.2rem) font-light`
+- Animation: `RevealLine triggerOnMount` — fires on mount via `requestAnimationFrame` instead of `useInView`, so all 3 slides reveal consistently regardless of scroll position
+
+**`triggerOnMount` prop added to `RevealLine` in `reveal-text.tsx`** — when true, skips `useInView` and reveals via rAF on mount. Used wherever RevealLine is inside an AnimatePresence block that's always in view.
+
+---
+
+### Simplify Pass — Code Cleanup ✅
+
+Ran `/simplify` with 4 parallel agents (reuse, simplification, efficiency, altitude). All 5 findings fixed:
+
+1. **`EASE_CSS` exported from `lib/motion.ts`** — was duplicated in `reveal-text.tsx` and `JoinStepsSlider.tsx`
+2. **`SliderReveal` deleted** — replaced by `RevealLine triggerOnMount` (correct altitude)
+3. **`SellProcess.tsx` dead code removed** — `s.textVw` field never existed on Step type; ranges now derived from `N = STEPS.length`
+4. **`useScrollStepper.ts` optimized** — pre-rounds segment widths once per frame instead of twice per element
+5. **`JoinCnCCTA.tsx` reverted** — simplify pass broke the heading into two hard lines; reverted to original single `RevealLine` (visual was correct, only a minor dim-layer issue in the implementation)
+
+**Commits this session:**
+- `c3a15f6` — Sell page Our Process (prior session, approved this session)
+- `43aa748` — session notes
+- `36b86b3` — sell page slide panels, join page fixes
+- `842769a` — simplify pass
+- `47fd9b5` — revert JoinCnCCTA heading fix (broke layout)
+
+---
+
+### Section / Page Status
+
+| Section / Page | Status |
+|---|---|
+| Sell Page — Hero | ✅ Approved |
+| Sell Page — Our Process | ✅ Approved |
+| Join Page — All sections | ✅ Approved |
+| Join Page — JoinStepsSlider titles | ✅ Approved |
+| Homepage — All sections | ✅ Approved |
+
+---
+
+### Next Session — Start Here
+
+1. **Call Rise Realty** — ask about dual agency / agent-relative-owned sale fee policy
+2. Once confirmed → finalize fee structure → update `docs/cnc-ica-draft.md` + Join page fee display
+3. Continue with remaining work:
+   - CnC ICA draft review (`docs/cnc-ica-draft.md`)
+   - Checklist templates at `/admin/settings/checklists`
+   - Phase 6 tasks (`docs/superpowers/plans/2026-05-22-phase-6-launch.md`)
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`
