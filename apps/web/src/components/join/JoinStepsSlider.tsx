@@ -4,22 +4,29 @@ import { useRef } from "react";
 import { motion, useScroll, AnimatePresence } from "motion/react";
 import { EASE_OUT_EXPO } from "@/lib/motion";
 import { useScrollStepper } from "@/hooks/useScrollStepper";
+import { RevealLine } from "@/components/ui/reveal-text";
 
 const EASE = EASE_OUT_EXPO as [number, number, number, number];
 
 const STEPS = [
   {
-    title: "Custom CRM",
+    title: "Full Transaction Management",
+    line1: "Full",
+    line2: "Transaction Management",
     body: "Manage your leads, transactions, and analytics all in one place with our custom CRM built exclusively for CnC agents.",
     image: "/images/join-slide-crm.png",
   },
   {
-    title: "Agent Profile",
+    title: "Personal webpage",
+    line1: "Personal",
+    line2: "webpage",
     body: "Your own professional profile page with stats, listings, and a contact form — all live on cncrealtygroup.com the moment you join.",
     image: "/images/join-slide-agent.png",
   },
   {
-    title: "Email Campaigns",
+    title: "Custom CRM & Email",
+    line1: "Custom",
+    line2: "CRM & Email",
     body: "Send branded email campaigns and drip sequences to your leads directly from the CnC platform. No third-party tools needed.",
     image: "/images/join-slide-campaign.png",
   },
@@ -94,7 +101,30 @@ export function JoinStepsSlider() {
             ))}
           </div>
 
-          {/* Step title + body — animates on step change */}
+          {/* Slide title — upper left, below progress bars */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={`title-${activeStep}`}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.35, ease: EASE }}
+              className="mt-6"
+            >
+              <h2 className="font-sans leading-[1.1]">
+                <span className="block font-light" style={{ fontSize: "clamp(1.2rem, 1.6vw, 1.5rem)" }}>
+                  <RevealLine triggerOnMount>{STEPS[activeStep].line1}</RevealLine>
+                </span>
+                <span className="block font-light" style={{ fontSize: "clamp(1.7rem, 2.3vw, 2.2rem)" }}>
+                  <RevealLine triggerOnMount delay={0.1}>
+                    <span style={{ color: "#9E8C61" }}>{STEPS[activeStep].line2}</span>
+                  </RevealLine>
+                </span>
+              </h2>
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Step body — vertically centered */}
           <div className="flex flex-1 items-center">
             <AnimatePresence mode="wait">
               <motion.div

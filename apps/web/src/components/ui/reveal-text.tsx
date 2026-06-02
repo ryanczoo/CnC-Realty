@@ -1,10 +1,8 @@
 "use client";
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useInView } from "motion/react";
 import { cn } from "@/lib/utils";
-import { EASE_OUT_EXPO } from "@/lib/motion";
-
-const EASE_CSS = `cubic-bezier(${EASE_OUT_EXPO.join(",")})`;
+import { EASE_OUT_EXPO, EASE_CSS } from "@/lib/motion";
 
 interface RevealTextProps {
   children: React.ReactNode;
@@ -17,14 +15,26 @@ interface RevealTextProps {
 // Use RevealLine for headings with mixed colors (dark text + gold accent).
 // clipPath inset() is used instead of mask so the animation is reliable across browsers,
 // and negative inset values extend the clip region past the border box to capture descenders.
-export function RevealLine({ children, delay = 0, className, onDark = false }: {
+// triggerOnMount: fires on mount via rAF instead of intersection — use inside AnimatePresence
+// where the element is always in view and useInView would fire too late for the first slide.
+export function RevealLine({ children, delay = 0, className, onDark = false, triggerOnMount = false }: {
   children: React.ReactNode;
   delay?: number;
   className?: string;
   onDark?: boolean;
+  triggerOnMount?: boolean;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
   const isInView = useInView(ref, { once: true, margin: "-8%" });
+  const [mountRevealed, setMountRevealed] = useState(false);
+
+  useEffect(() => {
+    if (!triggerOnMount) return;
+    const id = requestAnimationFrame(() => setMountRevealed(true));
+    return () => cancelAnimationFrame(id);
+  }, [triggerOnMount]);
+
+  const revealed = triggerOnMount ? mountRevealed : isInView;
 
   return (
     <span ref={ref} className={cn("relative inline-block", className)} style={{ color: onDark ? "#ffffff" : "#1B1B1B" }}>
@@ -39,7 +49,7 @@ export function RevealLine({ children, delay = 0, className, onDark = false }: {
           right: 0,
           bottom: "-0.25em",
           // negative top/bottom captures ascenders + descenders; negative left prevents left-edge clipping
-          clipPath: isInView ? "inset(-10% 0% -10% -5%)" : "inset(-10% 100% -10% -5%)",
+          clipPath: revealed ? "inset(-10% 0% -10% -5%)" : "inset(-10% 100% -10% -5%)",
           transition: `clip-path 1.2s ${EASE_CSS} ${delay}s`,
         } as React.CSSProperties}
       >

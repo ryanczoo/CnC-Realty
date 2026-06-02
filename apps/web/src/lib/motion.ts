@@ -6,6 +6,7 @@ export const NAV_PANEL_CLS = "overflow-hidden rounded-xl border border-white/10 
 export const NAV_ITEM_CLS = "block w-full px-6 py-3 text-center text-sm font-medium transition-colors hover:bg-white/5 hover:text-[#c9a84c]";
 
 export const EASE_OUT_EXPO: readonly [number, number, number, number] = [0.16, 1, 0.3, 1];
+export const EASE_CSS = `cubic-bezier(${[0.16, 1, 0.3, 1].join(",")})`;
 
 export function fadeUp(delay = 0, y = 40) {
   return {

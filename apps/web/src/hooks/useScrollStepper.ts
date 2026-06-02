@@ -25,10 +25,10 @@ export function useScrollStepper(scrollYProgress: MotionValue<number>, count: nu
       lastIdxRef.current = next;
       setActiveIdx(next);
     }
-    const nextWidths = computeSegmentProgress(p, count);
-    if (nextWidths.some((w, i) => Math.round(w) !== Math.round(lastBarRef.current[i] ?? -1))) {
-      lastBarRef.current = nextWidths;
-      setBarWidths(nextWidths);
+    const rounded = computeSegmentProgress(p, count).map(w => Math.round(w));
+    if (rounded.some((w, i) => w !== (lastBarRef.current[i] ?? -1))) {
+      lastBarRef.current = rounded;
+      setBarWidths(rounded);
     }
   });
 

@@ -56,10 +56,7 @@ const SLIDE_VW = 46; // narrow — photos fill most of the panel width
 
 const TOTAL_VW =
   INTRO_VW +
-  STEPS.reduce((sum, s) => {
-    const tw = s.textVw ?? TEXT_VW;
-    return sum + PHOTO_VW + (s.slideTop ? SLIDE_VW : 0) + tw;
-  }, 0);
+  STEPS.reduce((sum, s) => sum + PHOTO_VW + (s.slideTop ? SLIDE_VW : 0) + TEXT_VW, 0);
 const TRAVEL_VW = TOTAL_VW - 100;
 
 type Step = (typeof STEPS)[number];
@@ -98,12 +95,14 @@ export function SellProcess() {
 
   const x = useTransform(scrollYProgress, [0, 1], ["0vw", `-${TRAVEL_VW}vw`]);
 
-  // 4 equal segments across the full scroll range (one per step)
-  const seg1 = useTransform(scrollYProgress, [0.00, 0.25], [0, 1]);
-  const seg2 = useTransform(scrollYProgress, [0.25, 0.50], [0, 1]);
-  const seg3 = useTransform(scrollYProgress, [0.50, 0.75], [0, 1]);
-  const seg4 = useTransform(scrollYProgress, [0.75, 1.00], [0, 1]);
-  const SEG_FILLS = [seg1, seg2, seg3, seg4];
+  // One useTransform per step — N must match STEPS.length (4). Ranges derived from N
+  // so boundaries stay correct if steps are ever added/removed (and hook count updated).
+  const N = STEPS.length;
+  const seg0 = useTransform(scrollYProgress, [0 / N, 1 / N], [0, 1]);
+  const seg1 = useTransform(scrollYProgress, [1 / N, 2 / N], [0, 1]);
+  const seg2 = useTransform(scrollYProgress, [2 / N, 3 / N], [0, 1]);
+  const seg3 = useTransform(scrollYProgress, [3 / N, 4 / N], [0, 1]);
+  const SEG_FILLS = [seg0, seg1, seg2, seg3];
 
   return (
     <section
@@ -189,7 +188,7 @@ export function SellProcess() {
               {/* Step text panel */}
               <div
                 className="relative flex h-full items-center"
-                style={{ width: `${step.textVw ?? TEXT_VW}vw` }}
+                style={{ width: `${TEXT_VW}vw` }}
               >
                 <div className="relative z-10 px-16 lg:px-28">
                   <div className="mb-10">

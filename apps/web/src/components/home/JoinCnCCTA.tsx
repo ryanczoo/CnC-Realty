@@ -41,13 +41,18 @@ export function JoinCnCCTA() {
           className="px-6 text-center"
         >
           <motion.h2
-            className="font-sans text-[2.8rem] font-light leading-[1.3] xl:text-[3.5rem]"
+            className="font-sans font-light leading-[1.2]"
             initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
             viewport={{ once: true }}
           >
-            <RevealLine><span className="text-[2rem] xl:text-[2.5rem]">Be the agent</span>{" "} you&apos;re <span style={{ color: "#9E8C61" }}>meant</span> to be</RevealLine>
+            <span className="block text-[2rem] xl:text-[2.5rem]">
+              <RevealLine>Be the agent</RevealLine>
+            </span>
+            <span className="block text-[2.8rem] xl:text-[3.5rem]">
+              <RevealLine delay={0.15}>you&apos;re <span style={{ color: "#9E8C61" }}>meant</span> to be</RevealLine>
+            </span>
           </motion.h2>
         </div>
 
