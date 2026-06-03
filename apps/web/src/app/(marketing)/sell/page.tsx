@@ -17,12 +17,10 @@ export default function SellPage() {
       <div data-navbar-theme="light" className="bg-[#F2F0EF]">
         <SellProcess />
         <PageCTA
-          heading={<>What&apos;s your home <span style={{ color: "#9E8C61" }}>worth?</span></>}
-          body="Get a free, no-obligation valuation from a CnC agent."
+          heading={<>What&apos;s your property <span style={{ color: "#9E8C61" }}>worth?</span></>}
+          body="Get a free valuation estimate from a CnC agent."
           primaryHref="/contact"
-          primaryLabel="Request a Valuation →"
-          secondaryHref="/agents"
-          secondaryLabel="Meet Our Agents"
+          primaryLabel="Request a Valuation"
         />
       </div>
     </main>

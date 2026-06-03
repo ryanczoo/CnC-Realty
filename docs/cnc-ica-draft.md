@@ -109,7 +109,9 @@ The same double-fee structure applies to transactions involving the sale or purc
 
 **7.8. Deductions.** Broker may deduct from Associate-Licensee's commission any actual and pending reasonable expenses arising from Associate-Licensee's activity, including but not limited to: legal expenses, MLS/board dues paid on Associate-Licensee's behalf, repayment of any advance, and judgments or settlements. This paragraph applies regardless of whether Associate-Licensee is at fault and whether the matter has been adjudicated.
 
-**7.9. Post-Termination Compensation.** Upon termination of this Agreement, payments shall cease; provided that Associate-Licensee shall be entitled to commissions for transactions closed prior to the termination date for which Associate-Licensee has not yet been paid, so long as Associate-Licensee is not in default of this Agreement. Broker may deduct all financial obligations owed to Broker from any commissions due at termination. If pending transactions require further work normally rendered by Associate-Licensee, Broker may assign another licensee to complete the work, and reasonable compensation to the completing licensee shall be deducted from the terminating Associate-Licensee's commission share.
+**7.9. Broker-Provided Leads.** For any transaction that closes as a direct result of a lead provided by Broker, Associate-Licensee shall remit to Broker a referral fee equal to twenty-five percent (25%) of Associate-Licensee's gross commission on that transaction, in addition to the applicable flat transaction fee. The referral fee shall be deducted from Associate-Licensee's commission at closing. Broker will identify leads as "Broker-provided" in writing at the time of referral.
+
+**7.10. Post-Termination Compensation.** Upon termination of this Agreement, payments shall cease; provided that Associate-Licensee shall be entitled to commissions for transactions closed prior to the termination date for which Associate-Licensee has not yet been paid, so long as Associate-Licensee is not in default of this Agreement. Broker may deduct all financial obligations owed to Broker from any commissions due at termination. If pending transactions require further work normally rendered by Associate-Licensee, Broker may assign another licensee to complete the work, and reasonable compensation to the completing licensee shall be deducted from the terminating Associate-Licensee's commission share.
 
 ---
 
@@ -288,6 +290,7 @@ I, the undersigned Associate-Licensee, do hereby acknowledge that I have read Cn
 | E&O Supplement — per $500k (or fraction) over $1M | $200 |
 | E&O Supplement examples: $1M–$1.5M / $1.5M–$2M / $2M–$2.5M | +$200 / +$400 / +$600 |
 | Dual Agency / Agent-Relative Sale | Full fee (base + supplement) × 2 |
+| Broker-Provided Lead (referral fee) | 25% of gross commission + flat transaction fee |
 | Monthly Fee | $0 |
 | Optional CnC TC Service | $350 (paid through escrow) |
 | E&O Insurance | Included in transaction fee |

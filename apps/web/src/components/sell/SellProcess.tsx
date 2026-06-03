@@ -5,6 +5,8 @@ import { Fragment } from "react";
 import { motion, useScroll, useTransform } from "motion/react";
 import { RevealLine } from "@/components/ui/reveal-text";
 import Image from "next/image";
+import Link from "next/link";
+import { SPRING_HOVER } from "@/lib/motion";
 
 const STEPS = [
   {
@@ -44,6 +46,7 @@ const STEPS = [
     slideBottom: "/images/sell/sell-closing-slide-bottom.jpg",
     slideAfterText: true,
     slideShiftLeft: 192,
+    cta: { label: "Start", href: "/contact" },
   },
 ];
 
@@ -200,6 +203,16 @@ export function SellProcess() {
                   <p className="max-w-sm font-sans text-base font-light leading-relaxed text-white/50">
                     {step.body}
                   </p>
+                  {step.cta && (
+                    <motion.div whileHover={{ scale: 1.1 }} transition={SPRING_HOVER} className="mt-20 inline-block">
+                      <Link
+                        href={step.cta.href}
+                        className="rounded-full bg-white px-8 py-3.5 font-sans text-sm font-medium text-[#1B1B1B]"
+                      >
+                        {step.cta.label}
+                      </Link>
+                    </motion.div>
+                  )}
                 </div>
               </div>
 
