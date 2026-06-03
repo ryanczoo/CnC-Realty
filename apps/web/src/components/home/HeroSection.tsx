@@ -73,7 +73,7 @@ export function HeroSection() {
           {/* Zero-height spacer — holds the width of the longest phrase */}
           <span
             aria-hidden="true"
-            className="block whitespace-nowrap font-chopin text-3xl font-bold opacity-0 md:text-4xl lg:text-5xl"
+            className="block whitespace-nowrap font-sans text-3xl font-bold opacity-0 md:text-4xl lg:text-5xl"
             style={{ height: 0, lineHeight: 0, overflow: "hidden" }}
           >
             {LONGEST_PHRASE}
@@ -83,7 +83,7 @@ export function HeroSection() {
             <AnimatePresence mode="wait">
               <motion.h1
                 key={phraseIdx}
-                className="flex flex-wrap justify-center gap-x-[0.3em] font-chopin text-3xl font-bold text-white md:text-4xl lg:text-5xl"
+                className="flex flex-wrap justify-center gap-x-[0.3em] font-sans text-3xl font-bold text-white md:text-4xl lg:text-5xl"
                 initial="hidden"
                 animate="visible"
                 exit={{ opacity: 0, transition: { duration: 0.25, ease: "easeIn" } }}
@@ -113,9 +113,24 @@ export function HeroSection() {
               const input = (e.currentTarget as HTMLFormElement).querySelector(
                 "input"
               ) as HTMLInputElement;
-              if (input?.value) {
-                router.push(`/properties?query=${encodeURIComponent(input.value)}`);
+              const raw = input?.value?.trim();
+              if (!raw) return;
+
+              const params = new URLSearchParams();
+
+              // Extract "N bed(s)" or "N-bed" → minBeds filter
+              const bedMatch = raw.match(/(\d+)\s*-?\s*bed/i);
+              if (bedMatch) params.set("minBeds", bedMatch[1]);
+
+              // Extract "in City Name" at end of query → city search
+              const cityMatch = raw.match(/\bin\s+([a-zA-Z][a-zA-Z\s]+)$/i);
+              if (cityMatch) {
+                params.set("query", cityMatch[1].trim());
+              } else {
+                params.set("query", raw);
               }
+
+              router.push(`/properties?${params.toString()}`);
             }}
           />
         </div>
