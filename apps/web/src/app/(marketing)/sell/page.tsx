@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { Metadata } from "next";
-import { RevealText } from "@/components/ui/reveal-text";
 import { SellProcess } from "@/components/sell/SellProcess";
+import { PageCTA } from "@/components/ui/PageCTA";
+import { DownArrow } from "@/components/ui/DownArrow";
 
 export const metadata: Metadata = {
   title: "Sell Your Home | CnC Realty",
@@ -10,40 +10,75 @@ export const metadata: Metadata = {
 
 export default function SellPage() {
   return (
-    <main data-navbar-theme="light" className="min-h-screen bg-[#F2F0EF]">
-      <section className="px-8 pb-24 pt-40 lg:px-20">
-        <div className="mx-auto max-w-5xl">
-          <p className="mb-4 font-sans text-sm font-medium uppercase tracking-widest text-[#9E8C61]">Sell</p>
-          <h1 className="mb-6 font-sans text-[3.5rem] font-light leading-tight lg:text-[5rem]">
-            <span className="block"><RevealText>Sell smarter,</RevealText></span>
-            <span className="block"><RevealText delay={0.15}>close faster.</RevealText></span>
-          </h1>
-          <p className="mb-10 max-w-xl font-sans text-lg font-light text-[#1B1B1B]/60">
-            Full CRMLS exposure. Expert pricing. A dedicated agent from listing day through closing day.
-          </p>
-          <Link
-            href="/contact"
-            className="inline-flex items-center gap-2 rounded-full bg-[#1B1B1B] px-8 py-3.5 font-sans text-sm font-medium text-white transition-opacity hover:opacity-80"
-          >
-            Get a Free Home Valuation →
-          </Link>
-        </div>
+    <main>
+      {/* ── Hero ── */}
+      <section data-navbar-theme="dark" className="relative h-[95vh] overflow-hidden bg-black">
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
+          className="absolute inset-0 h-full w-full object-cover object-center"
+          src="/videos/sell-hero.mp4"
+        />
+
+        {/*
+          SVG mask: near-black rectangle covers the whole screen.
+          The text shapes are punched out (fill="black" in mask),
+          revealing the video through the letter outlines.
+        */}
+        <svg
+          className="absolute inset-0 h-full w-full"
+          viewBox="0 0 1920 1080"
+          preserveAspectRatio="xMidYMid slice"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <defs>
+            <mask id="sell-hero-mask">
+              <rect width="1920" height="1080" fill="white" />
+              <text
+                x="960"
+                y="400"
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fontSize="240"
+                fill="black"
+                style={{ fontFamily: "var(--font-sans), ui-sans-serif, system-ui, sans-serif", fontWeight: 300 }}
+              >
+                SELL WITH
+              </text>
+              <text
+                x="960"
+                y="710"
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fontSize="320"
+                fill="black"
+                style={{ fontFamily: "var(--font-sans), ui-sans-serif, system-ui, sans-serif", fontWeight: 300 }}
+              >
+                US
+              </text>
+            </mask>
+          </defs>
+          <rect width="1920" height="1080" fill="black" fillOpacity="0.72" mask="url(#sell-hero-mask)" />
+        </svg>
+
+        <DownArrow />
       </section>
 
-      <SellProcess />
-
-      <section className="px-8 pb-24 pt-16 lg:px-20">
-        <div className="mx-auto max-w-5xl rounded-2xl bg-[#1B1B1B] px-10 py-14 text-center">
-          <h2 className="mb-4 font-sans text-[2rem] font-light"><RevealText onDark>What&apos;s your home worth?</RevealText></h2>
-          <p className="mb-8 font-sans text-base text-white/50">Get a free, no-obligation valuation from a CnC agent.</p>
-          <Link
-            href="/contact"
-            className="inline-flex rounded-full bg-[#9E8C61] px-8 py-3.5 font-sans text-sm font-medium text-white transition-opacity hover:opacity-80"
-          >
-            Request a Valuation →
-          </Link>
-        </div>
-      </section>
+      {/* ── Light sections ── */}
+      <div data-navbar-theme="light" className="bg-[#F2F0EF]">
+        <SellProcess />
+        <PageCTA
+          heading={<>What&apos;s your home <span style={{ color: "#9E8C61" }}>worth?</span></>}
+          body="Get a free, no-obligation valuation from a CnC agent."
+          primaryHref="/contact"
+          primaryLabel="Request a Valuation →"
+          secondaryHref="/agents"
+          secondaryLabel="Meet Our Agents"
+        />
+      </div>
     </main>
   );
 }

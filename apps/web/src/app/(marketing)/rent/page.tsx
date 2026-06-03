@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Metadata } from "next";
 import { RevealText } from "@/components/ui/reveal-text";
+import { PageCTA } from "@/components/ui/PageCTA";
 
 export const metadata: Metadata = {
   title: "Rent | CnC Realty",
@@ -66,18 +67,14 @@ export default function RentPage() {
         </div>
       </section>
 
-      <section className="px-8 pb-24 lg:px-20">
-        <div className="mx-auto max-w-5xl rounded-2xl bg-[#1B1B1B] px-10 py-14 text-center">
-          <h2 className="mb-4 font-sans text-[2rem] font-light"><RevealText onDark>Need help finding a rental?</RevealText></h2>
-          <p className="mb-8 font-sans text-base text-white/50">A CnC agent will work on your behalf — at no cost to you.</p>
-          <Link
-            href="/contact"
-            className="inline-flex rounded-full bg-[#9E8C61] px-8 py-3.5 font-sans text-sm font-medium text-white transition-opacity hover:opacity-80"
-          >
-            Get in Touch →
-          </Link>
-        </div>
-      </section>
+      <PageCTA
+        heading={<>Need help finding a <span style={{ color: "#9E8C61" }}>rental?</span></>}
+        body="A CnC agent will work on your behalf — at no cost to you."
+        primaryHref="/properties?listingType=FOR_LEASE"
+        primaryLabel="Browse Rentals →"
+        secondaryHref="/contact"
+        secondaryLabel="Talk to an Agent"
+      />
     </main>
   );
 }

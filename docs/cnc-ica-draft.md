@@ -78,21 +78,28 @@ Associate-Licensee shall be familiar with and comply with all applicable laws, p
 
 **7.1. Compensation Structure.** Compensation shall be charged to the parties who enter into listing or buyer agreements for services requiring a real estate license. Associate-Licensee may use its own discretion regarding the commission fee to charge its clients, subject to the minimum fee described below. Broker's fee shall be deducted at closing before disbursement to Associate-Licensee.
 
-**7.2. Flat Transaction Fee.** Broker's fee per closed transaction is as follows, based on the sale price (or lease value as applicable):
+**7.2. Flat Transaction Fee.** Broker's flat fee per closed transaction is **$990**, inclusive of Errors & Omissions (E&O) insurance coverage as described in Section 9 for sale or lease values up to and including $1,000,000. For transactions exceeding $1,000,000, an E&O Supplement is added to the base fee.
 
-| Sale / Lease Price | Broker Fee |
-|--------------------|------------|
-| $0 – $999,999 | **$950** |
-| $1,000,000 – $1,999,999 | **$1,350** |
-| $2,000,000 – $2,999,999 | **$1,750** |
-| $3,000,000 – $3,999,999 | **$2,150** |
-| $4,000,000 and above | **$2,550** |
+**E&O Supplement:** $200 per $500,000 (or fraction thereof) of sale or lease price over $1,000,000.
 
-These fees are inclusive of Errors & Omissions (E&O) insurance coverage as described in Section 9. No monthly fee is charged.
+| Sale / Lease Price | E&O Supplement | Total Broker Fee |
+|--------------------|----------------|------------------|
+| $0 – $1,000,000 | $0 | **$990** |
+| $1,000,001 – $1,500,000 | $200 | **$1,190** |
+| $1,500,001 – $2,000,000 | $400 | **$1,390** |
+| $2,000,001 – $2,500,000 | $600 | **$1,590** |
+| $2,500,001 – $3,000,000 | $800 | **$1,790** |
+| $3,000,001 – $3,500,000 | $1,000 | **$1,990** |
+| $3,500,001 – $4,000,000 | $1,200 | **$2,190** |
+| $4,000,001+ | +$200 per additional $500k | $2,190 + supplement |
+
+No monthly fee is charged.
 
 **7.3. Associate-Licensee Commission.** After deduction of the flat transaction fee, 100% of the remaining commission is disbursed to Associate-Licensee. Associate-Licensee may receive commission directly from escrow, provided that: (a) the completed transaction file was submitted for Broker's review no later than two (2) business days before close of escrow, and (b) Broker has certified the file as complete. Unauthorized release of a commission check is grounds for immediate termination.
 
-**7.4. Dual Agency.** Any transaction in which Associate-Licensee represents both buyer and seller (or both landlord and tenant) is counted as two (2) separate transactions for fee purposes. The flat transaction fee shall be charged twice — once for the buyer-side representation and once for the seller-side representation.
+**7.4. Dual Agency and Agent-Relative Sales.** Any transaction in which Associate-Licensee represents both buyer and seller (or both landlord and tenant) is counted as two (2) separate transactions for fee purposes. The full transaction fee — including the base flat fee and any applicable E&O Supplement — shall be charged twice: once for the buyer-side representation and once for the seller-side representation.
+
+The same double-fee structure applies to transactions involving the sale or purchase of property owned by or for the benefit of Associate-Licensee, Associate-Licensee's immediate family member, or any entity in which Associate-Licensee holds an ownership interest, where Associate-Licensee also acts as the representing agent. Written approval from Broker is required for all such transactions per Section 6.
 
 **7.5. Referral and Lease Transactions.** The flat transaction fee applies to referrals, leases, and any other transaction for which a real estate license is required. Broker's fee on referral or lease transactions is the flat fee applicable to the transaction value, or $950 minimum, whichever applies.
 
@@ -120,7 +127,7 @@ These fees are inclusive of Errors & Omissions (E&O) insurance coverage as descr
 
 ## 9. ERRORS & OMISSIONS INSURANCE
 
-**9.1.** Broker maintains an Errors & Omissions (E&O) insurance policy covering real estate transactions brokered through CnC Realty Group. Coverage limits are $1,000,000 per claim and $1,000,000 aggregate. The flat transaction fee described in Section 7.2 includes E&O coverage — no separate E&O fee is charged per transaction.
+**9.1.** Broker maintains an Errors & Omissions (E&O) insurance policy covering real estate transactions brokered through CnC Realty Group. Coverage limits are $1,000,000 per claim and $1,000,000 aggregate. The flat transaction fee described in Section 7.2 includes E&O coverage for transactions with a sale or lease value up to and including $1,000,000. For transactions exceeding $1,000,000, the E&O Supplement described in Section 7.2 covers the additional E&O exposure — no further E&O fee is charged beyond what is specified in the fee schedule.
 
 **9.2.** Associate-Licensee is responsible for any deductible that may be assessed against a claim arising from Associate-Licensee's transaction(s). Broker's E&O policy does not cover: personal property transactions by Associate-Licensee (where Associate-Licensee is buying or selling their own property), prohibited activities listed in Section 6, or conduct found by a court or arbitration panel to constitute intentional fraud, misrepresentation, or gross negligence.
 
@@ -134,7 +141,7 @@ These fees are inclusive of Errors & Omissions (E&O) insurance coverage as descr
 
 **10.2.** Proper reporting requires Associate-Licensee to open a new transaction record in CnC Realty Group's transaction management platform and upload all required documents per Broker's checklist. **For dual agency transactions, Associate-Licensee must create two (2) separate transaction records — one for the listing/seller side and one for the buyer side.**
 
-**10.3.** Associate-Licensee who closes a transaction without first creating a transaction record in the CnC platform and receiving Broker certification will be subject to a non-compliance fee of **$500**, deducted from the most recent commission due or the next future commission.
+**10.3.** Commission will not be released until Associate-Licensee has created a complete transaction record in the CnC platform and Broker has certified the file as complete. Closing a transaction without an open and certified transaction record is grounds for withholding of commission until the deficiency is corrected.
 
 ---
 
@@ -276,14 +283,13 @@ I, the undersigned Associate-Licensee, do hereby acknowledge that I have read Cn
 
 | Item | Amount |
 |------|--------|
-| Transaction Fee — $0–$999,999 | $950 |
-| Transaction Fee — $1M–$1,999,999 | $1,350 |
-| Transaction Fee — $2M–$2,999,999 | $1,750 |
-| Transaction Fee — $3M–$3,999,999 | $2,150 |
-| Transaction Fee — $4M+ | $2,550 |
+| Transaction Fee (base, all transactions) | $990 |
+| E&O included through | $1,000,000 sale/lease price |
+| E&O Supplement — per $500k (or fraction) over $1M | $200 |
+| E&O Supplement examples: $1M–$1.5M / $1.5M–$2M / $2M–$2.5M | +$200 / +$400 / +$600 |
+| Dual Agency / Agent-Relative Sale | Full fee (base + supplement) × 2 |
 | Monthly Fee | $0 |
 | Optional CnC TC Service | $350 (paid through escrow) |
-| Non-compliance (closing without TC record) | $500 |
 | E&O Insurance | Included in transaction fee |
 | E&O Deductible (if claim) | Associate-Licensee's responsibility |
 
