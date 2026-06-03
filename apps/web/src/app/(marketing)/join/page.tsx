@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import { RevealText, RevealLine } from "@/components/ui/reveal-text";
-import { DownArrow } from "@/components/ui/DownArrow";
+import { JoinHero } from "@/components/join/JoinHero";
 import { StatsBar } from "@/components/join/StatsBar";
 import { FounderQuote } from "@/components/join/FounderQuote";
 import { WhyCnCStacked } from "@/components/join/WhyCnCStacked";
@@ -18,64 +18,7 @@ export const metadata: Metadata = {
 export default function JoinPage() {
   return (
     <main>
-      {/* ── Hero ── */}
-      <section data-navbar-theme="dark" className="relative h-[95vh] overflow-hidden bg-black">
-        {/* Video — full brightness so clouds read clearly through the text */}
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="auto"
-          className="absolute inset-0 h-full w-full object-cover object-center"
-          src="/videos/join-hero.mp4"
-        />
-
-        {/*
-          SVG mask: a near-black rectangle covers the whole screen.
-          The text shape is punched out (luminance=0 in the mask),
-          making the overlay transparent there — revealing the video
-          (and moving clouds) through the letter outlines.
-        */}
-        <svg
-          className="absolute inset-0 h-full w-full"
-          viewBox="0 0 1920 1080"
-          preserveAspectRatio="xMidYMid slice"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <defs>
-            <mask id="be-cnc-mask">
-              <rect width="1920" height="1080" fill="white" />
-              <text
-                x="860"
-                y="400"
-                textAnchor="end"
-                dominantBaseline="middle"
-                fontSize="320"
-                fill="black"
-                style={{ fontFamily: "var(--font-sans), ui-sans-serif, system-ui, sans-serif", fontWeight: 300 }}
-              >
-                Be
-              </text>
-              <text
-                x="860"
-                y="680"
-                textAnchor="start"
-                dominantBaseline="middle"
-                fontSize="320"
-                fill="black"
-                style={{ fontFamily: "var(--font-sans), ui-sans-serif, system-ui, sans-serif", fontWeight: 300 }}
-              >
-                CnC
-              </text>
-            </mask>
-          </defs>
-          <rect width="1920" height="1080" fill="black" fillOpacity="0.72" mask="url(#be-cnc-mask)" />
-        </svg>
-
-        <DownArrow />
-
-      </section>
+      <JoinHero />
 
       {/* ── Light sections: stats, founder quote, why CnC ── */}
       <div data-navbar-theme="light">
