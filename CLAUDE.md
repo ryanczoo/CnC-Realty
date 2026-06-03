@@ -3242,12 +3242,101 @@ Ran `/simplify` with 4 parallel agents (reuse, simplification, efficiency, altit
 
 ### Next Session — Start Here
 
-1. **Call Rise Realty** — ask about dual agency / agent-relative-owned sale fee policy
-2. Once confirmed → finalize fee structure → update `docs/cnc-ica-draft.md` + Join page fee display
-3. Continue with remaining work:
-   - CnC ICA draft review (`docs/cnc-ica-draft.md`)
+1. **Call Rise Realty** — ask about dual agency / agent-relative-owned sale fee policy (still pending)
+2. Continue with remaining work:
+   - CnC ICA draft review (`docs/cnc-ica-draft.md`) — fee structure finalized, pending attorney review
    - Checklist templates at `/admin/settings/checklists`
    - Phase 6 tasks (`docs/superpowers/plans/2026-05-22-phase-6-launch.md`)
+
+---
+
+## Session Notes — 2026-06-03
+
+### What Was Completed This Session
+
+All changes committed to `claude/real-estate-website-9bdWi`.
+
+---
+
+### ICA Fee Structure — FINALIZED ✅
+
+Conducted full competitor research (West Shores PDF, Rise Realty, REeBroker, Virtual Realty Group) via Puppeteer + PDF read.
+
+**Final fee structure locked in `docs/cnc-ica-draft.md`:**
+- Flat transaction fee: **$990** (all transactions)
+- E&O included through **$1M** sale price
+- E&O Supplement: **$200 per $500k (or fraction) over $1M**
+- Dual agency: full fee × 2 (both sides)
+- Dual agency + agent-relative-owned sale: full fee × 2 (same as dual agency — confirmed by West Shores call)
+- Monthly fee: **$0**
+- Optional TC service: **$350** (through escrow)
+- Non-compliance fee: **REMOVED** — replaced with commission withholding until file certified
+
+**ICA sections updated:**
+- Section 7.2: New fee table with $990 base + E&O supplement tiers
+- Section 7.4: Renamed "Dual Agency and Agent-Relative Sales" — covers both cases explicitly
+- Section 9.1: E&O coverage clarified ($1M threshold, supplement covers above)
+- Section 10.3: Non-compliance fee removed → West Shores-style withholding language
+
+**Competitor context:**
+- West Shores: $900 flat + $95/mo, no E&O supplement (absorbed by monthly fee), fee × 2 for dual agency
+- Rise Realty: $199–$999 scaled (capped), $0/mo, E&O through $1.5M, $150/500k supplement above $1.5M
+- REeBroker: $700 total ($500 + $200 risk mgmt), **25% of commission for dual agency** — CnC is far cheaper on dual
+- Virtual Realty (CA): $695 + tri-annual membership, large supplements at $1M/$1.5M/$2M
+
+---
+
+### Sell Page — New Video Hero ✅
+
+- Full-screen SVG-mask video hero, `h-[95vh]` (matches join page)
+- Video: `public/videos/sell-hero.mp4` (copied from Downloads)
+- "SELL WITH" (top, fontSize 240) / "US" (bottom, fontSize 320), both center-anchored at x=960
+- Same SVG mask technique as join page — video visible through letter cutouts
+- `DownArrow` component reused
+- Old text hero section removed
+
+---
+
+### PageCTA Component — New Shared Component ✅
+
+New file: `apps/web/src/components/ui/PageCTA.tsx`
+
+Matches Join page final CTA section style:
+- Off-white `#F2F0EF` background
+- `CTALineArt` isometric house SVG as background decoration
+- `RevealLine` heading with gold accent on last word
+- Two spring-animated buttons (gold primary + bordered secondary; secondary optional)
+
+Applied to:
+- `/buy` — "Ready to start **looking?**" · "Search All Listings →" + "Find an Agent"
+- `/rent` — "Need help finding a **rental?**" · "Browse Rentals →" + "Talk to an Agent"
+- `/manage` — "Ready to go **hands-off?**" · "Schedule a Consultation →" + "View Listings"
+- `/sell` — "What's your home **worth?**" · "Request a Valuation →" + "Meet Our Agents"
+
+---
+
+### Section / Page Status
+
+| Section / Page | Status |
+|---|---|
+| Sell Page — Hero (video) | ✅ Approved |
+| Sell Page — Our Process | ✅ Approved |
+| Sell Page — PageCTA | ✅ Applied |
+| Buy Page — PageCTA | ✅ Applied |
+| Rent Page — PageCTA | ✅ Applied |
+| Manage Page — PageCTA | ✅ Applied |
+| CnC ICA | ✅ Fee structure finalized, pending attorney review |
+
+---
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. Open `localhost:3000`
+3. Continue with remaining work:
+   - Checklist templates at `/admin/settings/checklists`
+   - Phase 6 tasks (`docs/superpowers/plans/2026-05-22-phase-6-launch.md`)
+   - Call Rise Realty re: dual agency policy (still pending — not blocking anything now)
 
 ---
 
