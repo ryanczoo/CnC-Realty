@@ -10,11 +10,11 @@ const WR_START =  2 * SPREAD; //  60 — card[0] at center when scroll=0
 const WR_END   = -2 * SPREAD; // -60 — card[4] at center when scroll=1
 
 const VALUES = [
-  { label: "Respect",             img: "/images/sell/sell-01.jpg" },
-  { label: "Punctuality",         img: "/images/sell/sell-02.jpg" },
-  { label: "Attention to Detail", img: "/images/sell/sell-03.jpg" },
-  { label: "Compassion",          img: "/images/sell/sell-04.jpg" },
-  { label: "Integrity",           img: "/images/sell/sell-05.jpg" },
+  { label: "Respect",             img: "/images/sell/values-respect.jpg" },
+  { label: "Punctuality",         img: "/images/sell/values-punctuality.jpg" },
+  { label: "Attention to Detail", img: "/images/sell/values-attention.jpg" },
+  { label: "Compassion",          img: "/images/sell/values-compassion.jpg" },
+  { label: "Integrity",           img: "/images/sell/values-integrity.jpg" },
 ];
 
 function cardVars(i: number, t: number) {
@@ -102,10 +102,10 @@ export function SellValues() {
       <div className="sticky top-0 h-screen overflow-hidden bg-cnc-bg">
 
         {/* Title — top center, same pattern as "Our Process" */}
-        <div className="absolute inset-x-0 top-12 flex justify-center">
-          <h2 className="font-sans text-[2.5rem] font-light xl:text-[3rem]">
+        <div className="absolute inset-x-0 top-40 flex justify-center">
+          <h2 className="font-sans text-[3.5rem] font-light xl:text-[4.5rem]">
             <RevealLine>
-              <span className="text-[1.9rem] xl:text-[2.2rem]">Our </span>
+              <span className="text-[2.6rem] xl:text-[3.4rem]">Our </span>
               <span style={{ color: "#9E8C61" }}>Values</span>
             </RevealLine>
           </h2>
