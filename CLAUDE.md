@@ -3340,6 +3340,161 @@ Applied to:
 
 ---
 
+## Session Notes — 2026-06-03
+
+### What Was Completed This Session
+
+All changes committed to `claude/real-estate-website-9bdWi` (commits `369f843` through `751e011`).
+
+---
+
+### Sell Page Hero — Word-by-Word Animation
+
+- Replaced typewriter letter-by-letter animation with Framer Motion word-by-word fade-in (matching homepage hero style)
+- "SELL" and "WITH" on top line (manually x-positioned), "US" on bottom line
+- Each word: `opacity 0→1, x -14→0`, `duration 0.9s easeOut`, `staggerChildren 0.28s`
+- Extracted hero into `apps/web/src/components/sell/SellHero.tsx` ("use client")
+- File: `apps/web/src/app/(marketing)/sell/page.tsx` → `<SellHero />`
+
+### Join Page Hero — Word-by-Word Animation
+
+- Same animation applied to "Be CnC" SVG mask text
+- Extracted into `apps/web/src/components/join/JoinHero.tsx` ("use client")
+- Stagger: `0.56s` (doubled from sell page — "Be CnC" is only 2 words so needed more gap to feel same speed)
+- File: `apps/web/src/app/(marketing)/join/page.tsx` → `<JoinHero />`
+
+### Homepage Hero — Font Swap
+
+- `font-chopin` (Inter) → `font-sans` (Google Sans Flex) on the cycling phrase heading
+- Matches the sell page hero SVG text font
+- File: `apps/web/src/components/home/HeroSection.tsx`
+
+### Hero Search — Natural Language Parsing
+
+- Fixed: "3 bed homes in Pasadena" returned 0 results (API only did city/address string match)
+- Added NLP parsing in `HeroSection.tsx` `onSubmit`: extracts "N bed" → `minBeds` param, "in City" → `query` param
+- Routes to `/properties?query=Pasadena&minBeds=3` instead of passing full string verbatim
+
+### Contact Page — Black Navbar
+
+- Added `pathname !== "/contact"` to `isTransparent` exclusion in `Navbar.tsx`
+- Removed `data-navbar-theme="light"` from contact page `<main>`
+- Contact page now shows solid `bg-[#0f0f0f]` navbar with white logo/buttons
+
+### Sell Page — Our Process Copy Updates
+
+- Intro heading: "We handle everything, start to close." → "We're here for you, start to close"
+- Intro body: updated to "CnC will be with you every step of the way"
+- Listing body: updated to professional photography + immaculate staging + effective agent communication + California (not Southern California)
+- Valuation body: period removed
+- Offers body: period removed
+- Closing body: "manage" → "read every detail"
+
+### Sell Page — "Start" Button on Closing Step
+
+- Added white pill "Start" button → `/contact` below Closing body text
+- `mt-20` spacing below body text
+- Pulses at idle, spring snap on hover (matches sitewide button standard)
+- Field: `cta: { label: "Start", href: "/contact" }` on step 04 in `STEPS` array
+
+### Sell Page — CTA Redesign
+
+- Heading: "Free Property-Value **Estimate**" (gold on last word)
+- Body: "By an experienced CnC Agent"
+- Button: "Request Valuation" (single centered button, no secondary)
+
+### Sell Page — FAQ Section
+
+- Added `<FAQ />` between SellProcess and PageCTA
+- FAQ component now accepts optional `faqs` prop (homepage uses default, sell page passes custom array)
+- FAQ also accepts optional `className` prop for background override
+- Sell page FAQ: `bg-[#DAD4D2]` + 4 sell-specific Q&As:
+  1. How long will it take to sell my property?
+  2. Should I get a home inspection?
+  3. What are closing costs?
+  4. Do I need to renovate my home or sell "as-is"?
+- Gradient bridge above FAQ: `#F2F0EF → #DAD4D2` (80px)
+- Gradient bridge below FAQ: `#DAD4D2 → #F2F0EF` (80px)
+
+### Homepage FAQ — Color Update
+
+- Background changed to `#DAD4D2` (same as sell page)
+- Gradient bridge above (from Testimonials `#F2F0EF → #DAD4D2`) and below (to JoinCnCCTA `#DAD4D2 → #F2F0EF`)
+- File: `apps/web/src/app/page.tsx`
+
+### ICA — Fee Structure Finalized
+
+- Rise Realty confirmed (via phone call): dual agency / agent-relative sale = fee × 2 (same as CnC policy)
+- Dual agency policy locked — no ICA text change needed (was already correct)
+- **New Section 7.9:** Broker-provided leads = 25% of gross commission + flat transaction fee, identified in writing at time of referral
+- Renumbered: old 7.9 (Post-Termination) → 7.10
+- Fee table updated with broker-provided lead row
+- ICA converted to Word doc: `C:\Users\hey_r\Downloads\CnC-Realty-ICA-DRAFT.docx`
+
+### StatsBar — Resources Updated
+
+- "20+" → "30+" for Resources stat
+- File: `apps/web/src/components/join/StatsBar.tsx`
+
+### Pulse Animation — Sitewide Button Standard
+
+**Established as the permanent standard for all buttons going forward.**
+
+All CTA/pill buttons now use a continuous idle pulse that stops on hover:
+- `animate={PULSE_ANIMATE}` — `scale: [1, 1.04, 1]`
+- `transition={PULSE_TRANSITION}` — `duration: 2, repeat: Infinity, ease: "easeInOut"`
+- `whileHover={{ scale: 1.05, transition: SPRING_HOVER }}` — hover overrides pulse transition
+
+Constants added to `apps/web/src/lib/motion.ts`: `PULSE_ANIMATE`, `PULSE_TRANSITION`
+
+**Applied to 10 buttons across 8 files:**
+- `PageCTA.tsx` — primary + secondary buttons
+- `JoinCnCCTA.tsx` — "Join Now"
+- `WhyCnC.tsx` — "Join CnC" (Freedom Awaits panel)
+- `ServicesSection.tsx` — "Services" pill
+- `HowToJoin.tsx` — "Apply Now →"
+- `JoinCTAButtons.tsx` — "Join" + "Message"
+- `contact/page.tsx` — "Send Message"
+- `SellProcess.tsx` — "Start" (Closing step)
+
+---
+
+### Section / Page Status
+
+| Section / Page | Status |
+|---|---|
+| Sell Page — Hero (word-by-word animation) | ✅ Approved |
+| Sell Page — Our Process (copy + Start button) | ✅ Approved |
+| Sell Page — FAQ (sell Q&As, #DAD4D2, gradients) | ✅ Approved |
+| Sell Page — CTA | ✅ Approved |
+| Join Page — Hero (word-by-word animation) | ✅ Approved |
+| Homepage — Hero (font swap + NLP search) | ✅ Approved |
+| Homepage — FAQ (#DAD4D2 + gradients) | ✅ Approved |
+| Contact Page — Navbar (solid black) | ✅ Approved |
+| Sitewide — Pulse button animation | ✅ Applied to all existing CTAs |
+| CnC ICA | ✅ Finalized + Word doc generated |
+
+---
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. Open `localhost:3000`
+3. Continue with remaining work:
+   - Checklist templates at `/admin/settings/checklists`
+   - Phase 6 tasks (`docs/superpowers/plans/2026-05-22-phase-6-launch.md`):
+     - ISR on property pages (`revalidate: 300`)
+     - Skeleton loaders
+     - Sitemap + robots.txt
+     - JSON-LD structured data
+     - Redis caching (needs Upstash credentials)
+     - Rate limiting (needs Upstash credentials)
+     - Sentry error monitoring (needs Sentry DSN)
+     - PostHog analytics (needs PostHog key)
+     - Deploy to Vercel + Railway
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`
