@@ -3557,8 +3557,9 @@ Ran `/simplify` across all today's changes. Findings applied (`2791ace`):
 | Section / Page | Status |
 |---|---|
 | Sell Page — Hero | ✅ Approved |
-| Sell Page — SellQuote | 🔄 Placeholder — text/format TBD |
+| Sell Page — SellQuote | ✅ Approved — "Our Mission" section, scroll word-lighting |
 | Sell Page — Our Process | ✅ Approved |
+| Sell Page — Our Values | ✅ Approved — real photos pending from Ryan |
 | Sell Page — FAQ | ✅ Approved |
 | Sell Page — CTA | ✅ Approved |
 | Homepage — All sections | ✅ Approved |
@@ -3569,12 +3570,25 @@ Ran `/simplify` across all today's changes. Findings applied (`2791ace`):
 
 ---
 
+### SellValues — Our Values Arch Wheel (2026-06-04)
+
+New component: `apps/web/src/components/sell/SellValues.tsx`
+- 500vh sticky section with scroll-driven image wheel (same mechanic as azure.sa/about "Azure Projects")
+- 5 cards on a half-circle arch, rotating right-to-left as user scrolls
+- Cards: Respect, Punctuality, Attention to Detail, Compassion, Integrity
+- Placeholder images: sell-01.jpg → sell-05.jpg (Ryan to swap real photos when ready)
+- Title "Our Values" top-center with RevealLine (same as Our Process)
+- 25 useTransform calls (5 cards × x/y/scale/opacity/rotate) — hooks at top level, not in loops
+- Placed in sell/page.tsx immediately after `<SellProcess />`
+
+---
+
 ### Next Session — Start Here
 
 1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
-2. Open `localhost:3001` (or check terminal for port)
+2. Open `localhost:3000` (or check terminal for port)
 3. Continue with remaining work:
-   - Finalize sell page: update `SellQuote` text and format (Ryan decides content)
+   - Swap placeholder images in SellValues when Ryan provides 5 photos
    - Finalize buy, rent, manage pages
    - Checklist templates at `/admin/settings/checklists`
    - Phase 6 tasks (`docs/superpowers/plans/2026-05-22-phase-6-launch.md`)
