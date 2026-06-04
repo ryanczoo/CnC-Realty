@@ -3476,22 +3476,108 @@ Constants added to `apps/web/src/lib/motion.ts`: `PULSE_ANIMATE`, `PULSE_TRANSIT
 
 ---
 
+## Session Notes — 2026-06-04
+
+### What Was Completed This Session
+
+All changes committed to `claude/real-estate-website-9bdWi` (commits through `2791ace`).
+
+---
+
+### SellQuote — Placeholder Section Added
+
+- New file: `apps/web/src/components/sell/SellQuote.tsx`
+- Copied from `FounderQuote.tsx` — same scroll-driven word-reveal animation, same placeholder text
+- Removed: photo, "Founder" label, "Ryan Chong" name
+- Text is centered (`text-center`) instead of float layout
+- Placed in `sell/page.tsx` directly after `<SellHero />`, before the light sections wrapper
+- **Status: placeholder** — Ryan will change the text and format in a future session
+
+### Sell Hero — Gradient Blend (Rejected)
+
+Attempted two approaches to blend the hero into the SellQuote section — both rejected:
+1. Gradient bridge div between sections (`#000000 → #F2F0EF`) — Ryan said it looked ugly
+2. Transparent → `#F2F0EF` overlay on the bottom of `SellHero` — tried `h-40`, `h-20`, `height: 80px` — still didn't look right
+
+**Final decision: hard cut between hero and SellQuote. No gradient.** Do not attempt a gradient blend between SellHero and SellQuote again unless Ryan explicitly asks with a specific reference.
+
+---
+
+### Homepage Section Titles — "Our Process" Format Applied Sitewide
+
+All homepage section titles now follow the sell page "Our Process" pattern: top row smaller, bottom row bigger. The bottom word is gold.
+
+**`FeaturedListings.tsx`:**
+- "Exclusive Listings" → "Exclusive" (`text-[1.9rem] xl:text-[2.2rem]`) + "**Listings**" (gold, `text-[2.5rem] xl:text-[3rem]`) — same line, inline
+
+**`WhyCnC.tsx`:**
+- "100% COMMISSION" → `100%` (sm, `text-[3rem]`) / `COMMISSION` (custom `text-[3.4rem] xl:text-[4.1rem]` — slightly smaller than full 4rem)
+- "AI-DRIVEN TECH" → `AI-DRIVEN` (sm) / `TECH` (full, gold)
+- "TRAINING & MENTORSHIP" → `TRAINING &` (sm) / `MENTORSHIP` (full, gold)
+- "FREEDOM AWAITS" → `FREEDOM` (sm) / `AWAITS` (full, gold)
+- Added `size?: string` prop to `TitlePart` type for one-off size overrides
+
+**`ServicesSection.tsx`:**
+- "with" now same size as "CnC" — removed smaller `text-[2.5rem]` span override, both inherit `text-[3.5rem] xl:text-[4.2rem]`
+
+**`Testimonials.tsx`:**
+- Cycling word (trust/results/futures/homes/teams) now slightly bigger than "We create"
+- Applied `fontSize: "clamp(3.5rem, 6.8vw, 6.2rem)"` to the `inline-grid` wrapper span
+- "We create" stays at `clamp(2.8rem, 5.5vw, 5rem)` — only the wrapper was changed, `GhostWords` + active word both scale together so layout-shift prevention stays intact
+
+---
+
+### Simplify Pass — 4-Agent Parallel Review
+
+Ran `/simplify` across all today's changes. Findings applied (`2791ace`):
+
+**New shared utilities:**
+- `lib/motion.ts` — added `WORD_VARIANT` (word fade-in variant) and `wordContainer(stagger)` factory
+- `components/ui/GradientBridge.tsx` — new component: `<GradientBridge from="#F2F0EF" to="#DAD4D2" />` replaces inline gradient style divs
+
+**Component improvements:**
+- `PageCTA.tsx` — extracted `CTAButton` sub-component, eliminates 3 repeated motion props
+- `SellProcess.tsx` — `motion(Link)` replaces `motion.div + Link` wrapper
+- `SellHero.tsx` + `JoinHero.tsx` — use `WORD_VARIANT` + `wordContainer()` from `motion.ts`
+- `FeaturedListings.tsx` — `MotionLink` + `SPRING_HOVER` replaces `motion.div` wrapper + inline spring
+- `ServicesSection.tsx` — card-back buttons use `SPRING_HOVER` instead of inline spring literals
+- `sell/page.tsx` — `SELL_FAQS` const hoisted out of inline JSX; uses `GradientBridge`
+- `page.tsx` (homepage) — uses `GradientBridge`
+- All 4 marketing pages + `FeaturedListings` — `className="text-cnc-gold"` replaces `style={{ color: "#9E8C61" }}`
+
+**Skipped (intentional):**
+- `VideoMaskHero` shared component — deferred until a 3rd page needs a video hero
+- `SellQuote`/`FounderQuote` merge — `SellQuote` is a placeholder Ryan will change
+- `SellQuote` scroll efficiency (`getBoundingClientRect` on every frame) — would need to fix `FounderQuote` too; deferred for consistency
+
+---
+
+### Section / Page Status
+
+| Section / Page | Status |
+|---|---|
+| Sell Page — Hero | ✅ Approved |
+| Sell Page — SellQuote | 🔄 Placeholder — text/format TBD |
+| Sell Page — Our Process | ✅ Approved |
+| Sell Page — FAQ | ✅ Approved |
+| Sell Page — CTA | ✅ Approved |
+| Homepage — All sections | ✅ Approved |
+| Homepage — Section title format | ✅ Applied (smaller top row, bigger gold bottom row) |
+| Buy Page | 🔄 Shell only — not yet finalized |
+| Rent Page | 🔄 Shell only — not yet finalized |
+| Manage Page | 🔄 Shell only — not yet finalized |
+
+---
+
 ### Next Session — Start Here
 
 1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
-2. Open `localhost:3000`
+2. Open `localhost:3001` (or check terminal for port)
 3. Continue with remaining work:
+   - Finalize sell page: update `SellQuote` text and format (Ryan decides content)
+   - Finalize buy, rent, manage pages
    - Checklist templates at `/admin/settings/checklists`
-   - Phase 6 tasks (`docs/superpowers/plans/2026-05-22-phase-6-launch.md`):
-     - ISR on property pages (`revalidate: 300`)
-     - Skeleton loaders
-     - Sitemap + robots.txt
-     - JSON-LD structured data
-     - Redis caching (needs Upstash credentials)
-     - Rate limiting (needs Upstash credentials)
-     - Sentry error monitoring (needs Sentry DSN)
-     - PostHog analytics (needs PostHog key)
-     - Deploy to Vercel + Railway
+   - Phase 6 tasks (`docs/superpowers/plans/2026-05-22-phase-6-launch.md`)
 
 ---
 
