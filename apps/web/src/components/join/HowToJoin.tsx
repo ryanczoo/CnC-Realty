@@ -2,6 +2,7 @@
 
 import { motion } from "motion/react";
 import { RevealText, RevealLine } from "@/components/ui/reveal-text";
+import { SPRING_HOVER, PULSE_ANIMATE, PULSE_TRANSITION } from "@/lib/motion";
 
 const STEPS = [
   {
@@ -41,8 +42,9 @@ export function HowToJoin() {
               </h2>
               <motion.a
                 href="/join/agent"
-                whileHover={{ scale: 1.1 }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                animate={PULSE_ANIMATE}
+                whileHover={{ scale: 1.1, transition: SPRING_HOVER }}
+                transition={PULSE_TRANSITION}
                 className="mt-8 inline-flex items-center gap-2 rounded-full bg-[#1B1B1B] px-6 py-3 font-sans text-sm text-white"
               >
                 Apply Now →

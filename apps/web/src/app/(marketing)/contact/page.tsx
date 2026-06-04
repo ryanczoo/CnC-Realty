@@ -3,7 +3,7 @@ import { useCallback, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { RevealText } from "@/components/ui/reveal-text";
 import { useClickOutside } from "@/hooks/useClickOutside";
-import { NAV_PANEL_CLS, NAV_ITEM_CLS, SPRING_HOVER } from "@/lib/motion";
+import { NAV_PANEL_CLS, NAV_ITEM_CLS, SPRING_HOVER, PULSE_ANIMATE, PULSE_TRANSITION } from "@/lib/motion";
 
 const ROLE_OPTIONS = [
   "Home Buyer",
@@ -131,8 +131,9 @@ export default function ContactPage() {
             <motion.button
               type="submit"
               disabled={status === "loading"}
-              whileHover={{ scale: 1.15 }}
-              transition={SPRING_HOVER}
+              animate={PULSE_ANIMATE}
+              whileHover={{ scale: 1.15, transition: SPRING_HOVER }}
+              transition={PULSE_TRANSITION}
               className="self-start rounded-full bg-[#1B1B1B] px-8 py-3.5 font-sans text-sm font-medium text-white disabled:opacity-40"
             >
               {status === "loading" ? "Sending…" : "Send Message"}

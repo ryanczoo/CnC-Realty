@@ -26,9 +26,9 @@ const FAQS = [
   },
 ];
 
-export function FAQ() {
+export function FAQ({ faqs = FAQS, className }: { faqs?: { question: string; answer: string }[]; className?: string }) {
   return (
-    <section data-navbar-theme="light" className="bg-[#F2F0EF] px-8 pb-20 pt-16 lg:px-20">
+    <section data-navbar-theme="light" className={`px-8 pb-20 pt-16 lg:px-20 ${className ?? "bg-[#F2F0EF]"}`}>
       <motion.h2
         className="mb-6 font-sans text-[2.8rem] font-light leading-[1.0] xl:text-[3.5rem]"
         initial={{ opacity: 0, y: 24 }}
@@ -40,7 +40,7 @@ export function FAQ() {
       </motion.h2>
 
       <div>
-        {FAQS.map((faq, i) => (
+        {faqs.map((faq, i) => (
           <motion.div
             key={i}
             className="relative grid cursor-default py-6"

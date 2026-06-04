@@ -23,7 +23,9 @@ export default function HomePage() {
         <div className="h-px w-full bg-[#1B1B1B]/10" />
       </div>
       <Testimonials />
-      <FAQ />
+      <div style={{ height: "80px", background: "linear-gradient(to bottom, #F2F0EF, #DAD4D2)" }} />
+      <FAQ className="bg-[#DAD4D2]" />
+      <div style={{ height: "80px", background: "linear-gradient(to bottom, #DAD4D2, #F2F0EF)" }} />
       <JoinCnCCTA />
     </>
   );

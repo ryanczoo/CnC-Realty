@@ -1,5 +1,9 @@
 export const SPRING_HOVER = { type: "spring", stiffness: 300, damping: 20 } as const;
 
+// Idle pulse — apply to all CTA/pill buttons. whileHover inline transition overrides this.
+export const PULSE_ANIMATE = { scale: [1, 1.04, 1] } as const;
+export const PULSE_TRANSITION = { duration: 2, repeat: Infinity, ease: "easeInOut" } as const;
+
 // Shared class strings for the dark dropdown panel — matches the navbar menu panel.
 // Used by Navbar.tsx and any page-level dropdowns so style stays in sync.
 export const NAV_PANEL_CLS = "overflow-hidden rounded-xl border border-white/10 bg-zinc-900/95 shadow-2xl backdrop-blur-md";

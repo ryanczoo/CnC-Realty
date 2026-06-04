@@ -3,6 +3,7 @@
 import { AnimatePresence, motion, useScroll } from "motion/react";
 import { useRef } from "react";
 import { useScrollStepper } from "@/hooks/useScrollStepper";
+import { SPRING_HOVER, PULSE_ANIMATE, PULSE_TRANSITION } from "@/lib/motion";
 
 const ITEMS: { title: TitlePart[]; description: string; imgFront?: string; imgFrontPosition?: string; imgBack?: string; videoBack?: string; videoBackPosition?: string; showButton?: boolean }[] = [
   {
@@ -190,8 +191,9 @@ export function WhyCnC() {
                 {active.showButton && (
                   <motion.a
                     href="/join"
-                    whileHover={{ scale: 1.1 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                    animate={PULSE_ANIMATE}
+                    whileHover={{ scale: 1.1, transition: SPRING_HOVER }}
+                    transition={PULSE_TRANSITION}
                     className="flex w-fit items-center gap-3 rounded-full bg-[#1B1B1B] px-7 py-3.5 text-sm font-medium text-white"
                     variants={{
                       hidden: { opacity: 0, y: 14 },

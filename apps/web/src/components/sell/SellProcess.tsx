@@ -6,13 +6,13 @@ import { motion, useScroll, useTransform } from "motion/react";
 import { RevealLine } from "@/components/ui/reveal-text";
 import Image from "next/image";
 import Link from "next/link";
-import { SPRING_HOVER } from "@/lib/motion";
+import { SPRING_HOVER, PULSE_ANIMATE, PULSE_TRANSITION } from "@/lib/motion";
 
 const STEPS = [
   {
     num: "01",
     title: "Valuation",
-    body: "We analyze your home's market value using live CRMLS data, recent comparable sales, and local expertise to price your property for maximum return.",
+    body: "We analyze your home's market value using live CRMLS data, recent comparable sales, and local expertise to price your property for maximum return",
     photo: "/images/sell/sell-10.jpg",
     // Two overlapping photos shown in a slide panel before the text panel
     slideTop: "/images/sell/sell-slide-top.jpg",
@@ -21,7 +21,7 @@ const STEPS = [
   {
     num: "02",
     title: "Listing",
-    body: "Professional photography, a compelling listing description, and immediate CRMLS exposure puts your home in front of every active buyer in Southern California.",
+    body: "Professional photography, immaculate staging, effective agent communication, and immediate market exposure puts your home in front of every active buyer in California",
     photo: "/images/sell/sell-08.jpg",
     photoPos: "left center", // buildings on left — anchor to show them first
     slideTop: "/images/sell/sell-listing-slide-top.jpg",
@@ -32,7 +32,7 @@ const STEPS = [
   {
     num: "03",
     title: "Offers",
-    body: "We present every offer clearly, walk you through the terms, and negotiate on your behalf to secure the best possible price and conditions.",
+    body: "We present every offer clearly, walk you through the terms, and negotiate on your behalf to secure the best possible price and conditions",
     photo: "/images/sell/sell-14.jpg",
     slideTop: "/images/sell/sell-offers-slide-top.jpg",
     slideBottom: "/images/sell/sell-offers-slide-bottom.jpg",
@@ -40,7 +40,7 @@ const STEPS = [
   {
     num: "04",
     title: "Closing",
-    body: "From escrow coordination to final paperwork, we manage every detail so you can sign with confidence and close on time.",
+    body: "From escrow coordination to final paperwork, we read every detail so you can sign with confidence and close on time",
     photo: "/images/sell/sell-09.jpg",
     slideTop: "/images/sell/sell-closing-slide-top.jpg",
     slideBottom: "/images/sell/sell-closing-slide-bottom.jpg",
@@ -153,10 +153,10 @@ export function SellProcess() {
             style={{ width: `${INTRO_VW}vw` }}
           >
             <h2 className="mb-6 max-w-2xl font-sans text-[3rem] font-light leading-tight text-white lg:text-[4.5rem]">
-              We handle everything,<br />start to close.
+              We're here for you,<br />start to close
             </h2>
             <p className="max-w-md font-sans text-base font-light leading-relaxed text-white/40">
-              From the first market analysis to the final signature, CnC manages every step of your sale.
+              From the first market analysis to the final signature, CnC will be with you every step of the way
             </p>
           </div>
 
@@ -204,7 +204,7 @@ export function SellProcess() {
                     {step.body}
                   </p>
                   {step.cta && (
-                    <motion.div whileHover={{ scale: 1.1 }} transition={SPRING_HOVER} className="mt-20 inline-block">
+                    <motion.div animate={PULSE_ANIMATE} whileHover={{ scale: 1.1, transition: SPRING_HOVER }} transition={PULSE_TRANSITION} className="mt-20 inline-block">
                       <Link
                         href={step.cta.href}
                         className="rounded-full bg-white px-8 py-3.5 font-sans text-sm font-medium text-[#1B1B1B]"

@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import { motion, useScroll, useTransform } from "motion/react";
-import { SPRING_HOVER } from "@/lib/motion";
+import { SPRING_HOVER, PULSE_ANIMATE, PULSE_TRANSITION } from "@/lib/motion";
 import { RevealLine } from "@/components/ui/reveal-text";
 import Image from "next/image";
 import Link from "next/link";
@@ -85,8 +85,9 @@ export function JoinCnCCTA() {
             </span>
             <MotionLink
               href="/join"
-              whileHover={{ scale: 1.05 }}
-              transition={SPRING_HOVER}
+              animate={PULSE_ANIMATE}
+              whileHover={{ scale: 1.05, transition: SPRING_HOVER }}
+              transition={PULSE_TRANSITION}
               className="inline-flex items-center gap-2 rounded-full bg-white px-8 py-3.5 font-sans text-sm font-medium text-cnc-dark transition-opacity hover:opacity-90"
             >
               Join Now

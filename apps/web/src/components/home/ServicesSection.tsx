@@ -11,6 +11,7 @@ import {
 import type { CSSProperties } from "react";
 import { useRef, useState } from "react";
 import { RevealText, RevealLine } from "@/components/ui/reveal-text";
+import { SPRING_HOVER, PULSE_ANIMATE, PULSE_TRANSITION } from "@/lib/motion";
 
 const CARDS = [
   {
@@ -293,8 +294,9 @@ export function ServicesSection() {
         </h2>
         <motion.button
           onClick={() => setModalOpen(true)}
-          whileHover={{ scale: 1.1 }}
-          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+          animate={PULSE_ANIMATE}
+          whileHover={{ scale: 1.1, transition: SPRING_HOVER }}
+          transition={PULSE_TRANSITION}
           className="ml-auto mt-6 flex w-fit items-center rounded-full bg-[#1B1B1B] px-7 py-3.5 text-sm font-medium text-white"
         >
           Let&apos;s Start
