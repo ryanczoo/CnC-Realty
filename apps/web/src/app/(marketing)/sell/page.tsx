@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { SellProcess } from "@/components/sell/SellProcess";
+import { SellValues } from "@/components/sell/SellValues";
 import { PageCTA } from "@/components/ui/PageCTA";
 import { SellHero } from "@/components/sell/SellHero";
 import { SellQuote } from "@/components/sell/SellQuote";
@@ -39,6 +40,7 @@ export default function SellPage() {
       {/* ── Light sections ── */}
       <div data-navbar-theme="light" className="bg-[#F2F0EF]">
         <SellProcess />
+        <SellValues />
         <GradientBridge from="#F2F0EF" to="#DAD4D2" />
         <FAQ className="bg-[#DAD4D2]" faqs={SELL_FAQS} />
         <GradientBridge from="#DAD4D2" to="#F2F0EF" />
