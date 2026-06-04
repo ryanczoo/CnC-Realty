@@ -4,7 +4,10 @@ import { motion } from "motion/react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { RevealText } from "@/components/ui/reveal-text";
+import { RevealLine } from "@/components/ui/reveal-text";
+import { SPRING_HOVER } from "@/lib/motion";
+
+const MotionLink = motion(Link);
 
 interface FeaturedListing {
   mlsNumber?: string;
@@ -51,7 +54,10 @@ export function FeaturedListings({ listings: propListings }: Props) {
     <section data-navbar-theme="light" className="overflow-hidden bg-[#F2F0EF] py-10">
       <div className="mb-12 px-4 text-center">
         <h2 className="font-sans text-[2.5rem] font-light xl:text-[3rem]">
-          <RevealText>Exclusive Listings</RevealText>
+          <RevealLine>
+            <span className="text-[1.9rem] xl:text-[2.2rem]">Exclusive </span>
+            <span className="text-cnc-gold">Listings</span>
+          </RevealLine>
         </h2>
       </div>
 
@@ -153,18 +159,13 @@ export function FeaturedListings({ listings: propListings }: Props) {
       </div>
 
       <div className="mt-10 text-center">
-        <motion.div
-          className="inline-block"
-          whileHover={{ scale: 1.1 }}
-          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+        <MotionLink
+          href="/properties"
+          whileHover={{ scale: 1.1, transition: SPRING_HOVER }}
+          className="inline-flex items-center rounded-full bg-[#1B1B1B] px-7 py-3.5 text-sm font-medium text-white"
         >
-          <Link
-            href="/properties"
-            className="inline-flex items-center rounded-full bg-[#1B1B1B] px-7 py-3.5 text-sm font-medium text-white"
-          >
-            View All →
-          </Link>
-        </motion.div>
+          View All →
+        </MotionLink>
       </div>
     </section>
   );

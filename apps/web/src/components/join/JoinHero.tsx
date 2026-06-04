@@ -2,16 +2,9 @@
 
 import { DownArrow } from "@/components/ui/DownArrow";
 import { motion } from "motion/react";
+import { wordContainer, WORD_VARIANT } from "@/lib/motion";
 
-const container = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.56 } },
-};
-
-const word = {
-  hidden: { opacity: 0, x: -14 },
-  visible: { opacity: 1, x: 0, transition: { duration: 0.9, ease: "easeOut" } },
-};
+const container = wordContainer(0.56);
 
 const TEXT_STYLE = {
   fontFamily: "var(--font-sans), ui-sans-serif, system-ui, sans-serif",
@@ -48,7 +41,7 @@ export function JoinHero() {
                 fontSize="320"
                 fill="black"
                 style={TEXT_STYLE}
-                variants={word}
+                variants={WORD_VARIANT}
               >
                 Be
               </motion.text>
@@ -59,7 +52,7 @@ export function JoinHero() {
                 fontSize="320"
                 fill="black"
                 style={TEXT_STYLE}
-                variants={word}
+                variants={WORD_VARIANT}
               >
                 CnC
               </motion.text>

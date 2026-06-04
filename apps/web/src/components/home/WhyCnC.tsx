@@ -7,7 +7,7 @@ import { SPRING_HOVER, PULSE_ANIMATE, PULSE_TRANSITION } from "@/lib/motion";
 
 const ITEMS: { title: TitlePart[]; description: string; imgFront?: string; imgFrontPosition?: string; imgBack?: string; videoBack?: string; videoBackPosition?: string; showButton?: boolean }[] = [
   {
-    title: [{ text: "100%" }, { text: "COMMISSION", sm: true }],
+    title: [{ text: "100%", sm: true }, { text: "COMMISSION", size: "text-[3.4rem] xl:text-[4.1rem]" }],
     description:
       "No jokes, no surprises. Keep every dollar you earn from every sale because you deserve it. Plain and simple.",
     videoBack: "/videos/commission-back.mp4",
@@ -16,21 +16,21 @@ const ITEMS: { title: TitlePart[]; description: string; imgFront?: string; imgFr
     imgFrontPosition: "center center",
   },
   {
-    title: [{ text: "AI-DRIVEN TECH" }],
+    title: [{ text: "AI-DRIVEN", sm: true }, { text: "TECH" }],
     description:
       "Predictive lead scoring, automated transaction alerts, creative email campaigns, real-time marketing analysis all powered by AI and FREE for CnC Agents. Combined with our custom CRM software, you have all the tools to succeed.",
     videoBack: "/videos/ai-tech-back.mp4",
     imgFront: "/images/ai-tech-front.jpg",
   },
   {
-    title: [{ text: "TRAINING &" }, { text: "MENTORSHIP", sm: true }],
+    title: [{ text: "TRAINING &", sm: true }, { text: "MENTORSHIP" }],
     description:
       "24/7 access to seasoned agents, updated video guides, custom roadmaps for success, and much more. New agents receive a mentor to help them with every step of the way.",
     videoBack: "/videos/training-back.mp4",
     imgFront: "/images/training-front.jpg",
   },
   {
-    title: [{ text: "FREEDOM AWAITS" }],
+    title: [{ text: "FREEDOM", sm: true }, { text: "AWAITS" }],
     description:
       "Create a personal brand, build your own team, and grow at your pace - backed by CnC Realty to give you everything you need and nothing you don't.",
     videoBack: "/videos/freedom-back.mp4",
@@ -40,7 +40,7 @@ const ITEMS: { title: TitlePart[]; description: string; imgFront?: string; imgFr
   },
 ];
 
-type TitlePart = { text: string; sm?: boolean };
+type TitlePart = { text: string; sm?: boolean; size?: string };
 
 const N_STRIPS = 8;
 
@@ -158,7 +158,7 @@ export function WhyCnC() {
                     return (
                       <span
                         key={i}
-                        className={`block ${part.sm ? "text-[3rem] xl:text-[3.6rem]" : "text-[4rem] xl:text-[4.8rem]"}`}
+                        className={`block ${part.size ?? (part.sm ? "text-[3rem] xl:text-[3.6rem]" : "text-[4rem] xl:text-[4.8rem]")}`}
                       >
                         {words.map((word, j) => (
                           <motion.span

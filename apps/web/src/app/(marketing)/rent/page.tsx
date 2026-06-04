@@ -68,7 +68,7 @@ export default function RentPage() {
       </section>
 
       <PageCTA
-        heading={<>Need help finding a <span style={{ color: "#9E8C61" }}>rental?</span></>}
+        heading={<>Need help finding a <span className="text-cnc-gold">rental?</span></>}
         body="A CnC agent will work on your behalf — at no cost to you."
         primaryHref="/properties?listingType=FOR_LEASE"
         primaryLabel="Browse Rentals →"

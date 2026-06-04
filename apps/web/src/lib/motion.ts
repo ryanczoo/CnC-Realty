@@ -1,5 +1,16 @@
 export const SPRING_HOVER = { type: "spring", stiffness: 300, damping: 20 } as const;
 
+// Shared word-by-word animation variant — used by SellHero, JoinHero, and Testimonials.
+export const WORD_VARIANT = {
+  hidden: { opacity: 0, x: -14 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.9, ease: "easeOut" } },
+} as const;
+
+// Returns a stagger container variant for word-by-word animations.
+export function wordContainer(stagger: number) {
+  return { hidden: {}, visible: { transition: { staggerChildren: stagger } } };
+}
+
 // Idle pulse — apply to all CTA/pill buttons. whileHover inline transition overrides this.
 export const PULSE_ANIMATE = { scale: [1, 1.04, 1] } as const;
 export const PULSE_TRANSITION = { duration: 2, repeat: Infinity, ease: "easeInOut" } as const;

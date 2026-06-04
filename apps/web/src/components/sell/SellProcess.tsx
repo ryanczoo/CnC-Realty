@@ -6,6 +6,8 @@ import { motion, useScroll, useTransform } from "motion/react";
 import { RevealLine } from "@/components/ui/reveal-text";
 import Image from "next/image";
 import Link from "next/link";
+
+const MotionLink = motion(Link);
 import { SPRING_HOVER, PULSE_ANIMATE, PULSE_TRANSITION } from "@/lib/motion";
 
 const STEPS = [
@@ -204,14 +206,15 @@ export function SellProcess() {
                     {step.body}
                   </p>
                   {step.cta && (
-                    <motion.div animate={PULSE_ANIMATE} whileHover={{ scale: 1.1, transition: SPRING_HOVER }} transition={PULSE_TRANSITION} className="mt-20 inline-block">
-                      <Link
-                        href={step.cta.href}
-                        className="rounded-full bg-white px-8 py-3.5 font-sans text-sm font-medium text-[#1B1B1B]"
-                      >
-                        {step.cta.label}
-                      </Link>
-                    </motion.div>
+                    <MotionLink
+                      href={step.cta.href}
+                      animate={PULSE_ANIMATE}
+                      whileHover={{ scale: 1.1, transition: SPRING_HOVER }}
+                      transition={PULSE_TRANSITION}
+                      className="mt-20 inline-flex rounded-full bg-white px-8 py-3.5 font-sans text-sm font-medium text-[#1B1B1B]"
+                    >
+                      {step.cta.label}
+                    </MotionLink>
                   )}
                 </div>
               </div>

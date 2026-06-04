@@ -72,7 +72,7 @@ export default function ManagePage() {
       </section>
 
       <PageCTA
-        heading={<>Ready to go <span style={{ color: "#9E8C61" }}>hands-off?</span></>}
+        heading={<>Ready to go <span className="text-cnc-gold">hands-off?</span></>}
         body="Talk to our property management team — no obligation."
         primaryHref="/contact"
         primaryLabel="Schedule a Consultation →"

@@ -64,6 +64,7 @@ export function Testimonials() {
               overflow: "visible",
               verticalAlign: "bottom",
               lineHeight: "inherit",
+              fontSize: "clamp(3.5rem, 6.8vw, 6.2rem)",
             }}
           >
             <GhostWords />

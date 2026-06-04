@@ -77,7 +77,7 @@ export default function BuyPage() {
       </section>
 
       <PageCTA
-        heading={<>Ready to start <span style={{ color: "#9E8C61" }}>looking?</span></>}
+        heading={<>Ready to start <span className="text-cnc-gold">looking?</span></>}
         body="Browse live CRMLS listings — no account required."
         primaryHref="/properties"
         primaryLabel="Search All Listings →"

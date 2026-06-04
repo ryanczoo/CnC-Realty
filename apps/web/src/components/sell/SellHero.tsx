@@ -2,16 +2,9 @@
 
 import { DownArrow } from "@/components/ui/DownArrow";
 import { motion } from "motion/react";
+import { wordContainer, WORD_VARIANT } from "@/lib/motion";
 
-const container = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.28 } },
-};
-
-const word = {
-  hidden: { opacity: 0, x: -14 },
-  visible: { opacity: 1, x: 0, transition: { duration: 0.9, ease: "easeOut" } },
-};
+const container = wordContainer(0.28);
 
 const TEXT_PROPS = {
   x: "960",
@@ -45,9 +38,9 @@ export function SellHero() {
           <mask id="sell-hero-mask">
             <rect width="1920" height="1080" fill="white" />
             <motion.g initial="hidden" animate="visible" variants={container}>
-              <motion.text {...TEXT_PROPS} textAnchor="end" x="930" y="400" variants={word}>SELL</motion.text>
-              <motion.text {...TEXT_PROPS} textAnchor="start" x="990" y="400" variants={word}>WITH</motion.text>
-              <motion.text {...TEXT_PROPS} y="710" variants={word}>US</motion.text>
+              <motion.text {...TEXT_PROPS} textAnchor="end" x="930" y="400" variants={WORD_VARIANT}>SELL</motion.text>
+              <motion.text {...TEXT_PROPS} textAnchor="start" x="990" y="400" variants={WORD_VARIANT}>WITH</motion.text>
+              <motion.text {...TEXT_PROPS} y="710" variants={WORD_VARIANT}>US</motion.text>
             </motion.g>
           </mask>
         </defs>

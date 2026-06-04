@@ -196,16 +196,14 @@ function ServiceCard({
             </p>
             <div className="mt-6 flex items-center justify-between">
               <motion.button
-                whileHover={{ scale: 1.1 }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                whileHover={{ scale: 1.1, transition: SPRING_HOVER }}
                 className="rounded-full border border-[#1B1B1B] px-5 py-2 text-sm font-medium text-[#1B1B1B] transition-colors hover:bg-[#1B1B1B] hover:text-white"
               >
                 {label}
               </motion.button>
               <motion.button
                 onClick={() => setFlipped(false)}
-                whileHover={{ scale: 1.1 }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                whileHover={{ scale: 1.1, transition: SPRING_HOVER }}
                 className="flex h-8 w-8 items-center justify-center text-xl text-[#1B1B1B]/50 transition-colors hover:text-[#1B1B1B]"
                 aria-label="Close"
               >
@@ -289,7 +287,7 @@ export function ServicesSection() {
         <h2 className="font-sans font-light leading-[1.0]">
           <span className="block text-[2.5rem] xl:text-[3rem]"><RevealText>See the difference,</RevealText></span>
           <span className="block text-[3.5rem] xl:text-[4.2rem]">
-            <RevealLine delay={0.1}><span className="text-[2.5rem] xl:text-[3rem]">with </span><span style={{ color: "#9E8C61" }}>CnC</span></RevealLine>
+            <RevealLine delay={0.1}>with <span style={{ color: "#9E8C61" }}>CnC</span></RevealLine>
           </span>
         </h2>
         <motion.button

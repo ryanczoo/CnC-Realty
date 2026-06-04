@@ -1,4 +1,5 @@
 import { FAQ } from "@/components/home/FAQ";
+import { GradientBridge } from "@/components/ui/GradientBridge";
 import { FeaturedListingsServer } from "@/components/home/FeaturedListingsServer";
 import { HeroSection } from "@/components/home/HeroSection";
 import { JoinCnCCTA } from "@/components/home/JoinCnCCTA";
@@ -23,9 +24,9 @@ export default function HomePage() {
         <div className="h-px w-full bg-[#1B1B1B]/10" />
       </div>
       <Testimonials />
-      <div style={{ height: "80px", background: "linear-gradient(to bottom, #F2F0EF, #DAD4D2)" }} />
+      <GradientBridge from="#F2F0EF" to="#DAD4D2" />
       <FAQ className="bg-[#DAD4D2]" />
-      <div style={{ height: "80px", background: "linear-gradient(to bottom, #DAD4D2, #F2F0EF)" }} />
+      <GradientBridge from="#DAD4D2" to="#F2F0EF" />
       <JoinCnCCTA />
     </>
   );

@@ -8,6 +8,20 @@ import { SPRING_HOVER, PULSE_ANIMATE, PULSE_TRANSITION } from "@/lib/motion";
 
 const MotionLink = motion(Link);
 
+function CTAButton({ href, className, children }: { href: string; className: string; children: React.ReactNode }) {
+  return (
+    <MotionLink
+      href={href}
+      animate={PULSE_ANIMATE}
+      whileHover={{ scale: 1.05, transition: SPRING_HOVER }}
+      transition={PULSE_TRANSITION}
+      className={className}
+    >
+      {children}
+    </MotionLink>
+  );
+}
+
 interface PageCTAProps {
   heading: React.ReactNode;
   body: string;
@@ -34,25 +48,13 @@ export function PageCTA({
         </h2>
         <p className="mb-10 font-sans text-base text-[#1B1B1B]/60">{body}</p>
         <div className="flex justify-center gap-4">
-          <MotionLink
-            href={primaryHref}
-            animate={PULSE_ANIMATE}
-            whileHover={{ scale: 1.05, transition: SPRING_HOVER }}
-            transition={PULSE_TRANSITION}
-            className="inline-flex items-center rounded-full bg-[#9E8C61] px-8 py-3.5 font-sans text-sm font-medium text-white"
-          >
+          <CTAButton href={primaryHref} className="inline-flex items-center rounded-full bg-[#9E8C61] px-8 py-3.5 font-sans text-sm font-medium text-white">
             {primaryLabel}
-          </MotionLink>
+          </CTAButton>
           {secondaryHref && secondaryLabel && (
-            <MotionLink
-              href={secondaryHref}
-              animate={PULSE_ANIMATE}
-              whileHover={{ scale: 1.05, transition: SPRING_HOVER }}
-              transition={PULSE_TRANSITION}
-              className="inline-flex items-center rounded-full border border-[#1B1B1B]/20 px-8 py-3.5 font-sans text-sm font-medium text-[#1B1B1B]"
-            >
+            <CTAButton href={secondaryHref} className="inline-flex items-center rounded-full border border-[#1B1B1B]/20 px-8 py-3.5 font-sans text-sm font-medium text-[#1B1B1B]">
               {secondaryLabel}
-            </MotionLink>
+            </CTAButton>
           )}
         </div>
       </div>
