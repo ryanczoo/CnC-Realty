@@ -3583,13 +3583,31 @@ New component: `apps/web/src/components/sell/SellValues.tsx`
 
 ---
 
+### BuySteps (2026-06-04)
+
+New component: `apps/web/src/components/buy/BuySteps.tsx`
+- Volta-style sticky-left / scrolling-right two-column section
+- 4 steps: Get Pre-Approved, Find Your Agent, Search & Tour, Closing Escrow
+- Segmented progress bar identical to WhyCnC (useScrollStepper)
+- AnimatePresence slide transitions on step change
+- Placeholder images: sell-06.jpg → sell-09.jpg (Ryan to swap real buy photos)
+- Removed "How it Works" grid from buy/page.tsx
+
+| Buy Page — BuySteps | ✅ Built — real photos pending |
+| Buy Page — Hero | ✅ Approved |
+| Rent Page | 🔄 Shell only — not yet finalized |
+| Manage Page | 🔄 Shell only — not yet finalized |
+
+---
+
 ### Next Session — Start Here
 
 1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
 2. Open `localhost:3000` (or check terminal for port)
 3. Continue with remaining work:
-   - Swap placeholder images in SellValues when Ryan provides 5 photos
-   - Finalize buy, rent, manage pages
+   - Swap placeholder images in BuySteps when Ryan provides photos
+   - Finalize rent page
+   - Finalize manage page
    - Checklist templates at `/admin/settings/checklists`
    - Phase 6 tasks (`docs/superpowers/plans/2026-05-22-phase-6-launch.md`)
 
