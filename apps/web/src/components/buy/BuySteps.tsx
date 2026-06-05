@@ -79,20 +79,22 @@ export function BuySteps() {
         </AnimatePresence>
       </div>
 
-      {/* ── Progress bar — between panels, full panel height ── */}
-      <div className="sticky top-0 flex h-screen self-start flex-col gap-1 py-8" style={{ width: 2 }}>
-        {STEPS.map((_, i) => (
-          <div
-            key={i}
-            className="flex-1 overflow-hidden"
-            style={{ backgroundColor: "rgba(27,27,27,0.12)" }}
-          >
+      {/* ── Progress bar — centred between panels ── */}
+      <div className="sticky top-0 flex h-screen w-8 flex-col items-center justify-center self-start">
+        <div className="flex flex-col gap-1" style={{ width: 2, height: 260 }}>
+          {STEPS.map((_, i) => (
             <div
-              className="w-full bg-[#1B1B1B]"
-              style={{ height: `${barWidths[i]}%`, transition: "height 0.05s linear" }}
-            />
-          </div>
-        ))}
+              key={i}
+              className="flex-1 overflow-hidden"
+              style={{ backgroundColor: "rgba(27,27,27,0.12)" }}
+            >
+              <div
+                className="w-full bg-[#1B1B1B]"
+                style={{ height: `${barWidths[i]}%`, transition: "height 0.05s linear" }}
+              />
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* ── Right panel — scrolling images ── */}
