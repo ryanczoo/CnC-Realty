@@ -42,11 +42,12 @@ export function BuySteps() {
     <section ref={sectionRef} className="relative flex bg-[#F2F0EF]">
 
       {/* ── Left panel — sticky ──
-          self-start is required: without it flex stretches this div to full
-          container height, which prevents position:sticky from triggering */}
-      <div className="sticky top-0 flex h-screen w-[42%] flex-col justify-center self-start pl-28 pr-16">
+          flex-col justify-between mirrors Volta's layout:
+          heading anchored top, counter+body anchored bottom.
+          self-start prevents flex stretching which would break sticky. */}
+      <div className="sticky top-0 flex h-screen w-[42%] flex-col justify-between self-start pb-16 pl-28 pr-16 pt-32">
 
-        {/* Segmented vertical progress bar — identical to WhyCnC */}
+        {/* Segmented vertical progress bar */}
         <div
           className="absolute left-14 top-1/2 flex -translate-y-1/2 flex-col gap-1"
           style={{ width: 2, height: 220 }}
@@ -65,43 +66,34 @@ export function BuySteps() {
           ))}
         </div>
 
-        {/* Counter */}
-        <p className="mb-8 font-sans text-sm font-medium uppercase tracking-widest text-[#9E8C61]">
-          {String(activeIdx + 1).padStart(2, "0")} / 04
-        </p>
+        {/* TOP — step heading, left-aligned */}
+        <AnimatePresence mode="wait">
+          <motion.h2
+            key={`title-${activeIdx}`}
+            className="font-sans text-[3.5rem] font-light leading-tight text-[#1B1B1B] xl:text-[4.5rem]"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0, transition: { duration: 0.55, ease: "easeOut" } }}
+            exit={{ opacity: 0, y: -30, transition: { duration: 0.35, ease: "easeIn" } }}
+          >
+            {active.title}
+          </motion.h2>
+        </AnimatePresence>
 
-        {/* Animated step content */}
+        {/* BOTTOM — counter above body text, left-aligned */}
         <AnimatePresence mode="wait">
           <motion.div
-            key={activeIdx}
-            initial="hidden"
-            animate="visible"
-            exit={{ opacity: 0, y: -44, transition: { duration: 0.4, ease: "easeIn" } }}
-            variants={{
-              hidden: {},
-              visible: { transition: { staggerChildren: 0.15 } },
-            }}
-            className="flex flex-col gap-8"
+            key={`body-${activeIdx}`}
+            className="flex flex-col gap-3"
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }}
+            exit={{ opacity: 0, y: -20, transition: { duration: 0.35, ease: "easeIn" } }}
           >
-            <motion.h2
-              className="font-sans text-[3.5rem] font-light leading-tight text-[#1B1B1B] xl:text-[4.5rem]"
-              variants={{
-                hidden: { opacity: 0, x: -20 },
-                visible: { opacity: 1, x: 0, transition: { duration: 0.55, ease: "easeOut" } },
-              }}
-            >
-              {active.title}
-            </motion.h2>
-
-            <motion.p
-              className="max-w-sm font-sans text-[0.95rem] leading-relaxed text-[#1B1B1B]/60"
-              variants={{
-                hidden: { opacity: 0, y: 14 },
-                visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
-              }}
-            >
+            <p className="font-sans text-sm font-medium uppercase tracking-widest text-[#9E8C61]">
+              {String(activeIdx + 1).padStart(2, "0")} / 04
+            </p>
+            <p className="max-w-sm font-sans text-[0.95rem] leading-relaxed text-[#1B1B1B]/60">
               {active.body}
-            </motion.p>
+            </p>
           </motion.div>
         </AnimatePresence>
       </div>
