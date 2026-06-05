@@ -3583,33 +3583,81 @@ New component: `apps/web/src/components/sell/SellValues.tsx`
 
 ---
 
-### BuySteps (2026-06-04)
+### Session 2026-06-04 — Full Summary
 
-New component: `apps/web/src/components/buy/BuySteps.tsx`
-- Volta-style sticky-left / scrolling-right two-column section
-- 4 steps: Get Pre-Approved, Find Your Agent, Search & Tour, Closing Escrow
-- Segmented progress bar identical to WhyCnC (useScrollStepper)
-- AnimatePresence slide transitions on step change
+#### Sell Page — Completed ✅
+
+**SellQuote → "Our Promise" section**
+- New text: "We know a home is more than 4 walls..." with scroll word-lighting animation
+- "very" highlights in gold (#9E8C61) when lit
+- Title "Our Promise" top-right, RevealLine reveal, same font as Our Process
+- Section title was "Our Mission" — **renamed to "Our Promise"** at end of session
+- File: `apps/web/src/components/sell/SellQuote.tsx`
+
+**SellValues → "Our Values" arch wheel section**
+- Placed after SellProcess, inside light bg-[#F2F0EF] wrapper
+- 5 cards on a half-circle arch, scroll-driven (500vh sticky section)
+- Cards: Respect, Punctuality, Attention to Detail, Compassion, Integrity
+- Real photos provided by Ryan and committed: `values-respect.jpg`, `values-punctuality.jpg`, `values-attention.jpg`, `values-compassion.jpg`, `values-integrity.jpg` (in `/images/sell/`)
+- Card overlay: `bg-black/40` tint, white label centered, `text-[2.2rem]/[2.6rem]`
+- Title "Our Values" top-center, larger font (`text-[3.5rem]/[4.5rem]`), `top-40`
+- File: `apps/web/src/components/sell/SellValues.tsx`
+- 25 `useTransform` hooks (5 cards × 5 props) — must stay at top level, not in loops
+
+**Key sell page decisions:**
+- Hard cut between SellHero and SellQuote — no gradient blend (rejected twice, do not attempt again)
+- Section title format: smaller dark "Our " + larger gold second word (RevealLine)
+- "Our Promise" title in top-right corner; body text center-aligned
+
+#### Buy Page — Completed ✅
+
+**BuySteps — replaces "How it Works" grid entirely**
+- Volta SKAI (voltaskai.endover.ee/en/) scroll-cards layout: sticky left panel + scrolling right images
+- Left panel: `flex-col justify-between`, title top-left, counter+body bottom-left
+- Title format: first word smaller (`text-[2.4rem]/[2.9rem]`), optional mid word smaller too, last word gold — with RevealLine `triggerOnMount`
+  - "Get Pre-Approved", "Find Your Agent", "Search & Tour", "Closing Escrow"
+  - "&" in "Search & Tour" is smaller size (same span as "Search")
+- Progress bar: own sticky flex column between left and right panels, `h-[68vh]`, `items-start`
+- Right panel: 4 images `height: 49vh` (matched Volta's ~437px), `gap-[4.2rem]`, `pr-8`
 - Placeholder images: sell-06.jpg → sell-09.jpg (Ryan to swap real buy photos)
-- Removed "How it Works" grid from buy/page.tsx
+- Outer section: `pl-20 pr-8` (matched Volta's padding measurements exactly)
+- Sticky offset: `top-[100px]` (matched Volta exactly)
+- Left panel height: `h-[68vh]` (reduced from 78vh to tighten title/body spacing)
+- File: `apps/web/src/components/buy/BuySteps.tsx`
 
-| Buy Page — BuySteps | ✅ Built — real photos pending |
-| Buy Page — Hero | ✅ Approved |
-| Rent Page | 🔄 Shell only — not yet finalized |
-| Manage Page | 🔄 Shell only — not yet finalized |
+**Volta measurements used (1440×900 viewport):**
+- Grid: `562.5px left | 75.83px gap | 678.33px right`
+- Card height: `437.5px` (~49vh)
+- Card gap: `66.67px` (~4.2rem)
+- Section padding: `left: 91.67px, right: 33.33px`
+- Sticky top: `100px`
+- Separator: CSS `::before` (700px track) + `::after` (dynamic fill, `right: -36.67px`)
+
+#### Component Status
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Sell Page — SellQuote ("Our Promise") | ✅ Approved | Scroll word-lighting, "very" gold |
+| Sell Page — SellValues ("Our Values") | ✅ Approved | Real photos in place |
+| Sell Page — Our Process | ✅ Approved | |
+| Sell Page — FAQ + CTA | ✅ Approved | |
+| Buy Page — Hero | ✅ Approved | |
+| Buy Page — BuySteps | ✅ Approved | Real photos pending from Ryan |
+| Rent Page | 🔄 Shell only | Not yet finalized |
+| Manage Page | 🔄 Shell only | Not yet finalized |
 
 ---
 
 ### Next Session — Start Here
 
 1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
-2. Open `localhost:3000` (or check terminal for port)
-3. Continue with remaining work:
-   - Swap placeholder images in BuySteps when Ryan provides photos
-   - Finalize rent page
-   - Finalize manage page
-   - Checklist templates at `/admin/settings/checklists`
-   - Phase 6 tasks (`docs/superpowers/plans/2026-05-22-phase-6-launch.md`)
+2. Open `localhost:3000`
+3. Continue with remaining work in order:
+   - **Rent page** — finalize (shell exists at `app/(marketing)/rent/page.tsx`)
+   - **Manage page** — finalize (shell exists at `app/(marketing)/manage/page.tsx`)
+   - **Swap placeholder images** in BuySteps when Ryan provides 4 real buy photos
+   - **Checklist templates** at `/admin/settings/checklists` (CA Purchase Buyer/Seller Side, CA Lease Tenant Side)
+   - **Phase 6 tasks** (`docs/superpowers/plans/2026-05-22-phase-6-launch.md`): ISR, skeleton loaders, sitemap, JSON-LD, rate limiting, Sentry, PostHog, deploy
 
 ---
 

@@ -148,8 +148,9 @@ export function SellValues() {
               className="object-cover"
               sizes="(max-width: 1024px) 160px, 300px"
             />
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/65 to-transparent pb-4 pl-4 pr-2 pt-10">
-              <p className="font-sans text-sm font-light leading-tight text-white lg:text-base">
+            <div className="absolute inset-0 bg-black/40" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <p className="px-4 text-center font-sans text-[2.2rem] font-light leading-tight text-white lg:text-[2.6rem]">
                 {v.label}
               </p>
             </div>

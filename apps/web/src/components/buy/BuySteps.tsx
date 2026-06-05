@@ -45,7 +45,7 @@ export function BuySteps() {
     <section ref={sectionRef} className="relative flex bg-[#F2F0EF] pl-20 pr-8">
 
       {/* ── Left panel — sticky ── */}
-      <div className="sticky top-[100px] flex h-[78vh] w-[42%] flex-col justify-between self-start pb-12 pt-10">
+      <div className="sticky top-[100px] flex h-[68vh] w-[42%] flex-col justify-between self-start pb-12 pt-10">
 
         {/* TOP — step heading with Our-Process-style two-tier title + RevealLine */}
         <AnimatePresence mode="wait">
@@ -58,8 +58,7 @@ export function BuySteps() {
           >
             {/* triggerOnMount because this is always in-view inside AnimatePresence */}
             <RevealLine triggerOnMount>
-              <span className="text-[2.4rem] xl:text-[2.9rem]">{active.title.first} </span>
-              {active.title.mid && <span>{active.title.mid} </span>}
+              <span className="text-[2.4rem] xl:text-[2.9rem]">{active.title.first} {active.title.mid && `${active.title.mid} `}</span>
               <span style={{ color: "#9E8C61" }}>{active.title.last}</span>
             </RevealLine>
           </motion.h2>
@@ -85,7 +84,7 @@ export function BuySteps() {
       </div>
 
       {/* ── Progress bar — between panels ── */}
-      <div className="sticky top-[100px] flex h-[78vh] w-8 flex-col items-start self-start py-10">
+      <div className="sticky top-[100px] flex h-[68vh] w-8 flex-col items-start self-start py-10">
         <div className="flex h-full w-[2px] flex-col gap-[3px]">
           {STEPS.map((_, i) => (
             <div
