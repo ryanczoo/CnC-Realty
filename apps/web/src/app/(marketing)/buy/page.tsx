@@ -2,38 +2,17 @@ import Link from "next/link";
 import { Metadata } from "next";
 import { RevealText } from "@/components/ui/reveal-text";
 import { PageCTA } from "@/components/ui/PageCTA";
+import { BuySteps } from "@/components/buy/BuySteps";
 
 export const metadata: Metadata = {
   title: "Buy a Home | CnC Realty",
   description: "Search thousands of California homes with CnC Realty. Expert buyer's agents, live MLS listings, and zero pressure.",
 };
 
-const STEPS = [
-  {
-    number: "01",
-    title: "Get Pre-Approved",
-    body: "Connect with a lender to understand your budget before you fall in love with a home. Our agents can refer you to trusted local lenders.",
-  },
-  {
-    number: "02",
-    title: "Find Your Agent",
-    body: "Every CnC agent is a local California expert. Match with someone who knows your target neighborhoods inside and out.",
-  },
-  {
-    number: "03",
-    title: "Search & Tour",
-    body: "Browse live CRMLS listings updated every 15 minutes. Schedule tours directly and move fast when the right home appears.",
-  },
-  {
-    number: "04",
-    title: "Close with Confidence",
-    body: "From offer to keys, your CnC agent handles the contracts, negotiations, inspections, and escrow — so you can focus on the move.",
-  },
-];
-
 export default function BuyPage() {
   return (
     <main data-navbar-theme="light" className="min-h-screen bg-[#F2F0EF]">
+      {/* Hero */}
       <section className="px-8 pb-24 pt-40 lg:px-20">
         <div className="mx-auto max-w-5xl">
           <p className="mb-4 font-sans text-sm font-medium uppercase tracking-widest text-[#9E8C61]">Buy</p>
@@ -61,20 +40,8 @@ export default function BuyPage() {
         </div>
       </section>
 
-      <section className="border-t border-[#1B1B1B]/8 px-8 py-24 lg:px-20">
-        <div className="mx-auto max-w-5xl">
-          <h2 className="mb-16 font-sans text-[2rem] font-light"><RevealText>How it works</RevealText></h2>
-          <div className="grid grid-cols-1 gap-px bg-[#1B1B1B]/8 md:grid-cols-2 lg:grid-cols-4">
-            {STEPS.map((step) => (
-              <div key={step.number} className="bg-[#F2F0EF] p-8">
-                <p className="mb-4 font-sans text-xs font-medium text-[#9E8C61]">{step.number}</p>
-                <h3 className="mb-3 font-sans text-lg font-medium text-[#1B1B1B]">{step.title}</h3>
-                <p className="font-sans text-sm font-light leading-relaxed text-[#1B1B1B]/60">{step.body}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* Steps — replaces "How it Works" grid */}
+      <BuySteps />
 
       <PageCTA
         heading={<>Ready to start <span className="text-cnc-gold">looking?</span></>}
