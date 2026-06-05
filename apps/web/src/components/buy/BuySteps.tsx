@@ -39,19 +39,19 @@ export function BuySteps() {
   const active = STEPS[activeIdx];
 
   return (
-    <section ref={sectionRef} className="relative flex bg-[#F2F0EF]">
+    <section ref={sectionRef} className="relative flex bg-[#F2F0EF] pl-20 pr-8">
 
       {/* ── Left panel — sticky ──
-          flex-col justify-between mirrors Volta's layout:
-          heading anchored top, counter+body anchored bottom.
-          self-start prevents flex stretching which would break sticky. */}
-      <div className="sticky top-0 flex h-screen w-[42%] flex-col justify-between self-start pb-16 pl-20 pr-12 pt-32">
+          Volta: 562px wide, 700px tall, sticky top:100px, flex-col space-between.
+          self-start is required — prevents flex from stretching to full container
+          height which would break sticky. */}
+      <div className="sticky top-[100px] flex h-[78vh] w-[42%] flex-col justify-between self-start pb-12 pt-10">
 
-        {/* TOP — step heading, left-aligned */}
+        {/* TOP — step heading */}
         <AnimatePresence mode="wait">
           <motion.h2
             key={`title-${activeIdx}`}
-            className="font-sans text-[3.5rem] font-light leading-tight text-[#1B1B1B] xl:text-[4.5rem]"
+            className="font-sans text-[3.2rem] font-light leading-[1.0] text-[#1B1B1B] xl:text-[3.8rem]"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0, transition: { duration: 0.55, ease: "easeOut" } }}
             exit={{ opacity: 0, y: -30, transition: { duration: 0.35, ease: "easeIn" } }}
@@ -60,11 +60,11 @@ export function BuySteps() {
           </motion.h2>
         </AnimatePresence>
 
-        {/* BOTTOM — counter above body text, left-aligned */}
+        {/* BOTTOM — counter then body, tight gap matching Volta's 6.67px */}
         <AnimatePresence mode="wait">
           <motion.div
             key={`body-${activeIdx}`}
-            className="flex flex-col gap-3"
+            className="flex flex-col gap-1"
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }}
             exit={{ opacity: 0, y: -20, transition: { duration: 0.35, ease: "easeIn" } }}
@@ -79,9 +79,11 @@ export function BuySteps() {
         </AnimatePresence>
       </div>
 
-      {/* ── Progress bar — centred between panels ── */}
-      <div className="sticky top-0 flex h-screen w-8 flex-col items-center justify-center self-start">
-        <div className="flex flex-col gap-1" style={{ width: 2, height: 260 }}>
+      {/* ── Progress bar — between panels, full left-panel height ──
+          Volta: ::before track (700px, light) + ::after fill (dynamic, darker).
+          Here reproduced as a flex sibling with the same height as the left panel. */}
+      <div className="sticky top-[100px] flex h-[78vh] w-8 flex-col items-center self-start py-10">
+        <div className="flex h-full w-[2px] flex-col gap-[3px]">
           {STEPS.map((_, i) => (
             <div
               key={i}
@@ -97,20 +99,22 @@ export function BuySteps() {
         </div>
       </div>
 
-      {/* ── Right panel — scrolling images ── */}
-      <div className="flex w-[58%] flex-col gap-6 py-[7.5vh] pr-20">
+      {/* ── Right panel — scrolling images ──
+          Volta: images 437.5px (~49vh) tall, gap 66.67px between cards, 33px right padding.
+          Right padding is now on the outer section (pr-8). */}
+      <div className="flex flex-1 flex-col gap-[4.2rem] py-[7.5vh]">
         {STEPS.map((step, i) => (
           <div
             key={i}
             className="relative overflow-hidden rounded-2xl"
-            style={{ height: "85vh" }}
+            style={{ height: "49vh" }}
           >
             <Image
               src={step.img}
               alt={step.title}
               fill
               className="object-cover"
-              sizes="(max-width: 1024px) 100vw, 58vw"
+              sizes="(max-width: 1024px) 100vw, 55vw"
             />
           </div>
         ))}
