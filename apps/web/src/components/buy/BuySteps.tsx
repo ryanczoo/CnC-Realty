@@ -45,26 +45,7 @@ export function BuySteps() {
           flex-col justify-between mirrors Volta's layout:
           heading anchored top, counter+body anchored bottom.
           self-start prevents flex stretching which would break sticky. */}
-      <div className="sticky top-0 flex h-screen w-[42%] flex-col justify-between self-start pb-16 pl-28 pr-16 pt-32">
-
-        {/* Segmented vertical progress bar */}
-        <div
-          className="absolute left-14 top-1/2 flex -translate-y-1/2 flex-col gap-1"
-          style={{ width: 2, height: 220 }}
-        >
-          {STEPS.map((_, i) => (
-            <div
-              key={i}
-              className="flex-1 overflow-hidden"
-              style={{ backgroundColor: "rgba(27,27,27,0.12)" }}
-            >
-              <div
-                className="w-full bg-[#1B1B1B]"
-                style={{ height: `${barWidths[i]}%`, transition: "height 0.05s linear" }}
-              />
-            </div>
-          ))}
-        </div>
+      <div className="sticky top-0 flex h-screen w-[42%] flex-col justify-between self-start pb-16 pl-20 pr-12 pt-32">
 
         {/* TOP — step heading, left-aligned */}
         <AnimatePresence mode="wait">
@@ -96,6 +77,22 @@ export function BuySteps() {
             </p>
           </motion.div>
         </AnimatePresence>
+      </div>
+
+      {/* ── Progress bar — between panels, full panel height ── */}
+      <div className="sticky top-0 flex h-screen self-start flex-col gap-1 py-8" style={{ width: 2 }}>
+        {STEPS.map((_, i) => (
+          <div
+            key={i}
+            className="flex-1 overflow-hidden"
+            style={{ backgroundColor: "rgba(27,27,27,0.12)" }}
+          >
+            <div
+              className="w-full bg-[#1B1B1B]"
+              style={{ height: `${barWidths[i]}%`, transition: "height 0.05s linear" }}
+            />
+          </div>
+        ))}
       </div>
 
       {/* ── Right panel — scrolling images ── */}
