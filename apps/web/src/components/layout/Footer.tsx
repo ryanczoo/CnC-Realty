@@ -1,6 +1,7 @@
 "use client";
 
 import { motion, useScroll, useTransform } from "motion/react";
+import { SPRING_HOVER } from "@/lib/motion";
 function EmailIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -178,7 +179,7 @@ export function Footer() {
                   aria-label={label}
                   className="flex items-center justify-center text-white/80 hover:text-white"
                   whileHover={{ scale: 1.2 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  transition={SPRING_HOVER}
                 >
                   {icon}
                 </motion.a>

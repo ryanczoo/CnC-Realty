@@ -15,7 +15,7 @@ const TEXT_PROPS = {
   style: { fontFamily: "var(--font-sans), ui-sans-serif, system-ui, sans-serif", fontWeight: 300 },
 };
 
-export function SellHero() {
+export function BuyHero() {
   return (
     <section data-navbar-theme="dark" className="relative h-[95vh] overflow-hidden bg-black">
       <video
@@ -25,7 +25,7 @@ export function SellHero() {
         playsInline
         preload="auto"
         className="absolute inset-0 h-full w-full object-cover object-center"
-        src="/videos/sell-hero.mp4"
+        src="/videos/buy-hero.mp4"
       />
 
       <svg
@@ -35,15 +35,15 @@ export function SellHero() {
         xmlns="http://www.w3.org/2000/svg"
       >
         <defs>
-          <mask id="sell-hero-mask">
+          <mask id="buy-hero-mask">
             <rect width="1920" height="1080" fill="white" />
             <motion.g initial="hidden" animate="visible" variants={container}>
-              <motion.text {...TEXT_PROPS} y="400" variants={WORD_VARIANT}>SELL</motion.text>
+              <motion.text {...TEXT_PROPS} y="400" variants={WORD_VARIANT}>BUY</motion.text>
               <motion.text {...TEXT_PROPS} y="710" variants={WORD_VARIANT}>WITH US</motion.text>
             </motion.g>
           </mask>
         </defs>
-        <rect width="1920" height="1080" fill="black" fillOpacity="0.72" mask="url(#sell-hero-mask)" />
+        <rect width="1920" height="1080" fill="black" fillOpacity="0.72" mask="url(#buy-hero-mask)" />
       </svg>
 
       <DownArrow />

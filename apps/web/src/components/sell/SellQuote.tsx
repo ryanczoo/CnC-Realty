@@ -12,17 +12,26 @@ export function SellQuote() {
   const [litCount, setLitCount] = useState(0);
 
   useEffect(() => {
-    const onScroll = () => {
-      const section = sectionRef.current;
-      if (!section) return;
-      const rect = section.getBoundingClientRect();
-      const vh = window.innerHeight;
-      const progress = Math.max(0, Math.min(1, (vh - rect.top) / (vh * 1.0)));
+    const section = sectionRef.current;
+    if (!section) return;
+
+    // Cache offsetTop once; update on resize to avoid reflow on every scroll tick
+    let sectionTop = section.offsetTop;
+    let vh = window.innerHeight;
+
+    const compute = () => {
+      const progress = Math.max(0, Math.min(1, (window.scrollY + vh - sectionTop) / vh));
       setLitCount(Math.round(progress * WORDS.length));
     };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-    return () => window.removeEventListener("scroll", onScroll);
+
+    const onResize = () => { sectionTop = section.offsetTop; vh = window.innerHeight; compute(); };
+    window.addEventListener("resize", onResize, { passive: true });
+    window.addEventListener("scroll", compute, { passive: true });
+    compute();
+    return () => {
+      window.removeEventListener("scroll", compute);
+      window.removeEventListener("resize", onResize);
+    };
   }, []);
 
   return (

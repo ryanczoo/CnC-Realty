@@ -4,6 +4,7 @@ import { AnimatePresence, motion, useScroll } from "motion/react";
 import { useRef } from "react";
 import { useScrollStepper } from "@/hooks/useScrollStepper";
 import { SPRING_HOVER, PULSE_ANIMATE, PULSE_TRANSITION } from "@/lib/motion";
+import { RevealLine } from "@/components/ui/reveal-text";
 
 const ITEMS: { title: TitlePart[]; description: string; imgFront?: string; imgFrontPosition?: string; imgBack?: string; videoBack?: string; videoBackPosition?: string; showButton?: boolean }[] = [
   {
@@ -145,38 +146,23 @@ export function WhyCnC() {
                 }}
                 className="flex flex-col gap-12"
               >
-                <motion.h2
-                  className="font-sans font-light uppercase leading-[0.90] tracking-wide text-[#1B1B1B]"
-                  variants={{
-                    hidden: {},
-                    visible: { transition: { staggerChildren: 0.1 } },
-                  }}
-                >
+                <h2 className="font-sans font-light uppercase leading-[0.90] tracking-wide text-[#1B1B1B]">
                   {active.title.map((part, i) => {
-                    const words = part.text.split(" ");
                     const isLastPart = i === active.title.length - 1;
                     return (
                       <span
                         key={i}
                         className={`block ${part.size ?? (part.sm ? "text-[3rem] xl:text-[3.6rem]" : "text-[4rem] xl:text-[4.8rem]")}`}
                       >
-                        {words.map((word, j) => (
-                          <motion.span
-                            key={j}
-                            className="mr-[0.22em] inline-block"
-                            style={isLastPart && j === words.length - 1 ? { color: "#9E8C61" } : undefined}
-                            variants={{
-                              hidden: { opacity: 0, x: -16 },
-                              visible: { opacity: 1, x: 0, transition: { duration: 0.55, ease: "easeOut" } },
-                            }}
-                          >
-                            {word}
-                          </motion.span>
-                        ))}
+                        <RevealLine triggerOnMount delay={i * 0.15}>
+                          <span className={isLastPart ? "text-cnc-gold" : undefined}>
+                            {part.text}
+                          </span>
+                        </RevealLine>
                       </span>
                     );
                   })}
-                </motion.h2>
+                </h2>
 
                 <motion.p
                   className="max-w-sm text-[0.95rem] leading-relaxed text-[#1B1B1B]/60"

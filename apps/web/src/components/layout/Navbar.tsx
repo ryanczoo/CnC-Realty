@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { NAV_ITEM_CLS } from "@/lib/motion";
+import { NAV_ITEM_CLS, SPRING_HOVER } from "@/lib/motion";
 import { AnimatePresence, motion } from "motion/react";
 import { X } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
@@ -140,7 +140,7 @@ export function Navbar() {
           <Link href="/" onClick={() => setMenuOpen(false)}>
             <motion.div
               whileHover={{ scale: 1.15 }}
-              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              transition={SPRING_HOVER}
             >
               <Image
                 src="/logo-white.png"
@@ -156,7 +156,7 @@ export function Navbar() {
 
           <div className="flex items-center gap-3">
             {authLink && (
-              <motion.div whileHover={{ scale: 1.15 }} transition={{ type: "spring", stiffness: 300, damping: 20 }}>
+              <motion.div whileHover={{ scale: 1.15 }} transition={SPRING_HOVER}>
                 <Link href={authLink.href}>
                   <span className={pillCls}>{authLink.label}</span>
                 </Link>
@@ -167,7 +167,7 @@ export function Navbar() {
               onClick={() => setMenuOpen((o) => !o)}
               aria-label={menuOpen ? "Close menu" : "Open menu"}
               whileHover={{ scale: 1.15 }}
-              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              transition={SPRING_HOVER}
               className={cn(
                 "flex h-9 w-9 items-center justify-center rounded-full transition-all duration-300",
                 useLightElements

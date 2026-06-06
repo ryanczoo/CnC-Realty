@@ -29,6 +29,7 @@ interface PageCTAProps {
   primaryLabel: string;
   secondaryHref?: string;
   secondaryLabel?: string;
+  secondaryClassName?: string;
 }
 
 export function PageCTA({
@@ -38,6 +39,7 @@ export function PageCTA({
   primaryLabel,
   secondaryHref,
   secondaryLabel,
+  secondaryClassName = "inline-flex items-center rounded-full border border-[#1B1B1B]/20 px-8 py-3.5 font-sans text-sm font-medium text-[#1B1B1B]",
 }: PageCTAProps) {
   return (
     <section className="relative overflow-hidden bg-[#F2F0EF] px-8 py-28 lg:px-20">
@@ -52,7 +54,7 @@ export function PageCTA({
             {primaryLabel}
           </CTAButton>
           {secondaryHref && secondaryLabel && (
-            <CTAButton href={secondaryHref} className="inline-flex items-center rounded-full border border-[#1B1B1B]/20 px-8 py-3.5 font-sans text-sm font-medium text-[#1B1B1B]">
+            <CTAButton href={secondaryHref} className={secondaryClassName}>
               {secondaryLabel}
             </CTAButton>
           )}

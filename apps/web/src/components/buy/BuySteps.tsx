@@ -12,22 +12,22 @@ const STEPS = [
   {
     title: { first: "Get", mid: "", last: "Pre-Approved" },
     body: "Connect with a lender to understand your budget before you fall in love with a home. Our agents can refer you to trusted local lenders.",
-    img: "/images/sell/sell-06.jpg",
+    img: "/images/buy/buy-step-01.jpg",
   },
   {
     title: { first: "Find", mid: "Your", last: "Agent" },
     body: "Every CnC agent is a local California expert. Match with someone who knows your target neighborhoods inside and out.",
-    img: "/images/sell/sell-07.jpg",
+    img: "/images/buy/buy-step-02.jpg",
   },
   {
     title: { first: "Search", mid: "&", last: "Tour" },
     body: "Browse live CRMLS listings updated every 15 minutes. Schedule tours directly and move fast when the right home appears.",
-    img: "/images/sell/sell-08.jpg",
+    img: "/images/buy/buy-step-03.jpg",
   },
   {
     title: { first: "Closing", mid: "", last: "Escrow" },
     body: "From offer to keys, your CnC agent handles the contracts, negotiations, inspections, and escrow — so you can focus on the move.",
-    img: "/images/sell/sell-09.jpg",
+    img: "/images/buy/buy-step-04.jpg",
   },
 ];
 
@@ -74,7 +74,7 @@ export function BuySteps() {
             exit={{ opacity: 0, y: -20, transition: { duration: 0.35, ease: "easeIn" } }}
           >
             <p className="font-sans text-sm font-medium uppercase tracking-widest text-[#9E8C61]">
-              {String(activeIdx + 1).padStart(2, "0")} / 04
+              {String(activeIdx + 1).padStart(2, "0")}
             </p>
             <p className="max-w-sm font-sans text-[0.95rem] leading-relaxed text-[#1B1B1B]/60">
               {active.body}
