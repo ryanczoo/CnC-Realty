@@ -3661,6 +3661,69 @@ New component: `apps/web/src/components/sell/SellValues.tsx`
 
 ---
 
+## Session Notes — 2026-06-05
+
+### What Was Completed This Session
+
+All changes committed to `claude/real-estate-website-9bdWi` (commits through `d4efdd0`).
+
+---
+
+### BuyContemporary — Full Two-Phase Scroll Animation
+
+New component: `apps/web/src/components/buy/BuyContemporary.tsx`
+
+Inspired by Uptown's (uptown.ae) transition between their "Contemporary" and "Why Choose Uptown" sections. Puppeteer was used to read Uptown's live GSAP source and translate it to Framer Motion.
+
+**Section structure:** `h-[200vh]` outer + `sticky top-0 h-screen overflow-hidden` inner → scroll-pinned viewport.
+
+**Phase 1 (scrollYProgress 0.05→0.45) — Cluster assembly:**
+- Center image (`buy-step-01.jpg`) scales 0.78×→1.455× while rising from below
+- Left image (`buy-step-03.jpg`) rotates from -7deg, fades in, arrives from left
+- Right image (`buy-step-02.jpg`) rotates from +7deg, fades in, arrives from right
+- "CONTEMPORARY" heading fades in, gradient overlays fade in with side images
+- Background watermark text (TRUSTWORTHY / INNOVATIVE / PROFESSIONAL) fades in at 12% opacity
+
+**Phase 2 (scrollYProgress 0.45→0.85) — Explosion to corners:**
+- All 4 images fly from cluster to viewport corners (all transforms → 0)
+- Back image (`buy-step-04.jpg`) appears and flies to bottom-right
+- Gradient overlays fade OUT during expansion
+- "CONTEMPORARY" heading fades out
+- "WHY CHOOSE CnC?" heading + body text fade in at center
+
+**Key constants (from Uptown 800×600 Puppeteer measurements):**
+- `C` = corner positions: cx/cy = image center as viewport fraction, w/h = size fraction
+- `K` = contemporary cluster centers as viewport fraction
+- `CW` = contemporary display widths (for scale ratio calculation)
+
+**Key helpers:**
+- `ramp(p, lo, hi, a, b)` — clamped linear interpolation
+- `pos(corner)` — returns absolute style using `calc(cx*100vw - w*50vw)` for center-based positioning
+
+**Viewport responsiveness:** `vwRef`/`vhRef` updated on resize, read inside `useTransform` callbacks to avoid stale closures.
+
+**Scale ratios:** center 1.455 (CW.center/C.topLeft.w), left 1.127, right 1.0, back 1.343
+
+**Critical fix — Tailwind + Framer Motion conflict:** `-translate-y-1/2` must be on a non-motion `div` wrapper; only `opacity` goes on the inner `motion.h2` — otherwise Framer Motion overrides Tailwind's CSS transform.
+
+**Status: committed, visual review pending.** Ryan said "there is still work that needs to be done" — specific fixes TBD after visual inspection next session.
+
+---
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. Open `localhost:3000/buy`
+3. **Review `BuyContemporary` visually** — scroll through the section, note any issues with timing, positioning, or text, then fix
+4. Continue with remaining work in order:
+   - **Rent page** — finalize (shell exists at `app/(marketing)/rent/page.tsx`)
+   - **Manage page** — finalize (shell exists at `app/(marketing)/manage/page.tsx`)
+   - **Swap placeholder images** in BuySteps when Ryan provides 4 real buy photos
+   - **Checklist templates** at `/admin/settings/checklists` (CA Purchase Buyer/Seller Side, CA Lease Tenant Side)
+   - **Phase 6 tasks** (`docs/superpowers/plans/2026-05-22-phase-6-launch.md`): ISR, skeleton loaders, sitemap, JSON-LD, rate limiting, Sentry, PostHog, deploy
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`
