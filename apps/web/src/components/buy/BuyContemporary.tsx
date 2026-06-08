@@ -4,29 +4,38 @@ import { useRef, useEffect } from "react";
 import { motion, useScroll, useTransform } from "motion/react";
 import Image from "next/image";
 
-// Corner positions from Uptown's 800×600 reference.
+// Corner positions measured from Uptown at 1440×900 viewport.
+// topRight.cy pulled to 0.28 (from measured 0.12) to overlap with "OSE" of "CHOOSE".
 // cx/cy = image CENTER as fraction of viewport. w/h = size as fraction of viewport.
 const C = {
-  topLeft:  { cx: 0.10703, cy: 0.25452, w: 0.16823, h: 0.28680 }, // center img → top-left
-  topRight: { cx: 0.74350, cy: 0.08790, w: 0.17969, h: 0.27778 }, // right img  → top-right
-  btmLeft:  { cx: 0.19115, cy: 1.00958, w: 0.15938, h: 0.27083 }, // left img   → bottom-left
-  btmRight: { cx: 0.87240, cy: 0.94417, w: 0.18229, h: 0.29167 }, // back img   → bottom-right
+  topLeft:  { cx: 0.1095, cy: 0.3125, w: 0.1721, h: 0.3522 },
+  topRight: { cx: 0.7375, cy: 0.28,   w: 0.1839, h: 0.3411 },
+  btmLeft:  { cx: 0.1956, cy: 0.82,   w: 0.1631, h: 0.3326 },
+  btmRight: { cx: 0.8694, cy: 0.79,   w: 0.1865, h: 0.3582 },
 };
 
-// Contemporary cluster centers as fraction of viewport
+// Cluster positions — where images START (assembled contemporary view).
 const K = {
-  center: { cx: 0.5,       cy: 0.5      },
-  left:   { cx: 0.39660,   cy: 0.49215  },
-  right:  { cx: 0.60341,   cy: 0.49215  },
+  center: { cx: 0.5,     cy: 0.5     },
+  left:   { cx: 0.39660, cy: 0.49215 },
+  right:  { cx: 0.60341, cy: 0.49215 },
 };
 
-// Contemporary widths as fraction of viewport width (for scale ratio)
+// Cluster display widths as fraction of viewport width.
 const CW = { center: 0.24479, left: 0.17969, right: 0.17969 };
 
+// Scale ratios: how much bigger each image is in the cluster vs its corner size.
+const SC = {
+  center: CW.center / C.topLeft.w,  // ≈ 1.422
+  left:   CW.left   / C.btmLeft.w,  // ≈ 1.102
+  right:  CW.right  / C.topRight.w, // ≈ 0.977
+  back:   CW.center / C.btmRight.w, // ≈ 1.313
+};
+
 const FLOAT_ROWS = [
-  { words: ["TRUST", "WORTHY"],   width: "90vw"  },
-  { words: ["INNOV", "ATIVE"],    width: "97vw"  },
-  { words: ["PROFES", "SIONAL"],  width: "112vw" },
+  { words: ["TRUST", "WORTHY"],  width: "90vw"  },
+  { words: ["INNOV", "ATIVE"],   width: "97vw"  },
+  { words: ["PROFES", "SIONAL"], width: "112vw" },
 ];
 
 function ramp(p: number, lo: number, hi: number, a: number, b: number) {
@@ -34,7 +43,7 @@ function ramp(p: number, lo: number, hi: number, a: number, b: number) {
   return a + (b - a) * t;
 }
 
-// Returns inline style for an image positioned by its center at corner coordinates
+// Returns absolute positioning style for an image centered at corner coordinates.
 function pos(corner: typeof C.topLeft) {
   return {
     position: "absolute" as const,
@@ -44,6 +53,12 @@ function pos(corner: typeof C.topLeft) {
     height: `${corner.h * 100}vh`,
   };
 }
+
+// Animation timeline (400vh total, sticky pinned for first 300vh = p 0→0.75):
+//   p 0.00 → 0.55  Explosion — images fly from cluster to corners        (220vh)
+//   p 0.50 → 0.65  WHY CHOOSE CnC? fades in (overlaps last bit of explosion)
+//   p 0.65 → 0.75  Hold — corners + WHY fully visible                    (40vh)
+//   p 0.75 → 1.00  Sticky div naturally scrolls off (exit)               (100vh)
 
 export function BuyContemporary() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -65,84 +80,67 @@ export function BuyContemporary() {
     offset: ["start start", "end start"],
   });
 
-  // ── Center image → top-left corner ──────────────────────────────────────
-  const ctrX = useTransform(scrollYProgress, (p) => {
-    const dx = (K.center.cx - C.topLeft.cx) * vwRef.current;
-    return ramp(p, 0.45, 0.85, dx, 0);
-  });
-  const ctrY = useTransform(scrollYProgress, (p) => {
-    const dy = (K.center.cy - C.topLeft.cy) * vhRef.current;
-    if (p < 0.45) return dy + vhRef.current * 0.15 * (1 - ramp(p, 0.05, 0.45, 0, 1));
-    return ramp(p, 0.45, 0.85, dy, 0);
-  });
-  const ctrSc = useTransform(scrollYProgress, (p) => {
-    const sc = CW.center / C.topLeft.w; // ≈1.455
-    if (p < 0.45) return ramp(p, 0.05, 0.45, 0.78 * sc, sc);
-    return ramp(p, 0.45, 0.85, sc, 1);
-  });
-
-  // ── Left image → bottom-left corner ─────────────────────────────────────
-  const lftX = useTransform(scrollYProgress, (p) => {
-    const dx = (K.left.cx - C.btmLeft.cx) * vwRef.current;
-    if (p < 0.45) return dx - vwRef.current * 0.08 * (1 - ramp(p, 0.05, 0.45, 0, 1));
-    return ramp(p, 0.45, 0.85, dx, 0);
-  });
-  const lftY = useTransform(scrollYProgress, (p) => {
-    const dy = (K.left.cy - C.btmLeft.cy) * vhRef.current;
-    if (p < 0.45) return dy + vhRef.current * 0.30 * (1 - ramp(p, 0.05, 0.45, 0, 1));
-    return ramp(p, 0.45, 0.85, dy, 0);
-  });
-  const lftSc  = useTransform(scrollYProgress, (p) => ramp(p, 0.45, 0.85, CW.left / C.btmLeft.w, 1));
-  const lftOp  = useTransform(scrollYProgress, (p) => ramp(p, 0.05, 0.30, 0, 1));
-  const lftRot = useTransform(scrollYProgress, (p) => {
-    if (p < 0.45) return ramp(p, 0.05, 0.45, -7, -3.5);
-    return ramp(p, 0.45, 0.85, -3.5, 0);
-  });
-
-  // ── Right image → top-right corner ──────────────────────────────────────
-  const rgtX = useTransform(scrollYProgress, (p) => {
-    const dx = (K.right.cx - C.topRight.cx) * vwRef.current;
-    if (p < 0.45) return dx + vwRef.current * 0.08 * (1 - ramp(p, 0.05, 0.45, 0, 1));
-    return ramp(p, 0.45, 0.85, dx, 0);
-  });
-  const rgtY = useTransform(scrollYProgress, (p) => {
-    const dy = (K.right.cy - C.topRight.cy) * vhRef.current;
-    if (p < 0.45) return dy + vhRef.current * 0.30 * (1 - ramp(p, 0.05, 0.45, 0, 1));
-    return ramp(p, 0.45, 0.85, dy, 0);
-  });
-  const rgtSc  = useTransform(scrollYProgress, (p) => ramp(p, 0.45, 0.85, CW.right / C.topRight.w, 1));
-  const rgtOp  = useTransform(scrollYProgress, (p) => ramp(p, 0.05, 0.30, 0, 1));
-  const rgtRot = useTransform(scrollYProgress, (p) => {
-    if (p < 0.45) return ramp(p, 0.05, 0.45, 7, 3.5);
-    return ramp(p, 0.45, 0.85, 3.5, 0);
-  });
-
-  // ── Back image → bottom-right corner ────────────────────────────────────
-  const bckX  = useTransform(scrollYProgress, (p) => ramp(p, 0.45, 0.85, (K.center.cx - C.btmRight.cx) * vwRef.current, 0));
-  const bckY  = useTransform(scrollYProgress, (p) => ramp(p, 0.45, 0.85, (K.center.cy - C.btmRight.cy) * vhRef.current, 0));
-  const bckSc = useTransform(scrollYProgress, (p) => ramp(p, 0.45, 0.85, CW.center / C.btmRight.w, 1)); // ≈1.343→1
-  const bckOp = useTransform(scrollYProgress, (p) => ramp(p, 0.50, 0.75, 0, 1));
-
-  // ── Side-image gradient overlay: fades IN with the image, then OUT during expansion ──
-  const overlayOp = useTransform(scrollYProgress, (p) =>
-    ramp(p, 0.05, 0.30, 0, 1) * ramp(p, 0.45, 0.70, 1, 0),
+  // ── Center image → top-left corner ──────────────────────────────────────────
+  const ctrX = useTransform(scrollYProgress, (p) =>
+    ramp(p, 0, 0.55, (K.center.cx - C.topLeft.cx) * vwRef.current, 0)
+  );
+  const ctrY = useTransform(scrollYProgress, (p) =>
+    ramp(p, 0, 0.55, (K.center.cy - C.topLeft.cy) * vhRef.current, 0)
+  );
+  const ctrSc = useTransform(scrollYProgress, (p) =>
+    ramp(p, 0, 0.55, SC.center, 1)
   );
 
-  // ── UI ────────────────────────────────────────────────────────────────────
+  // ── Left image → bottom-left corner ─────────────────────────────────────────
+  const lftX = useTransform(scrollYProgress, (p) =>
+    ramp(p, 0, 0.55, (K.left.cx - C.btmLeft.cx) * vwRef.current, 0)
+  );
+  const lftY = useTransform(scrollYProgress, (p) =>
+    ramp(p, 0, 0.55, (K.left.cy - C.btmLeft.cy) * vhRef.current, 0)
+  );
+  const lftSc  = useTransform(scrollYProgress, (p) => ramp(p, 0, 0.55, SC.left, 1));
+  const lftRot = useTransform(scrollYProgress, (p) => ramp(p, 0, 0.55, -3.5, 0));
+
+  // ── Right image → top-right corner ──────────────────────────────────────────
+  const rgtX = useTransform(scrollYProgress, (p) =>
+    ramp(p, 0, 0.55, (K.right.cx - C.topRight.cx) * vwRef.current, 0)
+  );
+  const rgtY = useTransform(scrollYProgress, (p) =>
+    ramp(p, 0, 0.55, (K.right.cy - C.topRight.cy) * vhRef.current, 0)
+  );
+  const rgtSc  = useTransform(scrollYProgress, (p) => ramp(p, 0, 0.55, SC.right, 1));
+  const rgtRot = useTransform(scrollYProgress, (p) => ramp(p, 0, 0.55, 3.5, 0));
+
+  // ── Back image → bottom-right corner (fades in during explosion) ─────────────
+  const bckX = useTransform(scrollYProgress, (p) =>
+    ramp(p, 0, 0.55, (K.center.cx - C.btmRight.cx) * vwRef.current, 0)
+  );
+  const bckY = useTransform(scrollYProgress, (p) =>
+    ramp(p, 0, 0.55, (K.center.cy - C.btmRight.cy) * vhRef.current, 0)
+  );
+  const bckSc = useTransform(scrollYProgress, (p) => ramp(p, 0, 0.55, SC.back, 1));
+  const bckOp = useTransform(scrollYProgress, (p) => ramp(p, 0.05, 0.40, 0, 1));
+
+  // Gradient overlays on side images — present in cluster, gone by mid-explosion.
+  const overlayOp = useTransform(scrollYProgress, (p) => ramp(p, 0, 0.30, 1, 0));
+
+  // CONTEMPORARY heading — fully visible at start, fades out early.
   const contemporaryOp = useTransform(scrollYProgress, (p) =>
-    p < 0.40 ? ramp(p, 0.05, 0.20, 0, 1) : ramp(p, 0.40, 0.58, 1, 0),
+    ramp(p, 0.05, 0.28, 1, 0)
   );
-  const floatOp = useTransform(scrollYProgress, (p) =>
-    p < 0.30 ? ramp(p, 0.05, 0.30, 0, 0.12) : ramp(p, 0.30, 0.50, 0.12, 0),
-  );
-  const whyOp = useTransform(scrollYProgress, (p) => ramp(p, 0.70, 0.90, 0, 1));
-  const whyY  = useTransform(scrollYProgress, (p) => ramp(p, 0.70, 0.90, 28, 0));
+
+  // Watermark text — starts at 12% opacity, gone before explosion finishes.
+  const floatOp = useTransform(scrollYProgress, (p) => ramp(p, 0, 0.22, 0.12, 0));
+
+  // WHY CHOOSE CnC? — starts appearing as images near their corners.
+  const whyOp = useTransform(scrollYProgress, (p) => ramp(p, 0.50, 0.65, 0, 1));
+  const whyY  = useTransform(scrollYProgress, (p) => ramp(p, 0.50, 0.65, 28, 0));
 
   return (
     <section
       ref={sectionRef}
       data-navbar-theme="dark"
-      style={{ height: "200vh" }}
+      style={{ height: "400vh" }}
     >
       <div className="sticky top-0 h-screen overflow-hidden bg-[#1B1B1B]">
 
@@ -155,7 +153,11 @@ export function BuyContemporary() {
           {FLOAT_ROWS.map(({ words, width }, i) => (
             <div key={i} className="flex justify-between" style={{ width }}>
               {words.map((w) => (
-                <span key={w} className="font-sans font-medium text-white" style={{ fontSize: "clamp(2.5rem, 8vw, 10rem)" }}>
+                <span
+                  key={w}
+                  className="font-sans font-medium text-white"
+                  style={{ fontSize: "clamp(2.5rem, 8vw, 10rem)" }}
+                >
                   {w}
                 </span>
               ))}
@@ -163,7 +165,7 @@ export function BuyContemporary() {
           ))}
         </motion.div>
 
-        {/* CONTEMPORARY heading — outer div owns position+translate, motion owns only opacity */}
+        {/* CONTEMPORARY heading — outer div owns vertical centering, motion owns only opacity */}
         <div className="pointer-events-none absolute inset-x-0 top-1/2 z-10 -translate-y-1/2 select-none text-center">
           <motion.h2
             style={{ opacity: contemporaryOp, fontSize: "clamp(2rem, 7vw, 10rem)" }}
@@ -175,14 +177,13 @@ export function BuyContemporary() {
 
         {/* ── Center image → top-left corner ── */}
         <motion.div style={{ ...pos(C.topLeft), x: ctrX, y: ctrY, scale: ctrSc, zIndex: 2 }}>
-          <Image src="/images/buy/buy-step-01.jpg" fill className="object-cover" alt="" sizes="25vw" />
+          <Image src="/images/contemporary/contemporary-01.jpg" fill className="object-cover" alt="" sizes="25vw" />
         </motion.div>
 
         {/* ── Right image → top-right corner ── */}
-        <motion.div style={{ ...pos(C.topRight), x: rgtX, y: rgtY, scale: rgtSc, rotate: rgtRot, opacity: rgtOp, zIndex: 1 }}>
-          <Image src="/images/buy/buy-step-02.jpg" fill className="object-cover" alt="" sizes="18vw" />
+        <motion.div style={{ ...pos(C.topRight), x: rgtX, y: rgtY, scale: rgtSc, rotate: rgtRot, zIndex: 1 }}>
+          <Image src="/images/contemporary/contemporary-02.jpg" fill className="object-cover" alt="" sizes="18vw" />
         </motion.div>
-        {/* Right image gradient overlay (independent opacity) */}
         <motion.div
           aria-hidden
           style={{
@@ -196,10 +197,9 @@ export function BuyContemporary() {
         />
 
         {/* ── Left image → bottom-left corner ── */}
-        <motion.div style={{ ...pos(C.btmLeft), x: lftX, y: lftY, scale: lftSc, rotate: lftRot, opacity: lftOp, zIndex: 1 }}>
-          <Image src="/images/buy/buy-step-03.jpg" fill className="object-cover" alt="" sizes="18vw" />
+        <motion.div style={{ ...pos(C.btmLeft), x: lftX, y: lftY, scale: lftSc, rotate: lftRot, zIndex: 1 }}>
+          <Image src="/images/contemporary/contemporary-03.jpg" fill className="object-cover" alt="" sizes="18vw" />
         </motion.div>
-        {/* Left image gradient overlay */}
         <motion.div
           aria-hidden
           style={{
@@ -214,10 +214,10 @@ export function BuyContemporary() {
 
         {/* ── Back image → bottom-right corner ── */}
         <motion.div style={{ ...pos(C.btmRight), x: bckX, y: bckY, scale: bckSc, opacity: bckOp, zIndex: 0 }}>
-          <Image src="/images/buy/buy-step-04.jpg" fill className="object-cover" alt="" sizes="18vw" />
+          <Image src="/images/contemporary/contemporary-04.jpg" fill className="object-cover" alt="" sizes="18vw" />
         </motion.div>
 
-        {/* WHY CHOOSE CnC? content */}
+        {/* WHY CHOOSE CnC? */}
         <motion.div
           style={{ opacity: whyOp, y: whyY, zIndex: 20 }}
           className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center"
