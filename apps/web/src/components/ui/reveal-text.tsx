@@ -17,12 +17,13 @@ interface RevealTextProps {
 // and negative inset values extend the clip region past the border box to capture descenders.
 // triggerOnMount: fires on mount via rAF instead of intersection — use inside AnimatePresence
 // where the element is always in view and useInView would fire too late for the first slide.
-export function RevealLine({ children, delay = 0, className, onDark = false, triggerOnMount = false }: {
+export function RevealLine({ children, delay = 0, className, onDark = false, triggerOnMount = false, color }: {
   children: React.ReactNode;
   delay?: number;
   className?: string;
   onDark?: boolean;
   triggerOnMount?: boolean;
+  color?: string;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
   const isInView = useInView(ref, { once: true, margin: "-8%" });
@@ -37,7 +38,7 @@ export function RevealLine({ children, delay = 0, className, onDark = false, tri
   const revealed = triggerOnMount ? mountRevealed : isInView;
 
   return (
-    <span ref={ref} className={cn("relative inline-block", className)} style={{ color: onDark ? "#ffffff" : "#1B1B1B" }}>
+    <span ref={ref} className={cn("relative inline-block", className)} style={{ color: color ?? (onDark ? "#ffffff" : "#1B1B1B") }}>
       {/* Dim base — always visible, sets layout dimensions */}
       <span aria-hidden style={{ opacity: 0.18 }}>{children}</span>
       {/* Bright overlay — revealed left-to-right via clip-path */}
