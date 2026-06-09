@@ -99,7 +99,7 @@ export function WhyCnC() {
     offset: ["start start", "end end"],
   });
 
-  const { activeIdx, scrollDirRef, barWidths } = useScrollStepper(scrollYProgress, ITEMS.length);
+  const { activeIdx, scrollDirRef, registerBarEl } = useScrollStepper(scrollYProgress, ITEMS.length);
 
   const active = ITEMS[activeIdx];
 
@@ -127,8 +127,9 @@ export function WhyCnC() {
                   style={{ backgroundColor: "rgba(27,27,27,0.12)" }}
                 >
                   <div
+                    ref={(el) => registerBarEl(i, el)}
                     className="w-full bg-[#1B1B1B]"
-                    style={{ height: `${barWidths[i]}%`, transition: "height 0.05s linear" }}
+                    style={{ height: "0%", transition: "height 0.05s linear" }}
                   />
                 </div>
               ))}

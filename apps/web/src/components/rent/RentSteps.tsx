@@ -30,9 +30,11 @@ export function RentSteps() {
 
         {/* Left: heading + CTA */}
         <div className="flex flex-1 flex-col gap-8">
-          <h2 className="font-sans text-[3.375rem] font-medium leading-none">
-            <RevealLine className="block">Real Estate,</RevealLine>
-            <RevealLine className="block" color="#b3b3b3" delay={0.15}>Rewired.</RevealLine>
+          <h2 className="font-sans font-light leading-[1.1]">
+            <RevealLine className="block text-[1.9rem] xl:text-[2.2rem]">Moving made,</RevealLine>
+            <span className="block pl-[7.5rem]">
+              <RevealLine className="text-[3rem] xl:text-[3.5rem]" color="#9E8C61" delay={0.15}>Easy</RevealLine>
+            </span>
           </h2>
           <motion.div
             animate={PULSE_ANIMATE}
@@ -41,7 +43,7 @@ export function RentSteps() {
             className="w-fit"
           >
             <Link
-              href="/properties?listingType=FOR_LEASE"
+              href="/properties?listingType=FOR_RENT"
               className="flex items-center gap-2 rounded-full bg-cnc-dark px-7 py-4 font-sans text-base font-medium text-white"
             >
               Start Your Search <span aria-hidden>→</span>
@@ -59,13 +61,13 @@ export function RentSteps() {
                 {...fadeUp(i * 0.12)}
                 className="flex items-center gap-10 border-t border-[#1B1B1B]/[0.07] py-6"
               >
-                <span className="w-8 shrink-0 font-sans text-[15px] font-normal text-[#b3b3b3]">
+                <span className="w-8 shrink-0 font-sans text-base font-medium tracking-widest text-cnc-gold">
                   {step.num}
                 </span>
-                <p className="font-sans font-medium leading-[1.15]" style={{ fontSize: "2.1rem" }}>
-                  <span className="text-[#1B1B1B]">{step.title} </span>
-                  <span className="text-[#b3b3b3]">{step.body}</span>
-                </p>
+                <div className="font-sans font-medium leading-[1.15]">
+                  <p className="text-[2.1rem] text-[#1B1B1B]">{step.title}</p>
+                  <p className="text-[2.1rem] text-[#b3b3b3]">{step.body}</p>
+                </div>
               </motion.div>
             ))}
           </div>
