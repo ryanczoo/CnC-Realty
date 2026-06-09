@@ -2804,6 +2804,119 @@ Replaced the single vertical pill (`3px wide, 220px tall, grows top-to-bottom`) 
 
 ---
 
+## Session Notes — 2026-06-08
+
+### What Was Completed This Session
+
+All changes committed and pushed on `claude/real-estate-website-9bdWi`.
+
+| Commit | Description |
+|---|---|
+| `b5d9772` | feat(buy): polish BuyContemporary animation + BuySteps copy |
+| `a480e77` | feat(rent): add rent hero + simplify pass across buy/sell/rent |
+
+---
+
+### BuyContemporary — Final State ✅
+
+**File:** `apps/web/src/components/buy/BuyContemporary.tsx`
+
+Complete rewrite of the scroll-driven animation section on `/buy`. Replicated Uptown's GSAP Flip cluster→corners pattern using Framer Motion.
+
+**Animation flow (400vh section, sticky pinned for 300vh):**
+- `p = 0`: Section opens with 3 images **already assembled** in a "RESULTS" cluster (no Phase 1 build animation)
+- `p 0.00 → 0.55`: Explosion — images fly from cluster to 4 corner positions
+- `p 0.50 → 0.65`: "WHY CHOOSE CnC?" text fades in
+- `p 0.65 → 0.75`: Hold state — all 4 corners + WHY visible
+- `p 0.75 → 1.00`: Sticky div scrolls off naturally
+
+**Key decisions:**
+- Removed Phase 1 assembly animation entirely — section starts with cluster already visible
+- Section height `400vh` so sticky stays pinned long enough for the full animation
+- Corner positions measured from Uptown at **1440×900 viewport** via Puppeteer (previous 800×600 measurements were wrong)
+- `topRight.cy = 0.28` (pulled down from measured 0.12) so top-right image overlaps "OSE" of "CHOOSE" text (text zIndex=20 renders in front)
+- Bottom images: `btmLeft.cy = 0.82`, `btmRight.cy = 0.79` (pulled up from 0.9787/0.9109 so images aren't cut off)
+- Watermark word "PROFES/SIONAL" row: `width: "94vw"` (reduced from 112vw so word is mostly visible)
+- Heading changed from "CONTEMPORARY" → **"RESULTS"**
+- 4 new real California photos in `/images/contemporary/` (contemporary-01 through 04) — separate from BuySteps `/images/buy/` photos
+- "WHY CHOOSE CnC?" body text: *"With over 15+ years of California real estate expertise, our team is built to protect your interest and put your needs first"*
+
+**Simplify pass improvements:**
+- `ramp()` moved to `lib/motion.ts` (was inline)
+- `pos()` style objects hoisted to module-scope constants (`POS_TOP_LEFT` etc.)
+- Overlay gradient extracted to `OVERLAY_GRADIENT` constant
+- Overlay `motion.div` moved inside parent image `motion.div` — halves Framer Motion subscriptions
+- Timeline comment rewritten to match actual two-state animation
+
+---
+
+### BuySteps — Copy + Style Updates ✅
+
+**File:** `apps/web/src/components/buy/BuySteps.tsx`
+
+**Body text (final, no trailing periods):**
+| Step | Body |
+|---|---|
+| Get Pre-Approved | "Connect with a lender to understand your budget before falling in love with a home. Our team works with multiple lenders for a fast and smooth approval" |
+| Find Your Agent | "CnC has agents all across California. Match with an expert today to get local expertise for your neighborhood" |
+| Search & Tour | "Use our property search tool to browse all active homes for sale, and schedule a tour directly in our website to move fast when the right home appears" |
+| Closing Escrow | (unchanged) |
+
+**Other changes:**
+- Step number: `text-sm` → `text-base`; body text: `0.95rem` → `1.1rem` for readability
+- Gold title word: inline `style={{ color: "#9E8C61" }}` → `className="text-cnc-gold"`
+- Step images 2–4: `loading="lazy"` added (first image stays eager)
+
+---
+
+### Rent Hero — New ✅
+
+**Files:** `apps/web/src/components/rent/RentHero.tsx`, `apps/web/public/videos/rent-hero.mp4`
+
+Video hero section added to `/rent` page matching Buy and Sell hero pattern exactly:
+- `95vh` height, black background, video fill
+- SVG mask cutout text: **"RENT" / "WITH US"** (same font, size, animation as buy/sell)
+- Video: `4554542-hd_1366_720_50fps.mp4` (second video tried — Ryan preferred this one over `4554539`)
+- `RentHero` is now a 4-line wrapper around the shared `VideoMaskHero` component
+
+---
+
+### Simplify Pass — Shared VideoMaskHero ✅
+
+**File:** `apps/web/src/components/ui/VideoMaskHero.tsx` (new)
+
+BuyHero, SellHero, and RentHero were identical copy-pastes. Extracted into a shared component:
+- Props: `maskId: string`, `videoSrc: string`, `lines: [string, string]`
+- All three hero files are now 4-line wrappers
+- `preload="metadata"` (was `"auto"`) — avoids competing with LCP resources on page load
+- `TEXT_PROPS`, `wordContainer(0.28)`, `WORD_VARIANT` all live in the shared component once
+
+---
+
+### Simplify Pass — useScrollStepper Performance ✅
+
+**File:** `apps/web/src/hooks/useScrollStepper.ts`
+
+`barWidths` state was causing React to re-render `BuySteps` at up to 60fps during scroll. Fixed by:
+- Removed `barWidths` state entirely
+- Added `registerBarEl(i, el)` callback — bar divs register their DOM refs into the hook
+- On each scroll frame, heights are written **directly to `element.style.height`** — bypasses React render cycle
+- `BuySteps` now only re-renders when `activeIdx` changes (at most 3 times per full scroll)
+
+---
+
+### Next Session — Start Here
+
+**Branch:** `claude/real-estate-website-9bdWi` (pushed, clean)
+
+**In progress / remaining work:**
+1. **Rent page** — hero done ✅; body sections (PERKS grid, CTA) are placeholder content — need real copy and any additional sections Ryan wants
+2. **Manage page** — still a shell at `apps/web/src/app/(marketing)/manage/page.tsx` — needs hero + content
+3. **Checklist templates** — create at `/admin/settings/checklists` (CA Purchase Buyer Side, CA Purchase Seller Side, CA Lease Tenant Side)
+4. **Phase 6** (`docs/superpowers/plans/2026-05-22-phase-6-launch.md`): ISR, skeleton loaders, sitemap, JSON-LD, rate limiting, Sentry, PostHog, deploy to Vercel
+
+---
+
 ### FAQ Homepage — Gold "s" ✅
 
 **File:** `apps/web/src/components/home/FAQ.tsx`
