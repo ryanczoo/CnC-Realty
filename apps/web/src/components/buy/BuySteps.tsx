@@ -38,7 +38,7 @@ export function BuySteps() {
     offset: ["start start", "end end"],
   });
 
-  const { activeIdx, barWidths } = useScrollStepper(scrollYProgress, STEPS.length);
+  const { activeIdx, registerBarEl } = useScrollStepper(scrollYProgress, STEPS.length);
   const active = STEPS[activeIdx];
 
   return (
@@ -59,7 +59,7 @@ export function BuySteps() {
             {/* triggerOnMount because this is always in-view inside AnimatePresence */}
             <RevealLine triggerOnMount>
               <span className="text-[2.4rem] xl:text-[2.9rem]">{active.title.first} {active.title.mid && `${active.title.mid} `}</span>
-              <span style={{ color: "#9E8C61" }}>{active.title.last}</span>
+              <span className="text-cnc-gold">{active.title.last}</span>
             </RevealLine>
           </motion.h2>
         </AnimatePresence>
@@ -93,8 +93,9 @@ export function BuySteps() {
               style={{ backgroundColor: "rgba(27,27,27,0.12)" }}
             >
               <div
+                ref={(el) => registerBarEl(i, el)}
                 className="w-full bg-[#1B1B1B]"
-                style={{ height: `${barWidths[i]}%`, transition: "height 0.05s linear" }}
+                style={{ height: "0%", transition: "height 0.05s linear" }}
               />
             </div>
           ))}
@@ -115,6 +116,7 @@ export function BuySteps() {
               fill
               className="object-cover"
               sizes="(max-width: 1024px) 100vw, 55vw"
+              loading={i === 0 ? "eager" : "lazy"}
             />
           </div>
         ))}

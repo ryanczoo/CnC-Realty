@@ -1,5 +1,11 @@
 export const SPRING_HOVER = { type: "spring", stiffness: 300, damping: 20 } as const;
 
+// Clamped linear interpolation — maps p in [lo, hi] to [a, b].
+export function ramp(p: number, lo: number, hi: number, a: number, b: number) {
+  const t = Math.max(0, Math.min(1, (p - lo) / (hi - lo)));
+  return a + (b - a) * t;
+}
+
 // Shared word-by-word animation variant — used by SellHero, JoinHero, and Testimonials.
 export const WORD_VARIANT = {
   hidden: { opacity: 0, x: -14 },

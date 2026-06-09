@@ -3,6 +3,7 @@
 import { useRef, useEffect } from "react";
 import { motion, useScroll, useTransform } from "motion/react";
 import Image from "next/image";
+import { ramp } from "@/lib/motion";
 
 // Corner positions measured from Uptown at 1440×900 viewport.
 // topRight.cy pulled to 0.28 (from measured 0.12) to overlap with "OSE" of "CHOOSE".
@@ -26,22 +27,17 @@ const CW = { center: 0.24479, left: 0.17969, right: 0.17969 };
 
 // Scale ratios: how much bigger each image is in the cluster vs its corner size.
 const SC = {
-  center: CW.center / C.topLeft.w,  // ≈ 1.422
-  left:   CW.left   / C.btmLeft.w,  // ≈ 1.102
-  right:  CW.right  / C.topRight.w, // ≈ 0.977
-  back:   CW.center / C.btmRight.w, // ≈ 1.313
+  center: CW.center / C.topLeft.w,
+  left:   CW.left   / C.btmLeft.w,
+  right:  CW.right  / C.topRight.w,
+  back:   CW.center / C.btmRight.w,
 };
 
 const FLOAT_ROWS = [
   { words: ["TRUST", "WORTHY"],  width: "90vw"  },
   { words: ["INNOV", "ATIVE"],   width: "97vw"  },
-  { words: ["PROFES", "SIONAL"], width: "112vw" },
+  { words: ["PROFES", "SIONAL"], width: "94vw"  },
 ];
-
-function ramp(p: number, lo: number, hi: number, a: number, b: number) {
-  const t = Math.max(0, Math.min(1, (p - lo) / (hi - lo)));
-  return a + (b - a) * t;
-}
 
 // Returns absolute positioning style for an image centered at corner coordinates.
 function pos(corner: typeof C.topLeft) {
@@ -54,11 +50,20 @@ function pos(corner: typeof C.topLeft) {
   };
 }
 
+// Hoisted to module scope — avoids re-allocating style objects on every render.
+const POS_TOP_LEFT  = pos(C.topLeft);
+const POS_TOP_RIGHT = pos(C.topRight);
+const POS_BTM_LEFT  = pos(C.btmLeft);
+const POS_BTM_RIGHT = pos(C.btmRight);
+
+const OVERLAY_GRADIENT = "linear-gradient(to bottom, transparent 0%, #1B1B1B 80%)";
+
 // Animation timeline (400vh total, sticky pinned for first 300vh = p 0→0.75):
-//   p 0.00 → 0.55  Explosion — images fly from cluster to corners        (220vh)
-//   p 0.50 → 0.65  WHY CHOOSE CnC? fades in (overlaps last bit of explosion)
-//   p 0.65 → 0.75  Hold — corners + WHY fully visible                    (40vh)
-//   p 0.75 → 1.00  Sticky div naturally scrolls off (exit)               (100vh)
+//   p 0.00          Start — all images assembled in cluster, RESULTS heading visible
+//   p 0.00 → 0.55   Explosion — images fly from cluster to corners
+//   p 0.50 → 0.65   WHY CHOOSE CnC? fades in (overlaps end of explosion)
+//   p 0.65 → 0.75   Hold — all 4 corners + WHY fully visible
+//   p 0.75 → 1.00   Sticky div naturally scrolls off (exit)
 
 export function BuyContemporary() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -87,9 +92,7 @@ export function BuyContemporary() {
   const ctrY = useTransform(scrollYProgress, (p) =>
     ramp(p, 0, 0.55, (K.center.cy - C.topLeft.cy) * vhRef.current, 0)
   );
-  const ctrSc = useTransform(scrollYProgress, (p) =>
-    ramp(p, 0, 0.55, SC.center, 1)
-  );
+  const ctrSc = useTransform(scrollYProgress, (p) => ramp(p, 0, 0.55, SC.center, 1));
 
   // ── Left image → bottom-left corner ─────────────────────────────────────────
   const lftX = useTransform(scrollYProgress, (p) =>
@@ -124,10 +127,8 @@ export function BuyContemporary() {
   // Gradient overlays on side images — present in cluster, gone by mid-explosion.
   const overlayOp = useTransform(scrollYProgress, (p) => ramp(p, 0, 0.30, 1, 0));
 
-  // CONTEMPORARY heading — fully visible at start, fades out early.
-  const contemporaryOp = useTransform(scrollYProgress, (p) =>
-    ramp(p, 0.05, 0.28, 1, 0)
-  );
+  // RESULTS heading — fully visible at start, fades out before images reach corners.
+  const contemporaryOp = useTransform(scrollYProgress, (p) => ramp(p, 0.05, 0.28, 1, 0));
 
   // Watermark text — starts at 12% opacity, gone before explosion finishes.
   const floatOp = useTransform(scrollYProgress, (p) => ramp(p, 0, 0.22, 0.12, 0));
@@ -165,55 +166,41 @@ export function BuyContemporary() {
           ))}
         </motion.div>
 
-        {/* CONTEMPORARY heading — outer div owns vertical centering, motion owns only opacity */}
+        {/* RESULTS heading */}
         <div className="pointer-events-none absolute inset-x-0 top-1/2 z-10 -translate-y-1/2 select-none text-center">
           <motion.h2
             style={{ opacity: contemporaryOp, fontSize: "clamp(2rem, 7vw, 10rem)" }}
             className="font-sans font-medium leading-none text-white"
           >
-            CONTEMPORARY
+            RESULTS
           </motion.h2>
         </div>
 
         {/* ── Center image → top-left corner ── */}
-        <motion.div style={{ ...pos(C.topLeft), x: ctrX, y: ctrY, scale: ctrSc, zIndex: 2 }}>
+        <motion.div style={{ ...POS_TOP_LEFT, x: ctrX, y: ctrY, scale: ctrSc, zIndex: 2 }}>
           <Image src="/images/contemporary/contemporary-01.jpg" fill className="object-cover" alt="" sizes="25vw" />
         </motion.div>
 
-        {/* ── Right image → top-right corner ── */}
-        <motion.div style={{ ...pos(C.topRight), x: rgtX, y: rgtY, scale: rgtSc, rotate: rgtRot, zIndex: 1 }}>
+        {/* ── Right image → top-right corner (overlay shares parent transform) ── */}
+        <motion.div style={{ ...POS_TOP_RIGHT, x: rgtX, y: rgtY, scale: rgtSc, rotate: rgtRot, zIndex: 1 }}>
           <Image src="/images/contemporary/contemporary-02.jpg" fill className="object-cover" alt="" sizes="18vw" />
+          <motion.div
+            aria-hidden
+            style={{ position: "absolute", inset: 0, opacity: overlayOp, background: OVERLAY_GRADIENT, pointerEvents: "none" }}
+          />
         </motion.div>
-        <motion.div
-          aria-hidden
-          style={{
-            ...pos(C.topRight),
-            x: rgtX, y: rgtY, scale: rgtSc, rotate: rgtRot,
-            opacity: overlayOp,
-            background: "linear-gradient(to bottom, transparent 0%, #1B1B1B 80%)",
-            zIndex: 1,
-            pointerEvents: "none",
-          }}
-        />
 
-        {/* ── Left image → bottom-left corner ── */}
-        <motion.div style={{ ...pos(C.btmLeft), x: lftX, y: lftY, scale: lftSc, rotate: lftRot, zIndex: 1 }}>
+        {/* ── Left image → bottom-left corner (overlay shares parent transform) ── */}
+        <motion.div style={{ ...POS_BTM_LEFT, x: lftX, y: lftY, scale: lftSc, rotate: lftRot, zIndex: 1 }}>
           <Image src="/images/contemporary/contemporary-03.jpg" fill className="object-cover" alt="" sizes="18vw" />
+          <motion.div
+            aria-hidden
+            style={{ position: "absolute", inset: 0, opacity: overlayOp, background: OVERLAY_GRADIENT, pointerEvents: "none" }}
+          />
         </motion.div>
-        <motion.div
-          aria-hidden
-          style={{
-            ...pos(C.btmLeft),
-            x: lftX, y: lftY, scale: lftSc, rotate: lftRot,
-            opacity: overlayOp,
-            background: "linear-gradient(to bottom, transparent 0%, #1B1B1B 80%)",
-            zIndex: 1,
-            pointerEvents: "none",
-          }}
-        />
 
         {/* ── Back image → bottom-right corner ── */}
-        <motion.div style={{ ...pos(C.btmRight), x: bckX, y: bckY, scale: bckSc, opacity: bckOp, zIndex: 0 }}>
+        <motion.div style={{ ...POS_BTM_RIGHT, x: bckX, y: bckY, scale: bckSc, opacity: bckOp, zIndex: 0 }}>
           <Image src="/images/contemporary/contemporary-04.jpg" fill className="object-cover" alt="" sizes="18vw" />
         </motion.div>
 
@@ -234,7 +221,7 @@ export function BuyContemporary() {
             className="mt-6 max-w-md font-sans font-light leading-relaxed text-white/60"
             style={{ fontSize: "clamp(0.875rem, 1.2vw, 1rem)" }}
           >
-            With 15+ years of California real estate expertise, our team is built to protect your interests at every step.
+            With over 15+ years of California real estate expertise, our team is built to protect your interest and put your needs first
           </p>
         </motion.div>
 

@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { Metadata } from "next";
+import { RentHero } from "@/components/rent/RentHero";
 import { RevealText } from "@/components/ui/reveal-text";
 import { PageCTA } from "@/components/ui/PageCTA";
 
@@ -25,33 +25,8 @@ const PERKS = [
 
 export default function RentPage() {
   return (
-    <main data-navbar-theme="light" className="min-h-screen bg-[#F2F0EF]">
-      <section className="px-8 pb-24 pt-40 lg:px-20">
-        <div className="mx-auto max-w-5xl">
-          <p className="mb-4 font-sans text-sm font-medium uppercase tracking-widest text-[#9E8C61]">Rent</p>
-          <h1 className="mb-6 font-sans text-[3.5rem] font-light leading-tight lg:text-[5rem]">
-            <span className="block"><RevealText>Find the right</RevealText></span>
-            <span className="block"><RevealText delay={0.15}>place to live.</RevealText></span>
-          </h1>
-          <p className="mb-10 max-w-xl font-sans text-lg font-light text-[#1B1B1B]/60">
-            Live CRMLS rental listings across Southern California. Expert tenant representation at no cost to you.
-          </p>
-          <div className="flex flex-wrap gap-3">
-            <Link
-              href="/properties?listingType=FOR_LEASE"
-              className="inline-flex items-center gap-2 rounded-full bg-[#1B1B1B] px-8 py-3.5 font-sans text-sm font-medium text-white transition-opacity hover:opacity-80"
-            >
-              Browse Rentals →
-            </Link>
-            <Link
-              href="/contact"
-              className="inline-flex items-center gap-2 rounded-full border border-[#1B1B1B]/20 px-8 py-3.5 font-sans text-sm font-medium text-[#1B1B1B] transition-colors hover:border-[#1B1B1B]/50"
-            >
-              Talk to an Agent
-            </Link>
-          </div>
-        </div>
-      </section>
+    <main className="min-h-screen bg-[#F2F0EF]">
+      <RentHero />
 
       <section className="border-t border-[#1B1B1B]/8 px-8 py-24 lg:px-20">
         <div className="mx-auto max-w-5xl">

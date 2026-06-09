@@ -1,20 +1,23 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useCallback } from "react";
 import { useMotionValueEvent } from "motion/react";
 import type { MotionValue } from "motion/react";
 import { computeSegmentProgress } from "@/lib/motion";
 
 // Drives a segmented scroll-stepper: active index, directional ref, and bar widths.
-// scrollDir is a ref (not state) so it updates synchronously before re-renders —
-// AnimatePresence reads the correct direction without an extra render cycle.
+// Bar heights are written directly to the DOM (via registerBarEl refs) to avoid
+// React re-renders at 60fps during scroll. Only activeIdx uses state.
 export function useScrollStepper(scrollYProgress: MotionValue<number>, count: number) {
   const [activeIdx, setActiveIdx] = useState(0);
-  const [barWidths, setBarWidths] = useState(() => Array<number>(count).fill(0));
   const scrollDirRef = useRef<"down" | "up">("down");
   const lastIdxRef = useRef(0);
-  const lastBarRef = useRef<number[]>([]);
   const lastScrollRef = useRef(0);
+  const barElsRef = useRef<(HTMLDivElement | null)[]>(Array(count).fill(null));
+
+  const registerBarEl = useCallback((i: number, el: HTMLDivElement | null) => {
+    barElsRef.current[i] = el;
+  }, []);
 
   useMotionValueEvent(scrollYProgress, "change", (p) => {
     const dir = p >= lastScrollRef.current ? "down" : "up";
@@ -25,12 +28,11 @@ export function useScrollStepper(scrollYProgress: MotionValue<number>, count: nu
       lastIdxRef.current = next;
       setActiveIdx(next);
     }
-    const rounded = computeSegmentProgress(p, count).map(w => Math.round(w));
-    if (rounded.some((w, i) => w !== (lastBarRef.current[i] ?? -1))) {
-      lastBarRef.current = rounded;
-      setBarWidths(rounded);
-    }
+    const widths = computeSegmentProgress(p, count);
+    barElsRef.current.forEach((el, i) => {
+      if (el) el.style.height = `${Math.round(widths[i])}%`;
+    });
   });
 
-  return { activeIdx, scrollDirRef, barWidths };
+  return { activeIdx, scrollDirRef, registerBarEl };
 }
