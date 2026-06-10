@@ -3837,6 +3837,116 @@ Inspired by Uptown's (uptown.ae) transition between their "Contemporary" and "Wh
 
 ---
 
+## Session Notes — 2026-06-09
+
+### What Was Completed This Session
+
+All changes committed as `a305f61` and pushed to `claude/real-estate-website-9bdWi` (23 files modified).
+
+---
+
+### Exclusive Listings Cards — Final State ✅
+
+**File:** `apps/web/src/components/home/FeaturedListings.tsx`
+
+Three iterations to find the right card color against the `#F2F0EF` section background:
+1. `bg-cnc-bg` — invisible (same color as background)
+2. `bg-[#1B1B1B]` — too dark (Ryan: "That's a little too dark now")
+3. `bg-white` — approved ✅
+
+**Canal Club "Be Inspired" attempt — reverted:**
+- Ryan asked to replicate canalclub-wickside.com's tilted, colorful-bordered photo carousel
+- Puppeteer blocked with 403 Forbidden on the site even in non-headless mode
+- Implemented purely from visual analysis of a screenshot (tilted cards, colored borders, portrait orientation)
+- Ryan saw the result and said "I don't think it looks that good. Can you change it back to how we had it, but keep the picture taking up the whole card with the address and price on the bottom left as it is now."
+
+**Final card format (approved):**
+- White shell: `w-72 bg-white border border-zinc-200 rounded-xl shadow-sm hover:border-[#c9a84c]/60`
+- Height: `290px`, stagger offsets: `STAGGER_OFFSETS = [0, 48, 24]`
+- Full-bleed image with `bg-gradient-to-t from-black/70 via-black/20 to-transparent` overlay
+- Status badge top-left, price + address + city stacked at bottom-left in white text
+
+---
+
+### PhotoGallery Lightbox X Button — Fixed ✅
+
+**File:** `apps/web/src/components/properties/PhotoGallery.tsx`
+
+**Root cause:** `position: fixed` inside `PropertyDrawer`'s Framer Motion `motion.div` — Framer Motion applies a CSS `transform`, which creates a new stacking context. `position: fixed` children become positioned relative to the transformed ancestor, not the viewport. The navbar (in the global stacking context) sat above the lightbox and intercepted clicks on the X button at `top-4`.
+
+**Fix:** `createPortal(lightboxContent, document.body)` renders the lightbox outside all transformed ancestors. Z-index bumped to `z-[500]`. X button gets `e.stopPropagation()`. Prev/Next buttons get `top-1/2 -translate-y-1/2` for proper vertical centering.
+
+**Key principle:** `position: fixed` inside a CSS `transform` ancestor doesn't escape it — use `createPortal` to escape.
+
+---
+
+### useScrollStepper — Width Support
+
+**File:** `apps/web/src/hooks/useScrollStepper.ts`
+
+Added `prop: "height" | "width" = "height"` parameter. Bar elements' DOM style is written as `el.style[prop]` instead of always `el.style.height`. Required for `JoinStepsSlider` which uses horizontal progress bars.
+
+---
+
+### JoinStepsSlider — Fixes
+
+**File:** `apps/web/src/components/join/JoinStepsSlider.tsx`
+
+- Passed `"width"` as third arg to `useScrollStepper` for horizontal fill bars
+- `line2: "webpage"` → `"Webpage"` (capitalization fix)
+- `line2` span changed to `font-medium` to match gold word pattern
+
+---
+
+### HowToJoin — Heading Left Shift
+
+**File:** `apps/web/src/components/join/HowToJoin.tsx`
+
+- Applied `-ml-16` only to the `<h2>` element (not the whole section or its siblings)
+- First attempt moved the whole section padding (wrong) — only the title should shift
+
+---
+
+### Font-Medium — Gold Word Standardization
+
+Gold-colored words across the site standardized to `font-medium` (500 weight) consistently. Applied across buy, sell, join, home pages.
+
+---
+
+### Phase 6 — CCPA Cookie Consent Banner Added
+
+**File:** `docs/superpowers/plans/2026-05-22-phase-6-launch.md`
+
+Task 9 added: CCPA Cookie Consent Banner (7 steps):
+- `useCookieConsent` hook (localStorage persistence)
+- `CookieBanner` component (bottom bar, Accept / Decline buttons)
+- PostHog initialization gated on consent
+- "Do Not Sell or Share My Personal Information" link in Footer
+- Old Tasks 9→10, 10→11 renumbered accordingly
+
+---
+
+### Section / Page Status
+
+| Section / Page | Status |
+|---|---|
+| Homepage — Exclusive Listings | ✅ Approved (white cards, full-bleed image, overlay text) |
+| Property Drawer — PhotoGallery lightbox | ✅ X button fixed via createPortal |
+| Join Page — JoinStepsSlider | ✅ Width bars fixed, Webpage capitalized |
+
+---
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. Open `localhost:3000`
+3. Continue with remaining work in order:
+   - **Manage page** — still a shell at `apps/web/src/app/(marketing)/manage/page.tsx`
+   - **Checklist templates** at `/admin/settings/checklists` (CA Purchase Buyer Side, CA Purchase Seller Side, CA Lease Tenant Side)
+   - **Phase 6 tasks** (`docs/superpowers/plans/2026-05-22-phase-6-launch.md`): ISR, skeleton loaders, sitemap, JSON-LD, rate limiting, CCPA cookie banner, Sentry, PostHog, deploy to Vercel + Railway
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`

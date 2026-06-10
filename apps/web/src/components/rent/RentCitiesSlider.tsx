@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { motion } from "motion/react";
 import { RevealLine } from "@/components/ui/reveal-text";
 import {
@@ -12,11 +13,11 @@ import {
 } from "@/lib/motion";
 
 const CITIES = [
-  { name: "Los Angeles",   src: "/images/cities/los-angeles.jpg" },
-  { name: "San Francisco", src: "/images/cities/san-francisco.jpg" },
-  { name: "San Diego",     src: "/images/cities/san-diego.jpg" },
-  { name: "Sacramento",    src: "/images/cities/sacramento.jpg" },
-  { name: "San Jose",      src: "/images/cities/san-jose.jpg" },
+  { name: "Los Angeles",   src: "/images/cities/los-angeles.jpg",   href: "/properties?listingType=FOR_LEASE&query=Los+Angeles" },
+  { name: "San Francisco", src: "/images/cities/san-francisco.jpg", href: "/properties?listingType=FOR_LEASE&query=San+Francisco" },
+  { name: "San Diego",     src: "/images/cities/san-diego.webp",    href: "/properties?listingType=FOR_LEASE&query=San+Diego" },
+  { name: "Sacramento",    src: "/images/cities/sacramento.jpg",    href: "/properties?listingType=FOR_LEASE&query=Sacramento" },
+  { name: "San Jose",      src: "/images/cities/san-jose.jpg",      href: "/properties?listingType=FOR_LEASE&query=San+Jose" },
 ] as const;
 
 const INTERVAL_MS = 5000;
@@ -37,8 +38,8 @@ export function getSlideState(
 function slideAnimate(pos: SlidePosition) {
   switch (pos) {
     case "active": return { x: "0vw",   opacity: 1,    scale: 1,    zIndex: 10 };
-    case "prev":   return { x: "-70vw", opacity: 0.45, scale: 0.88, zIndex: 1  };
-    case "next":   return { x: "70vw",  opacity: 0.45, scale: 0.88, zIndex: 1  };
+    case "prev":   return { x: "-55vw", opacity: 0.45, scale: 0.88, zIndex: 1  };
+    case "next":   return { x: "55vw",  opacity: 0.45, scale: 0.88, zIndex: 1  };
     case "hidden": return { x: "0vw",   opacity: 0,    scale: 0.88, zIndex: 0  };
   }
 }
@@ -73,7 +74,7 @@ export function RentCitiesSlider() {
   }
 
   return (
-    <section className="bg-[#1B1B1B] py-20 overflow-hidden">
+    <section data-navbar-theme="dark" className="bg-[#1B1B1B] py-20 overflow-hidden">
       <div className="mb-10 flex justify-end px-8 lg:px-20">
         <h2 className="font-sans text-[2.5rem] font-light xl:text-[3rem]">
           <RevealLine>
@@ -118,6 +119,21 @@ export function RentCitiesSlider() {
                       {city.name}
                     </p>
                   </div>
+                  {pos === "active" && (
+                    <motion.div
+                      className="absolute bottom-6 right-6"
+                      animate={PULSE_ANIMATE}
+                      transition={PULSE_TRANSITION}
+                      whileHover={{ scale: 1.05, transition: SPRING_HOVER }}
+                    >
+                      <Link
+                        href={city.href}
+                        className="flex items-center gap-2 rounded-full border border-white/40 bg-white/10 px-5 py-2.5 backdrop-blur-sm transition-colors hover:bg-white/20"
+                      >
+                        <span className="font-sans text-sm font-light text-white">Search Here</span>
+                      </Link>
+                    </motion.div>
+                  )}
                 </motion.div>
               );
             })}
@@ -131,7 +147,8 @@ export function RentCitiesSlider() {
           animate={PULSE_ANIMATE}
           transition={PULSE_TRANSITION}
           whileHover={{ scale: 1.05, transition: SPRING_HOVER }}
-          className="text-white border border-white/50 rounded-full p-3 rotate-90 cursor-pointer"
+          className="text-white border border-white/50 rounded-full p-3 cursor-pointer"
+          style={{ rotate: "90deg" }}
           aria-label="Previous city"
         >
           <ArrowIcon />
@@ -141,7 +158,8 @@ export function RentCitiesSlider() {
           animate={PULSE_ANIMATE}
           transition={PULSE_TRANSITION}
           whileHover={{ scale: 1.05, transition: SPRING_HOVER }}
-          className="-rotate-90 text-white border border-white/50 rounded-full p-3 cursor-pointer"
+          className="text-white border border-white/50 rounded-full p-3 cursor-pointer"
+          style={{ rotate: "-90deg" }}
           aria-label="Next city"
         >
           <ArrowIcon />

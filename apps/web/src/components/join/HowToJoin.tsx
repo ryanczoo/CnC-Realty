@@ -1,8 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "motion/react";
 import { RevealText, RevealLine } from "@/components/ui/reveal-text";
 import { SPRING_HOVER, PULSE_ANIMATE, PULSE_TRANSITION } from "@/lib/motion";
+
+const MotionLink = motion(Link);
 
 const STEPS = [
   {
@@ -40,7 +43,7 @@ export function HowToJoin() {
                 <span className="block text-[2.5rem] font-light"><RevealText>How to</RevealText></span>
                 <span className="block pl-[5.5rem] text-[3.5rem] font-medium"><RevealLine delay={0.15}>Join <span className="text-[#9E8C61]">CnC</span></RevealLine></span>
               </h2>
-              <motion.a
+              <MotionLink
                 href="/join/agent"
                 animate={PULSE_ANIMATE}
                 whileHover={{ scale: 1.1, transition: SPRING_HOVER }}
@@ -48,7 +51,7 @@ export function HowToJoin() {
                 className="mt-8 ml-[5.5rem] inline-flex items-center gap-2 rounded-full bg-[#1B1B1B] px-6 py-3 font-sans text-sm text-white"
               >
                 Apply Now →
-              </motion.a>
+              </MotionLink>
             </div>
           </div>
 

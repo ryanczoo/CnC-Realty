@@ -1,7 +1,11 @@
 "use client";
 
+import Image from "next/image";
+import Link from "next/link";
+import { useEffect, useRef } from "react";
 import { motion, useScroll, useTransform } from "motion/react";
 import { SPRING_HOVER } from "@/lib/motion";
+
 function EmailIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -37,10 +41,6 @@ function YoutubeIcon() {
     </svg>
   );
 }
-import Image from "next/image";
-import Link from "next/link";
-import { useEffect, useRef } from "react";
-
 const NAV_LINKS = [
   { href: "/buy", label: "Buy" },
   { href: "/sell", label: "Sell" },
@@ -56,7 +56,7 @@ const LEGAL_LINKS = [
   { href: "/terms", label: "Terms" },
   { href: "/fair-housing", label: "Fair Housing Notice" },
   { href: "/mls-disclaimer", label: "MLS Disclaimer" },
-  { href: "/dcma", label: "DCMA Notice" },
+  { href: "/dmca", label: "DMCA Notice" },
 ];
 
 export function Footer() {

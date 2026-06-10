@@ -13,16 +13,20 @@ export default function RentPage() {
   return (
     <main className="min-h-screen bg-[#F2F0EF]">
       <RentHero />
-      <RentSteps />
+      <div data-navbar-theme="light">
+        <RentSteps />
+      </div>
       <RentCitiesSlider />
-      <PageCTA
-        heading={<>Need help finding a <span className="text-cnc-gold">rental?</span></>}
-        body="A CnC agent will work on your behalf — at no cost to you."
-        primaryHref="/properties?listingType=FOR_LEASE"
-        primaryLabel="Browse Rentals →"
-        secondaryHref="/contact"
-        secondaryLabel="Talk to an Agent"
-      />
+      <div data-navbar-theme="light">
+        <PageCTA
+          heading={<>Need help finding a <span className="text-cnc-gold">rental?</span></>}
+          body="A CnC agent will work on your behalf — at no cost to you."
+          primaryHref="/properties?listingType=FOR_LEASE"
+          primaryLabel="Browse Rentals →"
+          secondaryHref="/contact"
+          secondaryLabel="Talk to an Agent"
+        />
+      </div>
     </main>
   );
 }

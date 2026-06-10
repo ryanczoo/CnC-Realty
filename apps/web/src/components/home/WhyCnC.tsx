@@ -1,12 +1,15 @@
 "use client";
 
+import Link from "next/link";
 import { AnimatePresence, motion, useScroll } from "motion/react";
 import { useRef } from "react";
 import { useScrollStepper } from "@/hooks/useScrollStepper";
 import { SPRING_HOVER, PULSE_ANIMATE, PULSE_TRANSITION } from "@/lib/motion";
 import { RevealLine } from "@/components/ui/reveal-text";
 
-const ITEMS: { title: TitlePart[]; description: string; imgFront?: string; imgFrontPosition?: string; imgBack?: string; videoBack?: string; videoBackPosition?: string; showButton?: boolean }[] = [
+const MotionLink = motion(Link);
+
+const ITEMS: { title: TitlePart[]; description: string; imgFront?: string; imgFrontPosition?: string; videoBack?: string; videoBackPosition?: string; showButton?: boolean }[] = [
   {
     title: [{ text: "100%", sm: true }, { text: "COMMISSION", size: "text-[3.4rem] xl:text-[4.1rem]" }],
     description:
@@ -42,55 +45,6 @@ const ITEMS: { title: TitlePart[]; description: string; imgFront?: string; imgFr
 ];
 
 type TitlePart = { text: string; sm?: boolean; size?: string };
-
-const N_STRIPS = 8;
-
-// Isolated so AnimatePresence freezes the imgSrc prop on exit
-function ShutterImage({ imgSrc }: { imgSrc: string }) {
-  return (
-    <motion.div
-      className="absolute inset-0"
-      initial="hidden"
-      animate="visible"
-      exit={{ opacity: 0, transition: { duration: 0.25 } }}
-      variants={{
-        hidden: {},
-        visible: { transition: { staggerChildren: 0.045 } },
-      }}
-    >
-      {Array.from({ length: N_STRIPS }).map((_, i) => (
-        <motion.div
-          key={i}
-          className="absolute w-full overflow-hidden"
-          style={{
-            top: `${(i / N_STRIPS) * 100}%`,
-            height: `${100 / N_STRIPS}%`,
-            transformOrigin: "top center",
-          }}
-          variants={{
-            hidden: { scaleY: 0 },
-            visible: {
-              scaleY: 1,
-              transition: { duration: 0.38, ease: [0.16, 1, 0.3, 1] },
-            },
-          }}
-        >
-          <img
-            src={imgSrc}
-            alt=""
-            style={{
-              position: "absolute",
-              top: `-${i * 100}%`,
-              width: "100%",
-              height: `${N_STRIPS * 100}%`,
-              objectFit: "cover",
-            }}
-          />
-        </motion.div>
-      ))}
-    </motion.div>
-  );
-}
 
 export function WhyCnC() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -176,7 +130,7 @@ export function WhyCnC() {
                 </motion.p>
 
                 {active.showButton && (
-                  <motion.a
+                  <MotionLink
                     href="/join"
                     animate={PULSE_ANIMATE}
                     whileHover={{ scale: 1.1, transition: SPRING_HOVER }}
@@ -188,7 +142,7 @@ export function WhyCnC() {
                     }}
                   >
                     Join CnC
-                  </motion.a>
+                  </MotionLink>
                 )}
               </motion.div>
             </AnimatePresence>
@@ -203,7 +157,7 @@ export function WhyCnC() {
               style={{ right: "12%", top: "13%", width: "60%", height: "80%" }}
             >
               <AnimatePresence>
-                {active.videoBack ? (
+                {active.videoBack && (
                   <motion.video
                     key={`back-${activeIdx}`}
                     className="absolute inset-0 h-full w-full object-cover"
@@ -217,11 +171,6 @@ export function WhyCnC() {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.7, ease: "easeOut" }}
-                  />
-                ) : (
-                  <ShutterImage
-                    key={`back-${activeIdx}`}
-                    imgSrc={active.imgBack ?? ""}
                   />
                 )}
               </AnimatePresence>

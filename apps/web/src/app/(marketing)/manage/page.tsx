@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Metadata } from "next";
 import { RevealText } from "@/components/ui/reveal-text";
 import { PageCTA } from "@/components/ui/PageCTA";
+import { ManageServices } from "@/components/manage/ManageServices";
 
 export const metadata: Metadata = {
   title: "Property Management | CnC Realty",
@@ -57,10 +58,12 @@ export default function ManagePage() {
         </div>
       </section>
 
-      <section className="border-t border-[#1B1B1B]/8 px-8 py-24 lg:px-20">
+      <ManageServices />
+
+      <section className="border-t border-[#1B1B1B]/20 px-8 py-24 lg:px-20">
         <div className="mx-auto max-w-5xl">
           <h2 className="mb-16 font-sans text-[2rem] font-light"><RevealText>What we handle</RevealText></h2>
-          <div className="grid grid-cols-1 gap-px bg-[#1B1B1B]/8 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-px bg-[#1B1B1B]/20 md:grid-cols-2 lg:grid-cols-3">
             {SERVICES.map((item) => (
               <div key={item.title} className="bg-[#F2F0EF] p-8">
                 <h3 className="mb-3 font-sans text-base font-semibold text-[#1B1B1B]">{item.title}</h3>

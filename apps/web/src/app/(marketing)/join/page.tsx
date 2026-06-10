@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { RevealText, RevealLine } from "@/components/ui/reveal-text";
+import { RevealLine } from "@/components/ui/reveal-text";
 import { JoinHero } from "@/components/join/JoinHero";
 import { StatsBar } from "@/components/join/StatsBar";
 import { FounderQuote } from "@/components/join/FounderQuote";

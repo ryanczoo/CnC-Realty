@@ -35,7 +35,7 @@ export function SellQuote() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="relative bg-cnc-bg px-8 py-16 lg:px-20">
+    <section ref={sectionRef} data-navbar-theme="light" className="relative bg-cnc-bg px-8 py-16 lg:px-20">
       <div className="mb-10 flex justify-end">
         <h2 className="font-sans text-[2.5rem] font-light xl:text-[3rem]">
           <RevealLine>

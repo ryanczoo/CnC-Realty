@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "motion/react";
 import { useSearchFilters } from "@/hooks/useSearchFilters";
 import { useProperties } from "@/hooks/useProperties";
 import { useSavedProperties } from "@/hooks/useSavedProperties";
