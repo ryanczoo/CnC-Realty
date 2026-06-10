@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import { RentHero } from "@/components/rent/RentHero";
 import { RentSteps } from "@/components/rent/RentSteps";
+import { RentCitiesSlider } from "@/components/rent/RentCitiesSlider";
 import { PageCTA } from "@/components/ui/PageCTA";
 
 export const metadata: Metadata = {
@@ -13,6 +14,7 @@ export default function RentPage() {
     <main className="min-h-screen bg-[#F2F0EF]">
       <RentHero />
       <RentSteps />
+      <RentCitiesSlider />
       <PageCTA
         heading={<>Need help finding a <span className="text-cnc-gold">rental?</span></>}
         body="A CnC agent will work on your behalf — at no cost to you."
