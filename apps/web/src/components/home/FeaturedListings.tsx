@@ -34,10 +34,8 @@ const PLACEHOLDER_LISTINGS: FeaturedListing[] = [
   { price: "$735,000", beds: 3, baths: 2, sqft: "1,540", address: "2210 Rosemead Blvd", city: "Temple City, CA", status: "For Sale", image: "https://picsum.photos/seed/house8/600/400" },
 ];
 
-const STAGGER_OFFSETS = [0, 48, 24];
-function cardOffset(i: number, total: number) {
-  return STAGGER_OFFSETS[(i % total) % STAGGER_OFFSETS.length];
-}
+const ROTATIONS = [-8, -3, 0, 5, -6, 2, -4, 7];
+const BORDER_COLORS = ["#F472B6", "#4ADE80", "#FB923C", "#C084FC", "#22D3EE"];
 
 interface Props {
   listings?: FeaturedListing[];
@@ -56,7 +54,7 @@ export function FeaturedListings({ listings: propListings }: Props) {
         <h2 className="font-sans text-[2.5rem] font-light xl:text-[3rem]">
           <RevealLine>
             <span className="text-[1.9rem] xl:text-[2.2rem]">Exclusive </span>
-            <span className="text-cnc-gold">Listings</span>
+            <span className="text-cnc-gold font-medium">Listings</span>
           </RevealLine>
         </h2>
       </div>
@@ -71,7 +69,7 @@ export function FeaturedListings({ listings: propListings }: Props) {
         <div className="pointer-events-none absolute bottom-0 right-0 top-0 z-10 w-32 bg-gradient-to-l from-[#F2F0EF] to-transparent" />
 
         <div
-          className="flex items-start gap-5 px-5 pb-16 pt-2"
+          className="flex items-center gap-6 px-5 py-12"
           style={{
             animation: "testimonial-scroll 80s linear infinite",
             animationPlayState: paused ? "paused" : "running",
@@ -95,17 +93,23 @@ export function FeaturedListings({ listings: propListings }: Props) {
               <Link
                 key={`${i}-${listing.address}`}
                 href={href}
-                className="group w-72 flex-shrink-0 overflow-hidden rounded-xl border border-zinc-200 bg-cnc-bg shadow-sm transition-all duration-300 hover:border-[#c9a84c]/60 hover:shadow-md"
-                style={{ transform: `translateY(${cardOffset(i, source.length)}px)` }}
+                className="group relative w-56 flex-shrink-0 overflow-hidden"
+                style={{
+                  height: "340px",
+                  border: `4px solid ${BORDER_COLORS[i % BORDER_COLORS.length]}`,
+                  borderRadius: "12px",
+                  transform: `rotate(${ROTATIONS[i % ROTATIONS.length]}deg)`,
+                }}
               >
-                <div className="relative h-48 overflow-hidden">
+                {/* Full-height image */}
+                <div className="relative h-full w-full">
                   {thumb ? (
                     <Image
                       src={thumb}
                       alt={listing.address}
                       fill
                       className="object-cover transition-transform duration-500 group-hover:scale-105"
-                      sizes="288px"
+                      sizes="224px"
                       unoptimized
                     />
                   ) : (
@@ -113,6 +117,9 @@ export function FeaturedListings({ listings: propListings }: Props) {
                       No photo
                     </div>
                   )}
+                  {/* Dark gradient overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                  {/* Status badge */}
                   <span
                     className="absolute left-3 top-3 rounded-full px-3 py-1 text-xs font-semibold"
                     style={
@@ -127,29 +134,11 @@ export function FeaturedListings({ listings: propListings }: Props) {
                   >
                     {listing.status}
                   </span>
-                </div>
-                <div className="flex flex-col gap-2 p-4">
-                  <p className="text-lg font-bold text-[#1B1B1B]">{displayPrice}</p>
-                  <div className="flex items-center gap-3 text-xs text-[#1B1B1B]/50">
-                    {listing.beds != null && <span>{listing.beds} bd</span>}
-                    {listing.baths != null && (
-                      <>
-                        <span className="text-[#1B1B1B]/20">·</span>
-                        <span>{listing.baths} ba</span>
-                      </>
-                    )}
-                    {sqftDisplay && (
-                      <>
-                        <span className="text-[#1B1B1B]/20">·</span>
-                        <span>{sqftDisplay} sqft</span>
-                      </>
-                    )}
-                  </div>
-                  <div className="mt-1 border-t border-[#1B1B1B]/10 pt-3">
-                    <p className="text-sm font-medium text-[#1B1B1B]/75">
-                      {listing.address}
-                    </p>
-                    <p className="text-xs text-[#1B1B1B]/45">{listing.city}</p>
+                  {/* Price + address overlay at bottom */}
+                  <div className="absolute bottom-0 left-0 p-4">
+                    <p className="text-base font-bold text-white">{displayPrice}</p>
+                    <p className="text-xs font-medium text-white/90">{listing.address}</p>
+                    <p className="text-xs text-white/65">{listing.city}</p>
                   </div>
                 </div>
               </Link>
