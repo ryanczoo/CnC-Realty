@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getSlideState } from "@/lib/rent-cities-helper";
+import { getSlideState } from "@/components/rent/RentCitiesSlider";
 
 describe("getSlideState", () => {
   it("marks the active index as active", () => {

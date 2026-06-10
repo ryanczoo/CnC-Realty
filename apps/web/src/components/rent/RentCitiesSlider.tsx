@@ -1,15 +1,16 @@
-"use client";
+export type SlidePosition = "active" | "prev" | "next" | "hidden";
 
-import type { ReactNode } from "react";
-import { getSlideState } from "@/lib/rent-cities-helper";
-
-interface RentCitiesSliderProps {
-  children?: ReactNode;
+export function getSlideState(
+  idx: number,
+  activeIdx: number,
+  total: number
+): SlidePosition {
+  if (idx === activeIdx) return "active";
+  if (idx === (activeIdx - 1 + total) % total) return "prev";
+  if (idx === (activeIdx + 1) % total) return "next";
+  return "hidden";
 }
 
-export function RentCitiesSlider({ children }: RentCitiesSliderProps) {
-  return <div>{children}</div>;
+export function RentCitiesSlider() {
+  return null;
 }
-
-export { getSlideState };
-export type { SlidePosition } from "@/lib/rent-cities-helper";
