@@ -13,11 +13,11 @@ import {
 } from "@/lib/motion";
 
 const CITIES = [
-  { name: "Los Angeles",   src: "/images/cities/los-angeles.jpg",   href: "/properties?listingType=FOR_SALE&query=Los+Angeles" },
-  { name: "San Francisco", src: "/images/cities/san-francisco.jpg", href: "/properties?listingType=FOR_SALE&query=San+Francisco" },
-  { name: "San Diego",     src: "/images/cities/san-diego.webp",    href: "/properties?listingType=FOR_SALE&query=San+Diego" },
-  { name: "Sacramento",    src: "/images/cities/sacramento.jpg",    href: "/properties?listingType=FOR_SALE&query=Sacramento" },
-  { name: "San Jose",      src: "/images/cities/san-jose.jpg",      href: "/properties?listingType=FOR_SALE&query=San+Jose" },
+  { name: "Los Angeles",   src: "/images/cities/los-angeles.jpg",   href: "/properties?listingType=FOR_RENT&query=Los+Angeles" },
+  { name: "San Francisco", src: "/images/cities/san-francisco.jpg", href: "/properties?listingType=FOR_RENT&query=San+Francisco" },
+  { name: "San Diego",     src: "/images/cities/san-diego.webp",    href: "/properties?listingType=FOR_RENT&query=San+Diego" },
+  { name: "Sacramento",    src: "/images/cities/sacramento.jpg",    href: "/properties?listingType=FOR_RENT&query=Sacramento" },
+  { name: "San Jose",      src: "/images/cities/san-jose.jpg",      href: "/properties?listingType=FOR_RENT&query=San+Jose" },
 ] as const;
 
 const INTERVAL_MS = 5000;
