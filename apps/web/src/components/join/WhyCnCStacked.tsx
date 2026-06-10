@@ -117,7 +117,7 @@ export function WhyCnCStacked() {
       <div className="relative z-10 px-8 pt-20 pb-0 text-right lg:px-24">
         <h2 className="font-sans font-light leading-[1.0]">
           <span className="block text-[2.5rem] xl:text-[3rem]"><RevealLine>For Agents,</RevealLine></span>
-          <span className="block text-[3.5rem] xl:text-[4.2rem]"><RevealLine delay={0.15}>By <span className="text-[#9E8C61]">Agents</span></RevealLine></span>
+          <span className="block text-[3.5rem] xl:text-[4.2rem] font-medium"><RevealLine delay={0.15}>By <span className="text-[#9E8C61]">Agents</span></RevealLine></span>
         </h2>
       </div>
 

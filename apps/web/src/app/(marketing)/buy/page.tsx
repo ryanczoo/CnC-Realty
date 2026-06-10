@@ -22,7 +22,7 @@ export default function BuyPage() {
       <BuyContemporary />
 
       <PageCTA
-        heading={<>Let's Get <span className="text-cnc-gold">Started</span></>}
+        heading={<>Let's Get <span className="text-cnc-gold font-medium">Started</span></>}
         body="We're one click away"
         primaryHref="/properties"
         primaryLabel="Search Homes"

@@ -30,6 +30,8 @@
 - `apps/web/sentry.server.config.ts` — Sentry server init
 - `apps/web/sentry.edge.config.ts` — Sentry edge init
 - `apps/web/src/__tests__/lib/json-ld.test.ts` — unit tests for JSON-LD builders
+- `apps/web/src/components/ui/CookieBanner.tsx` — CCPA cookie consent banner UI
+- `apps/web/src/hooks/useCookieConsent.ts` — consent preference hook (reads/writes cookie)
 
 **Modified files:**
 - `apps/web/src/app/(listings)/properties/[mlsNumber]/page.tsx` — add `revalidate` + JSON-LD
@@ -38,8 +40,10 @@
 - `apps/web/src/app/api/properties/route.ts` — add Redis caching
 - `apps/web/src/app/api/leads/route.ts` — add rate limiting
 - `apps/web/src/app/api/saved-searches/route.ts` — add Zod validation
-- `apps/web/src/components/Providers.tsx` — add PostHog init + PostHogPageView
+- `apps/web/src/components/Providers.tsx` — add PostHog init gated on cookie consent + PostHogPageView
 - `apps/web/next.config.mjs` — wrap with `withSentryConfig`
+- `apps/web/src/app/layout.tsx` — mount `<CookieBanner />`
+- `apps/web/src/components/layout/Footer.tsx` — add "Do Not Sell or Share My Personal Information" link
 
 ---
 
@@ -944,7 +948,204 @@ git commit -m "feat: add PostHog analytics with per-route pageview tracking"
 
 ---
 
-## Task 9: Pre-Deploy Environment Variable Audit
+## Task 9: CCPA Cookie Consent Banner
+
+Adds a cookie consent banner required for CCPA compliance. PostHog analytics only initializes after the user accepts. A "Do Not Sell or Share My Personal Information" link in the footer lets users re-open the banner at any time.
+
+**Files:**
+- Create: `apps/web/src/hooks/useCookieConsent.ts`
+- Create: `apps/web/src/components/ui/CookieBanner.tsx`
+- Modify: `apps/web/src/components/Providers.tsx` — gate PostHog on consent
+- Modify: `apps/web/src/app/layout.tsx` — mount `<CookieBanner />`
+- Modify: `apps/web/src/components/layout/Footer.tsx` — add "Do Not Sell" link
+
+- [ ] **Step 1: Create the consent hook**
+
+Create `apps/web/src/hooks/useCookieConsent.ts`:
+
+```typescript
+"use client";
+
+import { useState, useEffect } from "react";
+
+type ConsentState = "accepted" | "declined" | null;
+
+const COOKIE_NAME = "cnc_cookie_consent";
+const MAX_AGE = 60 * 60 * 24 * 365; // 1 year
+
+function readCookie(): ConsentState {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(new RegExp(`(?:^|; )${COOKIE_NAME}=([^;]*)`));
+  const val = match ? decodeURIComponent(match[1]) : null;
+  if (val === "accepted" || val === "declined") return val;
+  return null;
+}
+
+function writeCookie(value: "accepted" | "declined") {
+  document.cookie = `${COOKIE_NAME}=${encodeURIComponent(value)}; path=/; max-age=${MAX_AGE}; SameSite=Lax`;
+}
+
+export function useCookieConsent() {
+  const [consent, setConsent] = useState<ConsentState>(null);
+  const [bannerOpen, setBannerOpen] = useState(false);
+
+  useEffect(() => {
+    const stored = readCookie();
+    setConsent(stored);
+    if (!stored) setBannerOpen(true);
+  }, []);
+
+  const accept = () => {
+    writeCookie("accepted");
+    setConsent("accepted");
+    setBannerOpen(false);
+  };
+
+  const decline = () => {
+    writeCookie("declined");
+    setConsent("declined");
+    setBannerOpen(false);
+  };
+
+  const openBanner = () => setBannerOpen(true);
+
+  return { consent, bannerOpen, accept, decline, openBanner };
+}
+```
+
+- [ ] **Step 2: Create the CookieBanner component**
+
+Create `apps/web/src/components/ui/CookieBanner.tsx`:
+
+```tsx
+"use client";
+
+import { motion, AnimatePresence } from "motion/react";
+import { useCookieConsent } from "@/hooks/useCookieConsent";
+import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
+
+export function CookieBanner() {
+  const { bannerOpen, accept, decline } = useCookieConsent();
+
+  return (
+    <AnimatePresence>
+      {bannerOpen && (
+        <motion.div
+          initial={{ y: 80, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 80, opacity: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+          className="fixed bottom-6 left-6 right-6 z-[9999] mx-auto max-w-xl rounded-2xl bg-[#1B1B1B] p-6 shadow-2xl md:left-auto md:right-6 md:max-w-sm"
+        >
+          <p className="mb-1 font-sans text-sm font-medium text-white">
+            Cookie Preferences
+          </p>
+          <p className="mb-5 font-sans text-xs leading-relaxed text-white/60">
+            We use cookies to analyze site traffic via PostHog. Under the CCPA, you have the right to opt out of the sharing of your personal information.{" "}
+            <a href="/privacy" className="underline text-white/80 hover:text-white transition-colors">
+              Privacy Policy
+            </a>
+          </p>
+          <div className="flex gap-3">
+            <motion.button
+              onClick={accept}
+              animate={PULSE_ANIMATE}
+              transition={PULSE_TRANSITION}
+              whileHover={{ scale: 1.05, transition: SPRING_HOVER }}
+              className="flex-1 rounded-full bg-[#9E8C61] px-4 py-2 font-sans text-xs font-medium text-white"
+            >
+              Accept
+            </motion.button>
+            <motion.button
+              onClick={decline}
+              whileHover={{ scale: 1.05, transition: SPRING_HOVER }}
+              className="flex-1 rounded-full border border-white/20 px-4 py-2 font-sans text-xs font-medium text-white/70 hover:text-white transition-colors"
+            >
+              Decline
+            </motion.button>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+```
+
+- [ ] **Step 3: Gate PostHog on consent in Providers.tsx**
+
+In `apps/web/src/components/Providers.tsx`, import the hook and only call `posthog.init` when consent is `"accepted"`:
+
+```tsx
+import { useCookieConsent } from "@/hooks/useCookieConsent";
+
+// Inside the Providers component, replace the existing posthog useEffect with:
+const { consent } = useCookieConsent();
+
+useEffect(() => {
+  if (consent === "accepted" && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
+    posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
+      api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com",
+      person_profiles: "identified_only",
+      capture_pageview: false,
+    });
+  }
+  if (consent === "declined") {
+    posthog.opt_out_capturing();
+  }
+}, [consent]);
+```
+
+- [ ] **Step 4: Mount CookieBanner in root layout**
+
+In `apps/web/src/app/layout.tsx`, import and add `<CookieBanner />` inside `<Providers>`, just before `{children}`:
+
+```tsx
+import { CookieBanner } from "@/components/ui/CookieBanner";
+
+// Inside the Providers wrapper:
+<Providers session={session}>
+  <CookieBanner />
+  {children}
+</Providers>
+```
+
+- [ ] **Step 5: Add "Do Not Sell" link to Footer**
+
+In `apps/web/src/components/layout/Footer.tsx`, find the legal bar row (the one with "CA DRE #02439028") and add the CCPA link. Import `useCookieConsent` and wire the `openBanner` callback:
+
+```tsx
+// At the top of the Footer component function:
+const { openBanner } = useCookieConsent();
+
+// In the legal bar, after the existing links:
+<button
+  onClick={openBanner}
+  className="hover:text-white/70 transition-colors underline"
+>
+  Do Not Sell or Share My Personal Information
+</button>
+```
+
+- [ ] **Step 6: Verify in browser**
+
+With dev server running:
+1. Open `http://localhost:3000` in an incognito window — banner should appear at bottom-right
+2. Click "Decline" — banner disappears, PostHog does NOT initialize
+3. Reload — banner should NOT reappear (cookie is set)
+4. Scroll to footer, click "Do Not Sell or Share My Personal Information" — banner reopens
+5. Click "Accept" — banner disappears, PostHog initializes
+6. Check `document.cookie` in DevTools console — should show `cnc_cookie_consent=accepted`
+
+- [ ] **Step 7: Commit**
+
+```powershell
+git add apps/web/src/hooks/useCookieConsent.ts apps/web/src/components/ui/CookieBanner.tsx apps/web/src/components/Providers.tsx apps/web/src/app/layout.tsx apps/web/src/components/layout/Footer.tsx
+git commit -m "feat: add CCPA cookie consent banner with PostHog gating and Do Not Sell footer link"
+```
+
+---
+
+## Task 10: Pre-Deploy Environment Variable Audit
 
 Compile every env var the app needs. Set them all in Vercel before deploying.
 
@@ -996,7 +1197,7 @@ DNS propagation takes up to 24 hours but usually completes in minutes.
 
 ---
 
-## Task 10: Deploy to Production
+## Task 11: Deploy to Production
 
 Final deploy gate. Run the full build locally first, then deploy via Vercel CLI.
 
@@ -1083,8 +1284,9 @@ git push origin v1.0.0
 | Zod validation (remaining routes) | Task 6 | ✅ (`saved-searches`) |
 | Sentry error monitoring | Task 7 | ✅ |
 | PostHog analytics | Task 8 | ✅ |
-| Env var audit + Vercel setup | Task 9 | ✅ |
-| Deploy to Vercel + Railway | Task 10 | ✅ |
+| CCPA cookie consent banner | Task 9 | ✅ |
+| Env var audit + Vercel setup | Task 10 | ✅ |
+| Deploy to Vercel + Railway | Task 11 | ✅ |
 | Contact page | — | Already built in Phase 2/5 ✅ |
 | `/api/leads` Zod | — | Already in place ✅ |
 | Drip execution engine | — | Deferred post-launch (backlog) |

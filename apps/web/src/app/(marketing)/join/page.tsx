@@ -41,7 +41,7 @@ export default function JoinPage() {
         <CTALineArt />
         <div className="relative z-10 mx-auto max-w-3xl text-center">
           <h2 className="mb-4 font-sans text-[2.5rem] font-light leading-tight">
-            <RevealLine>Your Journey Begins <span style={{ color: "#9E8C61" }}>Here</span></RevealLine>
+            <RevealLine>Your Journey Begins <span style={{ color: "#9E8C61", fontWeight: 500 }}>Here</span></RevealLine>
           </h2>
           <p className="mb-10 font-sans text-base text-[#1B1B1B]/60">
             Be CnC

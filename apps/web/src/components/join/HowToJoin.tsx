@@ -36,16 +36,16 @@ export function HowToJoin() {
           {/* Left — sticky heading + button */}
           <div className="w-[45%] shrink-0">
             <div className="sticky top-28">
-              <h2 className="font-sans leading-[1.1]">
+              <h2 className="font-sans leading-[1.1] -ml-16">
                 <span className="block text-[2.5rem] font-light"><RevealText>How to</RevealText></span>
-                <span className="block text-[3.5rem] font-light"><RevealLine delay={0.15}>Join <span className="text-[#9E8C61]">CnC</span></RevealLine></span>
+                <span className="block pl-[5.5rem] text-[3.5rem] font-medium"><RevealLine delay={0.15}>Join <span className="text-[#9E8C61]">CnC</span></RevealLine></span>
               </h2>
               <motion.a
                 href="/join/agent"
                 animate={PULSE_ANIMATE}
                 whileHover={{ scale: 1.1, transition: SPRING_HOVER }}
                 transition={PULSE_TRANSITION}
-                className="mt-8 inline-flex items-center gap-2 rounded-full bg-[#1B1B1B] px-6 py-3 font-sans text-sm text-white"
+                className="mt-8 ml-[5.5rem] inline-flex items-center gap-2 rounded-full bg-[#1B1B1B] px-6 py-3 font-sans text-sm text-white"
               >
                 Apply Now →
               </motion.a>
@@ -59,8 +59,8 @@ export function HowToJoin() {
             <div className="flex-1">
               {STEPS.map((step) => (
                 <div key={step.number} className="py-10">
-                  <p className="mb-4 font-sans text-sm text-[#1B1B1B]/30">{step.number}</p>
-                  <h3 className="mb-3 font-sans text-[2.2rem] font-light text-[#1B1B1B]">{step.title}</h3>
+                  <p className="mb-4 font-sans text-base font-medium tracking-widest text-cnc-gold">{step.number}</p>
+                  <h3 className="mb-3 font-sans text-[2.2rem] font-medium text-[#1B1B1B]">{step.title}</h3>
                   <p className="max-w-sm font-sans text-base text-[#1B1B1B]/50">{step.body}</p>
                 </div>
               ))}

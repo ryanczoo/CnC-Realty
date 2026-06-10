@@ -286,7 +286,7 @@ export function ServicesSection() {
       >
         <h2 className="font-sans font-light leading-[1.0]">
           <span className="block text-[2.5rem] xl:text-[3rem]"><RevealText>See the difference,</RevealText></span>
-          <span className="block text-[3.5rem] xl:text-[4.2rem]">
+          <span className="block text-[3.5rem] xl:text-[4.2rem] font-medium">
             <RevealLine delay={0.1}>with <span style={{ color: "#9E8C61" }}>CnC</span></RevealLine>
           </span>
         </h2>

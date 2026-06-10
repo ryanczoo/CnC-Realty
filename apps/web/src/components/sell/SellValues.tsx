@@ -106,7 +106,7 @@ export function SellValues() {
           <h2 className="font-sans text-[3.5rem] font-light xl:text-[4.5rem]">
             <RevealLine>
               <span className="text-[2.6rem] xl:text-[3.4rem]">Our </span>
-              <span style={{ color: "#9E8C61" }}>Values</span>
+              <span style={{ color: "#9E8C61", fontWeight: 500 }}>Values</span>
             </RevealLine>
           </h2>
         </div>

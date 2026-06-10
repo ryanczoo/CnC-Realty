@@ -59,7 +59,7 @@ export function BuySteps() {
             {/* triggerOnMount because this is always in-view inside AnimatePresence */}
             <RevealLine triggerOnMount>
               <span className="text-[2.4rem] xl:text-[2.9rem]">{active.title.first} {active.title.mid && `${active.title.mid} `}</span>
-              <span className="text-cnc-gold">{active.title.last}</span>
+              <span className="text-cnc-gold font-medium">{active.title.last}</span>
             </RevealLine>
           </motion.h2>
         </AnimatePresence>

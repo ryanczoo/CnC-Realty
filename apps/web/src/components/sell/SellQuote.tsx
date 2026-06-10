@@ -40,7 +40,7 @@ export function SellQuote() {
         <h2 className="font-sans text-[2.5rem] font-light xl:text-[3rem]">
           <RevealLine>
             <span className="text-[1.9rem] xl:text-[2.2rem]">Our </span>
-            <span style={{ color: "#9E8C61" }}>Promise</span>
+            <span style={{ color: "#9E8C61", fontWeight: 500 }}>Promise</span>
           </RevealLine>
         </h2>
       </div>

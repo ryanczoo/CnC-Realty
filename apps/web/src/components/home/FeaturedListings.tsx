@@ -34,8 +34,10 @@ const PLACEHOLDER_LISTINGS: FeaturedListing[] = [
   { price: "$735,000", beds: 3, baths: 2, sqft: "1,540", address: "2210 Rosemead Blvd", city: "Temple City, CA", status: "For Sale", image: "https://picsum.photos/seed/house8/600/400" },
 ];
 
-const ROTATIONS = [-8, -3, 0, 5, -6, 2, -4, 7];
-const BORDER_COLORS = ["#F472B6", "#4ADE80", "#FB923C", "#C084FC", "#22D3EE"];
+const STAGGER_OFFSETS = [0, 48, 24];
+function cardOffset(i: number, total: number) {
+  return STAGGER_OFFSETS[(i % total) % STAGGER_OFFSETS.length];
+}
 
 interface Props {
   listings?: FeaturedListing[];
@@ -69,7 +71,7 @@ export function FeaturedListings({ listings: propListings }: Props) {
         <div className="pointer-events-none absolute bottom-0 right-0 top-0 z-10 w-32 bg-gradient-to-l from-[#F2F0EF] to-transparent" />
 
         <div
-          className="flex items-center gap-6 px-5 py-12"
+          className="flex items-start gap-5 px-5 pb-16 pt-2"
           style={{
             animation: "testimonial-scroll 80s linear infinite",
             animationPlayState: paused ? "paused" : "running",
@@ -93,12 +95,10 @@ export function FeaturedListings({ listings: propListings }: Props) {
               <Link
                 key={`${i}-${listing.address}`}
                 href={href}
-                className="group relative w-56 flex-shrink-0 overflow-hidden"
+                className="group relative w-72 flex-shrink-0 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm transition-all duration-300 hover:border-[#c9a84c]/60 hover:shadow-md"
                 style={{
-                  height: "340px",
-                  border: `4px solid ${BORDER_COLORS[i % BORDER_COLORS.length]}`,
-                  borderRadius: "12px",
-                  transform: `rotate(${ROTATIONS[i % ROTATIONS.length]}deg)`,
+                  height: "290px",
+                  transform: `translateY(${cardOffset(i, source.length)}px)`,
                 }}
               >
                 {/* Full-height image */}
@@ -109,7 +109,7 @@ export function FeaturedListings({ listings: propListings }: Props) {
                       alt={listing.address}
                       fill
                       className="object-cover transition-transform duration-500 group-hover:scale-105"
-                      sizes="224px"
+                      sizes="288px"
                       unoptimized
                     />
                   ) : (

@@ -8,7 +8,7 @@ import { computeSegmentProgress } from "@/lib/motion";
 // Drives a segmented scroll-stepper: active index, directional ref, and bar widths.
 // Bar heights are written directly to the DOM (via registerBarEl refs) to avoid
 // React re-renders at 60fps during scroll. Only activeIdx uses state.
-export function useScrollStepper(scrollYProgress: MotionValue<number>, count: number) {
+export function useScrollStepper(scrollYProgress: MotionValue<number>, count: number, prop: "height" | "width" = "height") {
   const [activeIdx, setActiveIdx] = useState(0);
   const scrollDirRef = useRef<"down" | "up">("down");
   const lastIdxRef = useRef(0);
@@ -30,7 +30,7 @@ export function useScrollStepper(scrollYProgress: MotionValue<number>, count: nu
     }
     const widths = computeSegmentProgress(p, count);
     barElsRef.current.forEach((el, i) => {
-      if (el) el.style.height = `${Math.round(widths[i])}%`;
+      if (el) el.style[prop] = `${Math.round(widths[i])}%`;
     });
   });
 

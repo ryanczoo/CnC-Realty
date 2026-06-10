@@ -19,7 +19,7 @@ const STEPS = [
   {
     title: "Personal webpage",
     line1: "Personal",
-    line2: "webpage",
+    line2: "Webpage",
     body: "Your own professional profile page with stats, listings, and a contact form — all live on cncrealtygroup.com the moment you join.",
     image: "/images/join-slide-agent.png",
   },
@@ -39,7 +39,7 @@ export function JoinStepsSlider() {
     offset: ["start start", "end end"],
   });
 
-  const { activeIdx: activeStep, scrollDirRef, barWidths } = useScrollStepper(scrollYProgress, STEPS.length);
+  const { activeIdx: activeStep, scrollDirRef, registerBarEl } = useScrollStepper(scrollYProgress, STEPS.length, "width");
 
   return (
     <section
@@ -91,11 +91,9 @@ export function JoinStepsSlider() {
                 style={{ height: "2px", backgroundColor: "rgba(27,27,27,0.12)" }}
               >
                 <div
+                  ref={(el) => registerBarEl(i, el)}
                   className="h-full bg-[#1B1B1B]"
-                  style={{
-                    width: `${barWidths[i]}%`,
-                    transition: "width 0.05s linear",
-                  }}
+                  style={{ width: "0%", transition: "width 0.05s linear" }}
                 />
               </div>
             ))}
@@ -115,7 +113,7 @@ export function JoinStepsSlider() {
                 <span className="block font-light" style={{ fontSize: "clamp(1.2rem, 1.6vw, 1.5rem)" }}>
                   <RevealLine triggerOnMount>{STEPS[activeStep].line1}</RevealLine>
                 </span>
-                <span className="block font-light" style={{ fontSize: "clamp(1.7rem, 2.3vw, 2.2rem)" }}>
+                <span className="block font-medium" style={{ fontSize: "clamp(1.7rem, 2.3vw, 2.2rem)" }}>
                   <RevealLine triggerOnMount delay={0.1}>
                     <span style={{ color: "#9E8C61" }}>{STEPS[activeStep].line2}</span>
                   </RevealLine>

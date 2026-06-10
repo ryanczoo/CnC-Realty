@@ -46,7 +46,7 @@ export function BuyFeatures() {
             </span>
             <span className="block text-[3.2rem] xl:text-[3.8rem] ml-[5rem] xl:ml-[6rem]">
               <RevealLine delay={0.15}>
-                <span className="text-cnc-gold">SHOP</span>
+                <span className="text-cnc-gold font-medium">SHOP</span>
               </RevealLine>
             </span>
           </h2>

@@ -47,7 +47,7 @@ export function JoinCnCCTA() {
             transition={{ duration: 0.8, ease: "easeOut" }}
             viewport={{ once: true }}
           >
-            <RevealLine><span className="text-[2rem] xl:text-[2.5rem]">Be the agent</span>{" "}you&apos;re <span style={{ color: "#9E8C61" }}>meant</span> to be</RevealLine>
+            <RevealLine><span className="text-[2rem] xl:text-[2.5rem]">Be the agent</span>{" "}you&apos;re <span style={{ color: "#9E8C61", fontWeight: 500 }}>meant</span> to be</RevealLine>
           </motion.h2>
         </div>
 

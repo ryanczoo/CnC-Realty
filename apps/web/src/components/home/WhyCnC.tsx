@@ -156,7 +156,7 @@ export function WhyCnC() {
                         className={`block ${part.size ?? (part.sm ? "text-[3rem] xl:text-[3.6rem]" : "text-[4rem] xl:text-[4.8rem]")}`}
                       >
                         <RevealLine triggerOnMount delay={i * 0.15}>
-                          <span className={isLastPart ? "text-cnc-gold" : undefined}>
+                          <span className={isLastPart ? "text-cnc-gold font-medium" : undefined}>
                             {part.text}
                           </span>
                         </RevealLine>

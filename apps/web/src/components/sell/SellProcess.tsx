@@ -139,7 +139,7 @@ export function SellProcess() {
           <h2 className="font-sans text-[2.5rem] font-light xl:text-[3rem]">
             <RevealLine onDark>
               <span className="text-[1.9rem] xl:text-[2.2rem]">Our </span>
-              <span style={{ color: "#9E8C61" }}>Process</span>
+              <span style={{ color: "#9E8C61", fontWeight: 500 }}>Process</span>
             </RevealLine>
           </h2>
         </div>

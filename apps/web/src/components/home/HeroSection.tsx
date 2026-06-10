@@ -83,7 +83,7 @@ export function HeroSection() {
             <AnimatePresence mode="wait">
               <motion.h1
                 key={phraseIdx}
-                className="flex flex-wrap justify-center gap-x-[0.3em] font-sans text-3xl font-bold text-white md:text-4xl lg:text-5xl"
+                className="flex flex-wrap justify-center gap-x-[0.3em] font-sans text-3xl font-medium text-white md:text-4xl lg:text-5xl"
                 initial="hidden"
                 animate="visible"
                 exit={{ opacity: 0, transition: { duration: 0.25, ease: "easeIn" } }}
@@ -93,7 +93,7 @@ export function HeroSection() {
                   <motion.span
                     key={i}
                     className="inline-block whitespace-nowrap"
-                    style={i === arr.length - 1 ? { color: "#9E8C61" } : undefined}
+                    style={i === arr.length - 1 ? { color: "#9E8C61", fontWeight: 700 } : undefined}
                     variants={{
                       hidden: { opacity: 0, x: -14 },
                       visible: { opacity: 1, x: 0, transition: { duration: 0.9, ease: "easeOut" } },

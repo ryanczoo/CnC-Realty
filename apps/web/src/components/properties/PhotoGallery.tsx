@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Props {
@@ -71,15 +72,15 @@ export function PhotoGallery({ photos, address }: Props) {
         </button>
       </div>
 
-      {/* Lightbox */}
-      {lightboxIndex !== null && (
+      {/* Lightbox — rendered via portal so position:fixed escapes any transformed ancestor (drawer) */}
+      {lightboxIndex !== null && createPortal(
         <div
-          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95"
+          className="fixed inset-0 z-[500] flex items-center justify-center bg-black/95"
           onClick={() => setLightboxIndex(null)}
         >
           <button
             className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
-            onClick={() => setLightboxIndex(null)}
+            onClick={(e) => { e.stopPropagation(); setLightboxIndex(null); }}
             aria-label="Close"
           >
             <X className="h-5 w-5" />
@@ -91,7 +92,7 @@ export function PhotoGallery({ photos, address }: Props) {
 
           {lightboxIndex > 0 && (
             <button
-              className="absolute left-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
+              className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
               onClick={(e) => {
                 e.stopPropagation();
                 setLightboxIndex((i) => Math.max(0, (i ?? 1) - 1));
@@ -118,7 +119,7 @@ export function PhotoGallery({ photos, address }: Props) {
 
           {lightboxIndex < photos.length - 1 && (
             <button
-              className="absolute right-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
+              className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
               onClick={(e) => {
                 e.stopPropagation();
                 setLightboxIndex((i) => Math.min(photos.length - 1, (i ?? 0) + 1));
@@ -128,7 +129,8 @@ export function PhotoGallery({ photos, address }: Props) {
               <ChevronRight className="h-6 w-6" />
             </button>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

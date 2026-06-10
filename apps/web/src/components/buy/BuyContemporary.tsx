@@ -170,7 +170,7 @@ export function BuyContemporary() {
         <div className="pointer-events-none absolute inset-x-0 top-1/2 z-10 -translate-y-1/2 select-none text-center">
           <motion.h2
             style={{ opacity: contemporaryOp, fontSize: "clamp(2rem, 7vw, 10rem)" }}
-            className="font-sans font-medium leading-none text-white"
+            className="font-sans font-light leading-none text-white"
           >
             RESULTS
           </motion.h2>
@@ -210,12 +210,12 @@ export function BuyContemporary() {
           className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center"
         >
           <h2
-            className="font-sans font-medium leading-tight text-white"
+            className="font-sans font-light leading-tight text-white"
             style={{ fontSize: "clamp(2.5rem, 6vw, 7rem)" }}
           >
             WHY CHOOSE
             <br />
-            <span className="text-cnc-gold">CnC?</span>
+            <span className="text-cnc-gold font-medium">CnC?</span>
           </h2>
           <p
             className="mt-6 max-w-md font-sans font-light leading-relaxed text-white/60"
