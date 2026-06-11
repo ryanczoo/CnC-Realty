@@ -210,15 +210,23 @@ export function BuyContemporary() {
           className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center"
         >
           <h2
-            className="font-sans font-light leading-tight text-white"
+            className="font-sans font-light leading-none text-white"
             style={{ fontSize: "clamp(2.5rem, 6vw, 7rem)" }}
           >
             WHY CHOOSE
-            <br />
-            <span className="text-cnc-gold font-medium">CnC?</span>
+            <span className="mt-6 flex justify-center">
+              <Image
+                src="/logo-mark.png"
+                alt="CnC"
+                width={612}
+                height={370}
+                style={{ height: "clamp(2.5rem, 6vw, 7rem)", width: "auto" }}
+                className="object-contain"
+              />
+            </span>
           </h2>
           <p
-            className="mt-6 max-w-md font-sans font-light leading-relaxed text-white/60"
+            className="mt-10 max-w-md font-sans font-light leading-relaxed text-white/60"
             style={{ fontSize: "clamp(0.875rem, 1.2vw, 1rem)" }}
           >
             With over 15+ years of California real estate expertise, our team is built to protect your interest and put your needs first

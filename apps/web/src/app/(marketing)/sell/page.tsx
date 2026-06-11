@@ -46,7 +46,7 @@ export default function SellPage() {
         <GradientBridge from="#DAD4D2" to="#F2F0EF" />
         <PageCTA
           heading={<>Free Property-Value <span className="text-cnc-gold font-medium">Estimate</span></>}
-          body="By an experienced CnC Agent"
+          body="By an experienced CnC agent"
           primaryHref="/contact"
           primaryLabel="Request Valuation"
         />

@@ -113,9 +113,9 @@ export function RentCitiesSlider() {
                     sizes="(max-width: 900px) 65vw, 900px"
                     priority={i === 0}
                   />
-                  <div className="absolute inset-0 bg-black/40" />
+                  <div className="absolute inset-0 bg-black/50" />
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <p className="font-sans font-light text-white text-[2.2rem] xl:text-[2.6rem]">
+                    <p className="font-sans font-light text-white text-[4.4rem] xl:text-[5.2rem]">
                       {city.name}
                     </p>
                   </div>
