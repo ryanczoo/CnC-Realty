@@ -60,7 +60,7 @@ const OVERLAY_GRADIENT = "linear-gradient(to bottom, transparent 0%, #1B1B1B 80%
 
 // Connector line paths — quadratic bezier arcs from each image's inner edge to logo center.
 // Start = where the direct logo→image-center line crosses the image border.
-// Control point = midpoint offset ~70px clockwise-perpendicular for a consistent bow direction.
+// Control point = offset clockwise-perpendicular from midpoint, bowing all 4 arcs the same direction.
 const LINE_PATHS = [
   "M 282,323 Q 556,327 720,470",   // topLeft  — right edge → logo
   "M 929,337 Q 864,468 720,470",   // topRight — left edge  → logo
@@ -72,7 +72,8 @@ const LINE_PATHS = [
 //   p 0.00          Start — all images assembled in cluster, RESULTS heading visible
 //   p 0.00 → 0.55   Explosion — images fly from cluster to corners
 //   p 0.50 → 0.65   WHY CHOOSE CnC? fades in (overlaps end of explosion)
-//   p 0.65 → 0.75   Hold — all 4 corners + WHY fully visible
+//   p 0.57 → 0.72   Connector lines draw in (overlaps WHY fade-in + hold)
+//   p 0.65 → 0.75   Hold — all 4 corners + WHY + lines fully visible
 //   p 0.75 → 1.00   Sticky div naturally scrolls off (exit)
 
 export function BuyContemporary() {
