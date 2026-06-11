@@ -3947,6 +3947,156 @@ Task 9 added: CCPA Cookie Consent Banner (7 steps):
 
 ---
 
+## Session Notes — 2026-06-10
+
+### What Was Completed This Session
+
+All changes committed as `1624529` on `claude/real-estate-website-9bdWi`. Branch is 12 commits ahead of origin (not yet pushed).
+
+---
+
+### Follow Up Boss — Full Feature Research (Complete)
+
+Used Puppeteer to read all FUB help articles across 8 categories. Produced a complete feature audit comparing FUB vs CnC CRM.
+
+**FUB's 8 core feature areas:**
+1. Contacts & Lead Profiles — custom fields, relationships, Homes Tab (property view tracking), deduplication, auto-tags
+2. Deal Tracking — separate pipelines/stages for forecasting (distinct from transaction files), Deals Leaderboard
+3. People Screen + Smart Lists — saved filtered contact views, mass actions, export to CSV
+4. Tasks — recurring tasks, quick follow-up tasks
+5. Communication — built-in calling (FUB Phone), 1:1 + group + video texting, Team Inbox, connected email
+6. Automation — Action Plans (per-lead drip with auto-pause on reply), Trigger-based Automations (stage change → plan), Lead Flow + Lead Ponds (round-robin routing + first-to-claim pool)
+7. Reporting — speed-to-lead, agent activity, UTM tracking, leaderboards, goal setting
+8. Integrations — 200+ (Zillow, Realtor.com, Zapier, calendar sync, etc.)
+
+**CnC already has:** Lead profiles, pipeline Kanban, email campaigns/drip, transaction management, IDX, agent dashboard, admin dashboard, property alerts.
+
+**CnC gaps vs FUB (all buildable):**
+- Smart Lists, Deal Pipeline, Action Plans, Trigger Automations, Lead Ponds, Reporting
+
+---
+
+### Phase Structure — Finalized
+
+**Key decision: site does NOT go live until BOTH Phase 6 AND Phase 7 are complete.**
+
+- **Phase 6** (infrastructure — staging only): ISR, Redis, skeleton loaders, JSON-LD, rate limiting, CCPA banner, Sentry, PostHog, deploy to Vercel + Railway
+- **Phase 7** (CRM Expansion — required before launch): 6 FUB-inspired features below
+- **Launch** — after Phase 7 complete
+
+**Phase 7 feature list and build order:**
+1. Smart Lists (~1–2 days) — saved filtered contact views
+2. Deal Pipeline (~2 days) — separate lightweight pipeline for forecasting
+3. Lead Ponds (~1 day) — unassigned lead pool with first-to-claim
+4. Action Plans (~4–5 days) — per-lead drip sequences with auto-pause on reply; needs background job runner (Railway worker or Vercel Cron)
+5. Trigger Automations (~1–2 days) — stage change → start action plan (depends on Action Plans)
+6. Reporting (~3–4 days) — agent activity, speed-to-lead, UTM tracking, leaderboards
+- Total: ~12–16 days of work
+
+---
+
+### Manage Page — Hero Added ✅
+
+**New file:** `apps/web/src/components/manage/ManageHero.tsx`
+
+4-line wrapper around `VideoMaskHero` — identical pattern to `BuyHero` and `SellHero`:
+```tsx
+<VideoMaskHero maskId="manage-hero-mask" videoSrc="/videos/manage-hero.mp4" lines={["MANAGE", "WITH US"]} />
+```
+
+**Video:** `13905490_1920_1080_30fps.mp4` (suburban aerial neighborhood shot, Full HD 1920×1080) copied to `apps/web/public/videos/manage-hero.mp4`.
+
+**`manage/page.tsx` updated:** Old text hero section removed (was `pt-40` heading + RevealText + Link button). `ManageHero` now renders at the top. `data-navbar-theme="light"` removed from `<main>` (hero handles dark theme internally). Unused `Link` import removed.
+
+---
+
+### FAQ Sections — Added to Rent and Buy Pages
+
+**Rent page (`apps/web/src/app/(marketing)/rent/page.tsx`):**
+- 4 rent-specific Q&As added below `<RentCitiesSlider />`
+- `bg-[#DAD4D2]` background, `GradientBridge from="#DAD4D2" to="#F2F0EF"` below
+- Questions: Do I need an agent to rent? / How long does it take? / What do I need to qualify? / Can CnC help with short-term rentals?
+
+**Buy page (`apps/web/src/app/(marketing)/buy/page.tsx`):**
+- 4 buy-specific Q&As added between `<BuyContemporary />` and `<PageCTA />`
+- `GradientBridge from="#F2F0EF" to="#DAD4D2"` before FAQ, `GradientBridge from="#DAD4D2" to="#F2F0EF"` after
+- Questions: Do I need pre-approval? / How much for a down payment? / How long does buying take? / Does it cost me anything to use a buyer's agent?
+
+---
+
+### BuyContemporary — WHY CHOOSE Section Polished ✅
+
+**File:** `apps/web/src/components/buy/BuyContemporary.tsx`
+
+- Replaced `<span className="text-cnc-gold font-medium">CnC?</span>` text with gold logo image (`/logo-mark.png`)
+- `logo-mark.png` = lettermark-only gold gradient CnC logo (no "REALTY" text), transparent background — copied from `C:\Users\hey_r\Desktop\CNC Logo\Gold Gradient\Transparent Gold Graident CNC Logo - Copy.png`, intrinsic 612×370
+- Question mark removed
+- Logo centered via `<span className="mt-6 flex justify-center">` wrapper (plain `<Image>` without flex container drifted left)
+- `leading-none` + explicit `mt-6` on logo span for controllable spacing between "WHY CHOOSE" and logo
+- `mt-10` on body text paragraph for more breathing room below logo
+
+**Key rule established:** `<Image>` without a flex container defaults to left alignment inside a block element. Always wrap in `<span className="flex justify-center">` to center.
+
+---
+
+### Sell Page — CTA Copy Fix ✅
+
+**File:** `apps/web/src/app/(marketing)/sell/page.tsx`
+
+- `body="By an experienced CnC Agent"` → `body="By an experienced CnC agent"` (lowercase 'a')
+
+---
+
+### RentCitiesSlider — Visual Polish ✅
+
+**File:** `apps/web/src/components/rent/RentCitiesSlider.tsx`
+
+- City name font size doubled: `text-[4.4rem] xl:text-[5.2rem]` (was `text-[2.2rem] xl:text-[2.6rem]` approx)
+- Font weight iterated: bold (ugly) → medium → **font-light** (final)
+- Overlay opacity iterated: /40 → /60 → **bg-black/50** (final)
+
+---
+
+### Rent Page CTA — Copy Updates ✅
+
+**File:** `apps/web/src/app/(marketing)/rent/page.tsx`
+
+| Field | Before | After |
+|---|---|---|
+| Heading | "Need help finding a rental?" (gold "rental?") | "Take the First **Step**" (only "Step" is gold + font-medium) |
+| Body | "A CnC agent will work on your behalf — at no cost to you." | "We'll help you get there" |
+| Primary button | "Browse Rentals →" | "Search Rentals" (no arrow) |
+| Secondary button | "Talk to an Agent" | "Message" |
+
+---
+
+### Section / Page Status
+
+| Section / Page | Status |
+|---|---|
+| Manage Page — Hero | ✅ ManageHero added (MANAGE WITH US video mask) |
+| Rent Page — FAQ | ✅ Added (rent-specific Q&As, DAD4D2 bg) |
+| Rent Page — CTA | ✅ Updated copy, Search Rentals, Message |
+| Buy Page — FAQ | ✅ Added (buy-specific Q&As, gradient bridges) |
+| Buy Page — WHY CHOOSE | ✅ Gold logo mark, no question mark, centered, spaced |
+| Sell Page — CTA | ✅ Lowercase 'agent' fix |
+| Manage Page — body sections | 🔄 Shell (ManageServices grid + What We Handle grid + PageCTA) — no visual changes yet |
+
+---
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. Open `localhost:3000`
+3. **Push branch to GitHub** (12 commits are local-only): `git push`
+4. **Review manage page** at `/manage` — confirm video hero looks right, decide if body sections need redesign or if the existing ManageServices + What We Handle grid is acceptable
+5. **Continue with remaining work in order:**
+   - Checklist templates at `/admin/settings/checklists` (CA Purchase Buyer Side, CA Purchase Seller Side, CA Lease Tenant Side)
+   - Phase 6 tasks (`docs/superpowers/plans/2026-05-22-phase-6-launch.md`): ISR, skeleton loaders, sitemap, JSON-LD, rate limiting, CCPA cookie banner, Sentry, PostHog, deploy to Vercel + Railway
+   - Phase 7 CRM Expansion (Smart Lists → Deal Pipeline → Lead Ponds → Action Plans → Trigger Automations → Reporting) — **required before launch**
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`
