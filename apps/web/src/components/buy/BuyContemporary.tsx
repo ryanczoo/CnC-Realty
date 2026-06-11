@@ -58,6 +58,14 @@ const POS_BTM_RIGHT = pos(C.btmRight);
 
 const OVERLAY_GRADIENT = "linear-gradient(to bottom, transparent 0%, #1B1B1B 80%)";
 
+// Connector line paths — logo center (720,470) to each corner image center.
+const LINE_PATHS = [
+  "M 720,470 L 158,281",
+  "M 720,470 L 1062,252",
+  "M 720,470 L 282,738",
+  "M 720,470 L 1252,711",
+];
+
 // Animation timeline (400vh total, sticky pinned for first 300vh = p 0→0.75):
 //   p 0.00          Start — all images assembled in cluster, RESULTS heading visible
 //   p 0.00 → 0.55   Explosion — images fly from cluster to corners
@@ -148,19 +156,13 @@ export function BuyContemporary() {
 
         {/* Connector lines — draw outward from logo center to each corner */}
         <svg
-          className="pointer-events-none absolute inset-0 h-full w-full"
+          className="pointer-events-none absolute inset-0 z-10 h-full w-full"
           viewBox="0 0 1440 900"
           preserveAspectRatio="xMidYMid slice"
           fill="none"
           aria-hidden
-          style={{ zIndex: 10 }}
         >
-          {[
-            "M 720,470 L 158,281",
-            "M 720,470 L 1062,252",
-            "M 720,470 L 282,738",
-            "M 720,470 L 1252,711",
-          ].map((d, i) => (
+          {LINE_PATHS.map((d, i) => (
             <motion.path
               key={i}
               d={d}
