@@ -136,6 +136,7 @@ export function BuyContemporary() {
   // WHY CHOOSE CnC? — starts appearing as images near their corners.
   const whyOp = useTransform(scrollYProgress, (p) => ramp(p, 0.50, 0.65, 0, 1));
   const whyY  = useTransform(scrollYProgress, (p) => ramp(p, 0.50, 0.65, 28, 0));
+  const lineProgress = useTransform(scrollYProgress, [0, 0.55], [0, 1]);
 
   return (
     <section
@@ -144,6 +145,33 @@ export function BuyContemporary() {
       style={{ height: "400vh" }}
     >
       <div className="sticky top-0 h-screen overflow-hidden bg-[#1B1B1B]">
+
+        {/* Connector lines — draw outward from logo center to each corner */}
+        <svg
+          className="pointer-events-none absolute inset-0 h-full w-full"
+          viewBox="0 0 1440 900"
+          preserveAspectRatio="xMidYMid slice"
+          fill="none"
+          aria-hidden
+          style={{ zIndex: 10 }}
+        >
+          {[
+            "M 720,470 L 158,281",
+            "M 720,470 L 1062,252",
+            "M 720,470 L 282,738",
+            "M 720,470 L 1252,711",
+          ].map((d, i) => (
+            <motion.path
+              key={i}
+              d={d}
+              stroke="#1B1B1B"
+              strokeOpacity="0.07"
+              strokeWidth="1"
+              strokeLinecap="round"
+              style={{ pathLength: lineProgress }}
+            />
+          ))}
+        </svg>
 
         {/* Watermark floating text */}
         <motion.div
