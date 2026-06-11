@@ -86,7 +86,7 @@ function CardRow({ cards, rowClass }: { cards: typeof CARDS; rowClass: string })
 
 export function ManageHandle() {
   return (
-    <section className="bg-[#F2F0EF] py-24 md:py-[150px] overflow-hidden">
+    <section data-navbar-theme="light" className="bg-[#F2F0EF] py-24 md:py-[150px] overflow-hidden">
       <style>{`
         .manage-handle-row-1,
         .manage-handle-row-2 {

@@ -42,7 +42,7 @@ export function PageCTA({
   secondaryClassName = "inline-flex items-center rounded-full border border-[#1B1B1B]/20 px-8 py-3.5 font-sans text-sm font-medium text-[#1B1B1B]",
 }: PageCTAProps) {
   return (
-    <section className="relative overflow-hidden bg-[#F2F0EF] px-8 py-28 lg:px-20">
+    <section data-navbar-theme="light" className="relative overflow-hidden bg-[#F2F0EF] px-8 py-28 lg:px-20">
       <CTALineArt />
       <div className="relative z-10 mx-auto max-w-3xl text-center">
         <h2 className="mb-4 font-sans text-[2.5rem] font-light leading-tight">
