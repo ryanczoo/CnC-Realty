@@ -58,12 +58,14 @@ const POS_BTM_RIGHT = pos(C.btmRight);
 
 const OVERLAY_GRADIENT = "linear-gradient(to bottom, transparent 0%, #1B1B1B 80%)";
 
-// Connector line paths — logo center (720,470) to each corner image center.
+// Connector line paths — quadratic bezier arcs from each image's inner edge to logo center.
+// Start = where the direct logo→image-center line crosses the image border.
+// Control point = midpoint offset ~70px clockwise-perpendicular for a consistent bow direction.
 const LINE_PATHS = [
-  "M 720,470 L 158,281",
-  "M 720,470 L 1062,252",
-  "M 720,470 L 282,738",
-  "M 720,470 L 1252,711",
+  "M 282,323 Q 556,327 720,470",   // topLeft  — right edge → logo
+  "M 929,337 Q 864,468 720,470",   // topRight — left edge  → logo
+  "M 400,666 Q 530,614 720,470",   // btmLeft  — right edge → logo
+  "M 1118,650 Q 948,618 720,470",  // btmRight — left edge  → logo
 ];
 
 // Animation timeline (400vh total, sticky pinned for first 300vh = p 0→0.75):
@@ -144,12 +146,13 @@ export function BuyContemporary() {
   // WHY CHOOSE CnC? — starts appearing as images near their corners.
   const whyOp = useTransform(scrollYProgress, (p) => ramp(p, 0.50, 0.65, 0, 1));
   const whyY  = useTransform(scrollYProgress, (p) => ramp(p, 0.50, 0.65, 28, 0));
-  const lineProgress = useTransform(scrollYProgress, [0, 0.55], [0, 1]);
+  const lineProgress = useTransform(scrollYProgress, [0.57, 0.72], [0, 1]);
 
   return (
     <section
       ref={sectionRef}
       data-navbar-theme="dark"
+      className="bg-[#1B1B1B]"
       style={{ height: "400vh" }}
     >
       <div className="sticky top-0 h-screen overflow-hidden bg-[#1B1B1B]">
@@ -166,8 +169,8 @@ export function BuyContemporary() {
             <motion.path
               key={i}
               d={d}
-              stroke="#1B1B1B"
-              strokeOpacity="0.07"
+              stroke="white"
+              strokeOpacity="0.18"
               strokeWidth="1"
               strokeLinecap="round"
               style={{ pathLength: lineProgress }}
