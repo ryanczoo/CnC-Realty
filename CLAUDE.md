@@ -4097,6 +4097,81 @@ Used Puppeteer to read all FUB help articles across 8 categories. Produced a com
 
 ---
 
+## Session Notes — 2026-06-11
+
+### What Was Completed This Session
+
+All changes committed as `944f01b` and pushed to `claude/real-estate-website-9bdWi` (4 files).
+
+---
+
+### Manage Page — Section Background Swap ✅
+
+**Decision:** Ryan asked to swap the background colors of the two manage page body sections — "Property Management, Fully Handled." (ManageServices) and "What we handle" (ManageHandle).
+
+**ManageServices** (`apps/web/src/components/manage/ManageServices.tsx`):
+- Was: `bg-[#1B1B1B]` dark, `data-navbar-theme="dark"`, white text
+- Now: `bg-[#F2F0EF]` off-white, `data-navbar-theme="light"`, `text-[#1B1B1B]` dark text
+- Muted spans: `text-white/40` → `text-[#1B1B1B]/40`
+- Button: `bg-white text-[#1B1B1B]` → `bg-[#1B1B1B] text-white` (inverted to stay visible)
+
+**ManageHandle** (`apps/web/src/components/manage/ManageHandle.tsx`):
+- Was: `bg-[#F2F0EF]` off-white, `data-navbar-theme="light"`
+- Now: `bg-[#1B1B1B]` dark, `data-navbar-theme="dark"`, `text-white` on section
+- h2: `text-[#1B1B1B]` → `text-white`
+- `<RevealText>` gained `onDark` prop — without it the heading was invisible (dark text on dark bg); `onDark` switches to white text + `rgba(255,255,255,0.18)` dim layer
+
+**Root cause of invisible heading:** `RevealText` defaults to `#1B1B1B` color (dark mode `false`). Always pass `onDark` when using `RevealText` inside a dark section.
+
+---
+
+### HowToJoin — House Photo Now Sticky ✅
+
+**File:** `apps/web/src/components/join/HowToJoin.tsx`
+
+Ryan asked for the house photo (right column) to move with the section title as the user scrolls — i.e., stay visible while scrolling through all 4 steps just like the heading does.
+
+**Fix:** Added `sticky top-28 self-start` to the photo wrapper `<div>`.
+- `sticky top-28` mirrors the heading's `sticky top-28` exactly
+- `self-start` is required — without it, the flex item stretches to full column height and sticky has no room to activate
+
+---
+
+### JoinStepsSlider — Copy Updates ✅
+
+**File:** `apps/web/src/components/join/JoinStepsSlider.tsx`
+
+Three copy changes in the STEPS array:
+1. Slide 1 (Full Transaction Management): removed trailing period from body text
+2. Slide 2 (Personal Webpage): removed trailing period from body text
+3. Slide 3 (Custom CRM & Email): "the CnC platform" → "your CnC account" (no period — already had none)
+
+---
+
+### Section / Page Status
+
+| Section / Page | Status |
+|---|---|
+| Manage Page — Hero | ✅ Approved |
+| Manage Page — ManageServices | ✅ Swapped to off-white bg, dark text, dark button |
+| Manage Page — ManageHandle | ✅ Swapped to dark bg, white text, RevealText onDark |
+| Join Page — HowToJoin photo | ✅ Sticky, mirrors heading scroll |
+| Join Page — JoinStepsSlider copy | ✅ Periods removed, CnC account copy |
+
+---
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. Open `localhost:3000`
+3. **Continue with remaining work in order:**
+   - Manage page body sections — review current state at `/manage` (ManageServices off-white + ManageHandle dark are now live)
+   - Checklist templates at `/admin/settings/checklists` (CA Purchase Buyer Side, CA Purchase Seller Side, CA Lease Tenant Side)
+   - Phase 6 tasks (`docs/superpowers/plans/2026-05-22-phase-6-launch.md`): ISR, skeleton loaders, sitemap, JSON-LD, rate limiting, CCPA cookie banner, Sentry, PostHog, deploy to Vercel + Railway
+   - Phase 7 CRM Expansion (Smart Lists → Deal Pipeline → Lead Ponds → Action Plans → Trigger Automations → Reporting) — **required before launch**
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`
