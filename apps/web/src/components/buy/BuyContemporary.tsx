@@ -100,50 +100,50 @@ export function BuyContemporary() {
 
   // ── Center image: from top-left corner → cluster center ─────────────────────
   const ctrX = useTransform(scrollYProgress, (p) =>
-    ramp(p, 0.45, 1.0, 0, (K.center.cx - C.topLeft.cx) * vwRef.current)
+    ramp(p, 0.45, 0.70, 0, (K.center.cx - C.topLeft.cx) * vwRef.current)
   );
   const ctrY = useTransform(scrollYProgress, (p) =>
-    ramp(p, 0.45, 1.0, 0, (K.center.cy - C.topLeft.cy) * vhRef.current)
+    ramp(p, 0.45, 0.70, 0, (K.center.cy - C.topLeft.cy) * vhRef.current)
   );
-  const ctrSc = useTransform(scrollYProgress, (p) => ramp(p, 0.45, 1.0, 1, SC.center));
+  const ctrSc = useTransform(scrollYProgress, (p) => ramp(p, 0.45, 0.70, 1, SC.center));
 
   // ── Left image: from bottom-left corner → cluster left ──────────────────────
   const lftX = useTransform(scrollYProgress, (p) =>
-    ramp(p, 0.45, 1.0, 0, (K.left.cx - C.btmLeft.cx) * vwRef.current)
+    ramp(p, 0.45, 0.70, 0, (K.left.cx - C.btmLeft.cx) * vwRef.current)
   );
   const lftY = useTransform(scrollYProgress, (p) =>
-    ramp(p, 0.45, 1.0, 0, (K.left.cy - C.btmLeft.cy) * vhRef.current)
+    ramp(p, 0.45, 0.70, 0, (K.left.cy - C.btmLeft.cy) * vhRef.current)
   );
-  const lftSc  = useTransform(scrollYProgress, (p) => ramp(p, 0.45, 1.0, 1, SC.left));
-  const lftRot = useTransform(scrollYProgress, (p) => ramp(p, 0.45, 1.0, 0, -3.5));
+  const lftSc  = useTransform(scrollYProgress, (p) => ramp(p, 0.45, 0.70, 1, SC.left));
+  const lftRot = useTransform(scrollYProgress, (p) => ramp(p, 0.45, 0.70, 0, -3.5));
 
   // ── Right image: from top-right corner → cluster right ──────────────────────
   const rgtX = useTransform(scrollYProgress, (p) =>
-    ramp(p, 0.45, 1.0, 0, (K.right.cx - C.topRight.cx) * vwRef.current)
+    ramp(p, 0.45, 0.70, 0, (K.right.cx - C.topRight.cx) * vwRef.current)
   );
   const rgtY = useTransform(scrollYProgress, (p) =>
-    ramp(p, 0.45, 1.0, 0, (K.right.cy - C.topRight.cy) * vhRef.current)
+    ramp(p, 0.45, 0.70, 0, (K.right.cy - C.topRight.cy) * vhRef.current)
   );
-  const rgtSc  = useTransform(scrollYProgress, (p) => ramp(p, 0.45, 1.0, 1, SC.right));
-  const rgtRot = useTransform(scrollYProgress, (p) => ramp(p, 0.45, 1.0, 0, 3.5));
+  const rgtSc  = useTransform(scrollYProgress, (p) => ramp(p, 0.45, 0.70, 1, SC.right));
+  const rgtRot = useTransform(scrollYProgress, (p) => ramp(p, 0.45, 0.70, 0, 3.5));
 
   // ── Back image: from bottom-right corner → cluster center (behind) ───────────
   const bckX = useTransform(scrollYProgress, (p) =>
-    ramp(p, 0.45, 1.0, 0, (K.center.cx - C.btmRight.cx) * vwRef.current)
+    ramp(p, 0.45, 0.70, 0, (K.center.cx - C.btmRight.cx) * vwRef.current)
   );
   const bckY = useTransform(scrollYProgress, (p) =>
-    ramp(p, 0.45, 1.0, 0, (K.center.cy - C.btmRight.cy) * vhRef.current)
+    ramp(p, 0.45, 0.70, 0, (K.center.cy - C.btmRight.cy) * vhRef.current)
   );
-  const bckSc = useTransform(scrollYProgress, (p) => ramp(p, 0.45, 1.0, 1, SC.back));
+  const bckSc = useTransform(scrollYProgress, (p) => ramp(p, 0.45, 0.70, 1, SC.back));
 
   // Gradient overlays: absent at corners, fade in as images cluster.
-  const overlayOp = useTransform(scrollYProgress, (p) => ramp(p, 0.45, 0.75, 0, 1));
+  const overlayOp = useTransform(scrollYProgress, (p) => ramp(p, 0.45, 0.68, 0, 1));
 
   // RESULTS heading: invisible at start, fades in as cluster forms.
-  const contemporaryOp = useTransform(scrollYProgress, (p) => ramp(p, 0.50, 0.72, 0, 1));
+  const contemporaryOp = useTransform(scrollYProgress, (p) => ramp(p, 0.50, 0.68, 0, 1));
 
   // Watermark text: invisible at start, fades in as cluster forms.
-  const floatOp = useTransform(scrollYProgress, (p) => ramp(p, 0.55, 0.72, 0, 0.12));
+  const floatOp = useTransform(scrollYProgress, (p) => ramp(p, 0.55, 0.70, 0, 0.12));
 
   // WHY CHOOSE CnC?: fully visible at start, fades out as lines reach logo.
   const whyOp = useTransform(scrollYProgress, (p) => ramp(p, 0.20, 0.45, 1, 0));
