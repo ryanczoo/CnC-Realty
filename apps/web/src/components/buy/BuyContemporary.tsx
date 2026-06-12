@@ -148,8 +148,9 @@ export function BuyContemporary() {
   // WHY CHOOSE CnC?: fully visible at start, fades out as lines reach logo.
   const whyOp = useTransform(scrollYProgress, (p) => ramp(p, 0.20, 0.45, 1, 0));
 
-  // Lines draw from images toward logo over the first scroll phase.
+  // Lines draw in over first phase, then fade out as images start collapsing.
   const lineProgress = useTransform(scrollYProgress, [0, 0.45], [0, 1]);
+  const lineOpacity  = useTransform(scrollYProgress, (p) => ramp(p, 0.45, 0.58, 1, 0));
 
   return (
     <section
@@ -160,13 +161,14 @@ export function BuyContemporary() {
     >
       <div className="sticky top-0 h-screen overflow-hidden bg-[#1B1B1B]">
 
-        {/* Connector lines — draw outward from logo center to each corner */}
-        <svg
+        {/* Connector lines — draw in, then fade out as images collapse */}
+        <motion.svg
           className="pointer-events-none absolute inset-0 z-10 h-full w-full"
           viewBox="0 0 1440 900"
           preserveAspectRatio="xMidYMid slice"
           fill="none"
           aria-hidden
+          style={{ opacity: lineOpacity }}
         >
           {LINE_PATHS.map((d, i) => (
             <motion.path
@@ -179,7 +181,7 @@ export function BuyContemporary() {
               style={{ pathLength: lineProgress }}
             />
           ))}
-        </svg>
+        </motion.svg>
 
         {/* Watermark floating text */}
         <motion.div
