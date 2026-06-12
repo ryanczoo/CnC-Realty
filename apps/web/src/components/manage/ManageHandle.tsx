@@ -86,7 +86,7 @@ function CardRow({ cards, rowClass }: { cards: typeof CARDS; rowClass: string })
 
 export function ManageHandle() {
   return (
-    <section data-navbar-theme="light" className="bg-[#F2F0EF] py-24 md:py-[150px] overflow-hidden">
+    <section data-navbar-theme="dark" className="bg-[#1B1B1B] text-white py-24 md:py-[150px] overflow-hidden">
       <style>{`
         .manage-handle-row-1,
         .manage-handle-row-2 {
@@ -105,8 +105,8 @@ export function ManageHandle() {
       `}</style>
 
       <div className="mx-auto max-w-[1920px] px-10 md:px-[100px]">
-        <h2 className="mb-16 font-sans text-[2rem] font-light text-[#1B1B1B]">
-          <RevealText>What we handle</RevealText>
+        <h2 className="mb-16 font-sans text-[2rem] font-light text-white">
+          <RevealText onDark>What we handle</RevealText>
         </h2>
 
         <CardRow cards={ROW_1} rowClass="manage-handle-row-1" />

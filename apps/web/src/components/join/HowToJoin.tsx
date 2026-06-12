@@ -69,8 +69,8 @@ export function HowToJoin() {
               ))}
             </div>
 
-            {/* Photo — sits beside the first two steps */}
-            <div className="w-72 shrink-0 pt-10">
+            {/* Photo — sticky, mirrors the heading column */}
+            <div className="w-72 shrink-0 pt-10 sticky top-28 self-start">
               <div className="h-[380px] w-full overflow-hidden rounded-2xl shadow-lg">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
