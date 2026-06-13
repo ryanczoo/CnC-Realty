@@ -72,7 +72,7 @@ const LINE_PATHS = [
 //   p 0.00          Start — images at 4 corners, WHY CHOOSE fully visible, no lines
 //   p 0.00 → 0.45   Lines draw from each image edge toward logo center
 //   p 0.20 → 0.45   WHY CHOOSE fades out as lines approach logo
-//   p 0.45 → 1.00   Images fly from corners into cluster
+//   p 0.45 → 0.70   Images fly from corners into cluster
 //   p 0.50 → 0.72   RESULTS heading fades in
 //   p 0.55 → 0.72   Watermark text fades in
 //   p 0.72 → 0.75   Hold — cluster assembled, RESULTS visible

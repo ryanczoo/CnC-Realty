@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import { PageCTA } from "@/components/ui/PageCTA";
-import { ManageServices } from "@/components/manage/ManageServices";
 import { ManageHero } from "@/components/manage/ManageHero";
+import { ManageQuote } from "@/components/manage/ManageQuote";
 import { ManageHandle } from "@/components/manage/ManageHandle";
 
 export const metadata: Metadata = {
@@ -14,7 +14,7 @@ export default function ManagePage() {
     <main className="min-h-screen bg-[#F2F0EF]">
       <ManageHero />
 
-      <ManageServices />
+      <ManageQuote />
 
       <ManageHandle />
 

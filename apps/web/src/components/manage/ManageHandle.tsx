@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { motion } from "motion/react";
-import { RevealText } from "@/components/ui/reveal-text";
-import { fadeUp } from "@/lib/motion";
+import { RevealLine } from "@/components/ui/reveal-text";
+import { fadeUp, PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
 
 const CARDS = [
   {
@@ -71,12 +71,19 @@ function CardRow({ cards, rowClass }: { cards: typeof CARDS; rowClass: string })
             {card.body}
           </p>
           <div className="relative">
-            <Link
-              href={card.href}
-              className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-black/20 backdrop-blur-sm px-6 py-3 font-sans text-sm font-medium text-white hover:border-white/70 transition-colors"
+            <motion.div
+              animate={PULSE_ANIMATE}
+              transition={PULSE_TRANSITION}
+              whileHover={{ scale: 1.05, transition: SPRING_HOVER }}
+              className="w-fit"
             >
-              Learn More →
-            </Link>
+              <Link
+                href={card.href}
+                className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-black/20 backdrop-blur-sm px-6 py-3 font-sans text-sm font-medium text-white transition-colors hover:border-white/70"
+              >
+                Learn More
+              </Link>
+            </motion.div>
           </div>
         </motion.div>
       ))}
@@ -105,9 +112,14 @@ export function ManageHandle() {
       `}</style>
 
       <div className="mx-auto max-w-[1920px] px-10 md:px-[100px]">
-        <h2 className="mb-16 font-sans text-[2rem] font-light text-white">
-          <RevealText onDark>What we handle</RevealText>
-        </h2>
+        <div className="mb-16 flex justify-end">
+          <h2 className="font-sans font-light">
+            <RevealLine>
+              <span className="text-[1.9rem] xl:text-[2.2rem] text-white/80">Our </span>
+              <span className="text-cnc-gold font-medium">Services</span>
+            </RevealLine>
+          </h2>
+        </div>
 
         <CardRow cards={ROW_1} rowClass="manage-handle-row-1" />
         <CardRow cards={ROW_2} rowClass="manage-handle-row-2 mt-3 md:mt-[20px]" />
