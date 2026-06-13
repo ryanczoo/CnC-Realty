@@ -4172,6 +4172,120 @@ Three copy changes in the STEPS array:
 
 ---
 
+## Session Notes — 2026-06-12
+
+### What Was Completed This Session
+
+All changes committed as `2237976` on `claude/real-estate-website-9bdWi`.
+
+---
+
+### Manage Page — ManageQuote Section (replaces ManageServices) ✅
+
+**New file:** `apps/web/src/components/manage/ManageQuote.tsx`
+
+Scroll-driven word-lighting quote section, identical mechanic to SellQuote and FounderQuote:
+- **Title:** "Your property," (smaller, `text-[1.9rem] xl:text-[2.2rem]`) + "Managed" (gold, `text-[3rem] xl:text-[3.5rem] font-medium`) — indented `pl-[4.8rem]` so "M" sits under "p" of "property,"
+- **Body text:** "The rental market never slows down - and neither do we. From tenant placement to monthly reporting, our team of dedicated agents and assistants handle everything to give you peace of mind"
+- **Gold word:** "dedicated" lights up `#9E8C61` when scrolled to
+- Font size: `text-[1.9rem] sm:text-[2.4rem] lg:text-[3rem]` (matches SellQuote and FounderQuote)
+- Section: `bg-cnc-bg`, `data-navbar-theme="light"`, natural height (no sticky)
+
+**`manage/page.tsx` updated:**
+- Removed `<ManageServices />` import and usage
+- Added `<ManageQuote />` after `<ManageHero />`
+- Page order: ManageHero → ManageQuote → ManageHandle → PageCTA
+
+---
+
+### Manage Page — ManageHandle Title Redesign ✅
+
+**File:** `apps/web/src/components/manage/ManageHandle.tsx`
+
+- Title changed from "What we handle" (`RevealText onDark`) to **"Our Services"** (`RevealLine`) — matching the SellQuote "Our Promise" pattern
+- Format: `<span className="text-[1.9rem] xl:text-[2.2rem] text-white/80">Our </span>` + `<span className="text-cnc-gold font-medium">Services</span>`
+- Heading right-aligned (`flex justify-end`)
+- Learn More buttons: arrow `→` removed; `PULSE_ANIMATE` + `PULSE_TRANSITION` + `SPRING_HOVER` added (matches sitewide button standard)
+
+---
+
+### Quote Sections — Font Sizes Standardized ✅
+
+All three quote/word-lighting sections now use the same responsive font size:
+
+| File | Old size | New size |
+|---|---|---|
+| `ManageQuote.tsx` | (new) | `text-[1.9rem] sm:text-[2.4rem] lg:text-[3rem]` |
+| `SellQuote.tsx` | `text-[2rem] sm:text-[2.5rem] lg:text-[3.25rem]` | `text-[1.9rem] sm:text-[2.4rem] lg:text-[3rem]` |
+| `FounderQuote.tsx` | `text-[2rem] sm:text-[2.5rem] lg:text-[3.25rem]` | `text-[1.9rem] sm:text-[2.4rem] lg:text-[3rem]` |
+
+---
+
+### BuyContemporary — Reversed Animation (committed earlier in session) ✅
+
+**File:** `apps/web/src/components/buy/BuyContemporary.tsx`
+
+Full reversal of the scroll animation direction:
+- **Was:** section opens with cluster (RESULTS heading visible) → images explode to corners → WHY CHOOSE fades in
+- **Now:** section opens with images at 4 corners + WHY CHOOSE visible → connector lines draw from images toward logo → images collapse into cluster → RESULTS heading fades in
+
+**Final timeline:**
+- `p 0.00`: images at corners, WHY CHOOSE visible, no lines
+- `p 0.00→0.45`: connector lines draw from image edges toward logo
+- `p 0.20→0.45`: WHY CHOOSE fades out
+- `p 0.45→0.58`: lines fade out (via `lineOpacity` on `<motion.svg>`)
+- `p 0.45→0.70`: images collapse to cluster
+- `p 0.45→0.68`: gradient overlays fade in
+- `p 0.50→0.68`: RESULTS heading fades in
+- `p 0.55→0.70`: watermark fades in
+- `p 0.70→0.75`: hold
+- `p 0.75→1.00`: exit
+
+**Key fixes during this work:**
+- **Animation finishing too late:** Original collapse ran `[0.45, 1.0]` but FAQ section appears at `p=0.75`. Fixed by compressing to `[0.45, 0.70]`. Verified with Puppeteer at `p=0.72` and `p=0.75`.
+- **Connector lines persisting in cluster state:** Added `lineOpacity = ramp(p, 0.45, 0.58, 1, 0)` on `<motion.svg style={{ opacity: lineOpacity }}>`.
+
+---
+
+### Simplify Pass — Code Cleanup ✅
+
+Ran `/simplify` with 4 parallel agents (reuse, simplification, efficiency, altitude). Fixes applied (`2237976`):
+
+1. **`ManageHandle.tsx`** — removed dead `text-[2.5rem] xl:text-[3rem]` from `h2` wrapper (children override these); changed gold span from `style={{ color: "#9E8C61", fontWeight: 500 }}` → `className="text-cnc-gold font-medium"`
+2. **`SellQuote.tsx`** — "Promise" span: `style={{ color, fontWeight }}` → `className="text-cnc-gold font-medium"`
+3. **`ManageQuote.tsx`** + **`SellQuote.tsx`** + **`FounderQuote.tsx`** — added `lastCountRef` guard to `compute()`: skips `setLitCount` when rounded value unchanged (was firing up to 60×/sec even when value was stable at 0 or 1)
+4. **`BuyContemporary.tsx`** — fixed comment: `p 0.45 → 1.00` → `p 0.45 → 0.70`
+
+**Skipped:**
+- `motion.div` → `motion(Link)` on ManageHandle buttons: introduces new TS error not present before (reverted)
+- Extract `useScrollWordLight` hook: valid but requires new file + touching 3 components — out of scope for simplify pass
+- Shared Tailwind class for quote body font sizes: requires globals.css change — out of scope
+
+---
+
+### Section / Page Status
+
+| Section / Page | Status |
+|---|---|
+| Manage Page — Hero | ✅ Approved |
+| Manage Page — ManageQuote ("Your property, Managed") | ✅ Built and committed |
+| Manage Page — ManageHandle ("Our Services") | ✅ Title redesigned, arrows removed, pulse added |
+| Buy Page — BuyContemporary (reversed animation) | ✅ Committed |
+
+---
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. Open `localhost:3000`
+3. **Review manage page at `/manage`** — confirm ManageQuote and ManageHandle look correct
+4. **Continue with remaining work in order:**
+   - Checklist templates at `/admin/settings/checklists` (CA Purchase Buyer Side, CA Purchase Seller Side, CA Lease Tenant Side)
+   - Phase 6 tasks (`docs/superpowers/plans/2026-05-22-phase-6-launch.md`): ISR, skeleton loaders, sitemap, JSON-LD, rate limiting, CCPA cookie banner, Sentry, PostHog, deploy to Vercel + Railway
+   - Phase 7 CRM Expansion (Smart Lists → Deal Pipeline → Lead Ponds → Action Plans → Trigger Automations → Reporting) — **required before launch**
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`
