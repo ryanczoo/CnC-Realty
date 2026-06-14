@@ -27,7 +27,7 @@ interface ManageContactModalProps {
 }
 
 export function ManageContactModal({ open, cardTitle, onClose }: ManageContactModalProps) {
-  const [form, setForm] = useState({ email: "", role: "", notes: "" });
+  const [form, setForm] = useState({ firstName: "", email: "", role: "", notes: "" });
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [roleOpen, setRoleOpen] = useState(false);
   const [roleError, setRoleError] = useState(false);
@@ -47,7 +47,7 @@ export function ManageContactModal({ open, cardTitle, onClose }: ManageContactMo
   // Reset form when modal opens
   useEffect(() => {
     if (open) {
-      setForm({ email: "", role: "", notes: "" });
+      setForm({ firstName: "", email: "", role: "", notes: "" });
       setStatus("idle");
       setRoleError(false);
     }
@@ -122,13 +122,26 @@ export function ManageContactModal({ open, cardTitle, onClose }: ManageContactMo
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+                {/* First Name */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="font-sans text-sm text-[#1B1B1B]/60">First Name *</label>
+                  <input
+                    type="text"
+                    required
+                    autoFocus
+                    value={form.firstName}
+                    onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
+                    className="border-b border-[#1B1B1B]/20 bg-transparent py-2 font-sans text-base text-[#1B1B1B] outline-none transition-colors focus:border-[#1B1B1B]/60"
+                    placeholder="First name"
+                  />
+                </div>
+
                 {/* Email */}
                 <div className="flex flex-col gap-1.5">
                   <label className="font-sans text-sm text-[#1B1B1B]/60">Email *</label>
                   <input
                     type="email"
                     required
-                    autoFocus
                     value={form.email}
                     onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                     className="border-b border-[#1B1B1B]/20 bg-transparent py-2 font-sans text-base text-[#1B1B1B] outline-none transition-colors focus:border-[#1B1B1B]/60"
