@@ -4286,6 +4286,103 @@ Ran `/simplify` with 4 parallel agents (reuse, simplification, efficiency, altit
 
 ---
 
+## Session Notes — 2026-06-14
+
+### What Was Completed This Session
+
+All changes committed on `claude/real-estate-website-9bdWi` across two commits: `26a3c2d` and `c615574`.
+
+---
+
+### JoinSteps — New Component (replaces JoinStepsSlider) ✅
+
+**New file:** `apps/web/src/components/join/JoinSteps.tsx`
+**Deleted:** `apps/web/src/components/join/JoinStepsSlider.tsx`
+
+Replaced the old card-based JoinStepsSlider with the BuySteps sticky-scroll design adapted for the join page:
+- Same layout as BuySteps: sticky left panel with title + gold checkmark icon + body text; vertical 2px segmented progress bar; stacked scrolling images on the right
+- Images on LEFT, sticky text panel on RIGHT (flipped from BuySteps)
+- Text panel is right-aligned (`text-right`, `ml-auto` on body)
+- Background: `bg-white`
+- Gold checkmark SVG icon replaces step numbers (inlined from `check-mark-circle-2-svgrepo-com.svg`)
+- `data-navbar-theme="light"` preserved
+
+**Content mapped from old JoinStepsSlider:**
+| Step | Title | Image |
+|---|---|---|
+| 1 | Full Transaction Management | `join-slide-crm.png` |
+| 2 | Personal Webpage | `join-slide-agent.png` |
+| 3 | Custom CRM & Email | `join-slide-campaign.png` |
+
+**`join/page.tsx`:** imports `JoinSteps` instead of `JoinStepsSlider`
+
+---
+
+### HowToJoin — Bottom Gradient ✅
+
+**File:** `apps/web/src/components/join/HowToJoin.tsx`
+
+Added `pointer-events-none absolute bottom-0 left-0 right-0 h-40` gradient overlay (`transparent → white`) to blend the off-white HowToJoin section into the white JoinSteps section below.
+
+---
+
+### BuySteps — Full Redesign (Remax-inspired alternating timeline) ✅
+
+**File:** `apps/web/src/components/buy/BuySteps.tsx`
+
+Completely replaced the sticky-panel design with a Remax-style alternating timeline:
+
+**Layout:** Natural scroll, `bg-[#F2F0EF]`, `max-w-7xl` container
+- Each step is a flex row: `[left content | w-16 spacer | right content]`
+- Steps 1 & 3 (even index): image LEFT, text RIGHT
+- Steps 2 & 4 (odd index): text LEFT, image RIGHT
+- Center vertical line: `absolute left-1/2`, 4 segments with `gap-4` between them, animated via `useScroll` + 4 `useTransform` calls (one per segment, each covering 25% of scroll range)
+- No sticky panel, no `useScrollStepper`
+
+**Per step text block:**
+- Gold `01`/`02`/`03`/`04` label (`font-sans text-sm font-medium text-[#9E8C61]`) above title
+- Two-tier `RevealLine` title (smaller first word + gold last word)
+- `gap-20` between title block and body text
+- `max-w-md` body text
+- `whileInView` fade + slide animation (`opacity: 0→1`, `x: ±20→0`)
+
+**Per step image:** `h-[340px]` `rounded-2xl` `object-cover`, `whileInView` fade-up
+
+**Removed:** `useScrollStepper`, `AnimatePresence`, sticky panel, horizontal split
+
+---
+
+### ManageHandle — Title Size Fix ✅
+
+**File:** `apps/web/src/components/manage/ManageHandle.tsx`
+
+Added `text-[2.5rem] xl:text-[3rem]` to the "Our Services" `h2` to match the "Our Promise" format from `SellQuote.tsx`.
+
+---
+
+### Section / Page Status
+
+| Section / Page | Status |
+|---|---|
+| Buy Page — BuySteps (Remax alternating timeline) | ✅ Complete |
+| Join Page — JoinSteps (new component) | ✅ Complete |
+| Join Page — HowToJoin gradient | ✅ Complete |
+| Manage Page — ManageHandle title size | ✅ Fixed |
+
+---
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. Open `localhost:3000`
+3. **Continue manage page** at `/manage` — review full page visually and finish any remaining body sections
+4. **Continue with remaining work in order:**
+   - Checklist templates at `/admin/settings/checklists` (CA Purchase Buyer Side, CA Purchase Seller Side, CA Lease Tenant Side)
+   - Phase 6 tasks (`docs/superpowers/plans/2026-05-22-phase-6-launch.md`): ISR, skeleton loaders, sitemap, JSON-LD, rate limiting, CCPA cookie banner, Sentry, PostHog, deploy to Vercel + Railway
+   - Phase 7 CRM Expansion (Smart Lists → Deal Pipeline → Lead Ponds → Action Plans → Trigger Automations → Reporting) — **required before launch**
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`
