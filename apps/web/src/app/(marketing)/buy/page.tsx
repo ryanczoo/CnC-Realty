@@ -55,8 +55,9 @@ export default function BuyPage() {
         body="We're one click away"
         primaryHref="/properties"
         primaryLabel="Search Homes"
-        secondaryHref="/contact"
         secondaryLabel="Message"
+        showContactModal
+        contactSource="BUY_CTA"
       />
     </main>
   );

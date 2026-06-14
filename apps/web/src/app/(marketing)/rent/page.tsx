@@ -50,8 +50,9 @@ export default function RentPage() {
           body="We'll help you get there"
           primaryHref="/properties?listingType=FOR_RENT"
           primaryLabel="Search Rentals"
-          secondaryHref="/contact"
           secondaryLabel="Message"
+          showContactModal
+          contactSource="RENT_CTA"
         />
       </div>
     </main>

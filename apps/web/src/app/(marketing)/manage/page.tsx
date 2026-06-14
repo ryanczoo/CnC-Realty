@@ -23,8 +23,9 @@ export default function ManagePage() {
         body="Talk to our property management team — no obligation."
         primaryHref="/contact"
         primaryLabel="Schedule a Consultation →"
-        secondaryHref="/contact"
         secondaryLabel="Message"
+        showContactModal
+        contactSource="MANAGE_CTA"
       />
     </main>
   );

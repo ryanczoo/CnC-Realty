@@ -49,8 +49,9 @@ export default function SellPage() {
           body="By an experienced CnC agent"
           primaryHref="/contact"
           primaryLabel="Request Valuation"
-          secondaryHref="/contact"
           secondaryLabel="Message"
+          showContactModal
+          contactSource="SELL_CTA"
         />
       </div>
     </main>
