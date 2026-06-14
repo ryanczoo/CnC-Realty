@@ -113,7 +113,7 @@ export function ManageHandle() {
 
       <div className="mx-auto max-w-[1920px] px-10 md:px-[100px]">
         <div className="mb-16 flex justify-end">
-          <h2 className="font-sans font-light">
+          <h2 className="font-sans text-[2.5rem] font-light xl:text-[3rem]">
             <RevealLine>
               <span className="text-[1.9rem] xl:text-[2.2rem] text-white/80">Our </span>
               <span className="text-cnc-gold font-medium">Services</span>
