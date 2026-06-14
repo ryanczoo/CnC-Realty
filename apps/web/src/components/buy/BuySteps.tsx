@@ -1,13 +1,10 @@
 "use client";
 
 import { useRef } from "react";
-import { AnimatePresence, motion, useScroll } from "motion/react";
+import { motion, useScroll, useTransform } from "motion/react";
 import Image from "next/image";
-import { useScrollStepper } from "@/hooks/useScrollStepper";
 import { RevealLine } from "@/components/ui/reveal-text";
 
-// Each title: first word smaller, optional middle words normal, last word gold.
-// Matches the "Our Process" / "Our Values" two-tier title pattern.
 const STEPS = [
   {
     title: { first: "Get", mid: "", last: "Pre-Approved" },
@@ -31,95 +28,124 @@ const STEPS = [
   },
 ];
 
+function StepImage({ step, i }: { step: (typeof STEPS)[0]; i: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-60px" }}
+      transition={{ duration: 0.7, ease: "easeOut" }}
+      className="relative overflow-hidden rounded-2xl"
+      style={{ height: "340px" }}
+    >
+      <Image
+        src={step.img}
+        alt={`${step.title.first} ${step.title.last}`}
+        fill
+        className="object-cover"
+        sizes="(max-width: 1024px) 100vw, 45vw"
+        loading={i === 0 ? "eager" : "lazy"}
+      />
+    </motion.div>
+  );
+}
+
+function StepText({
+  step,
+  i,
+  align,
+}: {
+  step: (typeof STEPS)[0];
+  i: number;
+  align: "left" | "right";
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: align === "left" ? -20 : 20 }}
+      whileInView={{ opacity: 1, x: 0 }}
+      viewport={{ once: true, margin: "-60px" }}
+      transition={{ duration: 0.7, ease: "easeOut" }}
+      className="relative"
+    >
+      <div
+        className={`relative flex flex-col gap-20 ${align === "right" ? "items-end text-right" : "items-start text-left"}`}
+      >
+        <div className="flex flex-col gap-3">
+          <span className="font-sans text-sm font-medium text-[#9E8C61]">
+            {String(i + 1).padStart(2, "0")}
+          </span>
+          <h2 className="font-sans text-[2.2rem] font-light leading-tight xl:text-[2.7rem]">
+            <RevealLine>
+              <span className="text-[1.7rem] xl:text-[2.1rem]">
+                {step.title.first}
+                {step.title.mid && ` ${step.title.mid}`}{" "}
+              </span>
+              <span className="text-cnc-gold font-medium">{step.title.last}</span>
+            </RevealLine>
+          </h2>
+        </div>
+        <p className="max-w-md font-sans text-[1rem] leading-relaxed text-[#1B1B1B]/60">
+          {step.body}
+        </p>
+      </div>
+    </motion.div>
+  );
+}
+
 export function BuySteps() {
   const sectionRef = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({
     target: sectionRef,
-    offset: ["start start", "end end"],
+    offset: ["start center", "end center"],
   });
 
-  const { activeIdx, registerBarEl } = useScrollStepper(scrollYProgress, STEPS.length);
-  const active = STEPS[activeIdx];
+  const seg0 = useTransform(scrollYProgress, [0, 0.25], ["0%", "100%"]);
+  const seg1 = useTransform(scrollYProgress, [0.25, 0.5], ["0%", "100%"]);
+  const seg2 = useTransform(scrollYProgress, [0.5, 0.75], ["0%", "100%"]);
+  const seg3 = useTransform(scrollYProgress, [0.75, 1.0], ["0%", "100%"]);
+  const segHeights = [seg0, seg1, seg2, seg3];
 
   return (
-    <section ref={sectionRef} className="relative flex bg-[#F2F0EF] pl-20 pr-8">
+    <section ref={sectionRef} className="relative bg-[#F2F0EF] px-8 py-24 lg:px-20">
+      <div className="relative mx-auto max-w-7xl">
 
-      {/* ── Left panel — sticky ── */}
-      <div className="sticky top-[100px] flex h-[68vh] w-[42%] flex-col justify-between self-start pb-12 pt-10">
-
-        {/* TOP — step heading with Our-Process-style two-tier title + RevealLine */}
-        <AnimatePresence mode="wait">
-          <motion.h2
-            key={`title-${activeIdx}`}
-            className="font-sans text-[3.2rem] font-light leading-[1.0] xl:text-[3.8rem]"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0, transition: { duration: 0.55, ease: "easeOut" } }}
-            exit={{ opacity: 0, y: -30, transition: { duration: 0.35, ease: "easeIn" } }}
-          >
-            {/* triggerOnMount because this is always in-view inside AnimatePresence */}
-            <RevealLine triggerOnMount>
-              <span className="text-[2.4rem] xl:text-[2.9rem]">{active.title.first} {active.title.mid && `${active.title.mid} `}</span>
-              <span className="text-cnc-gold font-medium">{active.title.last}</span>
-            </RevealLine>
-          </motion.h2>
-        </AnimatePresence>
-
-        {/* BOTTOM — counter then body */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={`body-${activeIdx}`}
-            className="flex flex-col gap-1"
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }}
-            exit={{ opacity: 0, y: -20, transition: { duration: 0.35, ease: "easeIn" } }}
-          >
-            <p className="font-sans text-base font-medium uppercase tracking-widest text-[#9E8C61]">
-              {String(activeIdx + 1).padStart(2, "0")}
-            </p>
-            <p className="max-w-sm font-sans text-[1.1rem] leading-relaxed text-[#1B1B1B]/60">
-              {active.body}
-            </p>
-          </motion.div>
-        </AnimatePresence>
-      </div>
-
-      {/* ── Progress bar — between panels ── */}
-      <div className="sticky top-[100px] flex h-[68vh] w-8 flex-col items-start self-start py-10">
-        <div className="flex h-full w-[2px] flex-col gap-[3px]">
-          {STEPS.map((_, i) => (
-            <div
-              key={i}
-              className="flex-1 overflow-hidden"
-              style={{ backgroundColor: "rgba(27,27,27,0.12)" }}
-            >
-              <div
-                ref={(el) => registerBarEl(i, el)}
-                className="w-full bg-[#1B1B1B]"
-                style={{ height: "0%", transition: "height 0.05s linear" }}
-              />
+        {/* Vertical center line — segmented, matches site progress bar style */}
+        <div className="absolute inset-y-0 left-1/2 flex w-[2px] -translate-x-1/2 flex-col gap-4">
+          {segHeights.map((h, i) => (
+            <div key={i} className="flex-1 overflow-hidden" style={{ backgroundColor: "rgba(27,27,27,0.12)" }}>
+              <motion.div className="w-full bg-[#1B1B1B]" style={{ height: h }} />
             </div>
           ))}
         </div>
-      </div>
 
-      {/* ── Right panel — scrolling images ── */}
-      <div className="flex flex-1 flex-col gap-[4.2rem] py-[7.5vh]">
-        {STEPS.map((step, i) => (
-          <div
-            key={i}
-            className="relative overflow-hidden rounded-2xl"
-            style={{ height: "49vh" }}
-          >
-            <Image
-              src={step.img}
-              alt={step.title.first + " " + step.title.last}
-              fill
-              className="object-cover"
-              sizes="(max-width: 1024px) 100vw, 55vw"
-              loading={i === 0 ? "eager" : "lazy"}
-            />
-          </div>
-        ))}
+        {/* Step rows */}
+        {STEPS.map((step, i) => {
+          const imageLeft = i % 2 === 0;
+          return (
+            <div key={i} className="relative flex items-center py-16">
+
+              {/* Left content */}
+              <div className="flex-1 pr-12">
+                {imageLeft
+                  ? <StepImage step={step} i={i} />
+                  : <StepText step={step} i={i} align="left" />
+                }
+              </div>
+
+              {/* Center spacer — keeps content off the line */}
+              <div className="w-16 flex-shrink-0" />
+
+              {/* Right content */}
+              <div className="flex-1 pl-12">
+                {imageLeft
+                  ? <StepText step={step} i={i} align="right" />
+                  : <StepImage step={step} i={i} />
+                }
+              </div>
+
+            </div>
+          );
+        })}
       </div>
     </section>
   );

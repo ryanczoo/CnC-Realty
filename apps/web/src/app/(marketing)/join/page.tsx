@@ -5,7 +5,7 @@ import { StatsBar } from "@/components/join/StatsBar";
 import { FounderQuote } from "@/components/join/FounderQuote";
 import { WhyCnCStacked } from "@/components/join/WhyCnCStacked";
 import { HowToJoin } from "@/components/join/HowToJoin";
-import { JoinStepsSlider } from "@/components/join/JoinStepsSlider";
+import { JoinSteps } from "@/components/join/JoinSteps";
 import { CTALineArt } from "@/components/join/CTALineArt";
 import { JoinCTAButtons } from "@/components/join/JoinCTAButtons";
 
@@ -34,7 +34,7 @@ export default function JoinPage() {
       <HowToJoin />
 
       {/* ── Steps Slider ── */}
-      <JoinStepsSlider />
+      <JoinSteps />
 
       {/* ── Final CTA ── */}
       <section data-navbar-theme="light" className="relative overflow-hidden bg-[#F2F0EF] px-8 py-28 lg:px-20">
