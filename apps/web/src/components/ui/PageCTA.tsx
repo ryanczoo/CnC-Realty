@@ -27,8 +27,8 @@ function CTAButton({ href, className, children }: { href: string; className: str
 interface PageCTAProps {
   heading: React.ReactNode;
   body: string;
-  primaryHref: string;
-  primaryLabel: string;
+  primaryHref?: string;
+  primaryLabel?: string;
   secondaryHref?: string;
   secondaryLabel?: string;
   secondaryClassName?: string;
@@ -58,9 +58,11 @@ export function PageCTA({
         </h2>
         <p className="mb-10 font-sans text-base text-[#1B1B1B]/60">{body}</p>
         <div className="flex justify-center gap-4">
-          <CTAButton href={primaryHref} className="inline-flex items-center rounded-full bg-[#9E8C61] px-8 py-3.5 font-sans text-sm font-medium text-white">
-            {primaryLabel}
-          </CTAButton>
+          {primaryLabel && primaryHref && (
+            <CTAButton href={primaryHref} className="inline-flex items-center rounded-full bg-[#9E8C61] px-8 py-3.5 font-sans text-sm font-medium text-white">
+              {primaryLabel}
+            </CTAButton>
+          )}
           {secondaryLabel && (
             showContactModal ? (
               <motion.button
