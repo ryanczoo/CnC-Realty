@@ -14,8 +14,18 @@ export async function POST(
   req: Request,
   { params }: { params: { id: string } },
 ) {
-  const { error } = await requireAuth("AGENT");
+  const { session, error } = await requireAuth("AGENT");
   if (error) return error;
+
+  const { id: userId, role } = session.user;
+
+  if (role !== "ADMIN") {
+    const agent = await prisma.agent.findUnique({ where: { userId } });
+    const lead = await prisma.lead.findUnique({ where: { id: params.id }, select: { agentId: true } });
+    if (!agent || !lead || lead.agentId !== agent.id) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+  }
 
   try {
     const body = await req.json();

@@ -52,64 +52,68 @@ export async function POST(req: Request) {
     include: { items: { orderBy: { order: "asc" } } },
   });
 
-  const tx = await prisma.transactionFile.create({
-    data: {
-      agentId: agent.id,
-      propertyAddress, city, state: state ?? "CA", zip,
-      mlsNumber: mlsNumber || null,
-      propertyType: propertyType || null,
-      yearBuilt: yearBuilt ? parseInt(yearBuilt) : null,
-      escrowNumber: escrowNumber || null,
-      transactionSide,
-      status: initialStatus,
-      originatingLeadId: originatingLeadId || null,
-      listPrice: listPrice ? parseFloat(listPrice) : null,
-      salePrice: salePrice ? parseFloat(salePrice) : null,
-      offerDate: offerDate ? new Date(offerDate) : null,
-      acceptanceDate: acceptanceDate ? new Date(acceptanceDate) : null,
-      inspectionDeadline: inspectionDeadline ? new Date(inspectionDeadline) : null,
-      appraisalDeadline: appraisalDeadline ? new Date(appraisalDeadline) : null,
-      loanApprovalDeadline: loanApprovalDeadline ? new Date(loanApprovalDeadline) : null,
-      closeOfEscrow: closeOfEscrow ? new Date(closeOfEscrow) : null,
-      commissionGCI: commissionGCI ? parseFloat(commissionGCI) : null,
-      saleCommissionPct: saleCommissionPct ? parseFloat(saleCommissionPct) : null,
-      listingCommissionPct: listingCommissionPct ? parseFloat(listingCommissionPct) : null,
-      otherDeductions: otherDeductions ? parseFloat(otherDeductions) : null,
-      commissionSplit: commissionSplit ? parseFloat(commissionSplit) : null,
-      commissionNotes: commissionNotes || null,
-      tcFeeEnabled: !!tcFeeEnabled,
-      parties: parties.length > 0 ? {
-        create: parties
-          .filter((p: { name?: string }) => p.name)
-          .map((p: { role: string; name: string; email?: string; phone?: string; company?: string; licenseNumber?: string }) => ({
+  try {
+    const tx = await prisma.transactionFile.create({
+      data: {
+        agentId: agent.id,
+        propertyAddress, city, state: state ?? "CA", zip,
+        mlsNumber: mlsNumber || null,
+        propertyType: propertyType || null,
+        yearBuilt: yearBuilt ? parseInt(yearBuilt) : null,
+        escrowNumber: escrowNumber || null,
+        transactionSide,
+        status: initialStatus,
+        originatingLeadId: originatingLeadId || null,
+        listPrice: listPrice ? parseFloat(listPrice) : null,
+        salePrice: salePrice ? parseFloat(salePrice) : null,
+        offerDate: offerDate ? new Date(offerDate) : null,
+        acceptanceDate: acceptanceDate ? new Date(acceptanceDate) : null,
+        inspectionDeadline: inspectionDeadline ? new Date(inspectionDeadline) : null,
+        appraisalDeadline: appraisalDeadline ? new Date(appraisalDeadline) : null,
+        loanApprovalDeadline: loanApprovalDeadline ? new Date(loanApprovalDeadline) : null,
+        closeOfEscrow: closeOfEscrow ? new Date(closeOfEscrow) : null,
+        commissionGCI: commissionGCI ? parseFloat(commissionGCI) : null,
+        saleCommissionPct: saleCommissionPct ? parseFloat(saleCommissionPct) : null,
+        listingCommissionPct: listingCommissionPct ? parseFloat(listingCommissionPct) : null,
+        otherDeductions: otherDeductions ? parseFloat(otherDeductions) : null,
+        commissionSplit: commissionSplit ? parseFloat(commissionSplit) : null,
+        commissionNotes: commissionNotes || null,
+        tcFeeEnabled: !!tcFeeEnabled,
+        parties: parties.length > 0 ? {
+          create: parties
+            .filter((p: { name?: string }) => p.name)
+            .map((p: { role: string; name: string; email?: string; phone?: string; company?: string; licenseNumber?: string }) => ({
+              fileType: "TRANSACTION" as const,
+              role: p.role,
+              name: p.name,
+              email: p.email || null,
+              phone: p.phone || null,
+              company: p.company || null,
+              licenseNumber: p.licenseNumber || null,
+            })),
+        } : undefined,
+        checklistItems: template ? {
+          create: template.items.map((item) => ({
             fileType: "TRANSACTION" as const,
-            role: p.role,
-            name: p.name,
-            email: p.email || null,
-            phone: p.phone || null,
-            company: p.company || null,
-            licenseNumber: p.licenseNumber || null,
+            name: item.name,
+            description: item.description,
+            order: item.order,
+            isRequired: item.isRequired,
           })),
-      } : undefined,
-      checklistItems: template ? {
-        create: template.items.map((item) => ({
-          fileType: "TRANSACTION" as const,
-          name: item.name,
-          description: item.description,
-          order: item.order,
-          isRequired: item.isRequired,
-        })),
-      } : undefined,
-      activities: {
-        create: {
-          fileType: "TRANSACTION" as const,
-          actorId: session.user.id,
-          actorRole: "AGENT" as const,
-          type: "FILE_CREATED" as const,
+        } : undefined,
+        activities: {
+          create: {
+            fileType: "TRANSACTION" as const,
+            actorId: session.user.id,
+            actorRole: "AGENT" as const,
+            type: "FILE_CREATED" as const,
+          },
         },
       },
-    },
-  });
-
-  return NextResponse.json({ transaction: tx }, { status: 201 });
+    });
+    return NextResponse.json({ transaction: tx }, { status: 201 });
+  } catch (err) {
+    console.error("[transactions POST] DB error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }

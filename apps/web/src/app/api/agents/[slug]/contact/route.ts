@@ -1,8 +1,18 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendLeadNotification } from "@/lib/email";
+import { publicFormRateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: Request, { params }: { params: { slug: string } }) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "anonymous";
+  const { success, reset } = await publicFormRateLimit.limit(ip);
+  if (!success) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again later." },
+      { status: 429, headers: { "Retry-After": String(Math.ceil((reset - Date.now()) / 1000)) } }
+    );
+  }
+
   try {
     const { name, email, phone, message } = await req.json();
 

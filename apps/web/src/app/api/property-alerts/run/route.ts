@@ -46,7 +46,7 @@ export async function POST(req: Request) {
 
       // Build Prisma where clause from search criteria
       const where: Prisma.PropertyWhereInput = {
-        status: { in: ["Active", "Coming Soon"] },
+        status: { in: ["Active", "ComingSoon", "ActiveUnderContract"] },
         createdAt: { gte: since },
       };
 

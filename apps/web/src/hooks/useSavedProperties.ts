@@ -18,12 +18,20 @@ export function useSavedProperties(): UseSavedPropertiesResult {
       return;
     }
 
-    fetch("/api/saved-properties")
+    const controller = new AbortController();
+
+    fetch("/api/saved-properties", { signal: controller.signal })
       .then((r) => r.json())
       .then((data: { mlsNumbers: string[] }) => {
         setSavedSet(new Set(data.mlsNumbers));
       })
-      .catch(() => {});
+      .catch((err) => {
+        if ((err as Error).name !== "AbortError") {
+          console.error("[useSavedProperties] Failed to load saved properties:", err);
+        }
+      });
+
+    return () => controller.abort();
   }, [session]);
 
   const toggle = useCallback(async (mlsNumber: string) => {

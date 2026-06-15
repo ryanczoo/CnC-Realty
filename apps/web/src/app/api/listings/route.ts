@@ -38,36 +38,40 @@ export async function POST(req: Request) {
     include: { items: { orderBy: { order: "asc" } } },
   });
 
-  const listing = await prisma.listingFile.create({
-    data: {
-      agentId: agent.id,
-      propertyAddress, city, state: state ?? "CA", zip,
-      mlsNumber: mlsNumber ?? null,
-      listPrice: parseFloat(listPrice),
-      listingType,
-      expirationDate: expirationDate ? new Date(expirationDate) : null,
-      listDate: listDate ? new Date(listDate) : null,
-      commissionPercent: commissionPercent ? parseFloat(commissionPercent) : null,
-      commissionNotes: commissionNotes ?? null,
-      checklistItems: template ? {
-        create: template.items.map((item) => ({
-          fileType: "LISTING" as const,
-          name: item.name,
-          description: item.description,
-          order: item.order,
-          isRequired: item.isRequired,
-        })),
-      } : undefined,
-      activities: {
-        create: {
-          fileType: "LISTING" as const,
-          actorId: session.user.id,
-          actorRole: "AGENT" as const,
-          type: "FILE_CREATED" as const,
+  try {
+    const listing = await prisma.listingFile.create({
+      data: {
+        agentId: agent.id,
+        propertyAddress, city, state: state ?? "CA", zip,
+        mlsNumber: mlsNumber ?? null,
+        listPrice: parseFloat(listPrice),
+        listingType,
+        expirationDate: expirationDate ? new Date(expirationDate) : null,
+        listDate: listDate ? new Date(listDate) : null,
+        commissionPercent: commissionPercent ? parseFloat(commissionPercent) : null,
+        commissionNotes: commissionNotes ?? null,
+        checklistItems: template ? {
+          create: template.items.map((item) => ({
+            fileType: "LISTING" as const,
+            name: item.name,
+            description: item.description,
+            order: item.order,
+            isRequired: item.isRequired,
+          })),
+        } : undefined,
+        activities: {
+          create: {
+            fileType: "LISTING" as const,
+            actorId: session.user.id,
+            actorRole: "AGENT" as const,
+            type: "FILE_CREATED" as const,
+          },
         },
       },
-    },
-  });
-
-  return NextResponse.json({ listing }, { status: 201 });
+    });
+    return NextResponse.json({ listing }, { status: 201 });
+  } catch (err) {
+    console.error("[listings POST] DB error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }

@@ -1,7 +1,9 @@
 import sgMail from "@sendgrid/mail";
 import { FROM } from "@/lib/email";
 
-sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
+if (process.env.SENDGRID_API_KEY) {
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+}
 
 export interface DeadlineReminder {
   agentEmail: string;

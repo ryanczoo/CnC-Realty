@@ -12,47 +12,52 @@ export default function ForgotPasswordPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    await fetch("/api/auth/forgot-password", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
-    });
+    try {
+      await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+    } catch {
+      // intentionally silent — always show generic message to avoid email enumeration
+    }
     setLoading(false);
     setSubmitted(true);
   }
 
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-md">
-        <h1 className="mb-2 text-2xl font-bold" style={{ color: "var(--brand-navy)" }}>
+    <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center bg-[#1B1B1B] px-4">
+      <div className="w-full max-w-md rounded-xl bg-[#F2F0EF] p-8 shadow-md">
+        <h1 className="mb-2 text-2xl font-bold text-[#1B1B1B]">
           Reset Password
         </h1>
 
         {submitted ? (
-          <div className="mt-4 rounded bg-green-50 px-4 py-3 text-sm text-green-700">
+          <div className="mt-4 rounded bg-[#1B1B1B]/8 px-4 py-3 text-sm text-[#1B1B1B]/70">
             If an account exists for that email, you&apos;ll receive a reset link shortly.
           </div>
         ) : (
           <>
-            <p className="mb-6 text-sm text-gray-500">
+            <p className="mb-6 text-sm text-[#1B1B1B]/60">
               Enter your email and we&apos;ll send a reset link.
             </p>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">Email</label>
+                <label className="mb-1 block text-sm font-medium text-[#1B1B1B]/70">Email</label>
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-navy)]"
+                  autoComplete="email"
+                  className="w-full rounded-md border border-[#1B1B1B]/20 bg-transparent px-3 py-2 text-sm text-[#1B1B1B] focus:border-[#1B1B1B]/60 focus:outline-none focus:ring-2 focus:ring-[#9E8C61]/40"
                 />
               </div>
               <Button
                 type="submit"
                 disabled={loading}
                 className="w-full"
-                style={{ backgroundColor: "var(--brand-navy)", color: "white" }}
+                style={{ backgroundColor: "#9E8C61", color: "white" }}
               >
                 {loading ? "Sending…" : "Send Reset Link"}
               </Button>
@@ -60,8 +65,8 @@ export default function ForgotPasswordPage() {
           </>
         )}
 
-        <p className="mt-6 text-center text-sm text-gray-500">
-          <Link href="/login" className="font-medium text-[var(--brand-navy)] hover:underline">
+        <p className="mt-6 text-center text-sm text-[#1B1B1B]/60">
+          <Link href="/login" className="font-medium text-[#9E8C61] hover:underline">
             Back to Sign In
           </Link>
         </p>

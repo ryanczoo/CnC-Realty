@@ -30,7 +30,7 @@ export function useProperties(
   const prevFiltersKey = useRef(filtersKey);
   const isFirstRender = useRef(true);
 
-  const fetchPage = useCallback(async (f: SearchFilters, page: number) => {
+  const fetchPage = useCallback(async (f: SearchFilters, page: number, signal?: AbortSignal) => {
     const params = new URLSearchParams();
     if (f.query) params.set("query", f.query);
     if (f.minPrice) params.set("minPrice", f.minPrice);
@@ -42,7 +42,7 @@ export function useProperties(
     params.set("page", String(page));
     params.set("limit", "20");
 
-    const res = await fetch(`/api/properties?${params}`);
+    const res = await fetch(`/api/properties?${params}`, { signal });
     return res.json() as Promise<{ properties: PropertyListing[]; total: number; pages: number }>;
   }, []);
 
@@ -62,27 +62,32 @@ export function useProperties(
     setIsLoading(true);
     setIsError(false);
 
-    fetchPage(filters, 1)
+    const controller = new AbortController();
+
+    fetchPage(filters, 1, controller.signal)
       .then((data) => {
         setPages([data.properties]);
         setTotal(data.total);
         setTotalPages(data.pages);
       })
-      .catch(() => setIsError(true))
+      .catch((err) => {
+        if ((err as Error).name !== "AbortError") setIsError(true);
+      })
       .finally(() => setIsLoading(false));
+
+    return () => controller.abort();
   }, [filtersKey, filters, fetchPage, initialData]);
 
   const loadNextPage = useCallback(() => {
     if (isLoading || currentPage >= totalPages) return;
     const nextPage = currentPage + 1;
+    const snapshotKey = prevFiltersKey.current;
     setCurrentPage(nextPage);
     setIsLoading(true);
 
-    fetchPage(
-      JSON.parse(prevFiltersKey.current) as SearchFilters,
-      nextPage
-    )
+    fetchPage(JSON.parse(snapshotKey) as SearchFilters, nextPage)
       .then((data) => {
+        if (prevFiltersKey.current !== snapshotKey) return;
         setPages((prev) => [...prev, data.properties]);
         setTotal(data.total);
         setTotalPages(data.pages);

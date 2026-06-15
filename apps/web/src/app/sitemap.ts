@@ -4,18 +4,6 @@ import { prisma } from "@/lib/prisma";
 const BASE = "https://cncrealtygroup.com";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [properties, agents] = await Promise.all([
-    prisma.property.findMany({
-      select: { mlsNumber: true, updatedAt: true },
-      where: { status: { in: ["Active", "Coming Soon"] } },
-      orderBy: { updatedAt: "desc" },
-      take: 50_000,
-    }),
-    prisma.agent.findMany({
-      select: { slug: true, updatedAt: true },
-    }),
-  ]);
-
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: BASE, lastModified: new Date(), priority: 1.0, changeFrequency: "weekly" },
     { url: `${BASE}/properties`, lastModified: new Date(), priority: 0.9, changeFrequency: "hourly" },
@@ -24,21 +12,40 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/about`, lastModified: new Date(), priority: 0.6, changeFrequency: "monthly" },
   ];
 
-  const propertyRoutes: MetadataRoute.Sitemap = properties.map((p) => ({
-    url: `${BASE}/properties/${p.mlsNumber}`,
-    lastModified: p.updatedAt,
-    changeFrequency: "daily" as const,
-    priority: 0.8,
-  }));
+  let propertyRoutes: MetadataRoute.Sitemap = [];
+  let agentRoutes: MetadataRoute.Sitemap = [];
 
-  const agentRoutes: MetadataRoute.Sitemap = agents
-    .filter((a) => a.slug)
-    .map((a) => ({
-      url: `${BASE}/agents/${a.slug}`,
-      lastModified: a.updatedAt,
-      changeFrequency: "weekly" as const,
-      priority: 0.7,
+  try {
+    const [properties, agents] = await Promise.all([
+      prisma.property.findMany({
+        select: { mlsNumber: true, updatedAt: true },
+        where: { status: { in: ["Active", "ComingSoon", "ActiveUnderContract"] } },
+        orderBy: { updatedAt: "desc" },
+        take: 50_000,
+      }),
+      prisma.agent.findMany({
+        select: { slug: true, updatedAt: true },
+      }),
+    ]);
+
+    propertyRoutes = properties.map((p) => ({
+      url: `${BASE}/properties/${p.mlsNumber}`,
+      lastModified: p.updatedAt,
+      changeFrequency: "daily" as const,
+      priority: 0.8,
     }));
+
+    agentRoutes = agents
+      .filter((a) => a.slug)
+      .map((a) => ({
+        url: `${BASE}/agents/${a.slug}`,
+        lastModified: a.updatedAt,
+        changeFrequency: "weekly" as const,
+        priority: 0.7,
+      }));
+  } catch (err) {
+    console.error("[sitemap] DB error:", err);
+  }
 
   return [...staticRoutes, ...agentRoutes, ...propertyRoutes];
 }

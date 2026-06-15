@@ -13,11 +13,15 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "Name is required" }, { status: 400 });
   }
 
-  const updated = await prisma.user.update({
-    where: { id: session.user.id },
-    data: { name: name.trim() },
-    select: { id: true, name: true, email: true },
-  });
-
-  return NextResponse.json({ user: updated });
+  try {
+    const updated = await prisma.user.update({
+      where: { id: session.user.id },
+      data: { name: name.trim() },
+      select: { id: true, name: true, email: true },
+    });
+    return NextResponse.json({ user: updated });
+  } catch (err) {
+    console.error("[profile PATCH] DB error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }
