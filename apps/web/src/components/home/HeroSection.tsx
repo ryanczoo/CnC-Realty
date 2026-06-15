@@ -5,6 +5,7 @@ import { DownArrow } from "@/components/ui/DownArrow";
 import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { WORD_VARIANT, wordContainer } from "@/lib/motion";
 
 const PHRASES = [
   "Find Your Dream Home",
@@ -87,17 +88,14 @@ export function HeroSection() {
                 initial="hidden"
                 animate="visible"
                 exit={{ opacity: 0, transition: { duration: 0.25, ease: "easeIn" } }}
-                variants={{ visible: { transition: { staggerChildren: 0.28 } } }}
+                variants={wordContainer(0.28)}
               >
                 {PHRASE_WORDS[phraseIdx].map((word, i, arr) => (
                   <motion.span
                     key={i}
                     className="inline-block whitespace-nowrap"
                     style={i === arr.length - 1 ? { color: "#9E8C61", fontWeight: 700 } : undefined}
-                    variants={{
-                      hidden: { opacity: 0, x: -14 },
-                      visible: { opacity: 1, x: 0, transition: { duration: 0.9, ease: "easeOut" } },
-                    }}
+                    variants={WORD_VARIANT}
                   >
                     {word}
                   </motion.span>

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { AnimatePresence, motion, useScroll } from "motion/react";
 import { useRef } from "react";
 import { useScrollStepper } from "@/hooks/useScrollStepper";
@@ -187,12 +188,16 @@ export function WhyCnC() {
                 exit={{ opacity: 0, transition: { duration: 0.15 } }}
                 transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1] }}
               >
-                <img
-                  src={active.imgFront ?? ""}
-                  alt=""
-                  className="h-full w-full object-cover"
-                  style={{ objectPosition: active.imgFrontPosition ?? "center" }}
-                />
+                {active.imgFront && (
+                  <Image
+                    src={active.imgFront}
+                    alt=""
+                    fill
+                    className="object-cover"
+                    style={{ objectPosition: active.imgFrontPosition ?? "center" }}
+                    sizes="40vw"
+                  />
+                )}
               </motion.div>
             </AnimatePresence>
 

@@ -5,7 +5,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function toTitleCase(s: string) {
+export function toSentenceCase(s: string) {
   return s.charAt(0) + s.slice(1).toLowerCase();
 }
 

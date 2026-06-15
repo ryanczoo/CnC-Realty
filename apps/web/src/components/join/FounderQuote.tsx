@@ -1,39 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useScrollWordLight } from "@/hooks/useScrollWordLight";
 
 const WORDS =
   "CnC was created to fulfill a need in our modern-day era of real estate. A need to be in control of your own career. A need for full compensation and training to not only support but motivate real estate agents at any level to achieve their goals. With AI-integrated resources and a community built on providing the highest standard of service, CnC is a breath of fresh air for California."
     .split(" ");
 
 export function FounderQuote() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const [litCount, setLitCount] = useState(0);
-  const lastCountRef = useRef(-1);
-
-  useEffect(() => {
-    const section = sectionRef.current;
-    if (!section) return;
-
-    let sectionTop = section.offsetTop;
-    let vh = window.innerHeight;
-
-    const compute = () => {
-      const next = Math.round(Math.max(0, Math.min(1, (window.scrollY + vh - sectionTop) / vh)) * WORDS.length);
-      if (next === lastCountRef.current) return;
-      lastCountRef.current = next;
-      setLitCount(next);
-    };
-
-    const onResize = () => { sectionTop = section.offsetTop; vh = window.innerHeight; compute(); };
-    window.addEventListener("resize", onResize, { passive: true });
-    window.addEventListener("scroll", compute, { passive: true });
-    compute();
-    return () => {
-      window.removeEventListener("scroll", compute);
-      window.removeEventListener("resize", onResize);
-    };
-  }, []);
+  const { sectionRef, litCount } = useScrollWordLight(WORDS.length);
 
   return (
     <section ref={sectionRef} className="bg-cnc-bg px-8 py-16 lg:px-20">

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { CAMPAIGN_STATUS_COLORS, CONTACT_STATUS_COLORS } from "@/lib/campaign-ui";
-import { toTitleCase } from "@/lib/utils";
+import { toSentenceCase } from "@/lib/utils";
 
 interface ContactRow {
   id: string;
@@ -114,7 +114,7 @@ export default function CampaignDetailPage() {
                 CAMPAIGN_STATUS_COLORS[campaign.status] ?? "bg-gray-100 text-gray-600"
               }`}
             >
-              {toTitleCase(campaign.status)}
+              {toSentenceCase(campaign.status)}
             </span>
           </div>
         </div>
@@ -238,7 +238,7 @@ export default function CampaignDetailPage() {
                           CONTACT_STATUS_COLORS[contact.status] ?? "bg-gray-100 text-gray-600"
                         }`}
                       >
-                        {toTitleCase(contact.status)}
+                        {toSentenceCase(contact.status)}
                       </span>
                     </td>
                     <td className="px-6 py-4 font-sans text-sm text-[#1B1B1B]/50">

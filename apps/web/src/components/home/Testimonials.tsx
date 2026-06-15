@@ -3,15 +3,9 @@
 import { AnimatePresence, motion } from "motion/react";
 import Image from "next/image";
 import { memo, useEffect, useState } from "react";
+import { fadeUp } from "@/lib/motion";
 
 const WORDS = ["trust", "results", "futures", "homes", "teams"];
-
-const fadeUp = (delay = 0) => ({
-  initial: { opacity: 0, y: 40 },
-  whileInView: { opacity: 1, y: 0 },
-  transition: { duration: 0.9, ease: [0.16, 1, 0.3, 1], delay },
-  viewport: { once: true, margin: "-8%" },
-});
 
 // Memoized so ghost words don't re-render on every word cycle
 const GhostWords = memo(function GhostWords() {

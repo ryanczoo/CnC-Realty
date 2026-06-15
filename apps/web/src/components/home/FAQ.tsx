@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "motion/react";
 import { RevealLine } from "@/components/ui/reveal-text";
 
@@ -27,6 +28,8 @@ const FAQS = [
 ];
 
 export function FAQ({ faqs = FAQS, className }: { faqs?: { question: string; answer: string }[]; className?: string }) {
+  const [openIdx, setOpenIdx] = useState<number | null>(null);
+
   return (
     <section data-navbar-theme="light" className={`px-8 pb-20 pt-16 lg:px-20 ${className ?? "bg-[#F2F0EF]"}`}>
       <motion.h2
@@ -40,40 +43,53 @@ export function FAQ({ faqs = FAQS, className }: { faqs?: { question: string; ans
       </motion.h2>
 
       <div>
-        {faqs.map((faq, i) => (
-          <motion.div
-            key={i}
-            className="relative grid cursor-default py-6"
-            style={{ gridTemplateColumns: "26% 52% 22%" }}
-            initial="rest"
-            whileHover="hover"
-          >
-            {/* Border — only visible on hover */}
+        {faqs.map((faq, i) => {
+          const isOpen = openIdx === i;
+          return (
             <motion.div
-              className="absolute left-0 right-0 top-0 h-px bg-[#1B1B1B]"
-              variants={{ rest: { opacity: 0 }, hover: { opacity: 0.12 } }}
-              transition={{ duration: 0.2 }}
-            />
-
-            <p className="font-sans text-[1.15rem] font-light leading-tight text-[#1B1B1B] xl:text-[1.3rem]">
-              {faq.question}
-            </p>
-
-            {/* Answer — revealed on hover */}
-            <motion.p
-              className="pl-24 pr-8 font-sans text-base leading-relaxed text-[#1B1B1B]/50"
-              variants={{
-                rest: { opacity: 0, y: 6 },
-                hover: { opacity: 1, y: 0 },
+              key={i}
+              className="relative grid cursor-pointer py-6"
+              style={{ gridTemplateColumns: "26% 52% 22%" }}
+              initial="rest"
+              animate={isOpen ? "hover" : "rest"}
+              whileHover="hover"
+              role="button"
+              tabIndex={0}
+              onClick={() => setOpenIdx(isOpen ? null : i)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setOpenIdx(isOpen ? null : i);
+                }
               }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
             >
-              {faq.answer}
-            </motion.p>
+              {/* Border — only visible on hover/open */}
+              <motion.div
+                className="absolute left-0 right-0 top-0 h-px bg-[#1B1B1B]"
+                variants={{ rest: { opacity: 0 }, hover: { opacity: 0.12 } }}
+                transition={{ duration: 0.2 }}
+              />
 
-            <span className="pt-1 text-right font-sans text-sm text-[#1B1B1B]/25">( {i + 1} )</span>
-          </motion.div>
-        ))}
+              <p className="font-sans text-[1.15rem] font-light leading-tight text-[#1B1B1B] xl:text-[1.3rem]">
+                {faq.question}
+              </p>
+
+              {/* Answer — revealed on hover/open */}
+              <motion.p
+                className="pl-24 pr-8 font-sans text-base leading-relaxed text-[#1B1B1B]/50"
+                variants={{
+                  rest: { opacity: 0, y: 6 },
+                  hover: { opacity: 1, y: 0 },
+                }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+              >
+                {faq.answer}
+              </motion.p>
+
+              <span className="pt-1 text-right font-sans text-sm text-[#1B1B1B]/25">( {i + 1} )</span>
+            </motion.div>
+          );
+        })}
       </div>
     </section>
   );

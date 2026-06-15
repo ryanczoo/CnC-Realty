@@ -19,7 +19,7 @@ export function JoinHero() {
         muted
         loop
         playsInline
-        preload="auto"
+        preload="metadata"
         className="absolute inset-0 h-full w-full object-cover object-center"
         src="/videos/join-hero.mp4"
       />

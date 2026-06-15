@@ -27,7 +27,7 @@ export function JoinFaq({ faqs }: { faqs: Faq[] }) {
           </button>
           <div
             className="overflow-hidden transition-all duration-300"
-            style={{ maxHeight: open === i ? "200px" : "0px" }}
+            style={{ maxHeight: open === i ? "9999px" : "0px" }}
           >
             <p className="pb-6 font-sans text-sm font-light leading-relaxed text-white/50">{faq.a}</p>
           </div>

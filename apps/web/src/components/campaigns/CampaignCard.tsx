@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { CAMPAIGN_STATUS_COLORS, CAMPAIGN_TYPE_COLORS } from "@/lib/campaign-ui";
-import { formatDate, toTitleCase } from "@/lib/utils";
+import { formatDate, toSentenceCase } from "@/lib/utils";
 
 interface CampaignCardProps {
   id: string;
@@ -43,7 +43,7 @@ export function CampaignCard({
             CAMPAIGN_STATUS_COLORS[status] ?? "bg-gray-100 text-gray-600"
           }`}
         >
-          {toTitleCase(status)}
+          {toSentenceCase(status)}
         </span>
       </div>
 
