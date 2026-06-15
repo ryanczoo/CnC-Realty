@@ -21,6 +21,7 @@
     "onlyBuiltDependencies": [
       "@prisma/client",
       "@prisma/engines",
+      "@sentry/cli",
       "esbuild",
       "prisma",
       "unrs-resolver"
