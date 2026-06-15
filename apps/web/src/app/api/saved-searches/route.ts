@@ -1,6 +1,19 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/api-auth";
+
+const savedSearchSchema = z.object({
+  name: z.string().optional(),
+  minPrice: z.number().optional(),
+  maxPrice: z.number().optional(),
+  minBeds: z.number().int().optional(),
+  minBaths: z.number().optional(),
+  propertyType: z.string().optional(),
+  cities: z.array(z.string()).optional(),
+  zips: z.array(z.string()).optional(),
+  alertsOn: z.boolean().optional(),
+});
 
 export async function GET() {
   const { session, error } = await requireAuth();
@@ -22,21 +35,14 @@ export async function POST(req: Request) {
   const { session, error } = await requireAuth();
   if (error) return error;
 
-  let body: {
-    name?: string;
-    minPrice?: number;
-    maxPrice?: number;
-    minBeds?: number;
-    minBaths?: number;
-    propertyType?: string;
-    cities?: string[];
-    zips?: string[];
-    alertsOn?: boolean;
-  };
-
+  let body: z.infer<typeof savedSearchSchema>;
   try {
-    body = await req.json();
-  } catch {
+    const json = await req.json();
+    body = savedSearchSchema.parse(json);
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return NextResponse.json({ error: err.errors[0].message }, { status: 400 });
+    }
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/api-auth";
 import { sendLeadNotification } from "@/lib/email";
+import { publicFormRateLimit } from "@/lib/rate-limit";
 
 const createSchema = z.object({
   firstName: z.string().min(1, "First name required"),
@@ -15,6 +16,15 @@ const createSchema = z.object({
 
 // Public — no auth required. Anyone can submit a lead.
 export async function POST(req: Request) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "anonymous";
+  const { success, reset } = await publicFormRateLimit.limit(ip);
+  if (!success) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again later." },
+      { status: 429, headers: { "Retry-After": String(Math.ceil((reset - Date.now()) / 1000)) } }
+    );
+  }
+
   try {
     const body = await req.json();
     const data = createSchema.parse(body);
