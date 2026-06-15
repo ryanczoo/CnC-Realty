@@ -1,5 +1,7 @@
 import { cache } from "react";
 import { notFound } from "next/navigation";
+
+export const revalidate = 300;
 import { prisma } from "@/lib/prisma";
 import { AgentProfileHero } from "@/components/agents/AgentProfileHero";
 import { AgentContactForm } from "@/components/agents/AgentContactForm";

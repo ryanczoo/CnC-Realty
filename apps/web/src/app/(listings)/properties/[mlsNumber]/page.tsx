@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
+
+export const revalidate = 300;
 import { prisma } from "@/lib/prisma";
 import { buildStatsFields, buildDetailSections } from "@/lib/property-ui-helpers";
 import { formatPropertyStatus } from "@/types/property";
