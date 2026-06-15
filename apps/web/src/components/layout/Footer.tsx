@@ -55,8 +55,7 @@ const LEGAL_LINKS = [
   { href: "/privacy", label: "Privacy Policy" },
   { href: "/terms", label: "Terms" },
   { href: "/fair-housing", label: "Fair Housing Notice" },
-  { href: "/mls-disclaimer", label: "MLS Disclaimer" },
-  { href: "/dmca", label: "DMCA Notice" },
+{ href: "/dmca", label: "DMCA Notice" },
   { href: "/do-not-sell", label: "Do Not Sell or Share My Personal Information" },
 ];
 
