@@ -4383,6 +4383,91 @@ Added `text-[2.5rem] xl:text-[3rem]` to the "Our Services" `h2` to match the "Ou
 
 ---
 
+## Session Notes — 2026-06-15
+
+### What Was Completed This Session
+
+Committed as `1c1dfce` on `claude/real-estate-website-9bdWi`.
+
+---
+
+### Legal Pages — 5 Pages Built and Committed ✅
+
+Before building, reviewed three competitor privacy policies:
+- **Rise Realty** (riserealtyca.com/privacy-policy) — full policy read via Puppeteer; California-specific, last updated 4/15/2026. Covers CCPA/CalOPPA, SMS non-sharing, third-party sharing, California users' rights.
+- **eXp/AGNT** (agnt.inc/privacy-policy) — global policy (eXp operates in 30+ countries), read via Puppeteer. Key additions: "Do Not Track" signal disclosure, advertising opt-out via NAI/DAA industry groups, email unsubscribe process (10 business days), account deletion right, session-replay technology disclosure.
+- **REeBroker PDF** — February 2020 PDF, browser native PDF viewer blocked text extraction. Skipped (too old to be useful for CCPA/CPRA compliance anyway — pre-CPRA Prop 24).
+
+**Pages created:**
+
+| Route | File | Description |
+|---|---|---|
+| `/privacy` | `(marketing)/privacy/page.tsx` | 16-section CCPA/CPRA + CalOPPA policy — data collection, SMS/TCPA, cookies, advertising opt-out (NAI/DAA), email unsubscribe, CA consumer rights (right to know/delete/correct/opt-out/limit/non-discrimination), Do Not Track disclosure, account deletion, children's policy |
+| `/terms` | `(marketing)/terms/page.tsx` | 13-section ToS — permitted use, MLS data disclaimer, no-agency relationship clause, mortgage disclaimer (illustrative only), IP ownership, liability limits, indemnification, CA jurisdiction (Los Angeles County) |
+| `/fair-housing` | `(marketing)/fair-housing/page.tsx` | Federal Fair Housing Act (7 protected classes) + CA FEHA (11 additional CA classes including source of income, immigration status, gender identity). HUD, CRD, and DRE complaint contacts. |
+| `/dmca` | `(marketing)/dmca/page.tsx` | Designated DMCA agent (info@cncrealtygroup.com), all 6 required elements for valid takedown (17 U.S.C. § 512(c)(3)), counter-notification process, repeat infringer policy |
+| `/do-not-sell` | `(marketing)/do-not-sell/page.tsx` | Interactive client component — opt-out button writes to localStorage + opts out PostHog; shows "already opted out" if consent=denied; email opt-out path; non-discrimination statement; link to Privacy Policy |
+
+**NOT built:** `/mls-disclaimer` — see decision below.
+
+**All pages share:** dark `bg-[#1B1B1B]` header / off-white `bg-[#F2F0EF]` content layout, `info@cncrealtygroup.com`, CA DRE #02439028.
+
+**⚠️ Pending attorney review before launch** — these pages should be reviewed by a California real estate lawyer before the site goes live.
+
+---
+
+### MLS Disclaimer Page — Decided NOT to Build
+
+**Decision:** Ryan asked if a dedicated `/mls-disclaimer` page is legally required. The answer is no:
+- CRMLS/IDX compliance requires the disclaimer to appear **inline on each listing page** — which we already satisfy via `CrmlsDisclaimer.tsx` on the property drawer and detail pages.
+- eXp, Rise Realty, and REeBroker do not have a standalone MLS disclaimer page in their footers — they only show the disclaimer inline on listing pages.
+- A dedicated page would be redundant extra work with no legal benefit.
+
+**Action taken:**
+- Deleted `(marketing)/mls-disclaimer/page.tsx`
+- Removed `{ href: "/mls-disclaimer", label: "MLS Disclaimer" }` from `LEGAL_LINKS` in `Footer.tsx`
+- The inline `CrmlsDisclaimer.tsx` on listing pages remains unchanged — that IS required for IDX compliance.
+
+---
+
+### Footer — Needs Review (⚠️ Flagged for Next Session)
+
+Ryan flagged that there is work to do on the footer links and pages. Specifically:
+- The current `LEGAL_LINKS` in `Footer.tsx` are: Privacy Policy | Terms | Fair Housing Notice | DMCA Notice | Do Not Sell or Share My Personal Information
+- Ryan wants to review these links and potentially the footer layout/content in the next session before launch.
+
+**Do NOT launch without reviewing footer links with Ryan.**
+
+---
+
+### Current Footer Legal Links State
+
+After removing the MLS disclaimer, `LEGAL_LINKS` in `Footer.tsx` is:
+```ts
+const LEGAL_LINKS = [
+  { href: "/privacy", label: "Privacy Policy" },
+  { href: "/terms", label: "Terms" },
+  { href: "/fair-housing", label: "Fair Housing Notice" },
+  { href: "/dmca", label: "DMCA Notice" },
+  { href: "/do-not-sell", label: "Do Not Sell or Share My Personal Information" },
+];
+```
+
+---
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. Open `localhost:3000`
+3. **Review footer links** at the bottom of any page — confirm the 5 legal links are correct, decide if any should be renamed or removed
+4. **Review the 5 legal pages** visually at `/privacy`, `/terms`, `/fair-housing`, `/dmca`, `/do-not-sell` — confirm layout and content look correct
+5. **Continue with remaining work in order:**
+   - Checklist templates at `/admin/settings/checklists` (CA Purchase Buyer Side, CA Purchase Seller Side, CA Lease Tenant Side) — Ryan's task
+   - Phase 6 tasks (`docs/superpowers/plans/2026-05-22-phase-6-launch.md`): ISR, skeleton loaders, sitemap, JSON-LD, rate limiting, deploy to Vercel + Railway
+   - Phase 7 CRM Expansion (Smart Lists → Deal Pipeline → Lead Ponds → Action Plans → Trigger Automations → Reporting) — **required before launch**
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`
