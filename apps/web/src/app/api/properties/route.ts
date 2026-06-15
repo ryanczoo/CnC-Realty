@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { MULTIFAMILY_TYPES } from "@/types/property";
+import { redis } from "@/lib/redis";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -59,7 +60,17 @@ export async function GET(req: Request) {
     where.propertyType = { contains: propertyType, mode: "insensitive" };
   }
 
-  // Fix 3: Wrap DB query in try/catch
+  // Build a deterministic cache key from sorted search params
+  const rawParams = new URL(req.url).searchParams;
+  const sortedKey = Array.from(rawParams.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([k, v]) => `${k}=${v}`)
+    .join("&");
+  const cacheKey = `properties:${sortedKey || "default"}`;
+
+  const cached = await redis.get(cacheKey);
+  if (cached) return NextResponse.json(cached);
+
   try {
     const [properties, total] = await Promise.all([
       prisma.property.findMany({
@@ -89,12 +100,9 @@ export async function GET(req: Request) {
       prisma.property.count({ where }),
     ]);
 
-    return NextResponse.json({
-      properties,
-      total,
-      page,
-      pages: Math.ceil(total / limit),
-    });
+    const result = { properties, total, page, pages: Math.ceil(total / limit) };
+    redis.setex(cacheKey, 300, result).catch(console.error);
+    return NextResponse.json(result);
   } catch (err) {
     console.error("[properties] DB error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
