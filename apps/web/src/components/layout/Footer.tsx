@@ -57,6 +57,7 @@ const LEGAL_LINKS = [
   { href: "/fair-housing", label: "Fair Housing Notice" },
   { href: "/mls-disclaimer", label: "MLS Disclaimer" },
   { href: "/dmca", label: "DMCA Notice" },
+  { href: "/do-not-sell", label: "Do Not Sell or Share My Personal Information" },
 ];
 
 export function Footer() {
