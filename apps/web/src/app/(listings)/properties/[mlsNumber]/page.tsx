@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
+import { propertyJsonLd } from "@/lib/json-ld";
 
 export const revalidate = 300;
 import { prisma } from "@/lib/prisma";
@@ -66,6 +67,28 @@ export default async function PropertyDetailPage({ params }: PageProps) {
 
   return (
     <div data-navbar-theme="light" className="min-h-screen bg-[#F2F0EF] pb-20 text-[#1B1B1B]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            propertyJsonLd({
+              mlsNumber: property.mlsNumber,
+              address: property.address,
+              city: property.city,
+              state: property.state,
+              zip: property.zip,
+              listPrice: property.listPrice,
+              beds: property.beds,
+              baths: property.baths,
+              sqft: property.sqft,
+              description: property.description,
+              photos: photos,
+              latitude: property.latitude,
+              longitude: property.longitude,
+            })
+          ),
+        }}
+      />
       {/* Dark header bar */}
       <div data-navbar-theme="dark" className="bg-[#1B1B1B] pb-3 pt-[76px]">
         <div className="mx-auto max-w-7xl px-4">

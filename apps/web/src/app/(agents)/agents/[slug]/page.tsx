@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { notFound } from "next/navigation";
+import { agentJsonLd } from "@/lib/json-ld";
 
 export const revalidate = 300;
 import { prisma } from "@/lib/prisma";
@@ -28,7 +29,22 @@ export default async function AgentProfilePage({ params }: Props) {
   if (!agent) notFound();
 
   return (
-    <main data-navbar-theme="dark">
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            agentJsonLd({
+              name: agent.displayName ?? agent.slug,
+              slug: agent.slug,
+              bio: agent.bio,
+              headshot: agent.headshot,
+              phone: agent.phone,
+            })
+          ),
+        }}
+      />
+      <main data-navbar-theme="dark">
       <AgentProfileHero
         displayName={agent.displayName}
         headshot={agent.headshot}
@@ -56,5 +72,6 @@ export default async function AgentProfilePage({ params }: Props) {
         </div>
       </section>
     </main>
+    </>
   );
 }

@@ -1,3 +1,4 @@
+import { localBusinessJsonLd } from "@/lib/json-ld";
 import { FAQ } from "@/components/home/FAQ";
 import { GradientBridge } from "@/components/ui/GradientBridge";
 import { FeaturedListingsServer } from "@/components/home/FeaturedListingsServer";
@@ -10,6 +11,10 @@ import { WhyCnC } from "@/components/home/WhyCnC";
 export default function HomePage() {
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessJsonLd()) }}
+      />
       <HeroSection />
       <FeaturedListingsServer />
       <div className="bg-[#F2F0EF] px-16 pt-10 pb-0">
