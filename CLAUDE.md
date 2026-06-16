@@ -4455,12 +4455,79 @@ const LEGAL_LINKS = [
 
 ---
 
+### Next Session — Start Here (superseded — see 2026-06-16 session below)
+
+---
+
+## Session Notes — 2026-06-16
+
+### What Was Completed This Session
+
+Committed across five commits on `claude/real-estate-website-9bdWi`: `c7766b6`, `f559e08`, `822f54d`, `ada3394`, `a1cee41`.
+
+---
+
+### Sell Page CTA — Request Valuation Now Opens Contact Modal ✅
+
+`PageCTA.tsx` previously only let the **secondary** button open `ContactModal` (via `showContactModal`); the primary button was always a `Link`. Added a new opt-in prop `primaryShowContactModal` so the primary button can open the modal too, without touching buy/rent/manage (their primary buttons stay real navigation links to `/properties`).
+
+- `PageCTA.tsx` — added `primaryShowContactModal` prop, mirrors the existing secondary-button conditional pattern
+- `sell/page.tsx` — "Request Valuation" now passes `primaryShowContactModal` instead of `primaryHref="/contact"`, matching "Message"
+
+---
+
+### Join Page — Step Copy Tightened ✅
+
+`HowToJoin.tsx` step titles: "Approval" → "Approve", "Onboarding" → "Onboard" (now "Apply", "Approve", "Onboard", "Win" — consistent one-word/imperative style).
+
+---
+
+### News Page Renamed to Press, New Half-Height Hero ✅
+
+Ryan noticed the News page had no hero section (unlike buy/sell/rent/manage/join, which all use full-bleed video-mask heroes), then asked to rename the whole section from "News" to "Press."
+
+**Route rename:** `/news` → `/press` (and `/news/[slug]` → `/press/[slug]`), git tracked these as renames. Updated every internal reference: `Navbar.tsx` and `Footer.tsx` nav links/labels, `BlogCard.tsx` and `BlogHero.tsx` post links, the admin "View live" link in `(dashboard)/admin/blog/[id]/edit/page.tsx`, and the slug preview text in `BlogEditorForm.tsx`. Page metadata title is now "Press | CnC Realty Group". `NewsHero.tsx` renamed to `PressHero.tsx`.
+
+**`VideoMaskHero.tsx` generalized** (shared by buy/sell/rent/manage/join heroes — all existing usages unaffected since new props default to prior behavior):
+- `lines` widened from a fixed 2-tuple to `string[]`, with a `LINE_Y` lookup table supporting 1-line (centered, y=540) or 2-line (y=400/710) layouts
+- New `heightClass` prop (default `h-[95vh]`) — Press hero uses `h-[47.5vh]` (half-size, per Ryan's request)
+- New `playbackRate` prop (default `1`) — set via a video `ref` callback since it's not a JSX attribute; Press hero uses `0.5` (half speed)
+- New `overlayOpacity` prop (default `0`, opt-in) — a plain dark `<div>` between the video and the SVG text-mask, so the masked-out letter cutouts (which show full video brightness) get dimmed too; Press hero uses `0.35` for legibility against a busy/bright video
+
+**Video asset:** Ryan supplied `12991839-hd_1280_720_60fps.mp4` (1280×720, ~6MB), copied to `apps/web/public/videos/news-hero.mp4` (filename kept as-is; only the route/labels changed to Press).
+
+**Hero copy:** Single line, "PRESS" (was going to follow the "X WITH US" pattern other heroes use, but Ryan wanted just the one word).
+
+---
+
+### Legal Pages / Footer Restructuring — Committed As-Is ✅
+
+Found already sitting uncommitted in the working tree at session start (not done by Claude this session — likely Ryan's own edits, or carried from an earlier uncommitted state). Per CLAUDE.md's 2026-06-15 notes this was flagged "Do NOT launch without reviewing footer links with Ryan." Asked Ryan how to handle it before committing; he said commit it as-is alongside tonight's work.
+
+**What changed vs. the 2026-06-15 state:**
+- `/dmca` and `/do-not-sell` pages **deleted entirely** (routes no longer exist — previously these were two of the "5 legal pages")
+- New `/accessibility` page added
+- `/fair-housing`, `/privacy`, `/terms` content edited
+- `Footer.tsx` `LEGAL_LINKS` is now just `Accessibility | Privacy Policy | Terms` (down from 5 links) — Fair Housing is no longer a text link in `LEGAL_LINKS` but is now represented by a clickable EHO (Equal Housing Opportunity) logo image (`/eho-logo.png`) linking to `/fair-housing` in the bottom legal bar
+- `Navbar.tsx` — transparent-navbar path list extended to include `/accessibility`, `/privacy`, `/terms`, `/fair-housing`
+
+**⚠️ Still flagged for Ryan's attention next session:** this is now committed to git history, but has **not** been visually reviewed in-browser this session. In particular, worth double-checking that fully removing the dedicated `/do-not-sell` page (rather than just relinking it) is the intended final CCPA approach, since the 2026-06-15 notes describe that page as having an interactive opt-out button (localStorage + PostHog opt-out) — confirm that functionality lives somewhere else now (e.g. the cookie banner) or was intentionally retired.
+
+---
+
+### Other Files Committed This Session
+
+- `apps/web/public/images/manage-*.jpg` (6 files) — image assets referenced by the already-committed `ManageHandle.tsx`, were untracked until now
+- `docs/superpowers/plans/2026-06-15-blog-system.md`, `docs/superpowers/plans/2026-06-15-manage-handle-contact-modal.md` — planning docs from earlier subagent-driven-development work this session, hadn't been committed yet
+
+---
+
 ### Next Session — Start Here
 
-1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty` (restart if already running, to clear the stale `.next/types` cache referencing the old `/news` route)
 2. Open `localhost:3000`
-3. **Review footer links** at the bottom of any page — confirm the 5 legal links are correct, decide if any should be renamed or removed
-4. **Review the 5 legal pages** visually at `/privacy`, `/terms`, `/fair-housing`, `/dmca`, `/do-not-sell` — confirm layout and content look correct
+3. **Review the legal pages/footer restructuring** (see flag above) — confirm `/do-not-sell` removal was intentional and that CCPA opt-out is still satisfied some other way; spot-check `/accessibility`, `/privacy`, `/terms`, `/fair-housing` content and the new EHO logo footer link
+4. **Visually check `/press`** — hero (video, "PRESS" text, overlay darkness/half-speed feel) and the post grid once posts exist
 5. **Continue with remaining work in order:**
    - Checklist templates at `/admin/settings/checklists` (CA Purchase Buyer Side, CA Purchase Seller Side, CA Lease Tenant Side) — Ryan's task
    - Phase 6 tasks (`docs/superpowers/plans/2026-05-22-phase-6-launch.md`): ISR, skeleton loaders, sitemap, JSON-LD, rate limiting, deploy to Vercel + Railway
