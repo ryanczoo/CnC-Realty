@@ -48,15 +48,13 @@ const NAV_LINKS = [
   { href: "/manage", label: "Property Management" },
   { href: "/join", label: "Join CnC" },
   { href: "/contact", label: "Contact" },
-  { href: "/news", label: "News" },
+  { href: "/press", label: "Press" },
 ];
 
 const LEGAL_LINKS = [
+  { href: "/accessibility", label: "Accessibility" },
   { href: "/privacy", label: "Privacy Policy" },
   { href: "/terms", label: "Terms" },
-  { href: "/fair-housing", label: "Fair Housing Notice" },
-{ href: "/dmca", label: "DMCA Notice" },
-  { href: "/do-not-sell", label: "Do Not Sell or Share My Personal Information" },
 ];
 
 export function Footer() {
@@ -204,6 +202,16 @@ export function Footer() {
         {/* Bottom legal bar */}
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 px-8 py-4 lg:px-16">
           <div className="flex flex-wrap items-center gap-4">
+            <Link href="/fair-housing" aria-label="Equal Housing Opportunity">
+              <Image
+                src="/eho-logo.png"
+                alt="Equal Housing Opportunity"
+                width={28}
+                height={28}
+                className="object-contain opacity-40 transition-opacity hover:opacity-70"
+                style={{ filter: "invert(1)" }}
+              />
+            </Link>
             <span className="font-sans text-xs text-white/40">CA DRE #02439028</span>
             <span className="font-sans text-xs text-white/40">Designated Broker - Ryan Chong</span>
             {LEGAL_LINKS.map((link) => (

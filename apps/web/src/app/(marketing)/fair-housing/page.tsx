@@ -8,13 +8,10 @@ export const metadata: Metadata = {
 export default function FairHousingPage() {
   return (
     <div className="min-h-screen bg-[#F2F0EF]">
-      <div className="bg-[#1B1B1B] px-8 pt-28 pb-16 lg:px-16">
-        <p className="mb-3 font-sans text-xs uppercase tracking-widest text-white/40">Legal</p>
-        <h1 className="font-sans text-4xl font-light text-white lg:text-5xl">Fair Housing Notice</h1>
-        <p className="mt-4 font-sans text-sm text-white/50">CA DRE #02439028 · CnC Realty Group</p>
-      </div>
-
-      <div className="mx-auto max-w-4xl px-8 py-16 lg:px-16">
+      <div className="mx-auto max-w-4xl px-8 pt-32 pb-16 lg:px-16">
+        <p className="mb-3 font-sans text-xs uppercase tracking-widest text-[#1B1B1B]/40">Legal</p>
+        <h1 className="font-sans text-4xl font-light text-[#1B1B1B] lg:text-5xl">Fair Housing Notice</h1>
+        <p className="mt-3 mb-12 font-sans text-sm text-[#1B1B1B]/50">CA DRE #02439028 · CnC Realty Group</p>
         <div className="space-y-12 font-sans text-[#1B1B1B]">
 
           <section>

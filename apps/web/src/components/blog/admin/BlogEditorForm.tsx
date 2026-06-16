@@ -188,7 +188,7 @@ export function BlogEditorForm({ post, isAdmin, defaultAuthorName }: BlogEditorF
           placeholder="post-url-slug"
           className="w-full rounded-xl border border-[#1B1B1B]/10 bg-white px-4 py-3 font-sans text-sm text-[#1B1B1B] outline-none placeholder:text-[#1B1B1B]/30 focus:border-[#1B1B1B]/30"
         />
-        <p className="mt-1 font-sans text-xs text-[#1B1B1B]/40">cncrealtygroup.com/news/{slug || "..."}</p>
+        <p className="mt-1 font-sans text-xs text-[#1B1B1B]/40">cncrealtygroup.com/press/{slug || "..."}</p>
       </div>
 
       {/* Excerpt */}

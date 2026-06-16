@@ -17,7 +17,7 @@ const NAV_LINKS = [
   { href: "/manage", label: "Property Management" },
   { href: "/join", label: "Join CnC" },
   { href: "/contact", label: "Contact" },
-  { href: "/news", label: "News" },
+  { href: "/press", label: "Press" },
 ];
 
 function BurgerIcon() {
@@ -46,7 +46,11 @@ export function Navbar() {
     pathname !== "/contact" &&
     pathname !== "/login" &&
     pathname !== "/register" &&
-    pathname !== "/forgot-password";
+    pathname !== "/forgot-password" &&
+    pathname !== "/accessibility" &&
+    pathname !== "/privacy" &&
+    pathname !== "/terms" &&
+    pathname !== "/fair-housing";
   const [scrolled, setScrolled] = useState(false);
   const [pastHero, setPastHero] = useState(!isTransparent);
   const [menuOpen, setMenuOpen] = useState(false);

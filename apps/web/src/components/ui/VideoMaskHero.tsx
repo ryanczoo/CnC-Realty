@@ -18,21 +18,38 @@ const TEXT_PROPS = {
 interface Props {
   maskId: string;
   videoSrc: string;
-  lines: [string, string];
+  lines: string[];
+  heightClass?: string;
+  playbackRate?: number;
+  overlayOpacity?: number;
 }
 
-export function VideoMaskHero({ maskId, videoSrc, lines }: Props) {
+const LINE_Y: Record<number, number[]> = {
+  1: [540],
+  2: [400, 710],
+};
+
+export function VideoMaskHero({ maskId, videoSrc, lines, heightClass = "h-[95vh]", playbackRate = 1, overlayOpacity = 0 }: Props) {
+  const yPositions = LINE_Y[lines.length] ?? LINE_Y[2];
+
   return (
-    <section data-navbar-theme="dark" className="relative h-[95vh] overflow-hidden bg-black">
+    <section data-navbar-theme="dark" className={`relative overflow-hidden bg-black ${heightClass}`}>
       <video
         autoPlay
         muted
         loop
         playsInline
         preload="metadata"
+        ref={(el) => {
+          if (el) el.playbackRate = playbackRate;
+        }}
         className="absolute inset-0 h-full w-full object-cover object-center"
         src={videoSrc}
       />
+
+      {overlayOpacity > 0 && (
+        <div className="absolute inset-0 bg-black" style={{ opacity: overlayOpacity }} />
+      )}
 
       <svg
         className="absolute inset-0 h-full w-full"
@@ -44,8 +61,11 @@ export function VideoMaskHero({ maskId, videoSrc, lines }: Props) {
           <mask id={maskId}>
             <rect width="1920" height="1080" fill="white" />
             <motion.g initial="hidden" animate="visible" variants={container}>
-              <motion.text {...TEXT_PROPS} y="400" variants={WORD_VARIANT}>{lines[0]}</motion.text>
-              <motion.text {...TEXT_PROPS} y="710" variants={WORD_VARIANT}>{lines[1]}</motion.text>
+              {lines.map((line, i) => (
+                <motion.text key={line} {...TEXT_PROPS} y={yPositions[i]} variants={WORD_VARIANT}>
+                  {line}
+                </motion.text>
+              ))}
             </motion.g>
           </mask>
         </defs>

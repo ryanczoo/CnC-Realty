@@ -23,7 +23,7 @@ function formatDate(d: string | Date | null): string {
 
 export function BlogCard({ post }: { post: BlogPostSummary }) {
   return (
-    <Link href={`/news/${post.slug}`} className="group flex flex-col gap-4">
+    <Link href={`/press/${post.slug}`} className="group flex flex-col gap-4">
       <div className="overflow-hidden rounded-2xl aspect-[16/9] bg-[#1B1B1B] relative">
         {post.coverImage ? (
           <Image

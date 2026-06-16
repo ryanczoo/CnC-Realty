@@ -17,7 +17,7 @@ function formatDate(d: string | Date | null): string {
 
 export function BlogHero({ post }: { post: BlogPostSummary }) {
   return (
-    <Link href={`/news/${post.slug}`} className="group flex flex-col gap-8 lg:flex-row lg:items-center lg:gap-12">
+    <Link href={`/press/${post.slug}`} className="group flex flex-col gap-8 lg:flex-row lg:items-center lg:gap-12">
       {/* Cover image */}
       <div className="relative w-full overflow-hidden rounded-2xl aspect-[16/9] bg-[#1B1B1B] lg:w-[58%] flex-shrink-0">
         {post.coverImage ? (

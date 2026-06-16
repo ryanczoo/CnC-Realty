@@ -50,7 +50,7 @@ export default async function EditBlogPostPage({ params }: Props) {
         <h1 className="font-sans text-2xl font-light text-[#1B1B1B]">Edit Post</h1>
         {post.published && (
           <a
-            href={`/news/${post.slug}`}
+            href={`/press/${post.slug}`}
             target="_blank"
             rel="noopener noreferrer"
             className="font-sans text-xs text-[#9E8C61] hover:underline"

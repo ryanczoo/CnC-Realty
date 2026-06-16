@@ -11,15 +11,11 @@ const EFFECTIVE_DATE = "June 15, 2026";
 export default function PrivacyPage() {
   return (
     <div className="min-h-screen bg-[#F2F0EF]">
-      {/* Page header */}
-      <div className="bg-[#1B1B1B] px-8 pt-28 pb-16 lg:px-16">
-        <p className="mb-3 font-sans text-xs uppercase tracking-widest text-white/40">Legal</p>
-        <h1 className="font-sans text-4xl font-light text-white lg:text-5xl">Privacy Policy</h1>
-        <p className="mt-4 font-sans text-sm text-white/50">Effective Date: {EFFECTIVE_DATE}</p>
-      </div>
-
       {/* Content */}
-      <div className="mx-auto max-w-4xl px-8 py-16 lg:px-16">
+      <div className="mx-auto max-w-4xl px-8 pt-32 pb-16 lg:px-16">
+        <p className="mb-3 font-sans text-xs uppercase tracking-widest text-[#1B1B1B]/40">Legal</p>
+        <h1 className="font-sans text-4xl font-light text-[#1B1B1B] lg:text-5xl">Privacy Policy</h1>
+        <p className="mt-3 mb-12 font-sans text-sm text-[#1B1B1B]/50">Effective Date: {EFFECTIVE_DATE}</p>
         <div className="space-y-12 font-sans text-[#1B1B1B]">
 
           <section>
@@ -101,7 +97,7 @@ export default function PrivacyPage() {
               <li><strong>In business transfers:</strong> In connection with a merger, acquisition, or sale of assets, your information may be transferred to a successor entity.</li>
             </ul>
             <p className="mt-4 text-base leading-relaxed text-[#1B1B1B]/80">
-              We do not sell your personal information to third parties for monetary consideration. However, we may share your information with analytics partners in a manner that may constitute a "sale" or "sharing" under the CCPA/CPRA. You have the right to opt out of such sharing — see Section 8 below.
+              We do not sell your personal information to third parties for monetary consideration. However, we may share your information with analytics partners in a manner that may constitute a "sale" or "sharing" under the CCPA/CPRA. You have the right to opt out of such sharing — see Section 9 below.
             </p>
           </section>
 
@@ -131,7 +127,7 @@ export default function PrivacyPage() {
               <li><strong>Right to Know:</strong> You may request a description of the categories and specific pieces of personal information we have collected about you, the sources, our purposes for using it, and the categories of third parties with whom we share it.</li>
               <li><strong>Right to Delete:</strong> You may request deletion of your personal information, subject to certain exceptions (e.g., information we are required to retain by law).</li>
               <li><strong>Right to Correct:</strong> You may request correction of inaccurate personal information we hold about you.</li>
-              <li><strong>Right to Opt Out of Sale/Sharing:</strong> You may direct us not to sell or share your personal information with third parties. To exercise this right, visit our{" "}<Link href="/do-not-sell" className="text-[#9E8C61] underline underline-offset-2">Do Not Sell or Share My Personal Information</Link>{" "}page, or click "Decline" on our cookie consent banner.</li>
+              <li><strong>Right to Opt Out of Sale/Sharing:</strong> You may direct us not to sell or share your personal information with third parties. To exercise this right, email us at <a href="mailto:info@cncrealtygroup.com" className="text-[#9E8C61] underline underline-offset-2">info@cncrealtygroup.com</a> or click &ldquo;Decline&rdquo; on our cookie consent banner.</li>
               <li><strong>Right to Limit Use of Sensitive Personal Information:</strong> You may request that we limit our use of any sensitive personal information to purposes necessary to provide the services you request.</li>
               <li><strong>Right to Non-Discrimination:</strong> We will not discriminate against you for exercising any of your CCPA/CPRA rights.</li>
             </ul>
