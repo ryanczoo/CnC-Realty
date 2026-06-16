@@ -15,12 +15,12 @@ const STEPS = [
   },
   {
     number: "02",
-    title: "Approval",
+    title: "Approve",
     body: "Get your guaranteed approval to join the team within 24 hours.",
   },
   {
     number: "03",
-    title: "Onboarding",
+    title: "Onboard",
     body: "A team member will welcome and prep you for your new journey.",
   },
   {
