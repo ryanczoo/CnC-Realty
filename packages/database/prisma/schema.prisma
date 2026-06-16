@@ -161,6 +161,7 @@ model User {
   uploadedDocuments  FileDocument[]  @relation("DocumentUploader")
   reviewedDocuments  FileDocument[]  @relation("DocumentReviewer")
   fileActivities     FileActivity[]  @relation("FileActivityActor")
+  blogPosts          BlogPost[]
 }
 
 model Account {
@@ -592,6 +593,9 @@ model BlogPost {
   published   Boolean   @default(false)
   publishedAt DateTime?
   coverImage  String?
+  authorId    String?
+  authorName  String?
+  author      User?     @relation(fields: [authorId], references: [id], onDelete: SetNull)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
