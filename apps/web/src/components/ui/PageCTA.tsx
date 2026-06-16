@@ -33,6 +33,7 @@ interface PageCTAProps {
   secondaryLabel?: string;
   secondaryClassName?: string;
   showContactModal?: boolean;
+  primaryShowContactModal?: boolean;
   contactSource?: string;
 }
 
@@ -45,6 +46,7 @@ export function PageCTA({
   secondaryLabel,
   secondaryClassName = "inline-flex items-center rounded-full border border-[#1B1B1B]/20 px-8 py-3.5 font-sans text-sm font-medium text-[#1B1B1B]",
   showContactModal = false,
+  primaryShowContactModal = false,
   contactSource = "WEBSITE_CTA",
 }: PageCTAProps) {
   const [modalOpen, setModalOpen] = useState(false);
@@ -58,10 +60,22 @@ export function PageCTA({
         </h2>
         <p className="mb-10 font-sans text-base text-[#1B1B1B]/60">{body}</p>
         <div className="flex justify-center gap-4">
-          {primaryLabel && primaryHref && (
-            <CTAButton href={primaryHref} className="inline-flex items-center rounded-full bg-[#9E8C61] px-8 py-3.5 font-sans text-sm font-medium text-white">
-              {primaryLabel}
-            </CTAButton>
+          {primaryLabel && (
+            primaryShowContactModal ? (
+              <motion.button
+                onClick={() => setModalOpen(true)}
+                animate={PULSE_ANIMATE}
+                whileHover={{ scale: 1.05, transition: SPRING_HOVER }}
+                transition={PULSE_TRANSITION}
+                className="inline-flex items-center rounded-full bg-[#9E8C61] px-8 py-3.5 font-sans text-sm font-medium text-white"
+              >
+                {primaryLabel}
+              </motion.button>
+            ) : primaryHref ? (
+              <CTAButton href={primaryHref} className="inline-flex items-center rounded-full bg-[#9E8C61] px-8 py-3.5 font-sans text-sm font-medium text-white">
+                {primaryLabel}
+              </CTAButton>
+            ) : null
           )}
           {secondaryLabel && (
             showContactModal ? (

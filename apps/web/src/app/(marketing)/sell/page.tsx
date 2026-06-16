@@ -47,8 +47,8 @@ export default function SellPage() {
         <PageCTA
           heading={<>Free Property-Value <span className="text-cnc-gold font-medium">Estimate</span></>}
           body="By an experienced CnC agent"
-          primaryHref="/contact"
           primaryLabel="Request Valuation"
+          primaryShowContactModal
           secondaryLabel="Message"
           showContactModal
           contactSource="SELL_CTA"
