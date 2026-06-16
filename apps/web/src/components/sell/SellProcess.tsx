@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Fragment } from "react";
 import { motion, useScroll, useTransform } from "motion/react";
 import { RevealLine } from "@/components/ui/reveal-text";
+import { ContactModal } from "@/components/ui/ContactModal";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -48,7 +49,7 @@ const STEPS = [
     slideBottom: "/images/sell/sell-closing-slide-bottom.jpg",
     slideAfterText: true,
     slideShiftLeft: 192,
-    cta: { label: "Start", href: "/contact" },
+    cta: { label: "Start", modal: true },
   },
 ];
 
@@ -64,7 +65,9 @@ const TOTAL_VW =
   STEPS.reduce((sum, s) => sum + PHOTO_VW + (s.slideTop ? SLIDE_VW : 0) + TEXT_VW, 0);
 const TRAVEL_VW = TOTAL_VW - 100;
 
-type Step = (typeof STEPS)[number];
+type Step = Omit<(typeof STEPS)[number], "cta"> & {
+  cta?: { label: string; href?: string; modal?: boolean };
+};
 
 function SlidePanel({ step, shiftLeft = 0 }: { step: Step; shiftLeft?: number }) {
   return (
@@ -92,6 +95,7 @@ function SlidePanel({ step, shiftLeft = 0 }: { step: Step; shiftLeft?: number })
 
 export function SellProcess() {
   const sectionRef = useRef<HTMLElement>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
   const { scrollYProgress } = useScroll({
     target: sectionRef,
@@ -206,15 +210,28 @@ export function SellProcess() {
                     {step.body}
                   </p>
                   {step.cta && (
-                    <MotionLink
-                      href={step.cta.href}
-                      animate={PULSE_ANIMATE}
-                      whileHover={{ scale: 1.1, transition: SPRING_HOVER }}
-                      transition={PULSE_TRANSITION}
-                      className="mt-20 inline-flex rounded-full bg-white px-8 py-3.5 font-sans text-sm font-medium text-[#1B1B1B]"
-                    >
-                      {step.cta.label}
-                    </MotionLink>
+                    step.cta.modal ? (
+                      <motion.button
+                        type="button"
+                        onClick={() => setModalOpen(true)}
+                        animate={PULSE_ANIMATE}
+                        whileHover={{ scale: 1.1, transition: SPRING_HOVER }}
+                        transition={PULSE_TRANSITION}
+                        className="mt-20 inline-flex rounded-full bg-white px-8 py-3.5 font-sans text-sm font-medium text-[#1B1B1B]"
+                      >
+                        {step.cta.label}
+                      </motion.button>
+                    ) : (
+                      <MotionLink
+                        href={step.cta.href!}
+                        animate={PULSE_ANIMATE}
+                        whileHover={{ scale: 1.1, transition: SPRING_HOVER }}
+                        transition={PULSE_TRANSITION}
+                        className="mt-20 inline-flex rounded-full bg-white px-8 py-3.5 font-sans text-sm font-medium text-[#1B1B1B]"
+                      >
+                        {step.cta.label}
+                      </MotionLink>
+                    )
                   )}
                 </div>
               </div>
@@ -228,6 +245,12 @@ export function SellProcess() {
           ))}
         </motion.div>
       </div>
+
+      <ContactModal
+        open={modalOpen}
+        source="SELL_PROCESS_CTA"
+        onClose={() => setModalOpen(false)}
+      />
     </section>
   );
 }
