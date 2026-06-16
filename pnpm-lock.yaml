@@ -90,9 +90,15 @@ importers:
       '@tabler/icons-react':
         specifier: ^3.41.1
         version: 3.41.1(react@18.3.1)
+      '@tailwindcss/typography':
+        specifier: ^0.5.20
+        version: 0.5.20(tailwindcss@3.4.19(tsx@4.21.0))
       '@tanstack/react-query':
         specifier: ^5.100.7
         version: 5.100.7(react@18.3.1)
+      '@tiptap/extension-link':
+        specifier: ^3.26.1
+        version: 3.26.1(@tiptap/core@3.23.5(@tiptap/pm@3.23.5))(@tiptap/pm@3.23.5)
       '@tiptap/extension-placeholder':
         specifier: ^3.23.5
         version: 3.23.5(@tiptap/extensions@3.23.5(@tiptap/core@3.23.5(@tiptap/pm@3.23.5))(@tiptap/pm@3.23.5))
@@ -1567,6 +1573,11 @@ packages:
   '@tabler/icons@3.41.1':
     resolution: {integrity: sha512-OaRnVbRmH2nHtFeg+RmMJ/7m2oBIF9XCJAUD5gQnMrpK9f05ydj8MZrAf3NZQqOXyxGN1UBL0D5IKLLEUfr74Q==}
 
+  '@tailwindcss/typography@0.5.20':
+    resolution: {integrity: sha512-hwbzQuNUfcPvbegQFatVPl/MY/tcM9KLl963hQ5laJKPh81TEZ1+dNG9PirGvcaDBkp+BCshExAyKVPW91dozw==}
+    peerDependencies:
+      tailwindcss: '>=3.0.0 || >=4.0.0 || insiders'
+
   '@tanstack/query-core@5.100.7':
     resolution: {integrity: sha512-5R7i6ENJLhVeeJrrUz7jKBXUXv/BJrxf9FQJSkR13bPrb3zOcE8A0Z0PxYCcsKPOsiIlTibrBL/zZbtUO1TFyQ==}
 
@@ -1655,11 +1666,11 @@ packages:
     peerDependencies:
       '@tiptap/core': 3.23.5
 
-  '@tiptap/extension-link@3.23.5':
-    resolution: {integrity: sha512-FEI58NAPnauBbs4nw1dkgRyEhcWnure0vIlStfQoQGXxj3xSRvxKH2lOkz54fGzuzRJAoudyLU65HW6D7kc+8Q==}
+  '@tiptap/extension-link@3.26.1':
+    resolution: {integrity: sha512-aLLGLgikuhLFHRbjfUC6D4gRg+NUty4uhW7YkyVl8AxxPME47dPbCOX4H6uLCjEZcn3WnfNuCTr6HCTl0KEmGA==}
     peerDependencies:
-      '@tiptap/core': 3.23.5
-      '@tiptap/pm': 3.23.5
+      '@tiptap/core': 3.26.1
+      '@tiptap/pm': 3.26.1
 
   '@tiptap/extension-list-item@3.23.5':
     resolution: {integrity: sha512-l7Hb4rfNIkO6JrNJYkdXap6QYXCz4XeeFmI1bfQgEiwPGs+RAn/+0cOdg7q+6MmtZFac5uSXV0PftPk6A0GsEA==}
@@ -4274,6 +4285,10 @@ packages:
     peerDependencies:
       postcss: ^8.2.14
 
+  postcss-selector-parser@6.0.10:
+    resolution: {integrity: sha512-IQ7TZdoaqbT+LCpShg46jnZVlhWD2w6iQYAcYXfHARZ7X1t/UGhhceQDs5X0cGqKvYlHNOuv7Oa1xmb0oQuA3w==}
+    engines: {node: '>=4'}
+
   postcss-selector-parser@6.1.2:
     resolution: {integrity: sha512-Q8qQfPiZ+THO/3ZrOrO0cJJKfpYCagtMUkXbnEfmgUjwXg6z/WBeOyS9APBBPCTSiDV+s4SwQGu8yFsiMRIudg==}
     engines: {node: '>=4'}
@@ -6732,6 +6747,11 @@ snapshots:
 
   '@tabler/icons@3.41.1': {}
 
+  '@tailwindcss/typography@0.5.20(tailwindcss@3.4.19(tsx@4.21.0))':
+    dependencies:
+      postcss-selector-parser: 6.0.10
+      tailwindcss: 3.4.19(tsx@4.21.0)
+
   '@tanstack/query-core@5.100.7': {}
 
   '@tanstack/react-query@5.100.7(react@18.3.1)':
@@ -6807,7 +6827,7 @@ snapshots:
     dependencies:
       '@tiptap/core': 3.23.5(@tiptap/pm@3.23.5)
 
-  '@tiptap/extension-link@3.23.5(@tiptap/core@3.23.5(@tiptap/pm@3.23.5))(@tiptap/pm@3.23.5)':
+  '@tiptap/extension-link@3.26.1(@tiptap/core@3.23.5(@tiptap/pm@3.23.5))(@tiptap/pm@3.23.5)':
     dependencies:
       '@tiptap/core': 3.23.5(@tiptap/pm@3.23.5)
       '@tiptap/pm': 3.23.5
@@ -6902,7 +6922,7 @@ snapshots:
       '@tiptap/extension-heading': 3.23.5(@tiptap/core@3.23.5(@tiptap/pm@3.23.5))
       '@tiptap/extension-horizontal-rule': 3.23.5(@tiptap/core@3.23.5(@tiptap/pm@3.23.5))(@tiptap/pm@3.23.5)
       '@tiptap/extension-italic': 3.23.5(@tiptap/core@3.23.5(@tiptap/pm@3.23.5))
-      '@tiptap/extension-link': 3.23.5(@tiptap/core@3.23.5(@tiptap/pm@3.23.5))(@tiptap/pm@3.23.5)
+      '@tiptap/extension-link': 3.26.1(@tiptap/core@3.23.5(@tiptap/pm@3.23.5))(@tiptap/pm@3.23.5)
       '@tiptap/extension-list': 3.23.5(@tiptap/core@3.23.5(@tiptap/pm@3.23.5))(@tiptap/pm@3.23.5)
       '@tiptap/extension-list-item': 3.23.5(@tiptap/extension-list@3.23.5(@tiptap/core@3.23.5(@tiptap/pm@3.23.5))(@tiptap/pm@3.23.5))
       '@tiptap/extension-list-keymap': 3.23.5(@tiptap/extension-list@3.23.5(@tiptap/core@3.23.5(@tiptap/pm@3.23.5))(@tiptap/pm@3.23.5))
@@ -9599,6 +9619,11 @@ snapshots:
     dependencies:
       postcss: 8.5.13
       postcss-selector-parser: 6.1.2
+
+  postcss-selector-parser@6.0.10:
+    dependencies:
+      cssesc: 3.0.0
+      util-deprecate: 1.0.2
 
   postcss-selector-parser@6.1.2:
     dependencies:
