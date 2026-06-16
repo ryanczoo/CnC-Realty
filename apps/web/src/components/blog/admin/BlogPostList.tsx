@@ -9,8 +9,8 @@ interface PostRow {
   title: string;
   slug: string;
   published: boolean;
-  publishedAt: string | null;
-  createdAt: string;
+  publishedAt: Date | string | null;
+  createdAt: Date | string;
   coverImage: string | null;
   authorName: string | null;
   author: { name: string | null } | null;
