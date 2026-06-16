@@ -115,6 +115,12 @@ export default async function AdminOverviewPage() {
         >
           View All Files →
         </Link>
+        <Link
+          href="/admin/blog"
+          className="rounded-full bg-[#1B1B1B] px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-75"
+        >
+          Manage Blog →
+        </Link>
       </div>
 
       {/* Broker Supervision — Upcoming Deadlines */}
