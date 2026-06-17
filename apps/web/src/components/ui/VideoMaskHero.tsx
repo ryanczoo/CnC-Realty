@@ -22,6 +22,7 @@ interface Props {
   heightClass?: string;
   playbackRate?: number;
   overlayOpacity?: number;
+  videoPosition?: string;
 }
 
 const LINE_Y: Record<number, number[]> = {
@@ -29,7 +30,7 @@ const LINE_Y: Record<number, number[]> = {
   2: [400, 710],
 };
 
-export function VideoMaskHero({ maskId, videoSrc, lines, heightClass = "h-[95vh]", playbackRate = 1, overlayOpacity = 0 }: Props) {
+export function VideoMaskHero({ maskId, videoSrc, lines, heightClass = "h-[95vh]", playbackRate = 1, overlayOpacity = 0, videoPosition = "object-center" }: Props) {
   const yPositions = LINE_Y[lines.length] ?? LINE_Y[2];
 
   return (
@@ -43,7 +44,7 @@ export function VideoMaskHero({ maskId, videoSrc, lines, heightClass = "h-[95vh]
         ref={(el) => {
           if (el) el.playbackRate = playbackRate;
         }}
-        className="absolute inset-0 h-full w-full object-cover object-center"
+        className={`absolute inset-0 h-full w-full object-cover ${videoPosition}`}
         src={videoSrc}
       />
 

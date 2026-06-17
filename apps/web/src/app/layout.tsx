@@ -1,7 +1,6 @@
 import { Footer } from "@/components/layout/Footer";
 import { Navbar } from "@/components/layout/Navbar";
 import { Providers } from "@/components/Providers";
-import { CookieBanner } from "@/components/ui/CookieBanner";
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 import localFont from "next/font/local";
@@ -46,7 +45,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <Navbar />
           <main className="relative z-10">{children}</main>
           <Footer />
-          <CookieBanner />
         </Providers>
       </body>
     </html>

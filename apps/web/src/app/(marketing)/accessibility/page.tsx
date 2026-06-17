@@ -9,7 +9,7 @@ export default function AccessibilityPage() {
   return (
     <div className="min-h-screen bg-[#F2F0EF]">
       {/* Content */}
-      <div className="mx-auto max-w-3xl px-8 pt-32 pb-16 lg:px-0">
+      <div className="mx-auto max-w-4xl px-8 pt-32 pb-16 lg:px-16">
         <p className="mb-3 font-sans text-xs uppercase tracking-widest text-[#1B1B1B]/40">Legal</p>
         <h1 className="mb-12 font-sans text-4xl font-light text-[#1B1B1B] lg:text-5xl">Accessibility</h1>
         <div className="space-y-10 font-sans">

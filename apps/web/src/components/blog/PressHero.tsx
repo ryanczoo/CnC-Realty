@@ -11,6 +11,7 @@ export function PressHero() {
       heightClass="h-[47.5vh]"
       playbackRate={0.5}
       overlayOpacity={0.35}
+      videoPosition="object-[center_25%]"
     />
   );
 }

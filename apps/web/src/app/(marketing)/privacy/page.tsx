@@ -75,7 +75,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="mb-4 font-sans text-xl font-medium text-[#1B1B1B]">5. Cookies and Tracking Technologies</h2>
             <p className="mb-3 text-base leading-relaxed text-[#1B1B1B]/80">
-              Our Site uses cookies and similar tracking technologies to improve your experience. CalOPPA requires us to disclose how we respond to "Do Not Track" signals: we currently do not alter our data collection practices in response to browser-based Do Not Track signals because there is no consensus on what such signals mean in this context. We offer a cookie consent banner through which California residents may decline analytics tracking.
+              Our Site uses cookies and similar tracking technologies to improve your experience. CalOPPA requires us to disclose how we respond to "Do Not Track" signals: we currently do not alter our data collection practices in response to browser-based Do Not Track signals because there is no consensus on what such signals mean in this context.
             </p>
             <p className="mb-3 text-base leading-relaxed text-[#1B1B1B]/80">
               You may disable cookies through your browser settings. Note that disabling cookies may affect the functionality of some Site features.
@@ -97,7 +97,7 @@ export default function PrivacyPage() {
               <li><strong>In business transfers:</strong> In connection with a merger, acquisition, or sale of assets, your information may be transferred to a successor entity.</li>
             </ul>
             <p className="mt-4 text-base leading-relaxed text-[#1B1B1B]/80">
-              We do not sell your personal information to third parties for monetary consideration. However, we may share your information with analytics partners in a manner that may constitute a "sale" or "sharing" under the CCPA/CPRA. You have the right to opt out of such sharing — see Section 9 below.
+              We do not sell your personal information to third parties for monetary consideration. We share data with analytics providers (such as PostHog) solely to operate and improve our Site; this data is not sold or shared for third-party marketing purposes.
             </p>
           </section>
 
@@ -127,7 +127,7 @@ export default function PrivacyPage() {
               <li><strong>Right to Know:</strong> You may request a description of the categories and specific pieces of personal information we have collected about you, the sources, our purposes for using it, and the categories of third parties with whom we share it.</li>
               <li><strong>Right to Delete:</strong> You may request deletion of your personal information, subject to certain exceptions (e.g., information we are required to retain by law).</li>
               <li><strong>Right to Correct:</strong> You may request correction of inaccurate personal information we hold about you.</li>
-              <li><strong>Right to Opt Out of Sale/Sharing:</strong> You may direct us not to sell or share your personal information with third parties. To exercise this right, email us at <a href="mailto:info@cncrealtygroup.com" className="text-[#9E8C61] underline underline-offset-2">info@cncrealtygroup.com</a> or click &ldquo;Decline&rdquo; on our cookie consent banner.</li>
+              <li><strong>Right to Opt Out of Sale/Sharing:</strong> You may direct us not to sell or share your personal information with third parties. To exercise this right, email us at <a href="mailto:info@cncrealtygroup.com" className="text-[#9E8C61] underline underline-offset-2">info@cncrealtygroup.com</a>.</li>
               <li><strong>Right to Limit Use of Sensitive Personal Information:</strong> You may request that we limit our use of any sensitive personal information to purposes necessary to provide the services you request.</li>
               <li><strong>Right to Non-Discrimination:</strong> We will not discriminate against you for exercising any of your CCPA/CPRA rights.</li>
             </ul>
