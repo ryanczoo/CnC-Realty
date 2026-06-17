@@ -31,13 +31,19 @@ export async function POST(
     const body = await req.json();
     const data = schema.parse(body);
 
-    const activity = await prisma.activity.create({
-      data: { ...data, leadId: params.id },
-    });
+    const [activity] = await Promise.all([
+      prisma.activity.create({
+        data: { ...data, leadId: params.id },
+      }),
+      prisma.lead.update({
+        where: { id: params.id },
+        data: { lastContactedAt: new Date() },
+      }),
+    ]);
     return NextResponse.json(activity, { status: 201 });
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: err.errors[0].message }, { status: 400 });
+      return NextResponse.json({ error: err.issues[0].message }, { status: 400 });
     }
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
