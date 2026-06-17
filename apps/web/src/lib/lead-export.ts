@@ -1,4 +1,4 @@
-type LeadRow = {
+export type LeadRow = {
   firstName: string;
   lastName: string;
   email: string;
