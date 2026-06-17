@@ -20,11 +20,14 @@ enum LeadStatus {
   NEW
   CONTACTED
   QUALIFIED
+  HOT_PROSPECT
+  NURTURE
   SHOWING
   OFFER
   UNDER_CONTRACT
   CLOSED
   LOST
+  SPHERE
 }
 
 enum LeadSource {
@@ -162,6 +165,7 @@ model User {
   reviewedDocuments  FileDocument[]  @relation("DocumentReviewer")
   fileActivities     FileActivity[]  @relation("FileActivityActor")
   blogPosts          BlogPost[]
+  propertyViews      PropertyView[]
 }
 
 model Account {
@@ -227,6 +231,7 @@ model Agent {
   listingFiles     ListingFile[]
   transactionFiles TransactionFile[]
   campaigns        Campaign[]
+  assignedTasks    LeadTask[]        @relation("TaskAssignee")
 }
 
 model Property {
@@ -285,14 +290,23 @@ model Lead {
   utmSource   String?
   utmMedium   String?
   utmCampaign String?
-  agentId     String?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  agentId         String?
+  priceMin        Float?
+  priceMax        Float?
+  timeframeToMove String?
+  lastContactedAt DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
 
-  agent            Agent?            @relation(fields: [agentId], references: [id])
-  activities       Activity[]
-  transactionFiles TransactionFile[]
-  campaignContacts CampaignContact[]
+  agent             Agent?             @relation(fields: [agentId], references: [id])
+  activities        Activity[]
+  transactionFiles  TransactionFile[]
+  campaignContacts  CampaignContact[]
+  tags              LeadTag[]
+  tasks             LeadTask[]
+  customFieldValues CustomFieldValue[]
+  relationshipsFrom LeadRelationship[] @relation("RelationshipFrom")
+  relationshipsTo   LeadRelationship[] @relation("RelationshipTo")
 }
 
 model Activity {
@@ -609,6 +623,89 @@ model Message {
   body      String
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  color     String   @default("#9E8C61")
+  createdAt DateTime @default(now())
+
+  leads LeadTag[]
+}
+
+model LeadTag {
+  leadId String
+  tagId  String
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId],  references: [id], onDelete: Cascade)
+
+  @@id([leadId, tagId])
+}
+
+model LeadRelationship {
+  id         String   @id @default(cuid())
+  fromLeadId String
+  toLeadId   String
+  type       String
+  createdAt  DateTime @default(now())
+
+  fromLead Lead @relation("RelationshipFrom", fields: [fromLeadId], references: [id], onDelete: Cascade)
+  toLead   Lead @relation("RelationshipTo",   fields: [toLeadId],   references: [id], onDelete: Cascade)
+
+  @@unique([fromLeadId, toLeadId])
+}
+
+model LeadTask {
+  id          String    @id @default(cuid())
+  leadId      String
+  title       String
+  taskType    String    @default("FOLLOW_UP")
+  assigneeId  String?
+  dueDate     DateTime?
+  done        Boolean   @default(false)
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  lead     Lead   @relation(fields: [leadId],     references: [id], onDelete: Cascade)
+  assignee Agent? @relation("TaskAssignee", fields: [assigneeId], references: [id])
+}
+
+model PropertyView {
+  id        String   @id @default(cuid())
+  userId    String
+  mlsNumber String
+  viewedAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([mlsNumber])
+}
+
+model CustomFieldDef {
+  id          String   @id @default(cuid())
+  name        String
+  fieldType   String
+  options     Json     @default("[]")
+  order       Int      @default(0)
+  hideIfEmpty Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  values CustomFieldValue[]
+}
+
+model CustomFieldValue {
+  id               String @id @default(cuid())
+  customFieldDefId String
+  leadId           String
+  value            String
+
+  def  CustomFieldDef @relation(fields: [customFieldDefId], references: [id], onDelete: Cascade)
+  lead Lead           @relation(fields: [leadId],           references: [id], onDelete: Cascade)
+
+  @@unique([customFieldDefId, leadId])
 }
 
 model SiteSettings {
