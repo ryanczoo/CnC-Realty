@@ -24,6 +24,7 @@ interface Props {
 export function AdminLeadsMergeClient({ leads }: Props) {
   const [selected, setSelected] = useState<string[]>([]);
   const [merging, setMerging] = useState(false);
+  const [isMerging, setIsMerging] = useState(false);
 
   function toggleSelect(id: string) {
     setSelected((prev) =>
@@ -36,15 +37,27 @@ export function AdminLeadsMergeClient({ leads }: Props) {
   }
 
   async function confirmMerge(winnerId: string) {
-    const loserId = selected.find((s) => s !== winnerId)!;
-    await fetch("/api/admin/leads/merge", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ winnerId, loserId }),
-    });
-    setMerging(false);
-    setSelected([]);
-    window.location.reload();
+    if (isMerging) return;
+    setIsMerging(true);
+    try {
+      const loserId = selected.find((s) => s !== winnerId)!;
+      const res = await fetch("/api/admin/leads/merge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ winnerId, loserId }),
+      });
+      if (!res.ok) {
+        alert("Merge failed. Please try again.");
+        return;
+      }
+      setMerging(false);
+      setSelected([]);
+      window.location.reload();
+    } catch {
+      alert("Network error. Please try again.");
+    } finally {
+      setIsMerging(false);
+    }
   }
 
   const selectedLeads = leads.filter((l) => selected.includes(l.id));
@@ -79,6 +92,9 @@ export function AdminLeadsMergeClient({ leads }: Props) {
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-[#1B1B1B]/50">
                 Email
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-widest text-[#1B1B1B]/40">
+                Phone
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-[#1B1B1B]/50">
                 Status
@@ -124,6 +140,7 @@ export function AdminLeadsMergeClient({ leads }: Props) {
                   </Link>
                 </td>
                 <td className="px-4 py-3 text-[#1B1B1B]/70">{lead.email}</td>
+                <td className="px-4 py-3 text-[#1B1B1B]/60">{lead.phone ?? "—"}</td>
                 <td className="px-4 py-3">
                   <span
                     className={`rounded-full px-2.5 py-1 text-xs font-medium ${
@@ -172,15 +189,12 @@ export function AdminLeadsMergeClient({ leads }: Props) {
                 <button
                   key={lead.id}
                   onClick={() => confirmMerge(lead.id)}
-                  className="w-full rounded-xl border border-[#1B1B1B]/10 px-4 py-3 text-left hover:border-[#9E8C61] hover:bg-[#F2F0EF]"
+                  disabled={isMerging}
+                  className="w-full rounded-xl border border-[#1B1B1B]/10 px-4 py-3 text-left hover:border-[#9E8C61] hover:bg-[#F2F0EF] disabled:opacity-50"
                 >
-                  <p className="font-medium text-[#1B1B1B]">
-                    {lead.firstName} {lead.lastName}
-                  </p>
+                  <p className="font-medium text-[#1B1B1B]">{lead.firstName} {lead.lastName}</p>
                   <p className="text-xs text-[#1B1B1B]/50">{lead.email}</p>
-                  <p className="mt-1 text-xs font-medium text-[#9E8C61]">
-                    Keep this record →
-                  </p>
+                  <p className="mt-1 text-xs font-medium text-[#9E8C61]">{isMerging ? "Merging..." : "Keep this record →"}</p>
                 </button>
               ))}
             </div>
