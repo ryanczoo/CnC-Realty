@@ -232,6 +232,7 @@ model Agent {
   transactionFiles TransactionFile[]
   campaigns        Campaign[]
   assignedTasks    LeadTask[]        @relation("TaskAssignee")
+  smartLists       SmartList[]
 }
 
 model Property {
@@ -713,4 +714,17 @@ model SiteSettings {
   key       String   @unique
   value     String
   updatedAt DateTime @updatedAt
+}
+
+model SmartList {
+  id        String   @id @default(cuid())
+  agentId   String
+  name      String
+  filters   Json     @default("[]")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([agentId])
 }
