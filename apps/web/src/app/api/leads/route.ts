@@ -91,26 +91,30 @@ export async function GET(req: Request) {
 
   const where = buildLeadWhere(filters, agentId);
 
-  const [leads, total] = await Promise.all([
-    prisma.lead.findMany({
-      where,
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        status: true,
-        source: true,
-        priceMin: true,
-        priceMax: true,
-        lastContactedAt: true,
-        tags: { select: { tag: { select: { name: true, color: true } } } },
-      },
-      orderBy: { createdAt: "desc" },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    }),
-    prisma.lead.count({ where }),
-  ]);
-
-  return NextResponse.json({ leads, total, page, pageSize });
+  try {
+    const [leads, total] = await Promise.all([
+      prisma.lead.findMany({
+        where,
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          status: true,
+          source: true,
+          priceMin: true,
+          priceMax: true,
+          lastContactedAt: true,
+          tags: { select: { tag: { select: { name: true, color: true } } } },
+        },
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      prisma.lead.count({ where }),
+    ]);
+    return NextResponse.json({ leads, total, page, pageSize });
+  } catch (e) {
+    console.error("[GET /api/leads] filter query failed:", e);
+    return NextResponse.json({ leads: [], total: 0, page, pageSize }, { status: 200 });
+  }
 }

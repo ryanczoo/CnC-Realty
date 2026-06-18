@@ -6,28 +6,26 @@ import type { FilterCondition } from "@/lib/smart-list-filters";
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const STATUSES = [
-  { value: "NEW_LEAD",          label: "New Lead" },
-  { value: "ATTEMPTING_CONTACT",label: "Attempting Contact" },
-  { value: "CONTACT_MADE",      label: "Contact Made" },
-  { value: "APPOINTMENT_SET",   label: "Appointment Set" },
-  { value: "APPOINTMENT_MET",   label: "Appointment Met" },
-  { value: "NURTURE",           label: "Nurture" },
-  { value: "HOT_PROSPECT",      label: "Hot Prospect" },
-  { value: "SPHERE",            label: "Sphere" },
-  { value: "UNDER_CONTRACT",    label: "Under Contract" },
-  { value: "CLOSED",            label: "Closed" },
-  { value: "LOST",              label: "Lost" },
+  { value: "NEW",            label: "New" },
+  { value: "CONTACTED",      label: "Contacted" },
+  { value: "QUALIFIED",      label: "Qualified" },
+  { value: "HOT_PROSPECT",   label: "Hot Prospect" },
+  { value: "NURTURE",        label: "Nurture" },
+  { value: "SHOWING",        label: "Showing" },
+  { value: "OFFER",          label: "Offer" },
+  { value: "UNDER_CONTRACT", label: "Under Contract" },
+  { value: "CLOSED",         label: "Past Client" },
+  { value: "LOST",           label: "Dead Lead" },
+  { value: "SPHERE",         label: "Sphere" },
 ];
 
 const SOURCES = [
-  { value: "AGENT_OUTREACH", label: "Agent Outreach" },
-  { value: "REFERRAL",       label: "Referral" },
-  { value: "OPEN_HOUSE",     label: "Open House" },
-  { value: "WEBSITE",        label: "Website" },
-  { value: "SOCIAL_MEDIA",   label: "Social Media" },
-  { value: "ZILLOW",         label: "Zillow" },
-  { value: "REALTOR_COM",    label: "Realtor.com" },
-  { value: "OTHER",          label: "Other" },
+  { value: "WEBSITE",   label: "Website" },
+  { value: "REFERRAL",  label: "Referral" },
+  { value: "SOCIAL",    label: "Social" },
+  { value: "OPEN_HOUSE",label: "Open House" },
+  { value: "COLD_CALL", label: "Cold Call" },
+  { value: "OTHER",     label: "Other" },
 ];
 
 const TIMEFRAMES = [
