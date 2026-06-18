@@ -18,6 +18,7 @@ const ADMIN_NAV = [
   { href: "/admin/leads", label: "All Leads" },
   { href: "/admin/transactions", label: "All Files" },
   { href: "/admin/settings/checklists", label: "Checklists" },
+  { href: "/admin/settings/tags", label: "Tags" },
 ];
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
