@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { PREBUILT_LISTS } from "@/lib/smart-list-filters";
-import SmartListDrawer from "./SmartListDrawer";
+import { SmartListDrawer } from "./SmartListDrawer";
 
 type CustomList = { id: string; name: string; filters: unknown };
 
@@ -35,7 +35,8 @@ export function SmartListSidebar({ customLists: initialLists }: Props) {
   }
 
   async function deleteList(id: string) {
-    await fetch(`/api/smart-lists/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/smart-lists/${id}`, { method: "DELETE" });
+    if (!res.ok) return;
     setLists(prev => prev.filter(l => l.id !== id));
     if (selected === id) selectList(null);
   }
@@ -118,12 +119,15 @@ export function SmartListSidebar({ customLists: initialLists }: Props) {
       <SmartListDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        onSaved={() => {
+        onSaved={(saved) => {
           setDrawerOpen(false);
-          // Refresh custom lists after save
           fetch("/api/smart-lists")
             .then(r => r.json())
-            .then(data => { if (Array.isArray(data)) setLists(data); });
+            .then(data => {
+              if (Array.isArray(data)) setLists(data);
+            });
+          // Navigate to the newly created/updated list
+          selectList(saved.id);
         }}
         initial={
           editingList
