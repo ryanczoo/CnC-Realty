@@ -1,74 +1,103 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
-import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
-import { AddNoteForm } from "@/components/dashboard/AddNoteForm";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import Link from "next/link";
+import { LeadDetailSidebar } from "@/components/leads/LeadDetailSidebar";
+import { LeadProfileTabs } from "@/components/leads/LeadProfileTabs";
 
-const STATUS_LABELS: Record<string, string> = {
-  NEW: "New", CONTACTED: "Contacted", QUALIFIED: "Qualified",
-  SHOWING: "Showing", OFFER: "Offer", UNDER_CONTRACT: "Under Contract",
-  CLOSED: "Closed", LOST: "Lost",
-};
+export const dynamic = "force-dynamic";
 
 export default async function LeadDetailPage({ params }: { params: { id: string } }) {
-  let lead = null;
-  try {
-    lead = await prisma.lead.findUnique({
-      where: { id: params.id },
-      include: { activities: { orderBy: { createdAt: "desc" } } },
-    });
-  } catch {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="text-center">
-          <p className="font-light text-[#1B1B1B]">Unable to load lead details right now.</p>
-          <p className="mt-2 text-sm text-[#1B1B1B]/50">Please check your connection and try again.</p>
-        </div>
-      </div>
-    );
-  }
+  const session = await getServerSession(authOptions);
+  const userId = (session!.user as any).id;
+  const role = (session!.user as any).role;
+
+  const agent = role !== "ADMIN" ? await prisma.agent.findUnique({ where: { userId } }) : null;
+
+  const lead = await prisma.lead.findUnique({
+    where: { id: params.id },
+    include: {
+      activities: { orderBy: { createdAt: "desc" } },
+      tags: { include: { tag: true } },
+      tasks: { orderBy: { createdAt: "asc" } },
+      relationshipsFrom: {
+        include: { toLead: { select: { id: true, firstName: true, lastName: true, email: true } } },
+      },
+      relationshipsTo: {
+        include: { fromLead: { select: { id: true, firstName: true, lastName: true, email: true } } },
+      },
+    },
+  });
+
   if (!lead) notFound();
+  if (agent && lead.agentId !== agent.id) notFound();
+
+  // Serialize dates to strings for client components
+  const sidebarLead = {
+    id: lead.id,
+    firstName: lead.firstName,
+    lastName: lead.lastName,
+    email: lead.email,
+    phone: lead.phone,
+    status: lead.status,
+    source: lead.source,
+    score: lead.score,
+    priceMin: lead.priceMin,
+    priceMax: lead.priceMax,
+    timeframeToMove: lead.timeframeToMove,
+    lastContactedAt: lead.lastContactedAt?.toISOString() ?? null,
+    createdAt: lead.createdAt.toISOString(),
+    utmSource: lead.utmSource,
+    utmMedium: lead.utmMedium,
+    utmCampaign: lead.utmCampaign,
+    tags: lead.tags,
+    relationshipsFrom: lead.relationshipsFrom.map((r) => ({
+      id: r.id,
+      type: r.type,
+      lead: r.toLead,
+    })),
+    relationshipsTo: lead.relationshipsTo.map((r) => ({
+      id: r.id,
+      type: r.type,
+      lead: r.fromLead,
+    })),
+  };
+
+  const tasks = lead.tasks.map((t) => ({
+    id: t.id,
+    title: t.title,
+    taskType: t.taskType,
+    dueDate: t.dueDate?.toISOString() ?? null,
+    done: t.done,
+    completedAt: t.completedAt?.toISOString() ?? null,
+  }));
+
+  // Serialize activities — ActivityFeed expects { id, type, content, createdAt: string }
+  const activities = lead.activities.map((a) => ({
+    id: a.id,
+    type: a.type,
+    content: a.content,
+    createdAt: a.createdAt.toISOString(),
+  }));
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <Link href="/dashboard/leads" className="mb-6 inline-block font-sans text-sm text-[#1B1B1B]/40 hover:text-[#1B1B1B]">
+    <div>
+      <Link
+        href="/dashboard/leads"
+        className="mb-6 inline-block font-sans text-sm text-[#1B1B1B]/40 hover:text-[#1B1B1B]"
+      >
         ← Back to Leads
       </Link>
 
-      <div className="mb-8 rounded-2xl bg-white p-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="font-sans text-2xl font-light text-[#1B1B1B]">
-              {lead.firstName} {lead.lastName}
-            </h1>
-            <p className="mt-1 font-sans text-sm text-[#1B1B1B]/50">{lead.email}</p>
-            {lead.phone && <p className="font-sans text-sm text-[#1B1B1B]/50">{lead.phone}</p>}
-          </div>
-          <span className="rounded-full bg-[#9E8C61]/15 px-3 py-1 font-sans text-xs font-medium text-[#9E8C61]">
-            {STATUS_LABELS[lead.status] ?? lead.status}
-          </span>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-1">
+          <LeadDetailSidebar lead={sidebarLead} onRefresh={() => {}} />
         </div>
-        {lead.notes && (
-          <div className="mt-4 border-t border-[#1B1B1B]/10 pt-4">
-            <p className="font-sans text-xs font-medium uppercase tracking-widest text-[#1B1B1B]/40">Message</p>
-            <p className="mt-1 font-sans text-sm text-[#1B1B1B]/70">{lead.notes}</p>
-          </div>
-        )}
-        <p className="mt-4 font-sans text-xs text-[#1B1B1B]/30">
-          Received {new Date(lead.createdAt).toLocaleDateString()}
-        </p>
-      </div>
 
-      <div className="mb-6 rounded-2xl bg-white p-6">
-        <h2 className="mb-4 font-sans text-sm font-medium text-[#1B1B1B]">Add Activity</h2>
-        <AddNoteForm leadId={lead.id} />
-      </div>
-
-      <div className="rounded-2xl bg-white p-6">
-        <h2 className="mb-4 font-sans text-sm font-medium text-[#1B1B1B]">Activity</h2>
-        <ActivityFeed
-          activities={lead.activities.map((a) => ({ ...a, createdAt: a.createdAt.toISOString() }))}
-        />
+        <div className="lg:col-span-2">
+          <LeadProfileTabs leadId={lead.id} activities={activities} tasks={tasks} />
+        </div>
       </div>
     </div>
   );
