@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import Link from "next/link";
-import { LeadDetailSidebar } from "@/components/leads/LeadDetailSidebar";
+import { LeadDetailSidebarWrapper } from "@/components/leads/LeadDetailSidebarWrapper";
 import { LeadProfileTabs } from "@/components/leads/LeadProfileTabs";
 
 export const dynamic = "force-dynamic";
@@ -92,7 +92,7 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-1">
-          <LeadDetailSidebar lead={sidebarLead} onRefresh={() => {}} />
+          <LeadDetailSidebarWrapper lead={sidebarLead} />
         </div>
 
         <div className="lg:col-span-2">

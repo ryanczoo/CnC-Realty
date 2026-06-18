@@ -10,9 +10,19 @@ const patchSchema = z.object({
   done: z.boolean().optional(),
 });
 
+async function assertOwnership(leadId: string, userId: string, role: string) {
+  if (role === "ADMIN") return true;
+  const agent = await prisma.agent.findUnique({ where: { userId } });
+  const lead = await prisma.lead.findUnique({ where: { id: leadId }, select: { agentId: true } });
+  return agent && lead && lead.agentId === agent.id;
+}
+
 export async function PATCH(req: Request, { params }: { params: { id: string; taskId: string } }) {
-  const { error } = await requireAuth("AGENT");
+  const { session, error } = await requireAuth("AGENT");
   if (error) return error;
+
+  const owns = await assertOwnership(params.id, session.user.id, session.user.role);
+  if (!owns) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   try {
     const body = patchSchema.parse(await req.json());
@@ -21,7 +31,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string; ta
     if (body.done === true) data.completedAt = new Date();
     if (body.done === false) data.completedAt = null;
 
-    const task = await prisma.leadTask.update({ where: { id: params.taskId }, data });
+    await prisma.leadTask.updateMany({ where: { id: params.taskId, leadId: params.id }, data: data as any });
+    const task = await prisma.leadTask.findFirst({ where: { id: params.taskId } });
+    if (!task) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json(task);
   } catch (err) {
     if (err instanceof z.ZodError) return NextResponse.json({ error: err.issues[0].message }, { status: 400 });
@@ -30,9 +42,12 @@ export async function PATCH(req: Request, { params }: { params: { id: string; ta
 }
 
 export async function DELETE(_req: Request, { params }: { params: { id: string; taskId: string } }) {
-  const { error } = await requireAuth("AGENT");
+  const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
-  await prisma.leadTask.delete({ where: { id: params.taskId } });
+  const owns = await assertOwnership(params.id, session.user.id, session.user.role);
+  if (!owns) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  await prisma.leadTask.deleteMany({ where: { id: params.taskId, leadId: params.id } });
   return new NextResponse(null, { status: 204 });
 }
