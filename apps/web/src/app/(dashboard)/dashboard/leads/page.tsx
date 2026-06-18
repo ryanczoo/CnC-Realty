@@ -4,6 +4,9 @@ import { authOptions } from "@/lib/auth";
 import { LeadKanban } from "@/components/dashboard/LeadKanban";
 import { SmartListSidebar } from "@/components/leads/SmartListSidebar";
 import { SmartListResults } from "@/components/leads/SmartListResults";
+import { resolveListFilters } from "@/lib/smart-list-filters";
+
+type LeadStatus = "NEW" | "CONTACTED" | "QUALIFIED" | "SHOWING" | "OFFER" | "UNDER_CONTRACT" | "CLOSED" | "LOST";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +32,8 @@ export default async function LeadsPage({
       })
     : [];
 
-  const selectedList = searchParams.list ?? null;
+  const list = searchParams.list ?? null;
+  const isValidList = list ? resolveListFilters(list, customLists) !== null : false;
 
   let kanbanLeads: {
     id: string;
@@ -41,7 +45,7 @@ export default async function LeadsPage({
     createdAt: string;
   }[] = [];
 
-  if (!selectedList) {
+  if (!list || !isValidList) {
     try {
       const leads = await prisma.lead.findMany({
         where: agent ? { agentId: agent.id } : {},
@@ -65,26 +69,19 @@ export default async function LeadsPage({
     }
   }
 
-  const mappedLists = customLists.map((l) => ({
-    id: l.id,
-    name: l.name,
-    filters: l.filters,
-  }));
-
   return (
     <div className="-m-8 flex min-h-[calc(100vh-4rem)]">
-      <SmartListSidebar customLists={mappedLists} />
+      <SmartListSidebar customLists={customLists} />
 
       <div className="flex-1 overflow-auto p-8">
-        {selectedList ? (
-          <SmartListResults activeList={selectedList} customLists={mappedLists} />
+        {list && isValidList ? (
+          <SmartListResults activeList={list} customLists={customLists} />
         ) : (
           <>
             <div className="mb-8">
               <h1 className="font-sans text-2xl font-light text-[#1B1B1B]">Leads</h1>
             </div>
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            <LeadKanban initialLeads={kanbanLeads as any} />
+            <LeadKanban initialLeads={kanbanLeads.map(l => ({ ...l, status: l.status as LeadStatus }))} />
           </>
         )}
       </div>
