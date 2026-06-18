@@ -28,6 +28,7 @@ export function LeadTasksTab({ leadId, initialTasks }: Props) {
   const [newTitle, setNewTitle] = useState("");
   const [newType, setNewType] = useState<string>("FOLLOW_UP");
   const [newDate, setNewDate] = useState("");
+  const [creating, setCreating] = useState(false);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -38,39 +39,56 @@ export function LeadTasksTab({ leadId, initialTasks }: Props) {
   const completed = tasks.filter((t) => t.done);
 
   async function quickTask(daysFromNow: number) {
-    const due = new Date();
-    due.setDate(due.getDate() + daysFromNow);
-    const res = await fetch(`/api/leads/${leadId}/tasks`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: "Follow Up", taskType: "FOLLOW_UP", dueDate: due.toISOString() }),
-    });
-    const task = await res.json();
-    setTasks((prev) => [task, ...prev]);
+    if (creating) return;
+    setCreating(true);
+    try {
+      const due = new Date();
+      due.setDate(due.getDate() + daysFromNow);
+      const res = await fetch(`/api/leads/${leadId}/tasks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: "Follow Up", taskType: "FOLLOW_UP", dueDate: due.toISOString() }),
+      });
+      if (!res.ok) return;
+      const task = await res.json();
+      setTasks((prev) => [task, ...prev]);
+    } finally {
+      setCreating(false);
+    }
   }
 
   async function toggleDone(task: LeadTask) {
-    const res = await fetch(`/api/leads/${leadId}/tasks/${task.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ done: !task.done }),
-    });
-    const updated = await res.json();
-    setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
+    try {
+      const res = await fetch(`/api/leads/${leadId}/tasks/${task.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ done: !task.done }),
+      });
+      if (!res.ok) return;
+      const updated = await res.json();
+      setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
+    } catch {
+      // network error — leave state unchanged
+    }
   }
 
   async function createTask() {
-    const res = await fetch(`/api/leads/${leadId}/tasks`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: newTitle, taskType: newType, dueDate: newDate ? new Date(newDate).toISOString() : null }),
-    });
-    const task = await res.json();
-    setTasks((prev) => [task, ...prev]);
-    setDrawerOpen(false);
-    setNewTitle("");
-    setNewType("FOLLOW_UP");
-    setNewDate("");
+    try {
+      const res = await fetch(`/api/leads/${leadId}/tasks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: newTitle, taskType: newType, dueDate: newDate ? new Date(newDate).toISOString() : null }),
+      });
+      if (!res.ok) return;
+      const task = await res.json();
+      setTasks((prev) => [task, ...prev]);
+      setDrawerOpen(false);
+      setNewTitle("");
+      setNewType("FOLLOW_UP");
+      setNewDate("");
+    } catch {
+      // network error — leave drawer open so user can retry
+    }
   }
 
   function TaskRow({ task, accent }: { task: LeadTask; accent?: string }) {
@@ -94,9 +112,9 @@ export function LeadTasksTab({ leadId, initialTasks }: Props) {
     <div className="space-y-4">
       {/* Quick tasks */}
       <div className="flex gap-2">
-        <button onClick={() => quickTask(1)} className="rounded-lg border border-[#1B1B1B]/10 px-3 py-1.5 text-xs hover:border-[#9E8C61] hover:text-[#9E8C61]">Tomorrow</button>
-        <button onClick={() => quickTask(3)} className="rounded-lg border border-[#1B1B1B]/10 px-3 py-1.5 text-xs hover:border-[#9E8C61] hover:text-[#9E8C61]">In 3 Days</button>
-        <button onClick={() => quickTask(7)} className="rounded-lg border border-[#1B1B1B]/10 px-3 py-1.5 text-xs hover:border-[#9E8C61] hover:text-[#9E8C61]">Next Week</button>
+        <button onClick={() => quickTask(1)} disabled={creating} className="rounded-lg border border-[#1B1B1B]/10 px-3 py-1.5 text-xs hover:border-[#9E8C61] hover:text-[#9E8C61] disabled:opacity-40">Tomorrow</button>
+        <button onClick={() => quickTask(3)} disabled={creating} className="rounded-lg border border-[#1B1B1B]/10 px-3 py-1.5 text-xs hover:border-[#9E8C61] hover:text-[#9E8C61] disabled:opacity-40">In 3 Days</button>
+        <button onClick={() => quickTask(7)} disabled={creating} className="rounded-lg border border-[#1B1B1B]/10 px-3 py-1.5 text-xs hover:border-[#9E8C61] hover:text-[#9E8C61] disabled:opacity-40">Next Week</button>
         <button onClick={() => setDrawerOpen(true)} className="ml-auto rounded-lg bg-[#1B1B1B] px-3 py-1.5 text-xs font-medium text-white">+ New Task</button>
       </div>
 

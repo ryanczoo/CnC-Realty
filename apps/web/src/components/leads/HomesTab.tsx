@@ -50,7 +50,8 @@ export function HomesTab({ leadId }: { leadId: string }) {
   useEffect(() => {
     fetch(`/api/leads/${leadId}/homes`)
       .then((r) => r.json())
-      .then(setData);
+      .then(setData)
+      .catch(() => setData({ saved: [], viewed: [] }));
   }, [leadId]);
 
   if (!data) return <p className="text-sm text-[#1B1B1B]/40">Loading...</p>;
@@ -65,8 +66,8 @@ export function HomesTab({ leadId }: { leadId: string }) {
         <div>
           <p className="mb-3 text-xs font-medium uppercase tracking-widest text-[#1B1B1B]/40">Saved Properties</p>
           <div className="grid grid-cols-2 gap-3">
-            {data.saved.map((s) => s.property && (
-              <PropCard key={s.mlsNumber} prop={s.property} sub={`Saved ${new Date(s.createdAt).toLocaleDateString()}`} />
+            {data.saved.filter((s) => s.property !== null).map((s) => (
+              <PropCard key={s.mlsNumber} prop={s.property!} sub={`Saved ${new Date(s.createdAt).toLocaleDateString()}`} />
             ))}
           </div>
         </div>
@@ -75,11 +76,11 @@ export function HomesTab({ leadId }: { leadId: string }) {
         <div>
           <p className="mb-3 text-xs font-medium uppercase tracking-widest text-[#1B1B1B]/40">Recently Viewed</p>
           <div className="space-y-2">
-            {data.viewed.map((v) => v.property && (
+            {data.viewed.filter((v) => v.property !== null).map((v) => (
               <div key={`${v.mlsNumber}-${v.viewedAt}`} className="flex items-center gap-3 rounded-lg bg-[#F2F0EF] px-3 py-2">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm text-[#1B1B1B]">{v.property.address}, {v.property.city}</p>
-                  <p className="text-xs text-[#1B1B1B]/40">{formatPrice(v.property.listPrice)} · Viewed {new Date(v.viewedAt).toLocaleDateString()}</p>
+                  <p className="truncate text-sm text-[#1B1B1B]">{v.property!.address}, {v.property!.city}</p>
+                  <p className="text-xs text-[#1B1B1B]/40">{formatPrice(v.property!.listPrice)} · Viewed {new Date(v.viewedAt).toLocaleDateString()}</p>
                 </div>
               </div>
             ))}
