@@ -5,6 +5,7 @@ import { requireAuth } from "@/lib/api-auth";
 import { sendLeadNotification } from "@/lib/email";
 import { publicFormRateLimit } from "@/lib/rate-limit";
 import { applyTag } from "@/lib/tags";
+import { buildLeadWhere, FilterCondition } from "@/lib/smart-list-filters";
 
 const createSchema = z.object({
   firstName: z.string().min(1, "First name required"),
@@ -15,7 +16,7 @@ const createSchema = z.object({
   source: z.enum(["WEBSITE", "REFERRAL", "SOCIAL", "OPEN_HOUSE", "COLD_CALL", "OTHER"]).default("WEBSITE"),
 });
 
-// Public — no auth required. Anyone can submit a lead.
+// Public — no auth required.
 export async function POST(req: Request) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "anonymous";
   const { success, reset } = await publicFormRateLimit.limit(ip);
@@ -29,17 +30,11 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const data = createSchema.parse(body);
-
     const lead = await prisma.lead.create({ data });
-
-    // Fire-and-forget — don't fail the request if email fails
     sendLeadNotification(lead).catch(console.error);
-
-    // Auto-tag based on source
     if (data.source === "OPEN_HOUSE") {
       applyTag(lead.id, "Open House").catch(console.error);
     }
-
     return NextResponse.json({ id: lead.id }, { status: 201 });
   } catch (err) {
     if (err instanceof z.ZodError) {
@@ -50,28 +45,72 @@ export async function POST(req: Request) {
   }
 }
 
-// Agents see their own leads; ADMIN sees all leads.
-export async function GET() {
+// Agents see their own leads; ADMIN sees all.
+export async function GET(req: Request) {
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
   const { id: userId, role } = session.user;
+  const url = new URL(req.url);
+  const filtersParam = url.searchParams.get("filters");
+  const page = Math.max(1, Number(url.searchParams.get("page") ?? "1"));
+  const pageSize = Math.min(100, Math.max(1, Number(url.searchParams.get("pageSize") ?? "25")));
 
-  if (role === "ADMIN") {
+  if (!filtersParam) {
+    if (role === "ADMIN") {
+      const leads = await prisma.lead.findMany({
+        include: { agent: { include: { user: { select: { name: true } } } } },
+        orderBy: { createdAt: "desc" },
+        take: 200,
+      });
+      return NextResponse.json(leads);
+    }
+    const agent = await prisma.agent.findUnique({ where: { userId } });
+    if (!agent) return NextResponse.json([]);
     const leads = await prisma.lead.findMany({
-      include: { agent: { include: { user: { select: { name: true } } } } },
+      where: { agentId: agent.id },
       orderBy: { createdAt: "desc" },
-      take: 200,
     });
     return NextResponse.json(leads);
   }
 
-  const agent = await prisma.agent.findUnique({ where: { userId } });
-  if (!agent) return NextResponse.json([]);
+  let filters: FilterCondition[] = [];
+  try {
+    filters = JSON.parse(filtersParam);
+    if (!Array.isArray(filters)) throw new Error();
+  } catch {
+    return NextResponse.json({ error: "Invalid filters" }, { status: 400 });
+  }
 
-  const leads = await prisma.lead.findMany({
-    where: { agentId: agent.id },
-    orderBy: { createdAt: "desc" },
-  });
-  return NextResponse.json(leads);
+  let agentId: string | null = null;
+  if (role !== "ADMIN") {
+    const agent = await prisma.agent.findUnique({ where: { userId } });
+    if (!agent) return NextResponse.json({ leads: [], total: 0, page, pageSize });
+    agentId = agent.id;
+  }
+
+  const where = buildLeadWhere(filters, agentId);
+
+  const [leads, total] = await Promise.all([
+    prisma.lead.findMany({
+      where,
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        status: true,
+        source: true,
+        priceMin: true,
+        priceMax: true,
+        lastContactedAt: true,
+        tags: { select: { tag: { select: { name: true, color: true } } } },
+      },
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.lead.count({ where }),
+  ]);
+
+  return NextResponse.json({ leads, total, page, pageSize });
 }
