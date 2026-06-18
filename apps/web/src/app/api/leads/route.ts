@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/api-auth";
 import { sendLeadNotification } from "@/lib/email";
 import { publicFormRateLimit } from "@/lib/rate-limit";
+import { applyTag } from "@/lib/tags";
 
 const createSchema = z.object({
   firstName: z.string().min(1, "First name required"),
@@ -33,6 +34,11 @@ export async function POST(req: Request) {
 
     // Fire-and-forget — don't fail the request if email fails
     sendLeadNotification(lead).catch(console.error);
+
+    // Auto-tag based on source
+    if (data.source === "OPEN_HOUSE") {
+      applyTag(lead.id, "Open House").catch(console.error);
+    }
 
     return NextResponse.json({ id: lead.id }, { status: 201 });
   } catch (err) {

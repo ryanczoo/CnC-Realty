@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { propertyJsonLd } from "@/lib/json-ld";
 
 export const revalidate = 300;
@@ -60,6 +62,17 @@ export default async function PropertyDetailPage({ params }: PageProps) {
     );
   }
   if (!property) notFound();
+
+  // Track property views for registered buyers (fire-and-forget)
+  const session = await getServerSession(authOptions);
+  if (session?.user && (session.user as any).role === "BUYER") {
+    prisma.propertyView.create({
+      data: {
+        userId: (session.user as any).id,
+        mlsNumber: params.mlsNumber,
+      },
+    }).catch(() => {});
+  }
 
   const photos = Array.isArray(property.photos) ? (property.photos as string[]) : [];
   const statsFields = buildStatsFields(property);
