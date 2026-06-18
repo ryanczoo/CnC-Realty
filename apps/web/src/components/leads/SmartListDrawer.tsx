@@ -341,10 +341,8 @@ export function SmartListDrawer({ open, onClose, initial, onSaved }: Props) {
 
   const canSave = name.trim().length > 0 && conditions.length > 0 && !saving;
 
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
+    <div className={`fixed inset-0 z-50 flex justify-end${open ? "" : " hidden"}`}>
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/20"
