@@ -18,6 +18,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     return NextResponse.json(tag);
   } catch (err) {
     if (err instanceof z.ZodError) return NextResponse.json({ error: err.issues[0].message }, { status: 400 });
+    if ((err as any)?.code === "P2025") return NextResponse.json({ error: "Tag not found" }, { status: 404 });
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
@@ -34,7 +35,9 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     return NextResponse.json({ error: `Used by ${count} leads`, count }, { status: 409 });
   }
 
-  await prisma.leadTag.deleteMany({ where: { tagId: params.id } });
-  await prisma.tag.delete({ where: { id: params.id } });
+  await prisma.$transaction([
+    prisma.leadTag.deleteMany({ where: { tagId: params.id } }),
+    prisma.tag.delete({ where: { id: params.id } }),
+  ]);
   return new NextResponse(null, { status: 204 });
 }

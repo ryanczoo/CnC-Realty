@@ -8,6 +8,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 
   const lead = await prisma.lead.findUnique({ where: { id: params.id }, select: { email: true } });
   if (!lead) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!lead.email) return NextResponse.json({ saved: [], viewed: [] });
 
   const user = await prisma.user.findFirst({ where: { email: lead.email, role: "BUYER" } });
   if (!user) return NextResponse.json({ saved: [], viewed: [] });
