@@ -5,6 +5,7 @@ vi.mock("@/lib/auth", () => ({ authOptions: {} }));
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     agent: { findUnique: vi.fn() },
+    lead: { findFirst: vi.fn() },
     deal: {
       findMany: vi.fn(),
       findUnique: vi.fn(),
@@ -81,6 +82,7 @@ describe("POST /api/deals", () => {
   it("returns 400 when stage is invalid for pipeline", async () => {
     vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
     vi.mocked(prisma.agent.findUnique).mockResolvedValue(AGENT as any);
+    vi.mocked(prisma.lead.findFirst).mockResolvedValue({ id: "l1" } as any);
 
     const body = { leadId: "l1", pipeline: "BUYERS", stage: "LISTING_APPOINTMENT" };
     const res = await POST(
@@ -92,6 +94,7 @@ describe("POST /api/deals", () => {
   it("creates a deal for valid input", async () => {
     vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
     vi.mocked(prisma.agent.findUnique).mockResolvedValue(AGENT as any);
+    vi.mocked(prisma.lead.findFirst).mockResolvedValue({ id: "l1" } as any);
     vi.mocked(prisma.deal.create).mockResolvedValue(MOCK_DEAL_DB as any);
 
     const body = { leadId: "l1", pipeline: "BUYERS", stage: "TOURING" };

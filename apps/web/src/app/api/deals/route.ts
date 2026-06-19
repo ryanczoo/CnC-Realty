@@ -72,8 +72,15 @@ export async function POST(req: Request) {
   const agent = await prisma.agent.findUnique({ where: { userId: session.user.id } });
   if (!agent) return NextResponse.json({ error: "Agent profile not found" }, { status: 404 });
 
+  const role = (session.user as any).role;
+
   try {
     const body = createSchema.parse(await req.json());
+
+    if (role !== "ADMIN") {
+      const lead = await prisma.lead.findFirst({ where: { id: body.leadId, agentId: agent.id } });
+      if (!lead) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
 
     if (!isValidStageForPipeline(body.stage, body.pipeline)) {
       return NextResponse.json({ error: `Stage ${body.stage} is not valid for ${body.pipeline} pipeline` }, { status: 400 });
