@@ -96,6 +96,11 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
   const { deal, owns } = await assertDealOwnership(params.id, session.user.id, (session.user as any).role);
   if (!deal || !owns) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  await prisma.deal.delete({ where: { id: params.id } }).catch(() => {});
+  try {
+    await prisma.deal.delete({ where: { id: params.id } });
+  } catch (err) {
+    if ((err as any)?.code === "P2025") return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
   return new NextResponse(null, { status: 204 });
 }
