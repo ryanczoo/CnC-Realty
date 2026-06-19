@@ -3,11 +3,14 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/api-auth";
 
+export const dynamic = "force-dynamic";
+
 const patchSchema = z.object({
   title: z.string().min(1).optional(),
   taskType: z.enum(["FOLLOW_UP","CALL","EMAIL","TEXT","SHOWING","THANK_YOU","OTHER"]).optional(),
   dueDate: z.string().datetime().nullable().optional(),
   done: z.boolean().optional(),
+  notes: z.string().nullable().optional(),
 });
 
 async function assertOwnership(leadId: string, userId: string, role: string) {

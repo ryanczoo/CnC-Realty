@@ -3,6 +3,8 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/api-auth";
 
+export const dynamic = "force-dynamic";
+
 const TASK_TYPES = ["FOLLOW_UP","CALL","EMAIL","TEXT","SHOWING","THANK_YOU","OTHER"] as const;
 
 const schema = z.object({
@@ -17,6 +19,20 @@ async function assertOwnership(leadId: string, userId: string, role: string) {
   const agent = await prisma.agent.findUnique({ where: { userId } });
   const lead = await prisma.lead.findUnique({ where: { id: leadId }, select: { agentId: true } });
   return agent && lead && lead.agentId === agent.id;
+}
+
+export async function GET(_req: Request, { params }: { params: { id: string } }) {
+  const { session, error } = await requireAuth("AGENT");
+  if (error) return error;
+
+  const owns = await assertOwnership(params.id, session.user.id, session.user.role);
+  if (!owns) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const tasks = await prisma.leadTask.findMany({
+    where: { leadId: params.id },
+    orderBy: { createdAt: "asc" },
+  });
+  return NextResponse.json(tasks);
 }
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
