@@ -96,7 +96,7 @@ describe("POST /api/deals/[id]/convert", () => {
     await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "d1" } });
     expect(prisma.transactionFile.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ transactionSide: "SELLER_SIDE", listPrice: 750000 }),
+        data: expect.objectContaining({ transactionSide: "SELLER_SIDE", listPrice: 750000, originatingLeadId: "l1" }),
       })
     );
   });
