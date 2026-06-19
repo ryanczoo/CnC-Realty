@@ -61,8 +61,13 @@ export function DealBoard({ pipeline, initialDeals, onCardClick, onOfferAccepted
     }
 
     if (targetStage === "OFFER_ACCEPTED" && onOfferAccepted) {
-      const updated = deals.find((d) => d.id === id);
-      if (updated) onOfferAccepted({ ...updated, stage: "OFFER_ACCEPTED" as DealRow["stage"] });
+      const deal = deals.find((d) => d.id === id);
+      if (deal) onOfferAccepted({
+        ...deal,
+        stage: "OFFER_ACCEPTED" as DealRow["stage"],
+        stageUpdatedAt: new Date().toISOString(),
+        daysInStage: 0,
+      });
     }
   }
 
