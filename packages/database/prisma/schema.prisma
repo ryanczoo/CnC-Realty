@@ -683,6 +683,7 @@ model LeadTask {
   taskType    String    @default("FOLLOW_UP")
   assigneeId  String?
   dueDate     DateTime?
+  notes       String?
   done        Boolean   @default(false)
   completedAt DateTime?
   createdAt   DateTime  @default(now())
