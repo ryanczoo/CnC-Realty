@@ -1,4 +1,4 @@
-﻿-- AlterEnum
+-- AlterEnum
 ALTER TYPE "LeadStatus" ADD VALUE 'HOT_PROSPECT';
 ALTER TYPE "LeadStatus" ADD VALUE 'NURTURE';
 ALTER TYPE "LeadStatus" ADD VALUE 'SPHERE';

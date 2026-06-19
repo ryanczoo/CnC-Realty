@@ -112,6 +112,21 @@ enum TransactionSide {
   LEASE
 }
 
+enum DealPipeline {
+  BUYERS
+  SELLERS
+}
+
+enum DealStage {
+  PRE_APPROVAL
+  TOURING
+  OFFER_SUBMITTED
+  LISTING_APPOINTMENT
+  ACTIVE_LISTING
+  OFFER_ACCEPTED
+  FALLEN_OUT
+}
+
 enum FilePartyRole {
   BUYER
   SELLER
@@ -233,6 +248,7 @@ model Agent {
   campaigns        Campaign[]
   assignedTasks    LeadTask[]        @relation("TaskAssignee")
   smartLists       SmartList[]
+  deals            Deal[]
 }
 
 model Property {
@@ -308,6 +324,7 @@ model Lead {
   customFieldValues CustomFieldValue[]
   relationshipsFrom LeadRelationship[] @relation("RelationshipFrom")
   relationshipsTo   LeadRelationship[] @relation("RelationshipTo")
+  deals             Deal[]
 }
 
 model Activity {
@@ -395,6 +412,7 @@ model TransactionFile {
   activities         FileActivity[]
   crmActivities      Activity[]
   tasks              FileTask[]
+  deal               Deal?
 }
 
 model FileTask {
@@ -727,4 +745,27 @@ model SmartList {
   agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
 
   @@index([agentId])
+}
+
+model Deal {
+  id                String       @id @default(cuid())
+  agentId           String
+  leadId            String
+  pipeline          DealPipeline
+  stage             DealStage
+  propertyAddress   String?
+  price             Float?
+  expectedCloseDate DateTime?
+  notes             String?
+  transactionFileId String?      @unique
+  stageUpdatedAt    DateTime     @default(now())
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  agent           Agent            @relation(fields: [agentId], references: [id])
+  lead            Lead             @relation(fields: [leadId], references: [id])
+  transactionFile TransactionFile? @relation(fields: [transactionFileId], references: [id])
+
+  @@index([agentId])
+  @@index([leadId])
 }
