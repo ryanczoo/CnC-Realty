@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 function serializeTask(task: {
   id: string; leadId: string; title: string; taskType: string; notes: string | null;
   dueDate: Date | null; done: boolean; completedAt: Date | null; createdAt: Date;
-  lead: { agentId: string | null; firstName: string; lastName: string };
+  lead: { firstName: string; lastName: string };
 }) {
   return {
     id: task.id,
@@ -46,7 +46,7 @@ export async function GET(req: Request) {
       ...(doneFilter !== undefined ? { done: doneFilter } : {}),
       ...(!isAdmin ? { lead: { agentId } } : {}),
     },
-    include: { lead: { select: { agentId: true, firstName: true, lastName: true } } },
+    include: { lead: { select: { firstName: true, lastName: true } } },
     orderBy: [{ done: "asc" }, { dueDate: "asc" }, { createdAt: "asc" }],
   });
 

@@ -61,6 +61,7 @@ export default function TasksDashboardPage() {
   const [completedTasks, setCompletedTasks] = useState<CrossLeadTask[]>([]);
   const [completedLoading, setCompletedLoading] = useState(false);
   const [completedLoaded, setCompletedLoaded] = useState(false);
+  const [completedError, setCompletedError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/tasks?done=false")
@@ -79,7 +80,7 @@ export default function TasksDashboardPage() {
       setCompletedTasks(data);
       setCompletedLoaded(true);
     } catch {
-      // ignore
+      setCompletedError("Failed to load completed tasks.");
     } finally {
       setCompletedLoading(false);
     }
@@ -153,6 +154,9 @@ export default function TasksDashboardPage() {
         <summary className="cursor-pointer text-xs text-[#1B1B1B]/40">Completed tasks</summary>
         <div className="mt-2 space-y-1">
           {completedLoading && <p className="text-sm text-[#1B1B1B]/40">Loading…</p>}
+          {completedError && (
+            <p className="text-sm text-red-500 mt-2">{completedError}</p>
+          )}
           {completedLoaded && completedTasks.length === 0 && (
             <p className="text-sm text-[#1B1B1B]/40">No completed tasks.</p>
           )}

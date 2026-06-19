@@ -95,14 +95,14 @@ export function LeadTaskDrawer({ open, task, leadId, onClose, onSaved, onDeleted
   }
 
   return (
-    <div className={open ? "" : "hidden"}>
+    <div className={open ? "" : "hidden"} role="dialog" aria-modal="true" aria-label="Edit Task">
       {/* Backdrop */}
-      <div className="fixed inset-0 z-40 bg-black/20" onClick={onClose} />
+      <div className="fixed inset-0 z-40 bg-black/20" onClick={onClose} aria-label="Close" />
       {/* Drawer */}
       <div className="fixed right-0 top-0 z-50 flex h-full w-full max-w-md flex-col bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-[#1B1B1B]/10 px-6 py-4">
           <h2 className="font-sans text-lg font-light text-[#1B1B1B]">Edit Task</h2>
-          <button onClick={onClose} className="text-[#1B1B1B]/40 hover:text-[#1B1B1B]">✕</button>
+          <button onClick={onClose} className="text-[#1B1B1B]/40 hover:text-[#1B1B1B]" aria-label="Close">✕</button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">

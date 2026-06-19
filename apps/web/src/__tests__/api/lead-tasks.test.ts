@@ -12,7 +12,7 @@ vi.mock("@/lib/prisma", () => ({
 
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
-import { GET, POST } from "../../app/api/leads/[id]/tasks/route";
+import { GET } from "../../app/api/leads/[id]/tasks/route";
 import { PATCH } from "../../app/api/leads/[id]/tasks/[taskId]/route";
 
 const SESSION = { user: { id: "u1", role: "AGENT" } };

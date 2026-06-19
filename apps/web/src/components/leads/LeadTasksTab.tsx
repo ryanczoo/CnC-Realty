@@ -70,7 +70,13 @@ export function LeadTasksTab({ leadId, initialTasks }: Props) {
 
   const overdue = tasks.filter((t) => !t.done && t.dueDate && new Date(t.dueDate) < today);
   const dueToday = tasks.filter((t) => !t.done && t.dueDate && new Date(t.dueDate).toDateString() === today.toDateString());
-  const upcoming = tasks.filter((t) => !t.done && (!t.dueDate || new Date(t.dueDate) > today) && !dueToday.includes(t));
+  const upcoming = tasks.filter(
+    (t) =>
+      !t.done &&
+      (!t.dueDate ||
+        (new Date(t.dueDate).toDateString() !== today.toDateString() &&
+          new Date(t.dueDate) > today))
+  );
   const completed = tasks.filter((t) => t.done);
 
   async function quickTask(daysFromNow: number) {
@@ -196,7 +202,6 @@ export function LeadTasksTab({ leadId, initialTasks }: Props) {
         onClose={() => setEditDrawerOpen(false)}
         onSaved={(updated) => {
           setTasks((prev) => prev.map((t) => (t.id === updated.id ? { ...updated } : t)));
-          setEditDrawerOpen(false);
         }}
         onDeleted={(taskId) => {
           setTasks((prev) => prev.filter((t) => t.id !== taskId));
