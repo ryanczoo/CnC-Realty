@@ -26,6 +26,34 @@ interface Props {
   initialTasks: LeadTask[];
 }
 
+interface TaskRowProps {
+  task: LeadTask;
+  accent?: string;
+  onEdit: (task: LeadTask) => void;
+  onToggleDone: (task: LeadTask) => void;
+}
+
+function TaskRow({ task, accent, onEdit, onToggleDone }: TaskRowProps) {
+  return (
+    <div
+      className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 ${accent ?? "bg-[#F2F0EF]"} hover:brightness-95`}
+      onClick={() => onEdit(task)}
+    >
+      <input
+        type="checkbox"
+        checked={task.done}
+        onChange={(e) => { e.stopPropagation(); onToggleDone(task); }}
+        onClick={(e) => e.stopPropagation()}
+        className="h-4 w-4 accent-[#9E8C61]"
+      />
+      <div className="min-w-0 flex-1">
+        <p className={`truncate text-sm ${task.done ? "line-through text-[#1B1B1B]/30" : "text-[#1B1B1B]"}`}>{task.title}</p>
+        <p className="text-xs text-[#1B1B1B]/40">{TYPE_LABELS[task.taskType]} {task.dueDate ? `· ${new Date(task.dueDate).toLocaleDateString()}` : ""}</p>
+      </div>
+    </div>
+  );
+}
+
 export function LeadTasksTab({ leadId, initialTasks }: Props) {
   const [tasks, setTasks] = useState<LeadTask[]>(initialTasks);
   const [newTaskOpen, setNewTaskOpen] = useState(false);
@@ -103,27 +131,6 @@ export function LeadTasksTab({ leadId, initialTasks }: Props) {
     setEditDrawerOpen(true);
   }
 
-  function TaskRow({ task, accent }: { task: LeadTask; accent?: string }) {
-    return (
-      <div
-        className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 ${accent ?? "bg-[#F2F0EF]"} hover:brightness-95`}
-        onClick={() => openEdit(task)}
-      >
-        <input
-          type="checkbox"
-          checked={task.done}
-          onChange={(e) => { e.stopPropagation(); toggleDone(task); }}
-          onClick={(e) => e.stopPropagation()}
-          className="h-4 w-4 accent-[#9E8C61]"
-        />
-        <div className="min-w-0 flex-1">
-          <p className={`truncate text-sm ${task.done ? "line-through text-[#1B1B1B]/30" : "text-[#1B1B1B]"}`}>{task.title}</p>
-          <p className="text-xs text-[#1B1B1B]/40">{TYPE_LABELS[task.taskType]} {task.dueDate ? `· ${new Date(task.dueDate).toLocaleDateString()}` : ""}</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-4">
       {/* Quick tasks */}
@@ -137,25 +144,25 @@ export function LeadTasksTab({ leadId, initialTasks }: Props) {
       {overdue.length > 0 && (
         <div>
           <p className="mb-1 text-xs font-medium text-red-500">Overdue</p>
-          <div className="space-y-1">{overdue.map((t) => <TaskRow key={t.id} task={t} accent="bg-red-50" />)}</div>
+          <div className="space-y-1">{overdue.map((t) => <TaskRow key={t.id} task={t} accent="bg-red-50" onEdit={openEdit} onToggleDone={toggleDone} />)}</div>
         </div>
       )}
       {dueToday.length > 0 && (
         <div>
           <p className="mb-1 text-xs font-medium text-amber-600">Due Today</p>
-          <div className="space-y-1">{dueToday.map((t) => <TaskRow key={t.id} task={t} accent="bg-amber-50" />)}</div>
+          <div className="space-y-1">{dueToday.map((t) => <TaskRow key={t.id} task={t} accent="bg-amber-50" onEdit={openEdit} onToggleDone={toggleDone} />)}</div>
         </div>
       )}
       {upcoming.length > 0 && (
         <div>
           <p className="mb-1 text-xs font-medium text-[#1B1B1B]/40">Upcoming</p>
-          <div className="space-y-1">{upcoming.map((t) => <TaskRow key={t.id} task={t} />)}</div>
+          <div className="space-y-1">{upcoming.map((t) => <TaskRow key={t.id} task={t} onEdit={openEdit} onToggleDone={toggleDone} />)}</div>
         </div>
       )}
       {completed.length > 0 && (
         <details>
           <summary className="cursor-pointer text-xs text-[#1B1B1B]/40">Completed ({completed.length})</summary>
-          <div className="mt-1 space-y-1">{completed.map((t) => <TaskRow key={t.id} task={t} />)}</div>
+          <div className="mt-1 space-y-1">{completed.map((t) => <TaskRow key={t.id} task={t} onEdit={openEdit} onToggleDone={toggleDone} />)}</div>
         </details>
       )}
       {tasks.length === 0 && <p className="text-sm text-[#1B1B1B]/40">No tasks yet. Use the quick buttons above.</p>}
