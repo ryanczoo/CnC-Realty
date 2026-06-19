@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { PULSE_ANIMATE, PULSE_TRANSITION } from "@/lib/motion";
 
 const TASK_TYPES = ["FOLLOW_UP","CALL","EMAIL","TEXT","SHOWING","THANK_YOU","OTHER"] as const;
 const TYPE_LABELS: Record<string, string> = {
@@ -165,7 +166,7 @@ export function LeadTaskDrawer({ open, task, leadId, onClose, onSaved, onDeleted
             <button
               onClick={handleSave}
               disabled={saving || !title.trim()}
-              className="rounded-lg bg-[#1B1B1B] px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
+              className={`rounded-lg bg-[#1B1B1B] px-4 py-2 text-sm font-medium text-white disabled:opacity-40 ${PULSE_ANIMATE} ${PULSE_TRANSITION}`}
             >
               {saving ? "Saving…" : "Save"}
             </button>
