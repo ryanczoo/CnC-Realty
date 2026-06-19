@@ -29,9 +29,35 @@ function formatDue(dueDate: string | null): string {
   return new Date(dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
+function TaskRow({ task, onCheck }: { task: CrossLeadTask; onCheck: (task: CrossLeadTask) => void }) {
+  const leadName = `${task.leadFirstName} ${task.leadLastName}`.trim();
+  return (
+    <div className="flex items-center gap-3 rounded-lg bg-[#F2F0EF] px-3 py-2">
+      <input
+        type="checkbox"
+        checked={false}
+        onChange={() => onCheck(task)}
+        className="h-4 w-4 accent-[#9E8C61]"
+      />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm text-[#1B1B1B]">{task.title}</p>
+        <p className="text-xs text-[#1B1B1B]/40">
+          {TYPE_LABELS[task.taskType] ?? task.taskType}
+          {" · "}
+          <Link href={`/dashboard/leads/${task.leadId}`} className="hover:text-[#9E8C61] hover:underline" onClick={(e) => e.stopPropagation()}>
+            {leadName || "Unknown Lead"}
+          </Link>
+        </p>
+      </div>
+      <span className="shrink-0 text-xs text-[#1B1B1B]/40">{formatDue(task.dueDate)}</span>
+    </div>
+  );
+}
+
 export default function TasksDashboardPage() {
   const [tasks, setTasks] = useState<CrossLeadTask[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [completedTasks, setCompletedTasks] = useState<CrossLeadTask[]>([]);
   const [completedLoading, setCompletedLoading] = useState(false);
   const [completedLoaded, setCompletedLoaded] = useState(false);
@@ -40,7 +66,7 @@ export default function TasksDashboardPage() {
     fetch("/api/tasks?done=false")
       .then((r) => r.json())
       .then(setTasks)
-      .catch(() => {})
+      .catch(() => { setError("Failed to load tasks. Please refresh."); })
       .finally(() => setLoading(false));
   }, []);
 
@@ -66,7 +92,7 @@ export default function TasksDashboardPage() {
       await fetch(`/api/leads/${task.leadId}/tasks/${task.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ done: true }),
+        body: JSON.stringify({ done: true, completedAt: new Date().toISOString() }),
       });
     } catch {
       // No snap-back — consistent with spec intent; task disappearing is correct behavior
@@ -84,31 +110,6 @@ export default function TasksDashboardPage() {
 
   const allEmpty = !loading && tasks.length === 0;
 
-  function TaskRow({ task }: { task: CrossLeadTask }) {
-    const leadName = `${task.leadFirstName} ${task.leadLastName}`.trim();
-    return (
-      <div className="flex items-center gap-3 rounded-lg bg-[#F2F0EF] px-3 py-2">
-        <input
-          type="checkbox"
-          checked={false}
-          onChange={() => checkOff(task)}
-          className="h-4 w-4 accent-[#9E8C61]"
-        />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm text-[#1B1B1B]">{task.title}</p>
-          <p className="text-xs text-[#1B1B1B]/40">
-            {TYPE_LABELS[task.taskType] ?? task.taskType}
-            {" · "}
-            <Link href={`/dashboard/leads/${task.leadId}`} className="hover:text-[#9E8C61] hover:underline" onClick={(e) => e.stopPropagation()}>
-              {leadName || "Unknown Lead"}
-            </Link>
-          </p>
-        </div>
-        <span className="shrink-0 text-xs text-[#1B1B1B]/40">{formatDue(task.dueDate)}</span>
-      </div>
-    );
-  }
-
   return (
     <div className="mx-auto max-w-2xl space-y-6 px-4 py-8">
       <div>
@@ -118,6 +119,10 @@ export default function TasksDashboardPage() {
 
       {loading && <p className="text-sm text-[#1B1B1B]/40">Loading…</p>}
 
+      {error && (
+        <p className="text-center text-sm text-red-500 mt-8">{error}</p>
+      )}
+
       {allEmpty && (
         <p className="text-center text-sm text-[#1B1B1B]/40">You&apos;re all caught up.</p>
       )}
@@ -125,21 +130,21 @@ export default function TasksDashboardPage() {
       {overdue.length > 0 && (
         <section>
           <p className="mb-2 text-xs font-medium text-red-500">Overdue</p>
-          <div className="space-y-1">{overdue.map((t) => <TaskRow key={t.id} task={t} />)}</div>
+          <div className="space-y-1">{overdue.map((t) => <TaskRow key={t.id} task={t} onCheck={checkOff} />)}</div>
         </section>
       )}
 
       {dueToday.length > 0 && (
         <section>
           <p className="mb-2 text-xs font-medium text-amber-600">Due Today</p>
-          <div className="space-y-1">{dueToday.map((t) => <TaskRow key={t.id} task={t} />)}</div>
+          <div className="space-y-1">{dueToday.map((t) => <TaskRow key={t.id} task={t} onCheck={checkOff} />)}</div>
         </section>
       )}
 
       {upcoming.length > 0 && (
         <section>
           <p className="mb-2 text-xs font-medium text-[#1B1B1B]/40">Upcoming</p>
-          <div className="space-y-1">{upcoming.map((t) => <TaskRow key={t.id} task={t} />)}</div>
+          <div className="space-y-1">{upcoming.map((t) => <TaskRow key={t.id} task={t} onCheck={checkOff} />)}</div>
         </section>
       )}
 
