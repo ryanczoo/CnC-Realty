@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import Link from "next/link";
 import { LeadDetailSidebarWrapper } from "@/components/leads/LeadDetailSidebarWrapper";
 import { LeadProfileTabs } from "@/components/leads/LeadProfileTabs";
+import { DealsSection } from "@/components/leads/DealsSection";
 
 export const dynamic = "force-dynamic";
 
@@ -97,6 +98,10 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
 
         <div className="lg:col-span-2">
           <LeadProfileTabs leadId={lead.id} activities={activities} tasks={tasks} />
+          <DealsSection
+            leadId={lead.id}
+            leadName={`${lead.firstName} ${lead.lastName}`}
+          />
         </div>
       </div>
     </div>

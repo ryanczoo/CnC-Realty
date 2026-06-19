@@ -7,6 +7,7 @@ import Image from "next/image";
 const AGENT_NAV = [
   { href: "/dashboard", label: "Overview" },
   { href: "/dashboard/leads", label: "Leads" },
+  { href: "/dashboard/pipeline", label: "Pipeline" },
   { href: "/dashboard/transactions", label: "Transactions" },
   { href: "/dashboard/campaigns", label: "Campaigns" },
   { href: "/dashboard/settings", label: "Settings" },
