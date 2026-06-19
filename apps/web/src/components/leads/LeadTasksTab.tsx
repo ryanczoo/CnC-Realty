@@ -1,14 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import { LeadTaskDrawer } from "./LeadTaskDrawer";
 
 type LeadTask = {
   id: string;
+  leadId?: string;
   title: string;
   taskType: string;
   dueDate: string | null;
+  notes: string | null;
   done: boolean;
   completedAt: string | null;
+  createdAt?: string;
 };
 
 const TASK_TYPES = ["FOLLOW_UP","CALL","EMAIL","TEXT","SHOWING","THANK_YOU","OTHER"] as const;
@@ -24,11 +28,14 @@ interface Props {
 
 export function LeadTasksTab({ leadId, initialTasks }: Props) {
   const [tasks, setTasks] = useState<LeadTask[]>(initialTasks);
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [newTaskOpen, setNewTaskOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newType, setNewType] = useState<string>("FOLLOW_UP");
   const [newDate, setNewDate] = useState("");
   const [creating, setCreating] = useState(false);
+
+  const [selectedTask, setSelectedTask] = useState<LeadTask | null>(null);
+  const [editDrawerOpen, setEditDrawerOpen] = useState(false);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -51,7 +58,7 @@ export function LeadTasksTab({ leadId, initialTasks }: Props) {
       });
       if (!res.ok) return;
       const task = await res.json();
-      setTasks((prev) => [task, ...prev]);
+      setTasks((prev) => [{ ...task, notes: null }, ...prev]);
     } finally {
       setCreating(false);
     }
@@ -66,7 +73,7 @@ export function LeadTasksTab({ leadId, initialTasks }: Props) {
       });
       if (!res.ok) return;
       const updated = await res.json();
-      setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
+      setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...updated, notes: updated.notes ?? null } : t)));
     } catch {
       // network error — leave state unchanged
     }
@@ -81,8 +88,8 @@ export function LeadTasksTab({ leadId, initialTasks }: Props) {
       });
       if (!res.ok) return;
       const task = await res.json();
-      setTasks((prev) => [task, ...prev]);
-      setDrawerOpen(false);
+      setTasks((prev) => [{ ...task, notes: null }, ...prev]);
+      setNewTaskOpen(false);
       setNewTitle("");
       setNewType("FOLLOW_UP");
       setNewDate("");
@@ -91,13 +98,22 @@ export function LeadTasksTab({ leadId, initialTasks }: Props) {
     }
   }
 
+  function openEdit(task: LeadTask) {
+    setSelectedTask(task);
+    setEditDrawerOpen(true);
+  }
+
   function TaskRow({ task, accent }: { task: LeadTask; accent?: string }) {
     return (
-      <div className={`flex items-center gap-3 rounded-lg px-3 py-2 ${accent ?? "bg-[#F2F0EF]"}`}>
+      <div
+        className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 ${accent ?? "bg-[#F2F0EF]"} hover:brightness-95`}
+        onClick={() => openEdit(task)}
+      >
         <input
           type="checkbox"
           checked={task.done}
-          onChange={() => toggleDone(task)}
+          onChange={(e) => { e.stopPropagation(); toggleDone(task); }}
+          onClick={(e) => e.stopPropagation()}
           className="h-4 w-4 accent-[#9E8C61]"
         />
         <div className="min-w-0 flex-1">
@@ -115,7 +131,7 @@ export function LeadTasksTab({ leadId, initialTasks }: Props) {
         <button onClick={() => quickTask(1)} disabled={creating} className="rounded-lg border border-[#1B1B1B]/10 px-3 py-1.5 text-xs hover:border-[#9E8C61] hover:text-[#9E8C61] disabled:opacity-40">Tomorrow</button>
         <button onClick={() => quickTask(3)} disabled={creating} className="rounded-lg border border-[#1B1B1B]/10 px-3 py-1.5 text-xs hover:border-[#9E8C61] hover:text-[#9E8C61] disabled:opacity-40">In 3 Days</button>
         <button onClick={() => quickTask(7)} disabled={creating} className="rounded-lg border border-[#1B1B1B]/10 px-3 py-1.5 text-xs hover:border-[#9E8C61] hover:text-[#9E8C61] disabled:opacity-40">Next Week</button>
-        <button onClick={() => setDrawerOpen(true)} className="ml-auto rounded-lg bg-[#1B1B1B] px-3 py-1.5 text-xs font-medium text-white">+ New Task</button>
+        <button onClick={() => setNewTaskOpen(true)} className="ml-auto rounded-lg bg-[#1B1B1B] px-3 py-1.5 text-xs font-medium text-white">+ New Task</button>
       </div>
 
       {overdue.length > 0 && (
@@ -144,10 +160,10 @@ export function LeadTasksTab({ leadId, initialTasks }: Props) {
       )}
       {tasks.length === 0 && <p className="text-sm text-[#1B1B1B]/40">No tasks yet. Use the quick buttons above.</p>}
 
-      {/* New Task Drawer */}
-      {drawerOpen && (
+      {/* New Task panel */}
+      {newTaskOpen && (
         <div className="fixed inset-0 z-50 flex items-end justify-end">
-          <div className="absolute inset-0 bg-black/20" onClick={() => setDrawerOpen(false)} />
+          <div className="absolute inset-0 bg-black/20" onClick={() => setNewTaskOpen(false)} />
           <div className="relative w-full max-w-md rounded-t-2xl bg-white p-6 shadow-2xl sm:rounded-2xl sm:m-4">
             <h3 className="mb-4 font-sans text-lg font-light">New Task</h3>
             <div className="space-y-3">
@@ -158,12 +174,28 @@ export function LeadTasksTab({ leadId, initialTasks }: Props) {
               <input type="datetime-local" value={newDate} onChange={(e) => setNewDate(e.target.value)} className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm" />
             </div>
             <div className="mt-4 flex gap-2">
-              <button onClick={() => setDrawerOpen(false)} className="flex-1 rounded-lg border border-[#1B1B1B]/10 py-2 text-sm">Cancel</button>
+              <button onClick={() => setNewTaskOpen(false)} className="flex-1 rounded-lg border border-[#1B1B1B]/10 py-2 text-sm">Cancel</button>
               <button onClick={createTask} disabled={!newTitle.trim()} className="flex-1 rounded-lg bg-[#1B1B1B] py-2 text-sm font-medium text-white disabled:opacity-40">Create</button>
             </div>
           </div>
         </div>
       )}
+
+      {/* Edit Task Drawer — always mounted */}
+      <LeadTaskDrawer
+        open={editDrawerOpen}
+        task={selectedTask ? { ...selectedTask, leadId: selectedTask.leadId ?? leadId, createdAt: selectedTask.createdAt ?? "" } : null}
+        leadId={leadId}
+        onClose={() => setEditDrawerOpen(false)}
+        onSaved={(updated) => {
+          setTasks((prev) => prev.map((t) => (t.id === updated.id ? { ...updated } : t)));
+          setEditDrawerOpen(false);
+        }}
+        onDeleted={(taskId) => {
+          setTasks((prev) => prev.filter((t) => t.id !== taskId));
+          setEditDrawerOpen(false);
+        }}
+      />
     </div>
   );
 }
