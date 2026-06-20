@@ -12,13 +12,23 @@ vi.mock("@/lib/prisma", () => ({
       delete: vi.fn(),
     },
     actionPlan: { findUnique: vi.fn() },
+    lead: { update: vi.fn() },
+    triggerExecution: { create: vi.fn() },
+    leadPlanEnrollment: { findFirst: vi.fn() },
+    $transaction: vi.fn(),
   },
 }));
+
+vi.mock("@sendgrid/mail", () => ({
+  default: { setApiKey: vi.fn(), send: vi.fn().mockResolvedValue([{}, {}]) },
+}));
+vi.mock("@/lib/email", () => ({ FROM: "noreply@cncrealtygroup.com" }));
 
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { GET, POST } from "../../app/api/admin/triggers/route";
 import { PATCH, DELETE } from "../../app/api/admin/triggers/[id]/route";
+import { PATCH as PATCH_LEAD } from "../../app/api/leads/[id]/route";
 
 const ADMIN_SESSION = { user: { id: "u1", role: "ADMIN" } };
 const AGENT_SESSION = { user: { id: "u2", role: "AGENT" } };
@@ -214,5 +224,91 @@ describe("DELETE /api/admin/triggers/[id]", () => {
     vi.mocked(prisma.trigger.delete).mockResolvedValue(TRIGGER_ENROLL as any);
     const res = await DELETE(new Request("http://localhost/api/admin/triggers/t1", { method: "DELETE" }), TRIGGER_PARAMS);
     expect(res.status).toBe(204);
+  });
+});
+
+// ─── Trigger execution in PATCH /api/leads/[id] ───────────────────────────────
+
+describe("Trigger execution — PATCH /api/leads/[id]", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  const LEAD_PARAMS = { params: { id: "l1" } };
+  const LEAD_SESSION = { user: { id: "u1", role: "ADMIN" } };
+  const UPDATED_LEAD = {
+    id: "l1", firstName: "John", lastName: "Doe",
+    email: "john@test.com", phone: null, status: "QUALIFIED",
+    agentId: "a1", createdAt: new Date(), updatedAt: new Date(),
+  };
+
+  it("fires trigger when status changes to matching value", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(LEAD_SESSION as any);
+    vi.mocked(prisma.lead.update).mockResolvedValue(UPDATED_LEAD as any);
+    vi.mocked(prisma.trigger.findMany).mockResolvedValue([
+      { ...TRIGGER_ENROLL, actionPlan: { id: "p1", isActive: true, steps: [] } },
+    ] as any);
+    vi.mocked(prisma.triggerExecution.create).mockResolvedValue({ id: "e1" } as any);
+    vi.mocked(prisma.leadPlanEnrollment.findFirst).mockResolvedValue(null);
+    vi.mocked(prisma.$transaction).mockResolvedValue({} as any);
+
+    const req = new Request("http://localhost/api/leads/l1", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "QUALIFIED" }),
+    });
+    const res = await PATCH_LEAD(req, LEAD_PARAMS);
+    expect(res.status).toBe(200);
+    expect(prisma.triggerExecution.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { triggerId: "t1", leadId: "l1" } })
+    );
+  });
+
+  it("skips trigger when P2002 (already fired for this lead)", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(LEAD_SESSION as any);
+    vi.mocked(prisma.lead.update).mockResolvedValue(UPDATED_LEAD as any);
+    vi.mocked(prisma.trigger.findMany).mockResolvedValue([
+      { ...TRIGGER_ENROLL, actionPlan: { id: "p1", isActive: true, steps: [] } },
+    ] as any);
+    vi.mocked(prisma.triggerExecution.create).mockRejectedValue(
+      Object.assign(new Error("Unique constraint"), { code: "P2002" })
+    );
+
+    const req = new Request("http://localhost/api/leads/l1", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "QUALIFIED" }),
+    });
+    const res = await PATCH_LEAD(req, LEAD_PARAMS);
+    // PATCH still succeeds even when trigger is skipped
+    expect(res.status).toBe(200);
+    // enrollment transaction should NOT have been called
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("does not enter trigger block when status not in body", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(LEAD_SESSION as any);
+    vi.mocked(prisma.lead.update).mockResolvedValue({ ...UPDATED_LEAD, status: "QUALIFIED" } as any);
+
+    const req = new Request("http://localhost/api/leads/l1", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ notes: "Updated notes" }),
+    });
+    const res = await PATCH_LEAD(req, LEAD_PARAMS);
+    expect(res.status).toBe(200);
+    expect(prisma.trigger.findMany).not.toHaveBeenCalled();
+  });
+
+  it("PATCH returns 200 even if trigger execution block throws", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(LEAD_SESSION as any);
+    vi.mocked(prisma.lead.update).mockResolvedValue(UPDATED_LEAD as any);
+    vi.mocked(prisma.trigger.findMany).mockRejectedValue(new Error("DB failure"));
+
+    const req = new Request("http://localhost/api/leads/l1", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "QUALIFIED" }),
+    });
+    const res = await PATCH_LEAD(req, LEAD_PARAMS);
+    expect(res.status).toBe(200);
   });
 });
