@@ -7,7 +7,7 @@ vi.mock("@/lib/prisma", () => ({
     agent: { findMany: vi.fn(), findUnique: vi.fn() },
     lead: { groupBy: vi.fn(), findMany: vi.fn(), count: vi.fn() },
     activity: { groupBy: vi.fn(), findMany: vi.fn(), count: vi.fn() },
-    deal: { groupBy: vi.fn(), count: vi.fn() },
+    deal: { groupBy: vi.fn(), count: vi.fn(), findMany: vi.fn() },
   },
 }));
 
@@ -121,10 +121,10 @@ describe("GET /api/reports/my-stats", () => {
   it("returns 200 with summary, sourceBreakdown, activityBreakdown for agent", async () => {
     vi.mocked(getServerSession).mockResolvedValue(AGENT_SESSION as any);
     vi.mocked(prisma.agent.findUnique).mockResolvedValue({ id: "a1" } as any);
-    vi.mocked(prisma.lead.count)
-      .mockResolvedValueOnce(5)  // leadsThisPeriod
-      .mockResolvedValueOnce(2)  // dealsInPipeline
-      .mockResolvedValueOnce(1); // dealsClosed
+    vi.mocked(prisma.lead.count).mockResolvedValueOnce(5);
+    vi.mocked(prisma.deal.count)
+      .mockResolvedValueOnce(2)   // dealsInPipeline
+      .mockResolvedValueOnce(1);  // dealsClosed
     vi.mocked(prisma.activity.count).mockResolvedValue(10);
     vi.mocked(prisma.lead.groupBy).mockResolvedValue([
       { source: "WEBSITE", _count: { id: 3 } } as any,
@@ -152,6 +152,7 @@ describe("GET /api/reports/my-stats", () => {
     vi.mocked(getServerSession).mockResolvedValue(AGENT_SESSION as any);
     vi.mocked(prisma.agent.findUnique).mockResolvedValue({ id: "a1" } as any);
     vi.mocked(prisma.lead.count).mockResolvedValue(0);
+    vi.mocked(prisma.deal.count).mockResolvedValue(0);
     vi.mocked(prisma.activity.count).mockResolvedValue(0);
     vi.mocked(prisma.lead.groupBy).mockResolvedValue([]);
     vi.mocked(prisma.activity.groupBy).mockResolvedValue([]);

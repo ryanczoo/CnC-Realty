@@ -50,16 +50,18 @@ export async function GET(req: Request) {
       prisma.lead.count({
         where: { agentId: agent.id, createdAt: dateFilter as any },
       }),
-      prisma.lead.count({
+      prisma.deal.count({
         where: {
           agentId: agent.id,
           createdAt: dateFilter as any,
+          stage: { notIn: ["FALLEN_OUT", "OFFER_ACCEPTED"] },
         },
       }),
-      prisma.lead.count({
+      prisma.deal.count({
         where: {
           agentId: agent.id,
-          createdAt: dateFilter as any,
+          stageUpdatedAt: dateFilter as any,
+          stage: "OFFER_ACCEPTED",
         },
       }),
       prisma.activity.count({
