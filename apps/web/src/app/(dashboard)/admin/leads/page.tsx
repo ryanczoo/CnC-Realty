@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { requireAdminPage } from "@/lib/server-utils";
-import { AdminLeadsMergeClient } from "./AdminLeadsMergeClient";
+import { AdminLeadsClient } from "./AdminLeadsClient";
 
 export const metadata = { title: "All Leads | CnC Realty Admin" };
 
@@ -16,25 +16,62 @@ export default async function AdminLeadsPage() {
     status: string;
     source: string;
     createdAt: Date;
-    agent: {
-      user: { email: string };
-    } | null;
+    agent: { user: { email: string } } | null;
+  };
+
+  type UnassignedRow = {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string | null;
+    status: string;
+    source: string;
+    createdAt: Date;
+  };
+
+  type AgentRow = {
+    id: string;
+    displayName: string | null;
+    user: { email: string };
   };
 
   let leads: LeadRow[] = [];
+  let unassignedLeads: UnassignedRow[] = [];
+  let agents: AgentRow[] = [];
 
   try {
-    leads = await prisma.lead.findMany({
-      include: {
-        agent: {
-          include: {
-            user: { select: { email: true } },
-          },
+    [leads, unassignedLeads, agents] = await Promise.all([
+      prisma.lead.findMany({
+        include: {
+          agent: { include: { user: { select: { email: true } } } },
         },
-      },
-      orderBy: { createdAt: "desc" },
-      take: 100,
-    });
+        orderBy: { createdAt: "desc" },
+        take: 100,
+      }),
+      prisma.lead.findMany({
+        where: { agentId: null },
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          phone: true,
+          status: true,
+          source: true,
+          createdAt: true,
+        },
+      }),
+      prisma.agent.findMany({
+        orderBy: { displayName: "asc" },
+        select: {
+          id: true,
+          displayName: true,
+          user: { select: { email: true } },
+        },
+      }),
+    ]);
   } catch {
     // DB unreachable — show empty state
   }
@@ -49,6 +86,17 @@ export default async function AdminLeadsPage() {
     source: l.source,
     createdAt: l.createdAt.toISOString(),
     agentEmail: l.agent?.user.email ?? null,
+  }));
+
+  const serializedUnassigned = unassignedLeads.map((l) => ({
+    id: l.id,
+    firstName: l.firstName,
+    lastName: l.lastName,
+    email: l.email,
+    phone: l.phone,
+    status: l.status,
+    source: l.source,
+    createdAt: l.createdAt.toISOString(),
   }));
 
   return (
@@ -66,7 +114,11 @@ export default async function AdminLeadsPage() {
         </a>
       </div>
 
-      <AdminLeadsMergeClient leads={serializedLeads} />
+      <AdminLeadsClient
+        leads={serializedLeads}
+        unassignedLeads={serializedUnassigned}
+        agents={agents}
+      />
     </div>
   );
 }
