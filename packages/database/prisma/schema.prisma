@@ -158,6 +158,32 @@ enum FileActivityType {
   CONVERTED_TO_TRANSACTION
 }
 
+// ─── Phase 5B: Action Plan enums ──────────────────────────────────────────────
+
+enum PlanStepType {
+  EMAIL
+  TASK
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+enum PausedReason {
+  REPLY
+  MANUAL
+}
+
+enum PlanStepStatus {
+  PENDING
+  DONE
+  SKIPPED
+  PAUSED
+}
+
 // ─── Auth models (unchanged) ─────────────────────────────────────────────────
 
 model User {
@@ -249,6 +275,7 @@ model Agent {
   assignedTasks    LeadTask[]        @relation("TaskAssignee")
   smartLists       SmartList[]
   deals            Deal[]
+  enrollments      LeadPlanEnrollment[]
 }
 
 model Property {
@@ -325,6 +352,7 @@ model Lead {
   relationshipsFrom LeadRelationship[] @relation("RelationshipFrom")
   relationshipsTo   LeadRelationship[] @relation("RelationshipTo")
   deals             Deal[]
+  enrollments       LeadPlanEnrollment[]
 }
 
 model Activity {
@@ -572,6 +600,69 @@ model DripStep {
   createdAt  DateTime @default(now())
 
   campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+}
+
+// ─── Action Plan models ──────────────────────────────────────────────────────
+
+model ActionPlan {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  steps       ActionPlanStep[]
+  enrollments LeadPlanEnrollment[]
+}
+
+model ActionPlanStep {
+  id        String       @id @default(cuid())
+  planId    String
+  stepOrder Int
+  delayDays Int          @default(0)
+  stepType  PlanStepType
+  subject   String?
+  body      String?
+  taskTitle String?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  plan ActionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+}
+
+model LeadPlanEnrollment {
+  id           String           @id @default(cuid())
+  leadId       String
+  planId       String
+  agentId      String
+  status       EnrollmentStatus @default(ACTIVE)
+  enrolledAt   DateTime         @default(now())
+  pausedAt     DateTime?
+  pausedReason PausedReason?
+  completedAt  DateTime?
+
+  lead  Lead       @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  plan  ActionPlan @relation(fields: [planId], references: [id])
+  agent Agent      @relation(fields: [agentId], references: [id])
+  steps LeadPlanStep[]
+}
+
+model LeadPlanStep {
+  id           String         @id @default(cuid())
+  enrollmentId String
+  stepOrder    Int
+  stepType     PlanStepType
+  subject      String?
+  body         String?
+  taskTitle    String?
+  dueAt        DateTime
+  status       PlanStepStatus @default(PENDING)
+  executedAt   DateTime?
+
+  enrollment LeadPlanEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  @@index([status, dueAt])
 }
 
 model SavedSearch {
