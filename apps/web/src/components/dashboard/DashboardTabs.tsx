@@ -5,6 +5,8 @@ import { StatsCard } from "@/components/dashboard/StatsCard";
 
 type RangeValue = "week" | "month" | "30d" | "90d" | "year" | "all";
 
+const ALL_ACTIVITY_TYPES = ["NOTE", "CALL", "EMAIL", "SHOWING", "OFFER", "DOCUMENT"] as const;
+
 const RANGES: { value: RangeValue; label: string }[] = [
   { value: "week",  label: "This Week" },
   { value: "month", label: "This Month" },
@@ -70,7 +72,7 @@ export function DashboardTabs({ overviewStats }: { overviewStats: OverviewStats 
       })
       .then(setMyStats)
       .catch((e) => { if (e.name !== "AbortError") setError("Failed to load stats"); })
-      .finally(() => setLoading(false));
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, [tab, range]);
 
@@ -181,11 +183,11 @@ export function DashboardTabs({ overviewStats }: { overviewStats: OverviewStats 
                 <h2 className="text-sm font-medium text-[#1B1B1B]">My Activity Breakdown</h2>
               </div>
               <div className="flex flex-wrap gap-4 px-5 py-4">
-                {myStats.activityBreakdown.map((row) => (
-                  <div
-                    key={row.type}
-                    className="rounded-xl border border-[#1B1B1B]/10 px-4 py-2"
-                  >
+                {(ALL_ACTIVITY_TYPES.map((type) => {
+                  const found = myStats.activityBreakdown.find((r) => r.type === type);
+                  return { type, count: found?.count ?? 0 };
+                })).map((row) => (
+                  <div key={row.type} className="rounded-xl border border-[#1B1B1B]/10 px-4 py-2">
                     <span className="text-xs font-medium text-[#1B1B1B]/50">
                       {ACTIVITY_LABELS[row.type] ?? row.type}:
                     </span>{" "}
