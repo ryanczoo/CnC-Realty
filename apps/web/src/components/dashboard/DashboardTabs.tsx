@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 
 type RangeValue = "week" | "month" | "30d" | "90d" | "year" | "all";
@@ -57,12 +57,24 @@ type DashboardTabsProps = {
   role: string;
 };
 
+// Defensively zero-fill all 6 activity types, in a fixed order, in case the
+// API response omits any of them.
+function zeroFillActivities(breakdown: { type: string; count: number }[]) {
+  const counts = new Map(breakdown.map((r) => [r.type, r.count]));
+  return ALL_ACTIVITY_TYPES.map((type) => ({ type, count: counts.get(type) ?? 0 }));
+}
+
 export function DashboardTabs({ overviewStats, role }: DashboardTabsProps) {
   const [tab, setTab] = useState<"overview" | "my-stats">("overview");
   const [range, setRange] = useState<RangeValue>("month");
   const [myStats, setMyStats] = useState<MyStatsData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const activityRows = useMemo(
+    () => (myStats ? zeroFillActivities(myStats.activityBreakdown) : []),
+    [myStats],
+  );
 
   // Fetch my stats whenever the tab is active or range changes
   useEffect(() => {
@@ -190,10 +202,7 @@ export function DashboardTabs({ overviewStats, role }: DashboardTabsProps) {
                 <h2 className="text-sm font-medium text-[#1B1B1B]">My Activity Breakdown</h2>
               </div>
               <div className="flex flex-wrap gap-4 px-5 py-4">
-                {(ALL_ACTIVITY_TYPES.map((type) => {
-                  const found = myStats.activityBreakdown.find((r) => r.type === type);
-                  return { type, count: found?.count ?? 0 };
-                })).map((row) => (
+                {activityRows.map((row) => (
                   <div key={row.type} className="rounded-xl border border-[#1B1B1B]/10 px-4 py-2">
                     <span className="text-xs font-medium text-[#1B1B1B]/50">
                       {ACTIVITY_LABELS[row.type] ?? row.type}:

@@ -1,50 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/api-auth";
+import { ALL_ACTIVITY_TYPES, getDateFilter, formatSpeedToLead } from "@/lib/reports";
 
 export const dynamic = "force-dynamic";
-
-const ALL_ACTIVITY_TYPES = ["NOTE", "CALL", "EMAIL", "SHOWING", "OFFER", "DOCUMENT"] as const;
-
-function getDateFilter(range: string | null): { gte: Date } | {} {
-  const now = new Date();
-  switch (range) {
-    case "week": {
-      const d = new Date(now);
-      const day = d.getDay(); // 0 = Sunday
-      const diff = day === 0 ? 6 : day - 1; // days since Monday
-      d.setDate(d.getDate() - diff);
-      d.setHours(0, 0, 0, 0);
-      return { gte: d };
-    }
-    case "30d":
-      return { gte: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) };
-    case "90d":
-      return { gte: new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000) };
-    case "year": {
-      return { gte: new Date(now.getFullYear(), 0, 1) };
-    }
-    case "all":
-      return {};
-    case "month":
-    default: {
-      return { gte: new Date(now.getFullYear(), now.getMonth(), 1) };
-    }
-  }
-}
-
-function formatSpeedToLead(avgHours: number | null): string {
-  if (avgHours === null) return "—";
-  if (avgHours < 1) return "< 1h";
-  if (avgHours < 24) {
-    const h = Math.floor(avgHours);
-    const m = Math.round((avgHours - h) * 60);
-    return m > 0 ? `${h}h ${m}m` : `${h}h`;
-  }
-  const d = Math.floor(avgHours / 24);
-  const h = Math.floor(avgHours % 24);
-  return h > 0 ? `${d}d ${h}h` : `${d}d`;
-}
 
 export async function GET(req: Request) {
   const { error } = await requireAuth("ADMIN");
@@ -133,12 +92,15 @@ export async function GET(req: Request) {
     speedMap.set(l.agentId, arr);
   }
 
+  const avgSpeedFor = (agentId: string): number | null => {
+    const diffs = speedMap.get(agentId);
+    if (!diffs || diffs.length === 0) return null;
+    return diffs.reduce((a, b) => a + b, 0) / diffs.length;
+  };
+
   // 4. Build leaderboard
   const leaderboard = agents
     .map((agent) => {
-      const diffs = speedMap.get(agent.id);
-      const avgSpeedToLeadHours =
-        diffs && diffs.length > 0 ? diffs.reduce((a, b) => a + b, 0) / diffs.length : null;
       return {
         agentId: agent.id,
         displayName: agent.displayName,
@@ -146,7 +108,7 @@ export async function GET(req: Request) {
         activitiesLogged: activitiesMap.get(agent.id) ?? 0,
         dealsInPipeline: pipelineMap.get(agent.id) ?? 0,
         dealsClosed: closedMap.get(agent.id) ?? 0,
-        avgSpeedToLeadHours,
+        avgSpeedToLeadHours: avgSpeedFor(agent.id),
       };
     })
     .sort((a, b) => b.activitiesLogged - a.activitiesLogged);
@@ -171,9 +133,7 @@ export async function GET(req: Request) {
   // 7. Speed-to-lead panel (same data as leaderboard, different shape)
   const speedToLead = agents
     .map((agent) => {
-      const diffs = speedMap.get(agent.id);
-      const avgHours =
-        diffs && diffs.length > 0 ? diffs.reduce((a, b) => a + b, 0) / diffs.length : null;
+      const avgHours = avgSpeedFor(agent.id);
       return {
         agentId: agent.id,
         displayName: agent.displayName,

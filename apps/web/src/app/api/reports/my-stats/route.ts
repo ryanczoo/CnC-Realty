@@ -1,36 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/api-auth";
+import { ALL_ACTIVITY_TYPES, getDateFilter } from "@/lib/reports";
 
 export const dynamic = "force-dynamic";
 
-const ALL_ACTIVITY_TYPES = ["NOTE", "CALL", "EMAIL", "SHOWING", "OFFER", "DOCUMENT"] as const;
 const ALL_SOURCES = ["WEBSITE", "REFERRAL", "SOCIAL", "OPEN_HOUSE", "COLD_CALL", "OTHER"] as const;
-
-function getDateFilter(range: string | null): { gte: Date } | {} {
-  const now = new Date();
-  switch (range) {
-    case "week": {
-      const d = new Date(now);
-      const day = d.getDay();
-      const diff = day === 0 ? 6 : day - 1;
-      d.setDate(d.getDate() - diff);
-      d.setHours(0, 0, 0, 0);
-      return { gte: d };
-    }
-    case "30d":
-      return { gte: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) };
-    case "90d":
-      return { gte: new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000) };
-    case "year":
-      return { gte: new Date(now.getFullYear(), 0, 1) };
-    case "all":
-      return {};
-    case "month":
-    default:
-      return { gte: new Date(now.getFullYear(), now.getMonth(), 1) };
-  }
-}
 
 export async function GET(req: Request) {
   const { session, error } = await requireAuth("AGENT");
