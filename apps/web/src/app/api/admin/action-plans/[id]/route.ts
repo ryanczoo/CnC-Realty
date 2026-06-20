@@ -5,6 +5,10 @@ import { requireAuth } from "@/lib/api-auth";
 
 export const dynamic = "force-dynamic";
 
+function isNotFound(err: unknown): boolean {
+  return (err as any)?.code === "P2025";
+}
+
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   const { error } = await requireAuth("ADMIN");
   if (error) return error;
@@ -20,6 +24,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     return NextResponse.json(plan);
   } catch (err) {
     if (err instanceof z.ZodError) return NextResponse.json({ error: err.issues[0].message }, { status: 400 });
+    if (isNotFound(err)) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
@@ -34,6 +39,11 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
   if (activeCount > 0) {
     return NextResponse.json({ error: "Cannot delete plan with active enrollments" }, { status: 409 });
   }
-  await prisma.actionPlan.delete({ where: { id: params.id } });
+  try {
+    await prisma.actionPlan.delete({ where: { id: params.id } });
+  } catch (err) {
+    if (isNotFound(err)) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
   return new NextResponse(null, { status: 204 });
 }
