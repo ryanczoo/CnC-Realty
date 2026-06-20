@@ -235,21 +235,27 @@ export default function AdminReportsPage() {
             <div className="border-b border-[#1B1B1B]/5 px-5 py-3">
               <h2 className="text-sm font-medium text-[#1B1B1B]">Activity Volume</h2>
             </div>
-            <div className="flex flex-wrap gap-4 px-5 py-4">
-              {data.activityVolume.map((row) => (
-                <div
-                  key={row.type}
-                  className="rounded-xl border border-[#1B1B1B]/10 px-4 py-2"
-                >
-                  <span className="text-xs font-medium text-[#1B1B1B]/50">
-                    {ACTIVITY_LABELS[row.type] ?? row.type}:
-                  </span>{" "}
-                  <span className="tabular-nums text-sm font-medium text-[#1B1B1B]">
-                    {row.count}
-                  </span>
-                </div>
-              ))}
-            </div>
+            {data.activityVolume.length === 0 ? (
+              <p className="px-5 py-8 text-center text-sm text-[#1B1B1B]/40">
+                No activity for this period.
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-4 px-5 py-4">
+                {data.activityVolume.map((row) => (
+                  <div
+                    key={row.type}
+                    className="rounded-xl border border-[#1B1B1B]/10 px-4 py-2"
+                  >
+                    <span className="text-xs font-medium text-[#1B1B1B]/50">
+                      {ACTIVITY_LABELS[row.type] ?? row.type}:
+                    </span>{" "}
+                    <span className="tabular-nums text-sm font-medium text-[#1B1B1B]">
+                      {row.count}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </>
       )}
