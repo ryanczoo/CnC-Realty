@@ -5,6 +5,7 @@ import { LeadKanban } from "@/components/dashboard/LeadKanban";
 import { SmartListSidebar } from "@/components/leads/SmartListSidebar";
 import { SmartListResults } from "@/components/leads/SmartListResults";
 import { resolveListFilters } from "@/lib/smart-list-filters";
+import { BrokerageLeadsBanner } from "@/components/leads/BrokerageLeadsBanner";
 
 type LeadStatus = "NEW" | "CONTACTED" | "QUALIFIED" | "SHOWING" | "OFFER" | "UNDER_CONTRACT" | "CLOSED" | "LOST";
 
@@ -30,6 +31,15 @@ export default async function LeadsPage({
         orderBy: { createdAt: "asc" },
         select: { id: true, name: true, filters: true },
       })
+    : [];
+
+  const unseenBrokerageLeads = agent
+    ? await prisma.lead
+        .findMany({
+          where: { agentId: agent.id, brokerageFed: true, assignmentSeenAt: null },
+          select: { id: true, firstName: true, lastName: true },
+        })
+        .catch(() => [])
     : [];
 
   const list = searchParams.list ?? null;
@@ -81,6 +91,7 @@ export default async function LeadsPage({
             <div className="mb-8">
               <h1 className="font-sans text-2xl font-light text-[#1B1B1B]">Leads</h1>
             </div>
+            <BrokerageLeadsBanner leads={unseenBrokerageLeads} />
             <LeadKanban initialLeads={kanbanLeads.map(l => ({ ...l, status: l.status as LeadStatus }))} />
           </>
         )}
