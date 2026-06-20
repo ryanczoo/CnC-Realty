@@ -165,6 +165,11 @@ enum PlanStepType {
   TASK
 }
 
+enum TriggerActionType {
+  ENROLL_PLAN
+  SEND_EMAIL
+}
+
 enum EnrollmentStatus {
   ACTIVE
   PAUSED
@@ -616,6 +621,7 @@ model ActionPlan {
 
   steps       ActionPlanStep[]
   enrollments LeadPlanEnrollment[]
+  triggers    Trigger[]
 }
 
 model ActionPlanStep {
@@ -862,4 +868,30 @@ model Deal {
 
   @@index([agentId])
   @@index([leadId])
+}
+
+model Trigger {
+  id            String            @id @default(cuid())
+  name          String
+  statusTrigger LeadStatus
+  actionType    TriggerActionType
+  actionPlanId  String?
+  emailSubject  String?
+  emailBody     String?
+  isActive      Boolean           @default(true)
+  createdAt     DateTime          @default(now())
+
+  actionPlan  ActionPlan?        @relation(fields: [actionPlanId], references: [id])
+  executions  TriggerExecution[]
+}
+
+model TriggerExecution {
+  id         String   @id @default(cuid())
+  triggerId  String
+  leadId     String
+  executedAt DateTime @default(now())
+
+  trigger Trigger @relation(fields: [triggerId], references: [id], onDelete: Cascade)
+
+  @@unique([triggerId, leadId])
 }
