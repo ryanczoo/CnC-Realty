@@ -36,6 +36,9 @@ export async function POST(req: NextRequest) {
 
     const agentEmail = enrollment.agent?.user?.email;
     if (agentEmail) {
+      // sendActionPlanEmail sets replyTo=reply+{enrollmentId}@... — if the agent
+      // accidentally replies to the forwarded email, this webhook fires again but the
+      // enrollment is already PAUSED, so it no-ops safely.
       await sendActionPlanEmail({
         to: agentEmail,
         subject: `[Lead Reply] ${subject}`,

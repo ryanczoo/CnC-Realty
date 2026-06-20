@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { NextRequest } from "next/server";
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     leadPlanEnrollment: { findUnique: vi.fn(), update: vi.fn() },
     leadPlanStep: { updateMany: vi.fn() },
-    agent: { findUnique: vi.fn() },
   },
 }));
 vi.mock("@/lib/action-plan-email", () => ({ sendActionPlanEmail: vi.fn() }));
@@ -25,7 +25,7 @@ function makeRequest(to: string, subject = "Re: Hello", text = "Thanks for reach
   form.append("from", "lead@gmail.com");
   form.append("subject", subject);
   form.append("text", text);
-  return new Request("http://localhost/api/webhooks/sendgrid/inbound", {
+  return new NextRequest("http://localhost/api/webhooks/sendgrid/inbound", {
     method: "POST",
     body: form,
   });
@@ -74,5 +74,18 @@ describe("POST /api/webhooks/sendgrid/inbound", () => {
     const res = await POST(makeRequest("noreply@example.com"));
     expect(res.status).toBe(200);
     expect(prisma.leadPlanEnrollment.findUnique).not.toHaveBeenCalled();
+  });
+
+  it("pauses steps but skips email forward when agent has no email", async () => {
+    const enrollmentNoEmail = { ...ENROLLMENT, agent: { id: "a1", user: { email: null } } };
+    vi.mocked(prisma.leadPlanEnrollment.findUnique).mockResolvedValue(enrollmentNoEmail as any);
+    vi.mocked(prisma.leadPlanEnrollment.update).mockResolvedValue({ ...ENROLLMENT, status: "PAUSED" } as any);
+    vi.mocked(prisma.leadPlanStep.updateMany).mockResolvedValue({ count: 1 } as any);
+
+    const res = await POST(makeRequest("reply+e1@reply.cncrealtygroup.com"));
+    expect(res.status).toBe(200);
+    expect(prisma.leadPlanEnrollment.update).toHaveBeenCalled();
+    expect(prisma.leadPlanStep.updateMany).toHaveBeenCalled();
+    expect(sendActionPlanEmail).not.toHaveBeenCalled();
   });
 });
