@@ -113,5 +113,6 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       steps: { orderBy: { stepOrder: "asc" } },
     },
   });
+  if (!full) return NextResponse.json({ error: "Server error" }, { status: 500 });
   return NextResponse.json(full, { status: 201 });
 }
