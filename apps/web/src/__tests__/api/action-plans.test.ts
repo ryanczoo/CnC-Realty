@@ -12,6 +12,7 @@ vi.mock("@/lib/prisma", () => ({
       delete: vi.fn(),
     },
     actionPlanStep: {
+      findUnique: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
@@ -105,6 +106,7 @@ describe("POST /api/admin/action-plans/[id]/steps", () => {
 
   it("returns 400 for EMAIL step missing subject", async () => {
     vi.mocked(getServerSession).mockResolvedValue(ADMIN_SESSION as any);
+    vi.mocked(prisma.actionPlan.findUnique).mockResolvedValue(PLAN as any);
     const req = new Request("http://localhost", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -116,6 +118,7 @@ describe("POST /api/admin/action-plans/[id]/steps", () => {
 
   it("returns 400 for TASK step missing taskTitle", async () => {
     vi.mocked(getServerSession).mockResolvedValue(ADMIN_SESSION as any);
+    vi.mocked(prisma.actionPlan.findUnique).mockResolvedValue(PLAN as any);
     const req = new Request("http://localhost", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -127,6 +130,7 @@ describe("POST /api/admin/action-plans/[id]/steps", () => {
 
   it("creates an EMAIL step", async () => {
     vi.mocked(getServerSession).mockResolvedValue(ADMIN_SESSION as any);
+    vi.mocked(prisma.actionPlan.findUnique).mockResolvedValue(PLAN as any);
     vi.mocked(prisma.actionPlanStep.create).mockResolvedValue(STEP as any);
     const req = new Request("http://localhost", {
       method: "POST",
@@ -147,5 +151,21 @@ describe("DELETE /api/admin/action-plans/[id]/steps/[stepId]", () => {
     const req = new Request("http://localhost", { method: "DELETE" });
     const res = await DELETE_STEP(req, STEP_PARAMS);
     expect(res.status).toBe(204);
+  });
+});
+
+describe("PATCH /api/admin/action-plans/[id]/steps/[stepId]", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("returns 400 when patching EMAIL step to null subject without sending stepType", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(ADMIN_SESSION as any);
+    vi.mocked(prisma.actionPlanStep.findUnique).mockResolvedValue({ ...STEP, stepType: "EMAIL" } as any);
+    const req = new Request("http://localhost", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ subject: null }), // no stepType in body
+    });
+    const res = await PATCH_STEP(req, STEP_PARAMS);
+    expect(res.status).toBe(400);
   });
 });

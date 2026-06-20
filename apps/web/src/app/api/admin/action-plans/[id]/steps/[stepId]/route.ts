@@ -23,11 +23,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string; st
   });
   try {
     const data = schema.parse(await req.json());
-    // When changing stepType, re-validate required fields
-    if (data.stepType === "EMAIL" && (data.subject === null || data.body === null)) {
+    const existingStep = await prisma.actionPlanStep.findUnique({ where: { id: params.stepId }, select: { stepType: true } });
+    if (!existingStep) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    const effectiveType = (data.stepType ?? existingStep.stepType) as "EMAIL" | "TASK";
+    if (effectiveType === "EMAIL" && (data.subject === null || data.body === null)) {
       return NextResponse.json({ error: "EMAIL steps require subject and body" }, { status: 400 });
     }
-    if (data.stepType === "TASK" && data.taskTitle === null) {
+    if (effectiveType === "TASK" && data.taskTitle === null) {
       return NextResponse.json({ error: "TASK steps require taskTitle" }, { status: 400 });
     }
     const step = await prisma.actionPlanStep.update({ where: { id: params.stepId }, data });

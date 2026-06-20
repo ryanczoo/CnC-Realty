@@ -19,6 +19,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   if (error) return error;
 
   try {
+    const plan = await prisma.actionPlan.findUnique({ where: { id: params.id } });
+    if (!plan) return NextResponse.json({ error: "Plan not found" }, { status: 404 });
     const raw = stepSchema.parse(await req.json());
     if (raw.stepType === "EMAIL" && (!raw.subject || !raw.body)) {
       return NextResponse.json({ error: "EMAIL steps require subject and body" }, { status: 400 });
