@@ -339,6 +339,8 @@ model Lead {
   priceMax        Float?
   timeframeToMove String?
   lastContactedAt DateTime?
+  brokerageFed      Boolean   @default(false)
+  assignmentSeenAt  DateTime?
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 
