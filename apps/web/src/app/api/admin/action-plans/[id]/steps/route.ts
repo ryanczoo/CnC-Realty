@@ -14,6 +14,16 @@ const stepSchema = z.object({
   taskTitle: z.string().optional(),
 });
 
+export async function GET(_req: Request, { params }: { params: { id: string } }) {
+  const { error } = await requireAuth("ADMIN");
+  if (error) return error;
+  const steps = await prisma.actionPlanStep.findMany({
+    where: { planId: params.id },
+    orderBy: { stepOrder: "asc" },
+  });
+  return NextResponse.json(steps);
+}
+
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   const { error } = await requireAuth("ADMIN");
   if (error) return error;
