@@ -32,7 +32,7 @@ export default async function DashboardPage() {
   return (
     <div>
       <DeadlineAlerts />
-      <DashboardTabs overviewStats={{ total, newThisWeek, active, closed }} />
+      <DashboardTabs overviewStats={{ total, newThisWeek, active, closed }} role={role} />
     </div>
   );
 }

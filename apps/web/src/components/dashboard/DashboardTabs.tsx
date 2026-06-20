@@ -52,7 +52,12 @@ type MyStatsData = {
   activityBreakdown: { type: string; count: number }[];
 };
 
-export function DashboardTabs({ overviewStats }: { overviewStats: OverviewStats }) {
+type DashboardTabsProps = {
+  overviewStats: OverviewStats;
+  role: string;
+};
+
+export function DashboardTabs({ overviewStats, role }: DashboardTabsProps) {
   const [tab, setTab] = useState<"overview" | "my-stats">("overview");
   const [range, setRange] = useState<RangeValue>("month");
   const [myStats, setMyStats] = useState<MyStatsData | null>(null);
@@ -80,7 +85,9 @@ export function DashboardTabs({ overviewStats }: { overviewStats: OverviewStats 
     <div>
       {/* Tab switcher */}
       <div className="mb-6 flex gap-2">
-        {(["overview", "my-stats"] as const).map((t) => (
+        {(["overview", "my-stats"] as const)
+          .filter((t) => !(t === "my-stats" && role === "ADMIN"))
+          .map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
