@@ -33,29 +33,38 @@ export async function PATCH(
     return NextResponse.json({ error: "Agent not found" }, { status: 404 });
   }
 
-  const lead = await prisma.lead.update({
-    where: { id: params.id },
-    data: {
-      agentId,
-      brokerageFed: true,
-      assignmentSeenAt: null,
-    },
-    select: {
-      id: true,
-      firstName: true,
-      lastName: true,
-      email: true,
-      phone: true,
-      status: true,
-      source: true,
-      createdAt: true,
-      agentId: true,
-      brokerageFed: true,
-    },
-  });
+  let lead;
+  try {
+    lead = await prisma.lead.update({
+      where: { id: params.id },
+      data: {
+        agentId,
+        brokerageFed: true,
+        assignmentSeenAt: null,
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+        status: true,
+        source: true,
+        createdAt: true,
+        agentId: true,
+        brokerageFed: true,
+      },
+    });
+  } catch (e: any) {
+    if (e?.code === "P2025") {
+      return NextResponse.json({ error: "Lead not found" }, { status: 404 });
+    }
+    throw e;
+  }
 
   try {
     if (process.env.SENDGRID_API_KEY && agent.user.email) {
+      sgMail.setApiKey(process.env.SENDGRID_API_KEY);
       await sgMail.send({
         to: agent.user.email,
         from: FROM,

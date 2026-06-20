@@ -78,6 +78,21 @@ describe("PATCH /api/admin/leads/[id]/assign", () => {
     expect(res.status).toBe(404);
   });
 
+  it("returns 404 when lead does not exist", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(ADMIN_SESSION as any);
+    vi.mocked(prisma.agent.findUnique).mockResolvedValue(AGENT as any);
+    vi.mocked(prisma.lead.update).mockRejectedValue(
+      Object.assign(new Error("Record not found"), { code: "P2025" })
+    );
+    const req = new Request("http://localhost/api/admin/leads/nonexistent/assign", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ agentId: "a1" }),
+    });
+    const res = await PATCH(req, { params: { id: "nonexistent" } });
+    expect(res.status).toBe(404);
+  });
+
   it("assigns lead and returns 200 with brokerageFed=true", async () => {
     vi.mocked(getServerSession).mockResolvedValue(ADMIN_SESSION as any);
     vi.mocked(prisma.agent.findUnique).mockResolvedValue(AGENT as any);

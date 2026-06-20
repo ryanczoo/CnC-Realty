@@ -84,6 +84,7 @@ export default async function LeadsPage({
       <SmartListSidebar customLists={customLists} />
 
       <div className="flex-1 overflow-auto p-8">
+        <BrokerageLeadsBanner leads={unseenBrokerageLeads} />
         {list && isValidList ? (
           <SmartListResults activeList={list} customLists={customLists} />
         ) : (
@@ -91,7 +92,6 @@ export default async function LeadsPage({
             <div className="mb-8">
               <h1 className="font-sans text-2xl font-light text-[#1B1B1B]">Leads</h1>
             </div>
-            <BrokerageLeadsBanner leads={unseenBrokerageLeads} />
             <LeadKanban initialLeads={kanbanLeads.map(l => ({ ...l, status: l.status as LeadStatus }))} />
           </>
         )}
