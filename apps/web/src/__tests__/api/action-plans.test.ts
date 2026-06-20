@@ -44,10 +44,11 @@ describe("GET /api/admin/action-plans", () => {
     expect(res.status).toBe(401);
   });
 
-  it("returns 403 for non-admin", async () => {
+  it("returns 200 for agent", async () => {
     vi.mocked(getServerSession).mockResolvedValue(AGENT_SESSION as any);
+    vi.mocked(prisma.actionPlan.findMany).mockResolvedValue([PLAN] as any);
     const res = await GET();
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(200);
   });
 
   it("returns plan list for admin", async () => {

@@ -46,10 +46,19 @@ export async function POST(req: NextRequest) {
       };
 
       if (step.stepType === "EMAIL") {
+        if (!lead.email) {
+          // Skip EMAIL step — no lead email on file
+          await prisma.leadPlanStep.update({
+            where: { id: step.id },
+            data: { status: "SKIPPED", executedAt: now },
+          });
+          processed++;
+          continue;
+        }
         const subject = substituteVars(step.subject ?? "", vars);
         const body = substituteVars(step.body ?? "", vars);
         await sendActionPlanEmail({
-          to: lead.email ?? "",
+          to: lead.email,
           subject,
           body,
           enrollmentId: enrollment.id,

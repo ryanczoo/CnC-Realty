@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
 import { ActionPlanStepDrawer } from "./ActionPlanStepDrawer";
 
 type PlanStep = {
@@ -90,12 +92,15 @@ export function ActionPlanDetailDrawer({ open, plan, onClose, onPlanChanged, onD
                 <span className={`block w-4 h-4 rounded-full bg-white shadow transition-transform mx-0.5 ${plan?.isActive ? "translate-x-5" : "translate-x-0"}`} />
               </button>
             </div>
-            <button
+            <motion.button
               onClick={() => { setEditStep(null); setStepDrawerOpen(true); }}
               className="rounded-lg bg-[#1B1B1B] px-3 py-1.5 text-xs font-medium text-white"
+              animate={PULSE_ANIMATE}
+              transition={PULSE_TRANSITION}
+              whileHover={{ scale: 1.05, transition: SPRING_HOVER }}
             >
               + Add Step
-            </button>
+            </motion.button>
           </div>
 
           <div className="flex-1 overflow-y-auto px-6 py-4 space-y-2">
