@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     include: {
       enrollment: {
         include: {
-          lead: { select: { id: true, firstName: true, lastName: true } },
+          lead: { select: { id: true, firstName: true, lastName: true, email: true } },
           agent: {
             select: { id: true, displayName: true, phone: true, user: { select: { email: true } } },
           },
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
         const subject = substituteVars(step.subject ?? "", vars);
         const body = substituteVars(step.body ?? "", vars);
         await sendActionPlanEmail({
-          to: agent.user?.email ?? "",
+          to: lead.email ?? "",
           subject,
           body,
           enrollmentId: enrollment.id,
