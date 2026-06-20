@@ -6,7 +6,7 @@ import { requireAuth } from "@/lib/api-auth";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const { error } = await requireAuth("ADMIN");
+  const { error } = await requireAuth("AGENT");
   if (error) return error;
 
   const plans = await prisma.actionPlan.findMany({

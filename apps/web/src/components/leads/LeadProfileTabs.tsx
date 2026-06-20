@@ -5,8 +5,9 @@ import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 import { AddNoteForm } from "@/components/dashboard/AddNoteForm";
 import { LeadTasksTab } from "./LeadTasksTab";
 import { HomesTab } from "./HomesTab";
+import { LeadActionPlansSection } from "./LeadActionPlansSection";
 
-type Tab = "activity" | "tasks" | "homes";
+type Tab = "activity" | "tasks" | "homes" | "plans";
 
 interface ActivityItem {
   id: string;
@@ -37,6 +38,7 @@ export function LeadProfileTabs({ leadId, activities, tasks }: Props) {
     { id: "activity", label: "Activity" },
     { id: "tasks", label: "Tasks" },
     { id: "homes", label: "Homes" },
+    { id: "plans", label: "Action Plans" },
   ];
 
   return (
@@ -64,6 +66,7 @@ export function LeadProfileTabs({ leadId, activities, tasks }: Props) {
         )}
         {tab === "tasks" && <LeadTasksTab leadId={leadId} initialTasks={tasks} />}
         {tab === "homes" && <HomesTab leadId={leadId} />}
+        {tab === "plans" && <LeadActionPlansSection leadId={leadId} />}
       </div>
     </div>
   );
