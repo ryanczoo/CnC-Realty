@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { LEAD_STATUS_COLORS } from "@/lib/campaign-ui";
 import { formatDate } from "@/lib/utils";
 import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
+import { NewLeadModal } from "@/components/leads/NewLeadModal";
 
 type LeadRow = {
   id: string;
@@ -47,8 +49,15 @@ export function AdminLeadsClient({
   unassignedLeads: initialUnassigned,
   agents,
 }: Props) {
+  const router = useRouter();
   const [tab, setTab] = useState<"all" | "unassigned">("all");
   const [unassigned, setUnassigned] = useState(initialUnassigned);
+  const [showModal, setShowModal] = useState(false);
+
+  function handleLeadSaved() {
+    router.refresh();
+    setShowModal(false);
+  }
 
   // assign modal state
   const [assigningLead, setAssigningLead] = useState<UnassignedLead | null>(null);
@@ -138,23 +147,34 @@ export function AdminLeadsClient({
 
   return (
     <>
-      {/* Tab bar */}
-      <div className="mb-6 flex gap-1 rounded-xl bg-[#F2F0EF] p-1">
-        {(["all", "unassigned"] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-              tab === t
-                ? "bg-white text-[#1B1B1B] shadow-sm"
-                : "text-[#1B1B1B]/50 hover:text-[#1B1B1B]"
-            }`}
-          >
-            {t === "all"
-              ? "All Leads"
-              : `Unassigned${unassigned.length > 0 ? ` (${unassigned.length})` : ""}`}
-          </button>
-        ))}
+      {/* Tab bar + Add Lead button */}
+      <div className="mb-6 flex items-center justify-between gap-4">
+        <div className="flex flex-1 gap-1 rounded-xl bg-[#F2F0EF] p-1">
+          {(["all", "unassigned"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                tab === t
+                  ? "bg-white text-[#1B1B1B] shadow-sm"
+                  : "text-[#1B1B1B]/50 hover:text-[#1B1B1B]"
+              }`}
+            >
+              {t === "all"
+                ? "All Leads"
+                : `Unassigned${unassigned.length > 0 ? ` (${unassigned.length})` : ""}`}
+            </button>
+          ))}
+        </div>
+        <motion.button
+          onClick={() => setShowModal(true)}
+          className="rounded-full bg-[#1B1B1B] px-5 py-2 text-sm text-white"
+          animate={PULSE_ANIMATE}
+          transition={PULSE_TRANSITION}
+          whileHover={{ scale: 1.05, transition: SPRING_HOVER }}
+        >
+          + Add Lead
+        </motion.button>
       </div>
 
       {/* ── All Leads tab ── */}
@@ -420,6 +440,9 @@ export function AdminLeadsClient({
           </div>
         </div>
       )}
+
+      {/* ── Add Lead modal ── */}
+      <NewLeadModal open={showModal} onClose={() => setShowModal(false)} onSaved={handleLeadSaved} />
     </>
   );
 }
