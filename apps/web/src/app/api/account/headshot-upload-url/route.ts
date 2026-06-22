@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/api-auth";
 import { getPresignedPutUrl } from "@/lib/r2";
 
+export const dynamic = "force-dynamic";
+
 const ALLOWED = ["image/jpeg", "image/png", "image/webp"];
 
 export async function GET(req: Request) {
