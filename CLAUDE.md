@@ -4535,6 +4535,103 @@ Found already sitting uncommitted in the working tree at session start (not done
 
 ---
 
+## Session Notes — 2026-06-22
+
+### What Was Completed This Session
+
+Committed as `331cac7` on `main`.
+
+---
+
+### Agent Profile Hero — Full Redesign ✅
+
+**File:** `apps/web/src/components/agents/AgentProfileHero.tsx`
+
+Completely rewrote the agent profile hero to match the FIND real estate layout (`findrealestate.com/agents/jamiesittner`) with three CnC-specific differences: no star ratings, no contact buttons below the headline, and custom stat cards.
+
+**Three-section layout:**
+
+1. **Light hero section** (`bg-[#F2F0EF]`) — Large headline with the agent's circular photo embedded inline inside the `<h1>`, FIND-style. The "I'm [photo]" portion uses `white-space: nowrap` so the photo never detaches from the "I'm". Photo is a `relative inline-block overflow-hidden rounded-full` span with Next.js `<Image fill>` inside. Font: `clamp(2.4rem, 5.5vw, 5rem)`, `letter-spacing: -0.03em`. CA DRE license shown below in faded text.
+
+2. **Dark stats section** (`bg-[#151717]`) — 4 cards: Years of Experience (Clock icon), Listings Closed (Home icon), Volume Closed (TrendingUp icon), Properties Rented (KeyRound icon). Mobile: horizontal snap-scroll; desktop: 4-col grid. Each card: `rgba(33,33,33,0.9)` bg, `1px solid rgba(179,179,179,0.1)` border, icon top-left, large white number + gray label bottom.
+
+3. **Bio + Specialties** (`bg-[#F2F0EF]`) — Only renders if bio or specialties exist. Gold uppercase "ABOUT" / "SPECIALTIES" label above each.
+
+**Icons:** Lucide React (`Clock`, `Home`, `TrendingUp`, `KeyRound`) — server-component safe.
+
+---
+
+### propertiesRented Stat — DB + API + Settings UI ✅
+
+Added full support for tracking how many properties an agent has rented:
+
+**Schema:** `propertiesRented Int @default(0)` on `Agent` model — migration `20260622070213_add_properties_rented` applied to Railway DB.
+
+**Files changed:**
+- `packages/database/prisma/schema.prisma` — field added
+- `apps/web/src/app/(agents)/agents/[slug]/page.tsx` — added to Prisma select, passed as prop
+- `apps/web/src/components/agents/AgentProfileHero.tsx` — consumed in stats array
+- `apps/web/src/app/api/account/agent-profile/route.ts` — GET selects it; PATCH writes `Math.max(0, Number(...) || 0)` (non-nullable)
+- `apps/web/src/app/(dashboard)/dashboard/settings/page.tsx` — state, load effect, save payload, and UI input all added (appears after "Years of Experience" in the Agent Profile form)
+
+**Prisma DLL lock issue (Windows):** When `prisma migrate dev` runs `prisma generate` while the dev server is holding the `query_engine-windows.dll.node` file, the binary rename fails with EPERM. Fix: kill all node processes → run `pnpm --filter @cnc/database exec prisma generate` → restart dev server.
+
+---
+
+### Agent Title — Admin Editing ✅
+
+**Migration:** `20260622052443_add_agent_title` — added `title String?` to Agent model (e.g. "Listing Specialist", "Buyer's Agent").
+
+**Files:**
+- `apps/web/src/app/(dashboard)/admin/agents/AgentTitleEditor.tsx` — inline editable field (click to edit, PATCH to `/api/admin/agents/[id]`)
+- `apps/web/src/app/api/admin/agents/[id]/route.ts` — PATCH route, `requireAuth("ADMIN")`, validates and updates `title`
+- `apps/web/src/app/(dashboard)/admin/agents/page.tsx` — integrates AgentTitleEditor
+
+---
+
+### Prisma EPERM Fix — Important Note for Windows
+
+The dev server holds a lock on `query_engine-windows.dll.node`. Any time you need to run `prisma generate` or `prisma migrate dev` (which internally runs generate), you must:
+1. `Stop-Process -Name "node" -Force` in PowerShell
+2. Run `pnpm --filter @cnc/database exec prisma generate`
+3. Restart dev server with `pnpm --filter web dev`
+
+---
+
+### Join Page / Dashboard — Misc Polish ✅
+
+Assorted CRM and join-page improvements committed alongside the above:
+- `LeadKanban.tsx`, `LeadDetailSidebar.tsx`, `LeadTasksTab.tsx`, `NewLeadModal.tsx`, `TagPicker.tsx` — Phase 7 subagent polish
+- `JoinSteps.tsx` — minor copy/image fix (`join-slide-campaign.png` recompressed)
+- `Navbar.tsx` — minor tweak
+- `r2.ts`, `leads/route.ts`, `account/profile/route.ts`, `headshot/[userId]/route.ts` — backend fixes
+- `seed.ts` — sample data added
+- Phase 7 sub1/sub3/sub6/sub7/sub8 specs and plans committed to `docs/superpowers/`
+
+---
+
+### What Still Needs to Be Done
+
+| Task | Priority |
+|---|---|
+| **Join page** — still has work to do (user said "we have a lot of work to do still for this join page") | High |
+| **Dashboard** — still has work to do | High |
+| Checklist templates at `/admin/settings/checklists` (CA Purchase Buyer Side, CA Purchase Seller Side, CA Lease Tenant Side) | Medium |
+| Phase 6: ISR, skeleton loaders, sitemap, JSON-LD, rate limiting, Sentry, PostHog, deploy | Medium |
+| Phase 7 CRM Expansion: Smart Lists → Deal Pipeline → Lead Ponds → Action Plans → Trigger Automations → Reporting | Required before launch |
+
+---
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. Open `localhost:3000`
+3. **Join page** — navigate to `/join` and review what still needs work
+4. **Dashboard** — navigate to `/dashboard` and review what still needs work
+5. User said both join page and dashboard have remaining work — let Ryan direct which to tackle first
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`
