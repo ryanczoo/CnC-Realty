@@ -16,15 +16,22 @@ const createSchema = z.object({
   source: z.enum(["WEBSITE", "REFERRAL", "SOCIAL", "OPEN_HOUSE", "COLD_CALL", "OTHER"]).default("WEBSITE"),
 });
 
-// Public — no auth required.
+// Public — no auth required. Authenticated users skip rate limiting.
 export async function POST(req: Request) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "anonymous";
-  const { success, reset } = await publicFormRateLimit.limit(ip);
-  if (!success) {
-    return NextResponse.json(
-      { error: "Too many requests. Please try again later." },
-      { status: 429, headers: { "Retry-After": String(Math.ceil((reset - Date.now()) / 1000)) } }
-    );
+  const { session: authSession } = await requireAuth("AGENT");
+  if (!authSession) {
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "anonymous";
+    try {
+      const { success, reset } = await publicFormRateLimit.limit(ip);
+      if (!success) {
+        return NextResponse.json(
+          { error: "Too many requests. Please try again later." },
+          { status: 429, headers: { "Retry-After": String(Math.ceil((reset - Date.now()) / 1000)) } }
+        );
+      }
+    } catch (err) {
+      console.error("[POST /api/leads] rate limiter unavailable, proceeding:", err);
+    }
   }
 
   try {

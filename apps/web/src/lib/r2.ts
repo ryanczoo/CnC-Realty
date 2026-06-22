@@ -28,6 +28,10 @@ export async function getPresignedGetUrl(key: string): Promise<string> {
   );
 }
 
+export async function uploadToR2(key: string, body: Buffer, contentType: string): Promise<void> {
+  await r2.send(new PutObjectCommand({ Bucket: R2_BUCKET, Key: key, Body: body, ContentType: contentType }));
+}
+
 export async function deleteR2Object(key: string): Promise<void> {
   await r2.send(new DeleteObjectCommand({ Bucket: R2_BUCKET, Key: key }));
 }

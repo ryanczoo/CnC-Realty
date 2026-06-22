@@ -34,6 +34,41 @@ const RESIDENTIAL_LEASE_ITEMS = [
   { name: "Lead-Based Paint Disclosure", description: "Required for pre-1978 properties", isRequired: false, order: 7 },
 ];
 
+const TAGS: { name: string; color: string }[] = [
+  // CA Counties — slate blue
+  ...[
+    "Alameda","Alpine","Amador","Butte","Calaveras","Colusa","Contra Costa",
+    "Del Norte","El Dorado","Fresno","Glenn","Humboldt","Imperial","Inyo",
+    "Kern","Kings","Lake","Lassen","Los Angeles","Madera","Marin","Mariposa",
+    "Mendocino","Merced","Modoc","Mono","Monterey","Napa","Nevada","Orange",
+    "Placer","Plumas","Riverside","Sacramento","San Benito","San Bernardino",
+    "San Diego","San Francisco","San Joaquin","San Luis Obispo","San Mateo",
+    "Santa Barbara","Santa Clara","Santa Cruz","Shasta","Sierra","Siskiyou",
+    "Solano","Sonoma","Stanislaus","Sutter","Tehama","Trinity","Tulare",
+    "Tuolumne","Ventura","Yolo","Yuba",
+  ].map((name) => ({ name, color: "#64748B" })),
+
+  // Buyer type — blue
+  ...["First Time Buyer","Cash Buyer","VA Loan","Investor","Relocating","Downsizing","Upsizing"]
+    .map((name) => ({ name, color: "#3B82F6" })),
+
+  // Property type — emerald
+  ...["Single Family","Condo","Townhome","New Construction","Fixer Upper","Luxury"]
+    .map((name) => ({ name, color: "#10B981" })),
+
+  // Lead origin — amber
+  ...["Open House","Referral","Instagram","Facebook","Zillow","Yelp"]
+    .map((name) => ({ name, color: "#F59E0B" })),
+
+  // Relationship — purple
+  ...["Past Client","Family","Friend","Colleague"]
+    .map((name) => ({ name, color: "#8B5CF6" })),
+
+  // Situation flags — rose
+  ...["Pre-Approved","Needs to Sell First","Divorce","Probate","Expired Listing"]
+    .map((name) => ({ name, color: "#F43F5E" })),
+];
+
 async function main() {
   console.log("Seeding checklist templates...");
 
@@ -86,6 +121,18 @@ async function main() {
   });
 
   console.log(`Created templates: ${resSaleBuyer.name}, ${resSaleSeller.name}, ${resLease.name}`);
+
+  console.log(`Seeding ${TAGS.length} tags...`);
+  await Promise.all(
+    TAGS.map((tag) =>
+      prisma.tag.upsert({
+        where: { name: tag.name },
+        update: { color: tag.color },
+        create: tag,
+      })
+    )
+  );
+  console.log("Tags seeded.");
 }
 
 main()

@@ -12,7 +12,7 @@ const SOURCE_OPTIONS = [
   { value: "COLD_CALL", label: "Cold Call" },
 ] as const;
 
-type SavedLead = {
+export type SavedLead = {
   id: string;
   firstName: string;
   lastName: string;
@@ -37,7 +37,7 @@ export function NewLeadModal({ open, onClose, onSaved }: Props) {
     lastName: "",
     email: "",
     phone: "",
-    source: "OTHER" as string,
+    source: "OTHER",
     notes: "",
   });
   const [saving, setSaving] = useState(false);
@@ -53,19 +53,28 @@ export function NewLeadModal({ open, onClose, onSaved }: Props) {
     setError("");
   }
 
+  function handleClose() {
+    reset();
+    onClose();
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
     setError("");
     try {
+      const firstName = form.firstName.trim();
+      const lastName = form.lastName.trim();
+      const email = form.email.trim();
+      const phone = form.phone.trim() || null;
       const res = await fetch("/api/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          firstName: form.firstName.trim(),
-          lastName: form.lastName.trim(),
-          email: form.email.trim(),
-          phone: form.phone.trim() || undefined,
+          firstName,
+          lastName,
+          email,
+          phone: phone ?? undefined,
           source: form.source,
           notes: form.notes.trim() || undefined,
         }),
@@ -77,10 +86,10 @@ export function NewLeadModal({ open, onClose, onSaved }: Props) {
       }
       onSaved?.({
         id: (json as { id: string }).id,
-        firstName: form.firstName.trim(),
-        lastName: form.lastName.trim(),
-        email: form.email.trim(),
-        phone: form.phone.trim() || null,
+        firstName,
+        lastName,
+        email,
+        phone,
         status: "NEW",
         createdAt: new Date().toISOString(),
       });
@@ -101,7 +110,7 @@ export function NewLeadModal({ open, onClose, onSaved }: Props) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          onClick={(e) => { if (e.target === e.currentTarget) { reset(); onClose(); } }}
+          onClick={(e) => e.target === e.currentTarget && handleClose()}
         >
           <motion.div
             className="w-full max-w-lg rounded-2xl bg-white p-8 shadow-xl"
@@ -147,7 +156,7 @@ export function NewLeadModal({ open, onClose, onSaved }: Props) {
               <div className="flex justify-end gap-3 pt-2">
                 <motion.button
                   type="button"
-                  onClick={() => { reset(); onClose(); }}
+                  onClick={handleClose}
                   className="rounded-full border border-[#1B1B1B]/20 px-5 py-2 text-sm text-[#1B1B1B]/60 hover:text-[#1B1B1B]"
                   whileHover={{ scale: 1.04, transition: SPRING_HOVER }}
                 >
@@ -157,9 +166,7 @@ export function NewLeadModal({ open, onClose, onSaved }: Props) {
                   type="submit"
                   disabled={saving}
                   className="rounded-full bg-[#9E8C61] px-6 py-2 text-sm text-white disabled:opacity-50"
-                  animate={saving ? {} : { scale: [1, 1.04, 1] }}
-                  transition={saving ? {} : PULSE_TRANSITION}
-                  whileHover={saving ? {} : { scale: 1.05, transition: SPRING_HOVER }}
+                  {...(!saving && { animate: PULSE_ANIMATE, transition: PULSE_TRANSITION, whileHover: { scale: 1.05, transition: SPRING_HOVER } })}
                 >
                   {saving ? "Saving…" : "Add Lead"}
                 </motion.button>

@@ -140,7 +140,7 @@ export function Navbar() {
           isTransparent && scrolled && !useLightElements && "bg-black/15 backdrop-blur-md border-b border-white/10"
         )}
       >
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="flex h-16 items-center justify-between px-6 lg:px-10">
           <Link href="/" onClick={() => setMenuOpen(false)}>
             <motion.div
               whileHover={{ scale: 1.15 }}

@@ -7,6 +7,9 @@ import { RelationshipSection } from "./RelationshipSection";
 type Tag = { id: string; name: string; color: string };
 type Relationship = { id: string; type: string; lead: { id: string; firstName: string; lastName: string; email: string } };
 
+const FIELD_CLS = "w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm text-[#1B1B1B]";
+const FIELD_CLS_SM = "w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-1.5 text-sm text-[#1B1B1B]";
+
 const STATUSES = [
   { value: "NEW", label: "New Lead" },
   { value: "CONTACTED", label: "Contacted" },
@@ -21,7 +24,7 @@ const STATUSES = [
   { value: "SPHERE", label: "Sphere" },
 ];
 
-const TIMEFRAMES = ["0-3 months","3-6 months","6-12 months","12+ months","Unknown"];
+const TIMEFRAMES = ["0-3 months","3-6 months","6-12 months","12+ months"];
 
 interface Props {
   lead: {
@@ -91,7 +94,7 @@ export function LeadDetailSidebar({ lead, onRefresh }: Props) {
         <select
           defaultValue={lead.status}
           onChange={(e) => patch({ status: e.target.value })}
-          className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm"
+          className={FIELD_CLS}
         >
           {STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
         </select>
@@ -125,14 +128,14 @@ export function LeadDetailSidebar({ lead, onRefresh }: Props) {
                 placeholder="Min $"
                 defaultValue={lead.priceMin ?? ""}
                 onBlur={(e) => patch({ priceMin: e.target.value ? Number(e.target.value) : null })}
-                className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-1.5 text-sm"
+                className={FIELD_CLS_SM}
               />
               <input
                 type="number"
                 placeholder="Max $"
                 defaultValue={lead.priceMax ?? ""}
                 onBlur={(e) => patch({ priceMax: e.target.value ? Number(e.target.value) : null })}
-                className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-1.5 text-sm"
+                className={FIELD_CLS_SM}
               />
             </div>
           </div>
@@ -141,7 +144,7 @@ export function LeadDetailSidebar({ lead, onRefresh }: Props) {
             <select
               defaultValue={lead.timeframeToMove ?? ""}
               onChange={(e) => patch({ timeframeToMove: e.target.value || null })}
-              className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm"
+              className={FIELD_CLS}
             >
               <option value="">Unknown</option>
               {TIMEFRAMES.map((t) => <option key={t} value={t}>{t}</option>)}

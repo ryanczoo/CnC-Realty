@@ -9,7 +9,7 @@ import { AgentContactForm } from "@/components/agents/AgentContactForm";
 import type { Metadata } from "next";
 
 const getAgent = cache((slug: string) =>
-  prisma.agent.findUnique({ where: { slug }, select: { id: true, userId: true, slug: true, displayName: true, bio: true, headshot: true, licenseNum: true, licenseState: true, yearsExp: true, specialties: true, phone: true, instagram: true, facebook: true, linkedin: true, listingsClosed: true, volumeClosed: true } })
+  prisma.agent.findUnique({ where: { slug }, select: { id: true, userId: true, slug: true, displayName: true, title: true, bio: true, headshot: true, licenseNum: true, licenseState: true, yearsExp: true, specialties: true, phone: true, instagram: true, facebook: true, linkedin: true, listingsClosed: true, volumeClosed: true, propertiesRented: true } })
 );
 
 type Props = { params: { slug: string } };
@@ -47,6 +47,7 @@ export default async function AgentProfilePage({ params }: Props) {
       <main data-navbar-theme="dark">
       <AgentProfileHero
         displayName={agent.displayName}
+        title={agent.title}
         headshot={agent.headshot ? `/api/headshot/${agent.userId}` : null}
         bio={agent.bio}
         licenseNum={agent.licenseNum}
@@ -59,6 +60,7 @@ export default async function AgentProfilePage({ params }: Props) {
         linkedin={agent.linkedin}
         listingsClosed={agent.listingsClosed}
         volumeClosed={agent.volumeClosed}
+        propertiesRented={agent.propertiesRented}
       />
 
       <section className="bg-cnc-bg py-16">

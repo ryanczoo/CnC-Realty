@@ -2,7 +2,6 @@ import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import Image from "next/image";
 
 const AGENT_NAV = [
   { href: "/dashboard", label: "Overview" },
@@ -35,11 +34,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <div className="flex min-h-screen bg-[#F2F0EF] pt-16">
       {/* Sidebar */}
       <aside className="flex w-56 flex-shrink-0 flex-col border-r border-[#1B1B1B]/10 bg-white px-4 py-6">
-        <Link href="/" className="mb-8 block">
-          <Image src="/logo-white.png" alt="CnC" width={100} height={40} className="invert" />
-        </Link>
-
-        <nav className="flex flex-col gap-1">
+        <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-[#1B1B1B]/30">Agent</p>
+        <div className="mb-2 border-t border-[#1B1B1B]/10" />
+        <nav className="flex flex-1 flex-col gap-1">
           {AGENT_NAV.map(({ href, label }) => (
             <Link
               key={href}
@@ -52,8 +49,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </nav>
 
         {isAdmin && (
-          <div className="mt-6">
+          <div className="mb-4">
             <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-[#1B1B1B]/30">Admin</p>
+            <div className="mb-2 border-t border-[#1B1B1B]/10" />
             <nav className="flex flex-col gap-1">
               {ADMIN_NAV.map(({ href, label }) => (
                 <Link

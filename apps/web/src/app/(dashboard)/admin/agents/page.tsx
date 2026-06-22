@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { AdminTable } from "@/components/admin/AdminTable";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PromoteButton } from "./PromoteButton";
+import { AgentTitleEditor } from "./AgentTitleEditor";
 import { formatDate } from "@/lib/utils";
 import { requireAdminPage } from "@/lib/server-utils";
 
@@ -20,6 +21,7 @@ export default async function AdminAgentsPage() {
   type AgentRow = {
     id: string;
     slug: string;
+    title: string | null;
     licenseNum: string | null;
     createdAt: Date;
     user: { email: string; role: string; createdAt: Date };
@@ -57,7 +59,7 @@ export default async function AdminAgentsPage() {
         <EmptyState message="No agents yet" />
       ) : (
         <AdminTable
-          headers={["Agent Name", "Email", "License", "Leads", "Joined", "Role", "Actions"]}
+          headers={["Agent Name", "Email", "Title", "License", "Leads", "Joined", "Role", "Actions"]}
         >
           {agents.map((agent) => (
             <tr
@@ -70,6 +72,9 @@ export default async function AdminAgentsPage() {
                 </Link>
               </td>
               <td className="px-4 py-3 text-[#1B1B1B]/70">{agent.user.email}</td>
+              <td className="px-4 py-3">
+                <AgentTitleEditor agentId={agent.id} currentTitle={agent.title} />
+              </td>
               <td className="px-4 py-3 text-[#1B1B1B]/60">
                 {agent.licenseNum ?? <span className="text-[#1B1B1B]/30">—</span>}
               </td>

@@ -18,6 +18,7 @@ export default function AgentSettingsPage() {
   const [agentProfile, setAgentProfile] = useState({
     bio: "",
     yearsExp: "",
+    propertiesRented: "",
     instagram: "",
     facebook: "",
     linkedin: "",
@@ -53,6 +54,7 @@ export default function AgentSettingsPage() {
         setAgentProfile({
           bio: d.bio ?? "",
           yearsExp: d.yearsExp?.toString() ?? "",
+          propertiesRented: d.propertiesRented != null && d.propertiesRented > 0 ? d.propertiesRented.toString() : "",
           instagram: d.instagram ?? "",
           facebook: d.facebook ?? "",
           linkedin: d.linkedin ?? "",
@@ -96,22 +98,22 @@ export default function AgentSettingsPage() {
     setHeadshotUploading(true);
     setProfileMsg(null);
     try {
-      const { uploadUrl, key } = await fetch(
-        `/api/account/headshot-upload-url?contentType=${encodeURIComponent(file.type)}`
-      ).then((r) => r.json());
-      await fetch(uploadUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
-      await fetch("/api/account/agent-profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ headshot: key }),
-      });
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/account/headshot-upload", { method: "POST", body: formData });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `Upload failed (${res.status})`);
+      }
+      const { key } = await res.json();
       setHeadshotKey(key);
       setProfileOk(true);
       setProfileMsg("Photo updated.");
       e.target.value = "";
-    } catch {
+    } catch (err) {
+      console.error("[headshot upload]", err);
       setProfileOk(false);
-      setProfileMsg("Photo upload failed. Try again.");
+      setProfileMsg(err instanceof Error ? err.message : "Photo upload failed. Try again.");
     } finally {
       setHeadshotUploading(false);
     }
@@ -128,6 +130,7 @@ export default function AgentSettingsPage() {
         body: JSON.stringify({
           bio: agentProfile.bio,
           yearsExp: agentProfile.yearsExp !== "" ? Number(agentProfile.yearsExp) : null,
+          propertiesRented: agentProfile.propertiesRented !== "" ? Number(agentProfile.propertiesRented) : 0,
           instagram: agentProfile.instagram,
           facebook: agentProfile.facebook,
           linkedin: agentProfile.linkedin,
@@ -300,6 +303,21 @@ export default function AgentSettingsPage() {
                   min={0}
                   value={agentProfile.yearsExp}
                   onChange={(e) => setAgentProfile((prev) => ({ ...prev, yearsExp: e.target.value }))}
+                  className="w-full rounded-lg border border-[#1B1B1B]/10 bg-white px-3 py-2.5 text-sm text-[#1B1B1B] outline-none focus:border-[#9E8C61] transition-colors"
+                />
+              </div>
+
+              {/* Properties Rented */}
+              <div>
+                <label className="mb-1.5 block text-xs text-[#1B1B1B]/50" htmlFor="propertiesRented">
+                  Properties Rented
+                </label>
+                <input
+                  id="propertiesRented"
+                  type="number"
+                  min={0}
+                  value={agentProfile.propertiesRented}
+                  onChange={(e) => setAgentProfile((prev) => ({ ...prev, propertiesRented: e.target.value }))}
                   className="w-full rounded-lg border border-[#1B1B1B]/10 bg-white px-3 py-2.5 text-sm text-[#1B1B1B] outline-none focus:border-[#9E8C61] transition-colors"
                 />
               </div>

@@ -10,7 +10,7 @@ export async function GET() {
 
   const agent = await prisma.agent.findUnique({
     where: { userId: session.user.id },
-    select: { bio: true, yearsExp: true, instagram: true, facebook: true, linkedin: true, headshot: true },
+    select: { bio: true, yearsExp: true, instagram: true, facebook: true, linkedin: true, headshot: true, propertiesRented: true },
   });
   return NextResponse.json(agent ?? {});
 }
@@ -20,7 +20,7 @@ export async function PATCH(req: Request) {
   if (error) return error;
 
   const body = await req.json();
-  const { bio, yearsExp, instagram, facebook, linkedin, headshot } = body;
+  const { bio, yearsExp, instagram, facebook, linkedin, headshot, propertiesRented } = body;
 
   const data: Record<string, unknown> = {};
   if (bio !== undefined) data.bio = bio || null;
@@ -29,6 +29,7 @@ export async function PATCH(req: Request) {
   if (facebook !== undefined) data.facebook = facebook || null;
   if (linkedin !== undefined) data.linkedin = linkedin || null;
   if (headshot !== undefined) data.headshot = headshot || null;
+  if (propertiesRented !== undefined) data.propertiesRented = Math.max(0, Number(propertiesRented) || 0);
 
   try {
     await prisma.agent.updateMany({

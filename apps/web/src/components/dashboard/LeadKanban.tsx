@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import {
   DndContext,
   DragEndEvent,
@@ -7,11 +7,12 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  useDroppable,
   closestCorners,
 } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { LeadCard } from "./LeadCard";
-import { NewLeadModal } from "@/components/leads/NewLeadModal";
+import { NewLeadModal, type SavedLead } from "@/components/leads/NewLeadModal";
 import { motion } from "framer-motion";
 import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
 
@@ -38,12 +39,21 @@ const COLUMNS: { status: LeadStatus; label: string }[] = [
   { status: "LOST", label: "Lost" },
 ];
 
+function DroppableColumn({ status, children }: { status: string; children: ReactNode }) {
+  const { setNodeRef } = useDroppable({ id: status });
+  return (
+    <div ref={setNodeRef} className="flex min-h-[120px] flex-col gap-2 rounded-2xl bg-[#1B1B1B]/5 p-2">
+      {children}
+    </div>
+  );
+}
+
 export function LeadKanban({ initialLeads }: { initialLeads: Lead[] }) {
   const [leads, setLeads] = useState(initialLeads);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
 
-  function handleLeadSaved(lead: { id: string; firstName: string; lastName: string; email: string; phone: string | null; status: string; createdAt: string }) {
+  function handleLeadSaved(lead: SavedLead) {
     setLeads((prev) => [{ ...lead, status: "NEW" as LeadStatus }, ...prev]);
   }
 
@@ -54,9 +64,16 @@ export function LeadKanban({ initialLeads }: { initialLeads: Lead[] }) {
     setActiveId(null);
     if (!over || active.id === over.id) return;
 
-    // `over.id` is the column status when dropped over an empty column
-    const newStatus = over.id as LeadStatus;
-    if (!COLUMNS.find((c) => c.status === newStatus)) return;
+    // over.id is the column status for empty columns, or a lead id when dropped onto a card
+    let newStatus = over.id as LeadStatus;
+    if (!COLUMNS.find((c) => c.status === newStatus)) {
+      const overLead = leads.find((l) => l.id === over.id);
+      if (!overLead) return;
+      newStatus = overLead.status;
+    }
+
+    const activeLead = leads.find((l) => l.id === active.id);
+    if (!activeLead || activeLead.status === newStatus) return;
 
     setLeads((prev) => prev.map((l) => l.id === active.id ? { ...l, status: newStatus } : l));
 
@@ -75,7 +92,7 @@ export function LeadKanban({ initialLeads }: { initialLeads: Lead[] }) {
         <motion.button
           onClick={() => setShowModal(true)}
           className="rounded-full bg-[#1B1B1B] px-5 py-2 text-sm text-white"
-          animate={{ scale: [1, 1.04, 1] }}
+          animate={PULSE_ANIMATE}
           transition={PULSE_TRANSITION}
           whileHover={{ scale: 1.05, transition: SPRING_HOVER }}
         >
@@ -93,12 +110,9 @@ export function LeadKanban({ initialLeads }: { initialLeads: Lead[] }) {
                   <span className="rounded-full bg-[#1B1B1B]/10 px-2 py-0.5 font-sans text-xs text-[#1B1B1B]/50">{col.length}</span>
                 </div>
                 <SortableContext id={status} items={col.map((l) => l.id)} strategy={verticalListSortingStrategy}>
-                  <div
-                    id={status}
-                    className="flex min-h-[120px] flex-col gap-2 rounded-2xl bg-[#1B1B1B]/5 p-2"
-                  >
+                  <DroppableColumn status={status}>
                     {col.map((lead) => <LeadCard key={lead.id} lead={lead} />)}
-                  </div>
+                  </DroppableColumn>
                 </SortableContext>
               </div>
             );

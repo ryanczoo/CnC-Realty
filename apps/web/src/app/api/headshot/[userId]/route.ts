@@ -15,5 +15,13 @@ export async function GET(_req: Request, { params }: { params: { userId: string 
   }
 
   const url = await getPresignedGetUrl(agent.headshot);
-  return NextResponse.redirect(url);
+  const r2Res = await fetch(url);
+  if (!r2Res.ok) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const contentType = r2Res.headers.get("content-type") ?? "image/jpeg";
+  return new Response(r2Res.body, {
+    headers: {
+      "Content-Type": contentType,
+      "Cache-Control": "public, max-age=3600",
+    },
+  });
 }

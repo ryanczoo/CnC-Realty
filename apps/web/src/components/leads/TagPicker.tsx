@@ -22,11 +22,10 @@ export function TagPicker({ leadId, applied, onApplied, onRemoved }: Props) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!open) return;
     fetch("/api/admin/tags")
       .then((r) => r.json())
       .then((data) => setAllTags(Array.isArray(data) ? data : []));
-  }, [open]);
+  }, []);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -104,14 +103,14 @@ export function TagPicker({ leadId, applied, onApplied, onRemoved }: Props) {
             value={query}
             onChange={(e) => { setQuery(e.target.value); setCreating(false); }}
             placeholder="Search or create tag..."
-            className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-1.5 text-sm outline-none focus:border-[#9E8C61]"
+            className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-1.5 text-sm text-[#1B1B1B] outline-none focus:border-[#9E8C61]"
           />
           <div className="mt-1 max-h-48 overflow-y-auto">
             {filtered.map((tag) => (
               <button
                 key={tag.id}
                 onClick={() => applyTag(tag)}
-                className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-[#F2F0EF]"
+                className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm text-[#1B1B1B] hover:bg-[#F2F0EF]"
               >
                 <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: tag.color }} />
                 {tag.name}

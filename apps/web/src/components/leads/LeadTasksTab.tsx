@@ -15,6 +15,8 @@ type LeadTask = {
   createdAt?: string;
 };
 
+const QUICK_TASK_CLS = "rounded-lg border border-[#1B1B1B]/10 px-3 py-1.5 text-xs text-[#1B1B1B] hover:border-[#9E8C61] hover:text-[#9E8C61] disabled:opacity-40";
+
 const TASK_TYPES = ["FOLLOW_UP","CALL","EMAIL","TEXT","SHOWING","THANK_YOU","OTHER"] as const;
 const TYPE_LABELS: Record<string, string> = {
   FOLLOW_UP: "Follow Up", CALL: "Call", EMAIL: "Email", TEXT: "Text",
@@ -141,9 +143,9 @@ export function LeadTasksTab({ leadId, initialTasks }: Props) {
     <div className="space-y-4">
       {/* Quick tasks */}
       <div className="flex gap-2">
-        <button onClick={() => quickTask(1)} disabled={creating} className="rounded-lg border border-[#1B1B1B]/10 px-3 py-1.5 text-xs hover:border-[#9E8C61] hover:text-[#9E8C61] disabled:opacity-40">Tomorrow</button>
-        <button onClick={() => quickTask(3)} disabled={creating} className="rounded-lg border border-[#1B1B1B]/10 px-3 py-1.5 text-xs hover:border-[#9E8C61] hover:text-[#9E8C61] disabled:opacity-40">In 3 Days</button>
-        <button onClick={() => quickTask(7)} disabled={creating} className="rounded-lg border border-[#1B1B1B]/10 px-3 py-1.5 text-xs hover:border-[#9E8C61] hover:text-[#9E8C61] disabled:opacity-40">Next Week</button>
+        <button onClick={() => quickTask(1)} disabled={creating} className={QUICK_TASK_CLS}>Tomorrow</button>
+        <button onClick={() => quickTask(3)} disabled={creating} className={QUICK_TASK_CLS}>In 3 Days</button>
+        <button onClick={() => quickTask(7)} disabled={creating} className={QUICK_TASK_CLS}>Next Week</button>
         <button onClick={() => setNewTaskOpen(true)} className="ml-auto rounded-lg bg-[#1B1B1B] px-3 py-1.5 text-xs font-medium text-white">+ New Task</button>
       </div>
 

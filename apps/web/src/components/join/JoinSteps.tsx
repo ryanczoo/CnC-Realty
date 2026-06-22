@@ -11,16 +11,21 @@ const STEPS = [
     title: { first: "Full", mid: "Transaction", last: "Management" },
     body: "Manage your leads, transactions, and analytics all in one place with our custom CRM built exclusively for CnC agents",
     img: "/images/join-slide-crm.png",
+    imgPosition: "top",
   },
   {
     title: { first: "Personal", mid: "", last: "Webpage" },
+    titleBreak: true,
     body: "Your own professional profile page with stats, listings, and a contact form — all live on cncrealtygroup.com the moment you join",
     img: "/images/join-slide-agent.png",
+    imgPosition: "center",
   },
   {
-    title: { first: "Custom", mid: "CRM &", last: "Email" },
+    title: { first: "Email &", mid: "Drip", last: "Campaigns" },
+    titleBreak: true,
     body: "Send branded email campaigns and drip sequences to your leads directly from your CnC account. No third-party tools needed.",
     img: "/images/join-slide-campaign.png",
+    imgPosition: "center",
   },
 ];
 
@@ -50,6 +55,7 @@ export function JoinSteps() {
               alt={step.title.first + " " + step.title.last}
               fill
               className="object-cover"
+              style={{ objectPosition: step.imgPosition }}
               sizes="(max-width: 1024px) 100vw, 55vw"
               loading={i === 0 ? "eager" : "lazy"}
             />
@@ -90,6 +96,7 @@ export function JoinSteps() {
           >
             <RevealLine triggerOnMount>
               <span className="text-[2.4rem] xl:text-[2.9rem]">{active.title.first}{active.title.mid && ` ${active.title.mid}`} </span>
+              {active.titleBreak && <br />}
               <span className="text-cnc-gold font-medium">{active.title.last}</span>
             </RevealLine>
           </motion.h2>
