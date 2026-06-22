@@ -12,6 +12,7 @@ export default function AgentSettingsPage() {
   const [licenseInput, setLicenseInput] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
+  const [saveOk, setSaveOk] = useState(true);
 
   // --- Right column: agent profile state ---
   const [agentProfile, setAgentProfile] = useState({
@@ -24,6 +25,7 @@ export default function AgentSettingsPage() {
   });
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileMsg, setProfileMsg] = useState<string | null>(null);
+  const [profileOk, setProfileOk] = useState(true);
   const [headshotUploading, setHeadshotUploading] = useState(false);
   const [headshotKey, setHeadshotKey] = useState<string | null>(null);
 
@@ -73,8 +75,10 @@ export default function AgentSettingsPage() {
       });
       if (!res.ok) throw new Error("Failed");
       await update({ name: nameInput });
+      setSaveOk(true);
       setSaveMsg("Profile updated.");
     } catch {
+      setSaveOk(false);
       setSaveMsg("Something went wrong. Try again.");
     } finally {
       setSaving(false);
@@ -85,6 +89,7 @@ export default function AgentSettingsPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setProfileOk(false);
       setProfileMsg("Only JPEG, PNG, or WebP images allowed.");
       return;
     }
@@ -101,8 +106,11 @@ export default function AgentSettingsPage() {
         body: JSON.stringify({ headshot: key }),
       });
       setHeadshotKey(key);
+      setProfileOk(true);
       setProfileMsg("Photo updated.");
+      e.target.value = "";
     } catch {
+      setProfileOk(false);
       setProfileMsg("Photo upload failed. Try again.");
     } finally {
       setHeadshotUploading(false);
@@ -126,8 +134,10 @@ export default function AgentSettingsPage() {
         }),
       });
       if (!res.ok) throw new Error("Failed");
+      setProfileOk(true);
       setProfileMsg("Agent profile updated.");
     } catch {
+      setProfileOk(false);
       setProfileMsg("Something went wrong. Try again.");
     } finally {
       setProfileSaving(false);
@@ -177,7 +187,7 @@ export default function AgentSettingsPage() {
                 />
               </div>
               {saveMsg && (
-                <p className={`text-xs ${saveMsg.includes("updated") ? "text-green-600" : "text-red-500"}`}>
+                <p className={`text-xs ${saveOk ? "text-green-600" : "text-red-500"}`}>
                   {saveMsg}
                 </p>
               )}
@@ -337,7 +347,7 @@ export default function AgentSettingsPage() {
 
               {/* Status message */}
               {profileMsg && (
-                <p className={`text-xs ${profileMsg.includes("updated") || profileMsg.includes("Photo updated") ? "text-green-600" : "text-red-500"}`}>
+                <p className={`text-xs ${profileOk ? "text-green-600" : "text-red-500"}`}>
                   {profileMsg}
                 </p>
               )}
