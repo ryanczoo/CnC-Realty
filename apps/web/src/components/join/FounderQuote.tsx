@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useScrollWordLight } from "@/hooks/useScrollWordLight";
 
 const WORDS =
@@ -15,12 +16,16 @@ export function FounderQuote() {
 
         {/* Floated left: photo then labels below */}
         <div className="float-left mr-10 mb-4">
-          <img
-            src="/images/ryan-chong.png"
-            alt="Ryan Chong"
-            className="h-32 w-auto object-contain object-top"
-            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-          />
+          <div className="h-24 w-24 overflow-hidden rounded-full">
+            <Image
+              src="/images/ryan-chong.png"
+              alt="Ryan Chong"
+              width={96}
+              height={96}
+              quality={95}
+              className="h-full w-full object-cover object-top"
+            />
+          </div>
           <p className="mt-2 font-sans text-[10px] font-medium uppercase tracking-[0.2em] text-[#9E8C61]">Founder</p>
           <p className="font-sans text-sm font-medium text-[#1B1B1B]">Ryan Chong</p>
         </div>

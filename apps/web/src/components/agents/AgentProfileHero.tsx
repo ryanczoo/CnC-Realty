@@ -1,6 +1,14 @@
-import Image from "next/image";
-import { Clock, Home, TrendingUp, KeyRound } from "lucide-react";
-import type { ReactNode } from "react";
+"use client";
+
+import { useRef, useState, useEffect, useCallback } from "react";
+import { useScroll, useMotionValueEvent } from "motion/react";
+import { AgentPhotoMorph } from "./AgentPhotoMorph";
+import type { MorphRect } from "./AgentPhotoMorph";
+import { AgentHeroSection } from "./AgentHeroSection";
+import { AgentAboutSection } from "./AgentAboutSection";
+import { AgentReviewsSection } from "./AgentReviewsSection";
+import { AgentTransactionsSection } from "./AgentTransactionsSection";
+import type { AgentTransaction } from "./AgentTransactionsSection";
 
 type AgentProfileHeroProps = {
   displayName: string | null;
@@ -18,6 +26,7 @@ type AgentProfileHeroProps = {
   listingsClosed: number;
   volumeClosed: number;
   propertiesRented: number;
+  transactions: AgentTransaction[];
 };
 
 function formatVolume(v: number): string {
@@ -25,8 +34,6 @@ function formatVolume(v: number): string {
   if (v >= 1_000) return `$${Math.round(v / 1_000)}K`;
   return `$${v.toLocaleString()}`;
 }
-
-type StatCard = { icon: ReactNode; value: string; label: string };
 
 export function AgentProfileHero({
   displayName,
@@ -37,150 +44,157 @@ export function AgentProfileHero({
   licenseState,
   yearsExp,
   specialties,
+  phone,
+  instagram,
+  facebook,
+  linkedin,
   listingsClosed,
   volumeClosed,
   propertiesRented,
+  transactions,
 }: AgentProfileHeroProps) {
   const name = displayName ?? "CnC Realty Agent";
 
-  const stats: StatCard[] = [
+  const stats = [
     {
-      icon: <Clock size={28} color="white" strokeWidth={1.5} />,
+      type: "years" as const,
       value: yearsExp !== null ? yearsExp.toString() : "—",
       label: "Years of Experience",
     },
     {
-      icon: <Home size={28} color="white" strokeWidth={1.5} />,
+      type: "listings" as const,
       value: listingsClosed > 0 ? listingsClosed.toString() : "—",
       label: "Listings Closed",
     },
     {
-      icon: <TrendingUp size={28} color="white" strokeWidth={1.5} />,
+      type: "volume" as const,
       value: volumeClosed > 0 ? formatVolume(volumeClosed) : "—",
       label: "Volume Closed",
     },
     {
-      icon: <KeyRound size={28} color="white" strokeWidth={1.5} />,
+      type: "rented" as const,
       value: propertiesRented > 0 ? propertiesRented.toString() : "—",
       label: "Properties Rented",
     },
   ];
 
+  // ── Photo morph refs ──────────────────────────────────────────────────────
+  const wrapperRef     = useRef<HTMLDivElement>(null);
+  const [heroPhotoEl,  setHeroPhotoEl]  = useState<HTMLDivElement | null>(null);
+  const [aboutPhotoEl, setAboutPhotoEl] = useState<HTMLDivElement | null>(null);
+
+  const [startRect,    setStartRect]    = useState<MorphRect | null>(null);
+  const [endRect,      setEndRect]      = useState<MorphRect | null>(null);
+  const [endProgress,  setEndProgress]  = useState(0.5);
+  const [morphReady,   setMorphReady]   = useState(false);
+  const [morphComplete, setMorphComplete] = useState(false);
+  const endProgressRef = useRef(0.5);
+
+  // Stable ref callbacks so AgentHeroSection / AgentAboutSection don't re-render on every parent render
+  const onHeroPhotoRef  = useCallback((el: HTMLDivElement | null) => setHeroPhotoEl(el),  []);
+  const onAboutPhotoRef = useCallback((el: HTMLDivElement | null) => setAboutPhotoEl(el), []);
+
+  // Measure positions once both elements are in the DOM
+  useEffect(() => {
+    if (!heroPhotoEl || !aboutPhotoEl || !wrapperRef.current) return;
+
+    const measure = () => {
+      const heroR    = heroPhotoEl.getBoundingClientRect();
+      const aboutR   = aboutPhotoEl.getBoundingClientRect();
+      const wrapperR = wrapperRef.current!.getBoundingClientRect();
+      const sy  = window.scrollY;
+      const vh  = window.innerHeight;
+
+      // Convert viewport rects → document positions
+      const heroDocTop   = heroR.top  + sy;
+      const aboutDocTop  = aboutR.top + sy;
+      const wrapperDocTop = wrapperR.top + sy;
+      const totalScroll  = Math.max(1, wrapperR.height - vh);
+
+      // scrollYProgress=0 when scrollY=wrapperDocTop → hero photo is at heroDocTop-wrapperDocTop
+      const startY = heroDocTop - wrapperDocTop;
+      const startX = heroR.left;
+
+      const stickyOffset  = 112;
+      const idealTarget   = aboutDocTop - stickyOffset;
+      const p             = Math.max(0.05, Math.min(1.0, (idealTarget - wrapperDocTop) / totalScroll));
+
+      // About photo's viewport y when animation ends
+      const endY = aboutDocTop - wrapperDocTop - p * totalScroll;
+      const endX = aboutR.left;
+
+      setStartRect({ x: startX, y: startY, w: heroR.width,  h: heroR.height  });
+      setEndRect  ({ x: endX,   y: endY,   w: aboutR.width, h: aboutR.height });
+      endProgressRef.current = p;
+      setEndProgress(p);
+      setMorphReady(true);
+    };
+
+    const t = setTimeout(measure, 60);
+    window.addEventListener("resize", measure, { passive: true });
+    return () => { clearTimeout(t); window.removeEventListener("resize", measure); };
+  }, [heroPhotoEl, aboutPhotoEl]);
+
+  // Drive scroll ─────────────────────────────────────────────────────────────
+  const { scrollYProgress } = useScroll({
+    target: wrapperRef,
+    offset: ["start start", "end end"],
+  });
+
+  // When scroll passes endProgress: hide overlay, show sticky card photo
+  useMotionValueEvent(scrollYProgress, "change", (latest) => {
+    setMorphComplete(latest >= endProgressRef.current);
+  });
+
   return (
     <>
-      {/* ── Hero: light section with inline-photo heading ── */}
-      <section className="bg-[#F2F0EF] px-6 pb-16 pt-28 md:px-12 md:pb-20 lg:px-20">
-        <div className="mx-auto max-w-5xl">
-          <h1
-            className="font-sans font-medium leading-[1.1] text-[#151717]"
-            style={{ fontSize: "clamp(2.4rem, 5.5vw, 5rem)", letterSpacing: "-0.03em" }}
-          >
-            {/* "I'm [photo]" kept together so they never break across lines */}
-            <span style={{ whiteSpace: "nowrap" }}>
-              {"I'm "}
-              {/* Inline circular photo — size matches spacer so text wraps around it */}
-              <span
-                className="relative inline-block overflow-hidden rounded-full bg-[#E0DDD8] align-middle"
-                style={{
-                  width: "clamp(3rem, 7.5vw, 6.5rem)",
-                  height: "clamp(3rem, 7.5vw, 6.5rem)",
-                  top: "-0.05em",
-                  margin: "0 0.15em",
-                }}
-              >
-                {headshot ? (
-                  <Image
-                    src={headshot}
-                    alt={name}
-                    fill
-                    sizes="104px"
-                    quality={95}
-                    className="object-cover"
-                  />
-                ) : (
-                  <span className="flex h-full w-full items-center justify-center font-sans text-xl font-light text-[#1B1B1B]/30">
-                    {name[0].toUpperCase()}
-                  </span>
-                )}
-              </span>
-            </span>
-            {name}, a Licensed{" "}
-            <span style={{ color: "#9B9B9B" }}>{title ?? "Real Estate Agent"}</span>
-          </h1>
+      {/* Relative wrapper spans hero + about — gives the sticky morph its scroll track */}
+      <div ref={wrapperRef} className="relative">
+        {startRect && endRect && (
+          <AgentPhotoMorph
+            headshot={headshot}
+            name={name}
+            startRect={startRect}
+            endRect={endRect}
+            endProgress={endProgress}
+            scrollYProgress={scrollYProgress}
+            visible={!morphComplete}
+          />
+        )}
 
-          {licenseNum && (
-            <p className="mt-5 font-sans text-sm text-[#1B1B1B]/45">
-              CA DRE #{licenseNum}
-              {licenseState ? ` · ${licenseState}` : ""}
-            </p>
-          )}
-        </div>
-      </section>
+        <AgentHeroSection
+          name={name}
+          title={title}
+          headshot={headshot}
+          phone={phone}
+          onPhotoRef={onHeroPhotoRef}
+          photoHidden={morphReady}
+        />
 
-      {/* ── Stats: dark section with 4 cards ── */}
-      <section className="bg-[#151717] px-6 py-10 md:px-12 lg:px-20">
-        <div className="mx-auto max-w-5xl">
-          {/* Mobile: horizontal snap-scroll; desktop: 4-col grid */}
-          <div
-            className="flex gap-2.5 overflow-x-auto pb-1 [scroll-snap-type:x_mandatory] md:grid md:grid-cols-4 md:overflow-visible md:pb-0"
-            style={{ scrollbarWidth: "none" }}
-          >
-            {stats.map(({ icon, value, label }) => (
-              <div
-                key={label}
-                className="flex min-w-[200px] flex-shrink-0 [scroll-snap-align:start] flex-col rounded-2xl p-6 md:aspect-square md:min-w-0"
-                style={{
-                  backgroundColor: "rgba(33,33,33,0.9)",
-                  border: "1px solid rgba(179,179,179,0.1)",
-                }}
-              >
-                <div>{icon}</div>
-                <div className="mt-auto pt-8">
-                  <p className="font-sans text-3xl font-medium leading-none text-white md:text-4xl">
-                    {value}
-                  </p>
-                  <p className="mt-2 font-sans text-xs font-medium text-[#9B9B9B] md:text-sm">
-                    {label}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+        <AgentAboutSection
+          displayName={name}
+          title={title}
+          headshot={headshot}
+          bio={bio}
+          licenseNum={licenseNum}
+          licenseState={licenseState}
+          specialties={specialties}
+          phone={phone}
+          instagram={instagram}
+          facebook={facebook}
+          linkedin={linkedin}
+          stats={stats}
+          onPhotoRef={onAboutPhotoRef}
+          photoVisible={morphComplete}
+        />
+      </div>
 
-      {/* ── Bio + Specialties ── */}
-      {(bio || specialties.length > 0) && (
-        <section className="bg-[#F2F0EF] py-12">
-          <div className="mx-auto max-w-5xl px-6 md:px-12 lg:px-20">
-            {bio && (
-              <div className="mb-6">
-                <h2 className="mb-3 font-sans text-xs font-medium uppercase tracking-widest text-[#9E8C61]">
-                  About
-                </h2>
-                <p className="font-sans text-base leading-relaxed text-[#1B1B1B]/80">{bio}</p>
-              </div>
-            )}
-            {specialties.length > 0 && (
-              <div>
-                <h2 className="mb-3 font-sans text-xs font-medium uppercase tracking-widest text-[#9E8C61]">
-                  Specialties
-                </h2>
-                <div className="flex flex-wrap gap-2">
-                  {specialties.map((s) => (
-                    <span
-                      key={s}
-                      className="rounded-full border border-[#9E8C61]/30 px-3 py-1 font-sans text-xs text-[#1B1B1B]/70"
-                    >
-                      {s}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
-      )}
+      <AgentReviewsSection displayName={name} />
+
+      <AgentTransactionsSection
+        transactions={transactions}
+        displayName={name}
+      />
     </>
   );
 }

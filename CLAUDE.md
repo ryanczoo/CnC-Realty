@@ -4632,6 +4632,21 @@ Assorted CRM and join-page improvements committed alongside the above:
 
 ---
 
+## Post-Deploy: SendGrid Inbound Parse Webhook (Hostinger DNS)
+
+**Do this AFTER the site is live on Vercel with cncrealtygroup.com pointing at it.**
+
+The MX record is already in Hostinger DNS: `MX | reply | 10 | mx.sendgrid.net`
+
+When ready to deploy, configure the webhook in SendGrid:
+1. SendGrid → Settings → Inbound Parse → Add Host & URL
+2. Host/Domain: `reply.cncrealtygroup.com`
+3. Webhook URL: `https://cncrealtygroup.com/api/action-plans/inbound`
+
+That's it. The DNS is already done — this is the only remaining step after deploy.
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`
