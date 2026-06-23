@@ -4647,6 +4647,128 @@ That's it. The DNS is already done — this is the only remaining step after dep
 
 ---
 
+## Session Notes — 2026-06-22 / 2026-06-23
+
+### What Was Completed This Session
+
+All changes committed in git: `9ce1496`
+
+---
+
+### Agent About Section — Polish
+
+- **Photo column** reduced from 38% → 29% width; background changed from `#2A2A2A` → `#E0DDD8` to match hero photo (seamless morph handoff)
+- **Bio font** changed to `font-sans text-4xl font-medium leading-relaxed text-white/62`
+- **"About Me" label** → `About {firstName}` (uses agent's first name)
+- **Removed** the `<h2>` heading ("I'm Ryan Chong, a Licensed Real Estate Broker")
+- **Removed** DRE # block from under photo
+- **Removed** divider line above fields
+- **Added** Location / Language / License fields below social icons (FIND-style)
+- Bio column padding increased: `md:pl-16 lg:pl-24`
+
+### LinkedIn — Removed Everywhere
+
+Removed from all 6 touchpoints:
+- `AgentAboutSection.tsx` — `linkedin` prop + `LiIcon` component removed
+- `AgentProfileHero.tsx` — prop removed
+- `agents/[slug]/page.tsx` — Prisma select + prop removed
+- `settings/page.tsx` — state, load effect, save payload, UI field removed
+- `agent-profile/route.ts` — select, destructuring, data assignment removed
+- `join/agent/page.tsx` — FormData type, state, Step 3 UI, Step 4 review removed
+
+**Decision:** Nobody cares about a real estate agent's LinkedIn profile.
+
+---
+
+### Agent Profile — New DB Fields (Migration: `20260623035930_add_agent_location_language`)
+
+Added to Prisma `Agent` model:
+- `location String?` — area the agent serves (e.g. "Los Angeles County, Orange County")
+- `language String?` — languages spoken (e.g. "English, Cantonese")
+
+These are editable in the Settings **Profile card** (left column), under Display Name, and save via `/api/account/profile`. They flow through to the About section on the public agent page.
+
+---
+
+### Settings Page — New Fields
+
+**Profile card (left column) — new fields added under Display Name:**
+- Location Served (text input, no placeholder)
+- Languages Spoken (text input, no placeholder)
+- Both save with the existing "Save Changes" button via `/api/account/profile` PATCH
+
+**Agent Profile card (right column) — new fields added between Years of Experience and Properties Rented:**
+- Listings Closed (whole numbers only, `step={1}`, strips non-digits)
+- Volume Closed (formatted with commas as you type, e.g. `1,500,000`; stripped on save)
+- Properties Rented (whole numbers only)
+- Years of Experience (whole numbers only)
+
+**"View Public Profile" button** added below "Save Agent Profile" button — outlined pill, opens agent's public page in new tab. Only renders once slug loads.
+
+---
+
+### Agent About Section — Email Icon
+
+Added email icon to the left of the Instagram icon in the social row. Uses the agent's User account email (`agent.user.email` via Prisma join). Opens `mailto:` to launch mail app. Works automatically for every agent.
+
+---
+
+### Dashboard Tab Switcher — Redesigned
+
+**Before:** Two pill buttons ("Overview" / "My Stats") always shown — admins saw a lone gold "Overview" button that did nothing.
+
+**After:**
+- Admins: tab bar hidden entirely, no button shown
+- Non-admins: single gold "My Stats" button in the top-right, inline with "Overview" heading, above the Closed stat card
+- Clicking "My Stats" → switches view; "← Overview" button appears in same position to go back
+
+---
+
+### Join Page — Apply Now Button
+
+- Removed arrow (`→`) from button text
+- Moved button left to `ml-[1.5rem]` (more under the word "Join")
+
+---
+
+### AgentAboutLineArt — Scroll Speed Tuned
+
+Animation draw speed tuned:
+- Original: completes at ~88% of scroll (too slow)
+- After first change: completes at ~48% (too fast)
+- **Final:** completes at ~67% of scroll — draw duration `0.16`, stagger `0.03` per path
+
+---
+
+### Agent Reviews Section
+
+- Removed the "5.0 · 3 reviews" star rating row from the section header
+- Reviews remain hardcoded placeholders — **decision made to keep fake reviews for now**
+- To add a real review: tell Claude "Add a review for [Agent] from [Name], [Role] — [stars] stars, '[text]'"
+
+---
+
+### Key Decisions Made
+
+1. **Reviews stay fake** — no client submission flow needed. Ryan will supply review text per agent.
+2. **LinkedIn removed permanently** — not relevant for real estate agents.
+3. **Location and language are free-text fields** — agents type whatever they want (e.g. "English, Cantonese").
+4. **Volume Closed is dollar amount** — agents enter raw number, commas auto-format for readability.
+5. **Always ask before placing any new UI element** — Claude must ask Ryan where to put things before coding.
+
+---
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. Open `localhost:3000`
+3. Navigate to `/agents/ryan-chong` to verify all About section changes look correct
+4. Navigate to `/dashboard/settings` to verify new Profile fields (Location, Language, Listings Closed, Volume Closed) load and save correctly
+5. Check the dashboard Overview page — confirm the lone gold "Overview" button is gone for admins
+6. Ryan to direct next area of work
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`
