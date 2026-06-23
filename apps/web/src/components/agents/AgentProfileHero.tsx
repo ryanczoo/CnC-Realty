@@ -20,9 +20,11 @@ type AgentProfileHeroProps = {
   yearsExp: number | null;
   specialties: string[];
   phone: string | null;
+  email: string | null;
   instagram: string | null;
   facebook: string | null;
-  linkedin: string | null;
+  location: string | null;
+  language: string | null;
   listingsClosed: number;
   volumeClosed: number;
   propertiesRented: number;
@@ -45,9 +47,11 @@ export function AgentProfileHero({
   yearsExp,
   specialties,
   phone,
+  email,
   instagram,
   facebook,
-  linkedin,
+  location,
+  language,
   listingsClosed,
   volumeClosed,
   propertiesRented,
@@ -180,9 +184,11 @@ export function AgentProfileHero({
           licenseState={licenseState}
           specialties={specialties}
           phone={phone}
+          email={email}
           instagram={instagram}
           facebook={facebook}
-          linkedin={linkedin}
+          location={location}
+          language={language}
           stats={stats}
           onPhotoRef={onAboutPhotoRef}
           photoVisible={morphComplete}

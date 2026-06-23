@@ -39,25 +39,25 @@ export function AgentAboutLineArt() {
     offset: ["start end", "end start"],
   });
 
-  const pFrontLeft    = useTransform(scrollYProgress, [0.00, 0.22], [0, 1]);
-  const pFrontBot     = useTransform(scrollYProgress, [0.04, 0.26], [0, 1]);
-  const pFrontRight   = useTransform(scrollYProgress, [0.08, 0.30], [0, 1]);
-  const pFrontTop     = useTransform(scrollYProgress, [0.12, 0.34], [0, 1]);
-  const pParapetFront = useTransform(scrollYProgress, [0.16, 0.38], [0, 1]);
-  const pParapetSide  = useTransform(scrollYProgress, [0.20, 0.42], [0, 1]);
-  const pRoof         = useTransform(scrollYProgress, [0.24, 0.46], [0, 1]);
-  const pSideBot      = useTransform(scrollYProgress, [0.28, 0.50], [0, 1]);
-  const pWin1         = useTransform(scrollYProgress, [0.32, 0.54], [0, 1]);
-  const pWin1Div      = useTransform(scrollYProgress, [0.36, 0.58], [0, 1]);
-  const pWin2         = useTransform(scrollYProgress, [0.38, 0.60], [0, 1]);
-  const pWin2Div      = useTransform(scrollYProgress, [0.42, 0.64], [0, 1]);
-  const pWin3         = useTransform(scrollYProgress, [0.44, 0.66], [0, 1]);
-  const pWin3Div      = useTransform(scrollYProgress, [0.48, 0.70], [0, 1]);
-  const pDoor         = useTransform(scrollYProgress, [0.50, 0.72], [0, 1]);
-  const pSideWin      = useTransform(scrollYProgress, [0.54, 0.76], [0, 1]);
-  const pChimFront    = useTransform(scrollYProgress, [0.58, 0.80], [0, 1]);
-  const pChimRight    = useTransform(scrollYProgress, [0.62, 0.84], [0, 1]);
-  const pChimTop      = useTransform(scrollYProgress, [0.66, 0.88], [0, 1]);
+  const pFrontLeft    = useTransform(scrollYProgress, [0.00, 0.16], [0, 1]);
+  const pFrontBot     = useTransform(scrollYProgress, [0.03, 0.19], [0, 1]);
+  const pFrontRight   = useTransform(scrollYProgress, [0.06, 0.22], [0, 1]);
+  const pFrontTop     = useTransform(scrollYProgress, [0.09, 0.25], [0, 1]);
+  const pParapetFront = useTransform(scrollYProgress, [0.12, 0.28], [0, 1]);
+  const pParapetSide  = useTransform(scrollYProgress, [0.15, 0.31], [0, 1]);
+  const pRoof         = useTransform(scrollYProgress, [0.18, 0.34], [0, 1]);
+  const pSideBot      = useTransform(scrollYProgress, [0.21, 0.37], [0, 1]);
+  const pWin1         = useTransform(scrollYProgress, [0.24, 0.40], [0, 1]);
+  const pWin1Div      = useTransform(scrollYProgress, [0.27, 0.43], [0, 1]);
+  const pWin2         = useTransform(scrollYProgress, [0.29, 0.45], [0, 1]);
+  const pWin2Div      = useTransform(scrollYProgress, [0.32, 0.48], [0, 1]);
+  const pWin3         = useTransform(scrollYProgress, [0.34, 0.50], [0, 1]);
+  const pWin3Div      = useTransform(scrollYProgress, [0.37, 0.53], [0, 1]);
+  const pDoor         = useTransform(scrollYProgress, [0.39, 0.55], [0, 1]);
+  const pSideWin      = useTransform(scrollYProgress, [0.42, 0.58], [0, 1]);
+  const pChimFront    = useTransform(scrollYProgress, [0.45, 0.61], [0, 1]);
+  const pChimRight    = useTransform(scrollYProgress, [0.48, 0.64], [0, 1]);
+  const pChimTop      = useTransform(scrollYProgress, [0.51, 0.67], [0, 1]);
 
   return (
     <div ref={ref} className="pointer-events-none absolute inset-0" aria-hidden>

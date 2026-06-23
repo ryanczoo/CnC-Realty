@@ -7,6 +7,14 @@ import { Phone } from "lucide-react";
 import { StatCards } from "./StatCards";
 import type { StatCardData } from "./StatCards";
 
+function EmailIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path fillRule="evenodd" clipRule="evenodd" d="M2 6C2 4.89543 2.89543 4 4 4H20C21.1046 4 22 4.89543 22 6V18C22 19.1046 21.1046 20 20 20H4C2.89543 20 2 19.1046 2 18V6ZM4 6L12 13L20 6H4ZM4 8.41421V18H20V8.41421L12 15.4142L4 8.41421Z" fill="currentColor"/>
+    </svg>
+  );
+}
+
 function IgIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -25,16 +33,6 @@ function FbIcon() {
   );
 }
 
-function LiIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-      <path d="M16 8C17.5913 8 19.1174 8.63214 20.2426 9.75736C21.3679 10.8826 22 12.4087 22 14V21H18V14C18 13.4696 17.7893 12.9609 17.4142 12.5858C17.0391 12.2107 16.5304 12 16 12C15.4696 12 14.9609 12.2107 14.5858 12.5858C14.2107 12.9609 14 13.4696 14 14V21H10V14C10 12.4087 10.6321 10.8826 11.7574 9.75736C12.8826 8.63214 14.4087 8 16 8Z"/>
-      <path d="M6 9H2V21H6V9Z"/>
-      <path d="M4 6C5.10457 6 6 5.10457 6 4C6 2.89543 5.10457 2 4 2C2.89543 2 2 2.89543 2 4C2 5.10457 2.89543 6 4 6Z"/>
-    </svg>
-  );
-}
-
 // Overlapping diamond outlines — matches FIND's dark section watermark
 
 type Props = {
@@ -44,11 +42,13 @@ type Props = {
   bio: string | null;
   licenseNum: string | null;
   licenseState: string | null;
+  location?: string | null;
+  language?: string | null;
   specialties: string[];
   phone: string | null;
+  email: string | null;
   instagram: string | null;
   facebook: string | null;
-  linkedin: string | null;
   stats: StatCardData[];
   onPhotoRef?: (el: HTMLDivElement | null) => void;
   photoVisible?: boolean;
@@ -65,11 +65,13 @@ export function AgentAboutSection({
   bio,
   licenseNum,
   licenseState,
+  location,
+  language,
   specialties,
   phone,
+  email,
   instagram,
   facebook,
-  linkedin,
   stats,
   onPhotoRef,
   photoVisible = false,
@@ -82,12 +84,12 @@ export function AgentAboutSection({
         <div className="flex flex-col gap-12 md:flex-row md:gap-16 lg:gap-24">
 
           {/* LEFT — sticky photo column */}
-          <div className="md:w-[38%]">
+          <div className="md:w-[29%]">
             <div className="sticky top-28">
               {/* Large agent photo — hidden until morph animation hands off */}
               <div
                 ref={onPhotoRef}
-                className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl bg-[#2A2A2A]"
+                className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl bg-[#E0DDD8]"
                 style={{ visibility: photoVisible ? "visible" : "hidden" }}
               >
                 {headshot ? (
@@ -95,21 +97,30 @@ export function AgentAboutSection({
                     src={headshot}
                     alt={displayName}
                     fill
-                    sizes="(max-width: 768px) 100vw, 40vw"
+                    sizes="(max-width: 768px) 100vw, 30vw"
                     quality={95}
                     className="object-cover object-top"
                     priority
                   />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center font-sans text-6xl font-light text-white/15">
+                  <div className="flex h-full w-full items-center justify-center font-sans text-6xl font-light text-[#1B1B1B]/30">
                     {displayName[0]?.toUpperCase()}
                   </div>
                 )}
               </div>
 
               {/* Social icons */}
-              {(instagram || facebook || linkedin) && (
+              {(email || instagram || facebook) && (
                 <div className="mt-5 flex items-center gap-2.5">
+                  {email && (
+                    <a
+                      href={`mailto:${email}`}
+                      aria-label="Email"
+                      className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-white/55 transition-colors hover:border-white/45 hover:text-white"
+                    >
+                      <EmailIcon />
+                    </a>
+                  )}
                   {instagram && (
                     <a
                       href={socialHref(instagram, "https://instagram.com/")}
@@ -132,62 +143,58 @@ export function AgentAboutSection({
                       <FbIcon />
                     </a>
                   )}
-                  {linkedin && (
-                    <a
-                      href={socialHref(linkedin, "https://linkedin.com/in/")}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label="LinkedIn"
-                      className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-white/55 transition-colors hover:border-white/45 hover:text-white"
-                    >
-                      <LiIcon />
-                    </a>
-                  )}
                 </div>
               )}
 
-              {licenseNum && (
-                <p className="mt-3 font-sans text-xs text-white/30">
-                  {licenseState ?? "CA"} DRE #{licenseNum}
-                </p>
-              )}
+              {/* Location / Language / License fields */}
+              <div className="mt-6 space-y-5">
+                {location && (
+                  <div>
+                    <p className="font-sans text-xs uppercase tracking-widest text-white/40">Location</p>
+                    <p className="mt-1 font-sans text-sm font-medium text-white">{location}</p>
+                  </div>
+                )}
+                {language && (
+                  <div>
+                    <p className="font-sans text-xs uppercase tracking-widest text-white/40">Language</p>
+                    <p className="mt-1 font-sans text-sm font-medium text-white">{language}</p>
+                  </div>
+                )}
+                {licenseNum && (
+                  <div>
+                    <p className="font-sans text-xs uppercase tracking-widest text-white/40">License</p>
+                    <p className="mt-1 font-sans text-sm font-medium text-white">DRE #{licenseNum}</p>
+                  </div>
+                )}
+              </div>
+
             </div>
           </div>
 
           {/* RIGHT — scrollable bio content */}
           <motion.div
-            className="md:w-[62%] md:py-4"
+            className="md:w-[71%] md:py-4 md:pl-16 lg:pl-24"
             initial={{ opacity: 0, scale: 0.96 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true, amount: 0.12 }}
             transition={{ duration: 0.9, ease: [0.25, 0.1, 0.25, 1] }}
           >
             <p className="mb-3 font-sans text-xs font-medium uppercase tracking-widest text-[#9E8C61]">
-              About Me
+              About {displayName.split(" ")[0]}
             </p>
-            <h2
-              className="mb-8 font-sans font-medium leading-[1.1] text-white"
-              style={{ fontSize: "clamp(2rem, 3.5vw, 3rem)", letterSpacing: "-0.02em" }}
-            >
-              I&rsquo;m {displayName},{" "}
-              <span className="text-white/40">
-                a Licensed {title ?? "Real Estate Agent"}
-              </span>
-            </h2>
-
             {bio ? (
               <div className="space-y-5">
                 {bio.split(/\n\n+/).map((para, i) => (
                   <p
                     key={i}
-                    className="font-sans text-base leading-relaxed text-white/62"
+                    className="font-sans text-4xl font-medium leading-relaxed text-white/62"
                   >
                     {para}
                   </p>
                 ))}
               </div>
             ) : (
-              <p className="font-sans text-base leading-relaxed text-white/62">
+              <p className="font-sans text-4xl font-medium leading-relaxed text-white/62">
                 Dedicated to helping clients buy, sell, and invest in real estate
                 across Southern California with integrity and expertise.
               </p>

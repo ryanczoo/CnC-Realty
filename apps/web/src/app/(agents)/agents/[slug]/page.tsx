@@ -26,7 +26,9 @@ const getAgent = cache((slug: string) =>
       phone: true,
       instagram: true,
       facebook: true,
-      linkedin: true,
+      location: true,
+      language: true,
+      user: { select: { email: true } },
       listingsClosed: true,
       volumeClosed: true,
       propertiesRented: true,
@@ -106,9 +108,11 @@ export default async function AgentProfilePage({ params }: Props) {
           yearsExp={agent.yearsExp}
           specialties={agent.specialties}
           phone={agent.phone}
+          email={agent.user.email}
           instagram={agent.instagram}
           facebook={agent.facebook}
-          linkedin={agent.linkedin}
+          location={agent.location}
+          language={agent.language}
           listingsClosed={agent.listingsClosed}
           volumeClosed={agent.volumeClosed}
           propertiesRented={agent.propertiesRented}

@@ -9,6 +9,8 @@ export default function AgentSettingsPage() {
 
   // --- Left column: profile state ---
   const [nameInput, setNameInput] = useState("");
+  const [locationInput, setLocationInput] = useState("");
+  const [languageInput, setLanguageInput] = useState("");
   const [licenseInput, setLicenseInput] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
@@ -18,12 +20,14 @@ export default function AgentSettingsPage() {
   const [agentProfile, setAgentProfile] = useState({
     bio: "",
     yearsExp: "",
+    listingsClosed: "",
+    volumeClosed: "",
     propertiesRented: "",
     instagram: "",
     facebook: "",
-    linkedin: "",
     headshot: null as string | null,
   });
+  const [agentSlug, setAgentSlug] = useState<string | null>(null);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileMsg, setProfileMsg] = useState<string | null>(null);
   const [profileOk, setProfileOk] = useState(true);
@@ -41,7 +45,11 @@ export default function AgentSettingsPage() {
   useEffect(() => {
     fetch("/api/account/profile")
       .then((r) => r.ok ? r.json() : null)
-      .then((d) => { if (d?.licenseNum) setLicenseInput(d.licenseNum); })
+      .then((d) => {
+        if (d?.licenseNum) setLicenseInput(d.licenseNum);
+        if (d?.location) setLocationInput(d.location);
+        if (d?.language) setLanguageInput(d.language);
+      })
       .catch(() => {});
   }, []);
 
@@ -54,13 +62,15 @@ export default function AgentSettingsPage() {
         setAgentProfile({
           bio: d.bio ?? "",
           yearsExp: d.yearsExp?.toString() ?? "",
+          listingsClosed: d.listingsClosed > 0 ? d.listingsClosed.toString() : "",
+          volumeClosed: d.volumeClosed > 0 ? Math.round(d.volumeClosed).toLocaleString("en-US") : "",
           propertiesRented: d.propertiesRented != null && d.propertiesRented > 0 ? d.propertiesRented.toString() : "",
           instagram: d.instagram ?? "",
           facebook: d.facebook ?? "",
-          linkedin: d.linkedin ?? "",
           headshot: d.headshot ?? null,
         });
         if (d.headshot) setHeadshotKey(d.headshot);
+        if (d.slug) setAgentSlug(d.slug);
       })
       .catch(() => {});
   }, []);
@@ -73,7 +83,7 @@ export default function AgentSettingsPage() {
       const res = await fetch("/api/account/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: nameInput, licenseNum: licenseInput }),
+        body: JSON.stringify({ name: nameInput, licenseNum: licenseInput, location: locationInput, language: languageInput }),
       });
       if (!res.ok) throw new Error("Failed");
       await update({ name: nameInput });
@@ -130,10 +140,11 @@ export default function AgentSettingsPage() {
         body: JSON.stringify({
           bio: agentProfile.bio,
           yearsExp: agentProfile.yearsExp !== "" ? Number(agentProfile.yearsExp) : null,
+          listingsClosed: agentProfile.listingsClosed !== "" ? Number(agentProfile.listingsClosed) : 0,
+          volumeClosed: agentProfile.volumeClosed !== "" ? Number(agentProfile.volumeClosed.replace(/,/g, "")) : 0,
           propertiesRented: agentProfile.propertiesRented !== "" ? Number(agentProfile.propertiesRented) : 0,
           instagram: agentProfile.instagram,
           facebook: agentProfile.facebook,
-          linkedin: agentProfile.linkedin,
         }),
       });
       if (!res.ok) throw new Error("Failed");
@@ -173,6 +184,32 @@ export default function AgentSettingsPage() {
                   type="text"
                   value={nameInput}
                   onChange={(e) => setNameInput(e.target.value)}
+                  className="w-full rounded-lg border border-[#1B1B1B]/10 bg-white px-3 py-2.5 text-sm text-[#1B1B1B] outline-none focus:border-[#9E8C61] transition-colors"
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs text-[#1B1B1B]/50" htmlFor="location">
+                  Location Served
+                </label>
+                <input
+                  id="location"
+                  type="text"
+                  value={locationInput}
+                  onChange={(e) => setLocationInput(e.target.value)}
+                  placeholder=""
+                  className="w-full rounded-lg border border-[#1B1B1B]/10 bg-white px-3 py-2.5 text-sm text-[#1B1B1B] outline-none focus:border-[#9E8C61] transition-colors"
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs text-[#1B1B1B]/50" htmlFor="language">
+                  Languages Spoken
+                </label>
+                <input
+                  id="language"
+                  type="text"
+                  value={languageInput}
+                  onChange={(e) => setLanguageInput(e.target.value)}
+                  placeholder=""
                   className="w-full rounded-lg border border-[#1B1B1B]/10 bg-white px-3 py-2.5 text-sm text-[#1B1B1B] outline-none focus:border-[#9E8C61] transition-colors"
                 />
               </div>
@@ -301,8 +338,44 @@ export default function AgentSettingsPage() {
                   id="yearsExp"
                   type="number"
                   min={0}
+                  step={1}
                   value={agentProfile.yearsExp}
-                  onChange={(e) => setAgentProfile((prev) => ({ ...prev, yearsExp: e.target.value }))}
+                  onChange={(e) => setAgentProfile((prev) => ({ ...prev, yearsExp: e.target.value.replace(/\D/g, "") }))}
+                  className="w-full rounded-lg border border-[#1B1B1B]/10 bg-white px-3 py-2.5 text-sm text-[#1B1B1B] outline-none focus:border-[#9E8C61] transition-colors"
+                />
+              </div>
+
+              {/* Listings Closed */}
+              <div>
+                <label className="mb-1.5 block text-xs text-[#1B1B1B]/50" htmlFor="listingsClosed">
+                  Listings Closed
+                </label>
+                <input
+                  id="listingsClosed"
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={agentProfile.listingsClosed}
+                  onChange={(e) => setAgentProfile((prev) => ({ ...prev, listingsClosed: e.target.value.replace(/\D/g, "") }))}
+                  className="w-full rounded-lg border border-[#1B1B1B]/10 bg-white px-3 py-2.5 text-sm text-[#1B1B1B] outline-none focus:border-[#9E8C61] transition-colors"
+                />
+              </div>
+
+              {/* Volume Closed */}
+              <div>
+                <label className="mb-1.5 block text-xs text-[#1B1B1B]/50" htmlFor="volumeClosed">
+                  Volume Closed ($)
+                </label>
+                <input
+                  id="volumeClosed"
+                  type="text"
+                  inputMode="numeric"
+                  value={agentProfile.volumeClosed}
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/\D/g, "");
+                    const formatted = digits.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                    setAgentProfile((prev) => ({ ...prev, volumeClosed: formatted }));
+                  }}
                   className="w-full rounded-lg border border-[#1B1B1B]/10 bg-white px-3 py-2.5 text-sm text-[#1B1B1B] outline-none focus:border-[#9E8C61] transition-colors"
                 />
               </div>
@@ -316,8 +389,9 @@ export default function AgentSettingsPage() {
                   id="propertiesRented"
                   type="number"
                   min={0}
+                  step={1}
                   value={agentProfile.propertiesRented}
-                  onChange={(e) => setAgentProfile((prev) => ({ ...prev, propertiesRented: e.target.value }))}
+                  onChange={(e) => setAgentProfile((prev) => ({ ...prev, propertiesRented: e.target.value.replace(/\D/g, "") }))}
                   className="w-full rounded-lg border border-[#1B1B1B]/10 bg-white px-3 py-2.5 text-sm text-[#1B1B1B] outline-none focus:border-[#9E8C61] transition-colors"
                 />
               </div>
@@ -349,20 +423,6 @@ export default function AgentSettingsPage() {
                   className="w-full rounded-lg border border-[#1B1B1B]/10 bg-white px-3 py-2.5 text-sm text-[#1B1B1B] outline-none focus:border-[#9E8C61] transition-colors"
                 />
               </div>
-              <div>
-                <label className="mb-1.5 block text-xs text-[#1B1B1B]/50" htmlFor="linkedin">
-                  LinkedIn URL
-                </label>
-                <input
-                  id="linkedin"
-                  type="text"
-                  value={agentProfile.linkedin}
-                  onChange={(e) => setAgentProfile((prev) => ({ ...prev, linkedin: e.target.value }))}
-                  placeholder="https://linkedin.com/in/yourprofile"
-                  className="w-full rounded-lg border border-[#1B1B1B]/10 bg-white px-3 py-2.5 text-sm text-[#1B1B1B] outline-none focus:border-[#9E8C61] transition-colors"
-                />
-              </div>
-
               {/* Status message */}
               {profileMsg && (
                 <p className={`text-xs ${profileOk ? "text-green-600" : "text-red-500"}`}>
@@ -371,13 +431,25 @@ export default function AgentSettingsPage() {
               )}
 
               {/* Save button */}
-              <button
-                type="submit"
-                disabled={profileSaving}
-                className="self-start rounded-full bg-[#1B1B1B] px-6 py-2.5 text-sm text-white transition-opacity hover:opacity-75 disabled:opacity-40"
-              >
-                {profileSaving ? "Saving…" : "Save Agent Profile"}
-              </button>
+              <div className="flex flex-col gap-3">
+                <button
+                  type="submit"
+                  disabled={profileSaving}
+                  className="self-start rounded-full bg-[#1B1B1B] px-6 py-2.5 text-sm text-white transition-opacity hover:opacity-75 disabled:opacity-40"
+                >
+                  {profileSaving ? "Saving…" : "Save Agent Profile"}
+                </button>
+                {agentSlug && (
+                  <Link
+                    href={`/agents/${agentSlug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="self-start rounded-full border border-[#1B1B1B]/20 px-6 py-2.5 font-sans text-sm text-[#1B1B1B] transition-colors hover:border-[#1B1B1B]"
+                  >
+                    View Public Profile
+                  </Link>
+                )}
+              </div>
             </form>
           </div>
         </div>

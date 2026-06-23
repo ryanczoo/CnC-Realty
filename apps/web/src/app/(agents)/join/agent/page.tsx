@@ -27,7 +27,6 @@ interface FormData {
   specialties: Specialty[];
   instagramUrl: string;
   facebookUrl: string;
-  linkedinUrl: string;
 }
 
 const STEPS = ["Personal Info", "License", "Social", "Review"] as const;
@@ -52,7 +51,6 @@ export default function AgentOnboardingPage() {
     specialties: [],
     instagramUrl: "",
     facebookUrl: "",
-    linkedinUrl: "",
   });
 
   // Pre-fill email from session
@@ -309,16 +307,6 @@ export default function AgentOnboardingPage() {
                 placeholder="https://facebook.com/username"
               />
             </div>
-            <div>
-              <label className={labelClass}>LinkedIn URL</label>
-              <input
-                className={inputClass}
-                type="url"
-                value={form.linkedinUrl}
-                onChange={(e) => set("linkedinUrl", e.target.value)}
-                placeholder="https://linkedin.com/in/username"
-              />
-            </div>
           </div>
         )}
 
@@ -342,7 +330,6 @@ export default function AgentOnboardingPage() {
             <div className="rounded-xl bg-[#F2F0EF] px-5 py-4 space-y-3">
               <Row label="Instagram" value={form.instagramUrl || "—"} />
               <Row label="Facebook" value={form.facebookUrl || "—"} />
-              <Row label="LinkedIn" value={form.linkedinUrl || "—"} />
             </div>
           </div>
         )}

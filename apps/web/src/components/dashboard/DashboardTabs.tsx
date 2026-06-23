@@ -95,28 +95,19 @@ export function DashboardTabs({ overviewStats, role }: DashboardTabsProps) {
 
   return (
     <div>
-      {/* Tab switcher */}
-      <div className="mb-6 flex gap-2">
-        {(["overview", "my-stats"] as const)
-          .filter((t) => !(t === "my-stats" && role === "ADMIN"))
-          .map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
-              tab === t
-                ? "border-[#9E8C61] bg-[#9E8C61] text-white"
-                : "border-[#1B1B1B]/20 text-[#1B1B1B]/60 hover:border-[#9E8C61] hover:text-[#9E8C61]"
-            }`}
-          >
-            {t === "overview" ? "Overview" : "My Stats"}
-          </button>
-        ))}
-      </div>
-
       {/* Overview tab */}
       <div className={tab === "overview" ? "" : "hidden"}>
-        <h1 className="mb-8 font-sans text-2xl font-light text-[#1B1B1B]">Overview</h1>
+        <div className="mb-8 flex items-center justify-between">
+          <h1 className="font-sans text-2xl font-light text-[#1B1B1B]">Overview</h1>
+          {role !== "ADMIN" && (
+            <button
+              onClick={() => setTab("my-stats")}
+              className="rounded-full border border-[#9E8C61] bg-[#9E8C61] px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-[#8a7a52]"
+            >
+              My Stats
+            </button>
+          )}
+        </div>
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <StatsCard label="Total Leads" value={overviewStats.total} />
           <StatsCard label="New This Week" value={overviewStats.newThisWeek} />
@@ -127,6 +118,15 @@ export function DashboardTabs({ overviewStats, role }: DashboardTabsProps) {
 
       {/* My Stats tab */}
       <div className={tab === "my-stats" ? "" : "hidden"}>
+        <div className="mb-8 flex items-center justify-between">
+          <h1 className="font-sans text-2xl font-light text-[#1B1B1B]">My Stats</h1>
+          <button
+            onClick={() => setTab("overview")}
+            className="rounded-full border border-[#1B1B1B]/20 px-4 py-1.5 text-sm font-medium text-[#1B1B1B]/60 transition-colors hover:border-[#1B1B1B]"
+          >
+            ← Overview
+          </button>
+        </div>
         <div className="mb-6 flex flex-wrap gap-2">
           {RANGES.map((r) => (
             <button

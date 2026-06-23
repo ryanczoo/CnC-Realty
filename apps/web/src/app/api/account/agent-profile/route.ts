@@ -10,7 +10,7 @@ export async function GET() {
 
   const agent = await prisma.agent.findUnique({
     where: { userId: session.user.id },
-    select: { bio: true, yearsExp: true, instagram: true, facebook: true, linkedin: true, headshot: true, propertiesRented: true },
+    select: { slug: true, bio: true, yearsExp: true, listingsClosed: true, volumeClosed: true, instagram: true, facebook: true, headshot: true, propertiesRented: true },
   });
   return NextResponse.json(agent ?? {});
 }
@@ -20,14 +20,15 @@ export async function PATCH(req: Request) {
   if (error) return error;
 
   const body = await req.json();
-  const { bio, yearsExp, instagram, facebook, linkedin, headshot, propertiesRented } = body;
+  const { bio, yearsExp, listingsClosed, volumeClosed, instagram, facebook, headshot, propertiesRented } = body;
 
   const data: Record<string, unknown> = {};
   if (bio !== undefined) data.bio = bio || null;
   if (yearsExp !== undefined) data.yearsExp = yearsExp !== null ? Number(yearsExp) : null;
+  if (listingsClosed !== undefined) data.listingsClosed = Math.max(0, Number(listingsClosed) || 0);
+  if (volumeClosed !== undefined) data.volumeClosed = Math.max(0, Number(volumeClosed) || 0);
   if (instagram !== undefined) data.instagram = instagram || null;
   if (facebook !== undefined) data.facebook = facebook || null;
-  if (linkedin !== undefined) data.linkedin = linkedin || null;
   if (headshot !== undefined) data.headshot = headshot || null;
   if (propertiesRented !== undefined) data.propertiesRented = Math.max(0, Number(propertiesRented) || 0);
 

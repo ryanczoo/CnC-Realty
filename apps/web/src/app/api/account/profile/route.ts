@@ -9,7 +9,7 @@ export async function GET() {
   try {
     const agent = await prisma.agent.findUnique({
       where: { userId: session.user.id },
-      select: { licenseNum: true },
+      select: { licenseNum: true, location: true, language: true },
     });
     return NextResponse.json(agent ?? {});
   } catch (err) {
@@ -23,7 +23,7 @@ export async function PATCH(req: Request) {
   if (error) return error;
 
   const body = await req.json();
-  const { name, licenseNum } = body;
+  const { name, licenseNum, location, language } = body;
 
   if (typeof name !== "string" || name.trim().length === 0) {
     return NextResponse.json({ error: "Name is required" }, { status: 400 });
@@ -36,10 +36,15 @@ export async function PATCH(req: Request) {
       select: { id: true, name: true, email: true },
     });
 
-    if (licenseNum !== undefined) {
+    const agentData: Record<string, unknown> = {};
+    if (licenseNum !== undefined) agentData.licenseNum = licenseNum.trim() || null;
+    if (location !== undefined) agentData.location = location.trim() || null;
+    if (language !== undefined) agentData.language = language.trim() || null;
+
+    if (Object.keys(agentData).length > 0) {
       await prisma.agent.updateMany({
         where: { userId: session.user.id },
-        data: { licenseNum: licenseNum.trim() || null },
+        data: agentData,
       });
     }
 

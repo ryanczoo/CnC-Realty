@@ -49,9 +49,9 @@ export function HowToJoin() {
                 animate={PULSE_ANIMATE}
                 whileHover={{ scale: 1.1, transition: SPRING_HOVER }}
                 transition={PULSE_TRANSITION}
-                className="mt-8 ml-[5.5rem] inline-flex items-center gap-2 rounded-full bg-[#1B1B1B] px-6 py-3 font-sans text-sm text-white"
+                className="mt-8 ml-[1.5rem] inline-flex items-center rounded-full bg-[#1B1B1B] px-6 py-3 font-sans text-sm text-white"
               >
-                Apply Now →
+                Apply Now
               </MotionLink>
             </div>
           </div>

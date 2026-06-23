@@ -55,20 +55,6 @@ export function AgentReviewsSection({ displayName }: { displayName: string }) {
           </svg>
         </div>
 
-        {/* Stars + label */}
-        <div className="mb-10 flex items-center gap-2.5">
-          <div className="flex items-center gap-0.5">
-            {[...Array(5)].map((_, i) => (
-              <Star
-                key={i}
-                size={16}
-                className="fill-[#9E8C61] text-[#9E8C61]"
-              />
-            ))}
-          </div>
-          <span className="font-sans text-sm text-[#1B1B1B]/45">5.0 · 3 reviews</span>
-        </div>
-
         {/* Review cards */}
         <div className="grid gap-4 md:grid-cols-3">
           {PLACEHOLDER_REVIEWS.map((review) => (
