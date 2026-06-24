@@ -21,7 +21,7 @@ export async function GET(_req: Request, { params }: { params: { userId: string 
   return new Response(r2Res.body, {
     headers: {
       "Content-Type": contentType,
-      "Cache-Control": "public, max-age=3600",
+      "Cache-Control": "no-store",
     },
   });
 }

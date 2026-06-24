@@ -36,7 +36,7 @@ export async function PATCH(req: Request) {
       select: { id: true, name: true, email: true },
     });
 
-    const agentData: Record<string, unknown> = {};
+    const agentData: Record<string, unknown> = { displayName: name.trim() };
     if (licenseNum !== undefined) agentData.licenseNum = licenseNum.trim() || null;
     if (location !== undefined) agentData.location = location.trim() || null;
     if (language !== undefined) agentData.language = language.trim() || null;

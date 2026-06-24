@@ -69,7 +69,7 @@ export default function AgentSettingsPage() {
           facebook: d.facebook ?? "",
           headshot: d.headshot ?? null,
         });
-        if (d.headshot) setHeadshotKey(d.headshot);
+        if (d.headshot) setHeadshotKey(Date.now().toString());
         if (d.slug) setAgentSlug(d.slug);
       })
       .catch(() => {});
@@ -115,8 +115,8 @@ export default function AgentSettingsPage() {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || `Upload failed (${res.status})`);
       }
-      const { key } = await res.json();
-      setHeadshotKey(key);
+      await res.json();
+      setHeadshotKey(Date.now().toString());
       setProfileOk(true);
       setProfileMsg("Photo updated.");
       e.target.value = "";

@@ -8,24 +8,39 @@ import { RevealLine } from "@/components/ui/reveal-text";
 
 const STEPS = [
   {
-    title: { first: "Full", mid: "Transaction", last: "Management" },
-    body: "Manage your leads, transactions, and analytics all in one place with our custom CRM built exclusively for CnC agents",
+    title: { first: "Transaction", mid: "", last: "Management" },
+    titleBreak: true,
+    body: "Manage all of your listings and transactions in one place with our full transaction management system built exclusively for CnC agents",
+    img: "/images/join-slide-transaction.png",
+    imgPosition: "top",
+  },
+  {
+    title: { first: "CRM", mid: "", last: "Software" },
+    titleBreak: true,
+    body: "Track every lead with a full pipeline, smart lists, and deal management tools built right into\nyour CnC dashboard",
     img: "/images/join-slide-crm.png",
     imgPosition: "top",
   },
   {
     title: { first: "Personal", mid: "", last: "Webpage" },
     titleBreak: true,
-    body: "Your own professional profile page with stats, listings, and a contact form — all live on cncrealtygroup.com the moment you join",
+    body: "Your own professional website complete with stats, contact info, and a bio created the moment you join",
     img: "/images/join-slide-agent.png",
-    imgPosition: "center",
+    imgPosition: "top",
   },
   {
-    title: { first: "Email &", mid: "Drip", last: "Campaigns" },
+    title: { first: "Email", mid: "", last: "Campaigns" },
     titleBreak: true,
-    body: "Send branded email campaigns and drip sequences to your leads directly from your CnC account. No third-party tools needed.",
+    body: "Send branded emails, setup DRIP campaigns, and follow-up with clients directly\nwithin CnC's dashboard",
     img: "/images/join-slide-campaign.png",
-    imgPosition: "center",
+    imgPosition: "top",
+  },
+  {
+    title: { first: "Interactive", mid: "", last: "Task Board" },
+    titleBreak: true,
+    body: "Control all of your leads easily with a drag-and-drop task board, giving you the ability to move deals from new to closed with ease",
+    img: "/images/join-slide-kanban.png",
+    imgPosition: "top",
   },
 ];
 
@@ -115,7 +130,7 @@ export function JoinSteps() {
               <path d="M20.94,11A8.26,8.26,0,0,1,21,12a9,9,0,1,1-9-9,8.83,8.83,0,0,1,4,1" stroke="#9E8C61" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               <polyline points="21 5 12 14 8 10" stroke="#9E8C61" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            <p className="ml-auto max-w-sm font-sans text-[1.1rem] leading-relaxed text-[#1B1B1B]/60">
+            <p className="ml-auto max-w-sm whitespace-pre-line font-sans text-[1.1rem] leading-relaxed text-[#1B1B1B]/60">
               {active.body}
             </p>
           </motion.div>
