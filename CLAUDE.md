@@ -4769,6 +4769,74 @@ Animation draw speed tuned:
 
 ---
 
+## Session Notes — 2026-06-24
+
+### What Was Completed This Session
+
+All changes committed as `9dab434` on `main`.
+
+---
+
+### Agent Public Page — Transactions Section (New) ✅
+
+**New file:** `apps/web/src/components/agents/AgentTransactionsSection.tsx`
+
+Added a "[First Name]'s Transactions" section below the Client Reviews section on every agent's public profile page.
+
+**Layout decisions:**
+- Section background: `bg-white`; cards: `bg-cnc-bg` (`#F2F0EF`) — reversed from first attempt after Ryan said "reverse that"
+- Gradient bridges at top (`#F2F0EF → white`) and bottom (`white → #F2F0EF`) via inline absolute divs to blend with adjacent sections
+- Title: left-aligned, same two-tier style as "Client Reviews" — muted `text-[#1B1B1B]/70` "[firstName]'s " + gold `text-cnc-gold font-medium` "Transactions"
+- **Grid:** 2 rows × 3 columns, `PER_PAGE = 6`
+- **Card shape:** `flex items-center gap-4` — 78×78px house SVG thumbnail left, bold price, stats line (agent side + close date), address — all with `mb-2` spacing and `text-[#1B1B1B]/45` grey for stats AND address
+- **Pagination:** FIND-style numbered (no arrows), ellipsis logic when `totalPages > 7`
+- **Empty state:** Plain `<p>` text "Coming soon..." (no dashed border box) — bare centered text only
+
+**Data source:**
+- `page.tsx` already queries `prisma.transactionFile.findMany({ where: { agentId, status: "CLOSED" } })` and passes `transactions` prop — no changes needed there
+- Component maps real data via `realToDisplay()` — shows actual sale/list price, agent side label, and close date
+- When `transactions.length === 0` → shows "Coming soon..." instead of fake placeholders
+
+---
+
+### Agent Public Page — Client Reviews Carousel Restored ✅
+
+**File:** `apps/web/src/components/agents/AgentReviewsSection.tsx`
+
+The full placeholder carousel was accidentally removed in a previous session. Restored completely:
+
+- All 7 PLACEHOLDER_REVIEWS: Sarah M. (Home Buyer), James T. (Home Seller), Priya K. (First-Time Buyer), Michael R. (Home Buyer), Linda C. (Home Seller), David & Amy W. (Relocation Buyers), Tony B. (Repeat Client)
+- Gold star row (5 stars, `fill-[#9E8C61]`)
+- Italic review text in `text-[#1B1B1B]/60`
+- Author avatar circle + name + role
+- `motion.div` horizontal scroll with `containerRef` measuring card width dynamically
+- Prev/Next arrow buttons with `PULSE_ANIMATE` + `PULSE_TRANSITION` + `SPRING_HOVER` (matches sitewide button standard)
+- `VISIBLE = 3`, `MAX_IDX = PLACEHOLDER_REVIEWS.length - VISIBLE`
+
+**Empty state change (both sections):**
+- Removed the `rounded-2xl border border-dashed border-[#1B1B1B]/15 py-16` wrapper div
+- Now just: `<p className="py-16 text-center font-sans text-sm text-[#1B1B1B]/35">Coming soon...</p>`
+
+---
+
+### Key Decisions Made
+
+1. **Reviews stay fake** — no client submission flow. Ryan will supply review text per agent when ready.
+2. **Transactions section is fully data-driven** — when an agent closes a deal in the CRM (status `CLOSED`), it automatically appears on their public page. No manual work needed.
+3. **Both section empty states are plain text** — no box, no border. Just the bare "Coming soon..." sentence.
+4. **Section background contrast:** Transactions section is `bg-white` with `bg-cnc-bg` cards; Reviews section is `bg-cnc-bg` with `bg-white` cards.
+
+---
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. Open `localhost:3000`
+3. Navigate to `/agents/ryan-chong` — review the Client Reviews carousel and the Transactions section beneath it
+4. Ryan to direct next area of work
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`
