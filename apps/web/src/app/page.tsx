@@ -25,9 +25,7 @@ export default function HomePage() {
         <div className="h-px w-full bg-[#1B1B1B]/10" />
       </div>
       <ServicesSection />
-      <div className="bg-[#F2F0EF] px-16 py-10">
-        <div className="h-px w-full bg-[#1B1B1B]/10" />
-      </div>
+      <div className="bg-[#F2F0EF] py-10" />
       <Testimonials />
       <GradientBridge from="#F2F0EF" to="#DAD4D2" />
       <FAQ className="bg-[#DAD4D2]" />

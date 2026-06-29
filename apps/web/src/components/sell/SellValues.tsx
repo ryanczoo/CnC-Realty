@@ -2,7 +2,6 @@
 
 import { useRef } from "react";
 import { motion, useScroll, useTransform } from "motion/react";
-import Image from "next/image";
 import { RevealLine } from "@/components/ui/reveal-text";
 
 const SPREAD = 30; // degrees between adjacent cards
@@ -141,12 +140,11 @@ export function SellValues() {
               rotate: MOTION[i].rotate,
             }}
           >
-            <Image
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
               src={v.img}
               alt={v.label}
-              fill
-              className="object-cover"
-              sizes="(max-width: 1024px) 160px, 300px"
+              className="absolute inset-0 h-full w-full object-cover"
             />
             <div className="absolute inset-0 bg-black/40" />
             <div className="absolute inset-0 flex items-center justify-center">

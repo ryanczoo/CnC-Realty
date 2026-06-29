@@ -33,8 +33,8 @@ const STEPS = [
 export function HowToJoin() {
   return (
     <section data-navbar-theme="light" className="relative z-10 bg-cnc-bg px-8 pt-6 pb-28 lg:px-20">
-      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-40" style={{ background: "linear-gradient(to bottom, transparent, white)" }} />
-      <div className="mx-auto max-w-7xl">
+      <div className="pointer-events-none absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-white to-transparent" />
+<div className="mx-auto max-w-7xl">
         <div className="flex gap-24">
 
           {/* Left — sticky heading + button */}

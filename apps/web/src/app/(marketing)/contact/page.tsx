@@ -6,9 +6,10 @@ import { useClickOutside } from "@/hooks/useClickOutside";
 import { NAV_PANEL_CLS, NAV_ITEM_CLS, SPRING_HOVER, PULSE_ANIMATE, PULSE_TRANSITION } from "@/lib/motion";
 
 const ROLE_OPTIONS = [
-  "Home Buyer",
-  "Home Seller",
-  "Home Owner",
+  "Agent",
+  "Buyer",
+  "Seller",
+  "Owner",
   "Renter",
   "Landlord",
   "Property Manager",
@@ -43,7 +44,7 @@ export default function ContactPage() {
 
   const field = (name: keyof typeof form, label: string, type = "text", required = false) => (
     <div className="flex flex-col gap-1.5">
-      <label className="font-sans text-sm text-[#1B1B1B]/60">{label}{required && " *"}</label>
+      <label className="font-sans text-sm text-left text-[#1B1B1B]/60">{label}{required && " *"}</label>
       <input
         type={type}
         required={required}
@@ -79,7 +80,7 @@ export default function ContactPage() {
             {field("phone", "Phone (optional)")}
 
             <div className="flex flex-col gap-1.5" ref={roleRef}>
-              <label className={`font-sans text-sm ${roleError ? "text-red-500" : "text-[#1B1B1B]/60"}`}>I am a *</label>
+              <label className={`font-sans text-sm text-left ${roleError ? "text-red-500" : "text-[#1B1B1B]/60"}`}>I am a *</label>
               <button
                 type="button"
                 onClick={() => { setRoleOpen((o) => !o); setRoleError(false); }}
@@ -116,13 +117,14 @@ export default function ContactPage() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="font-sans text-sm text-[#1B1B1B]/60">Message *</label>
+              <label className="font-sans text-sm text-left text-[#1B1B1B]/60">Message *</label>
               <textarea
                 rows={4}
                 required
                 value={form.notes}
                 onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
                 className="resize-none border-b border-[#1B1B1B]/20 bg-transparent py-2 font-sans text-base text-[#1B1B1B] outline-none transition-colors focus:border-[#1B1B1B]/60"
+                placeholder="Type away..."
               />
             </div>
             {status === "error" && (

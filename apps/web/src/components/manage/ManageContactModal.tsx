@@ -12,9 +12,10 @@ import {
 } from "@/lib/motion";
 
 const ROLE_OPTIONS = [
-  "Home Buyer",
-  "Home Seller",
-  "Home Owner",
+  "Agent",
+  "Buyer",
+  "Seller",
+  "Owner",
   "Renter",
   "Landlord",
   "Property Manager",
@@ -124,7 +125,7 @@ export function ManageContactModal({ open, cardTitle, onClose }: ManageContactMo
               <form onSubmit={handleSubmit} className="flex flex-col gap-6">
                 {/* First Name */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="font-sans text-sm text-[#1B1B1B]/60">First Name *</label>
+                  <label className="font-sans text-sm text-left text-[#1B1B1B]/60">First Name *</label>
                   <input
                     type="text"
                     required
@@ -132,26 +133,26 @@ export function ManageContactModal({ open, cardTitle, onClose }: ManageContactMo
                     value={form.firstName}
                     onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
                     className="border-b border-[#1B1B1B]/20 bg-transparent py-2 font-sans text-base text-[#1B1B1B] outline-none transition-colors focus:border-[#1B1B1B]/60"
-                    placeholder="First name"
+                    placeholder=""
                   />
                 </div>
 
                 {/* Email */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="font-sans text-sm text-[#1B1B1B]/60">Email *</label>
+                  <label className="font-sans text-sm text-left text-[#1B1B1B]/60">Email *</label>
                   <input
                     type="email"
                     required
                     value={form.email}
                     onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                     className="border-b border-[#1B1B1B]/20 bg-transparent py-2 font-sans text-base text-[#1B1B1B] outline-none transition-colors focus:border-[#1B1B1B]/60"
-                    placeholder="your@email.com"
+                    placeholder=""
                   />
                 </div>
 
                 {/* I am a */}
                 <div className="flex flex-col gap-1.5" ref={roleRef}>
-                  <label className={`font-sans text-sm ${roleError ? "text-red-500" : "text-[#1B1B1B]/60"}`}>
+                  <label className={`font-sans text-sm text-left ${roleError ? "text-red-500" : "text-[#1B1B1B]/60"}`}>
                     I am a *
                   </label>
                   <button
@@ -188,14 +189,14 @@ export function ManageContactModal({ open, cardTitle, onClose }: ManageContactMo
 
                 {/* Message */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="font-sans text-sm text-[#1B1B1B]/60">Message *</label>
+                  <label className="font-sans text-sm text-left text-[#1B1B1B]/60">Message *</label>
                   <textarea
                     rows={4}
                     required
                     value={form.notes}
                     onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
                     className="resize-none border-b border-[#1B1B1B]/20 bg-transparent py-2 font-sans text-base text-[#1B1B1B] outline-none transition-colors focus:border-[#1B1B1B]/60"
-                    placeholder="Tell us what you're looking for…"
+                    placeholder="Type away..."
                   />
                 </div>
 

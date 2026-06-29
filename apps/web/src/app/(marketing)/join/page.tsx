@@ -8,6 +8,7 @@ import { HowToJoin } from "@/components/join/HowToJoin";
 import { JoinSteps } from "@/components/join/JoinSteps";
 import { CTALineArt } from "@/components/join/CTALineArt";
 import { JoinCTAButtons } from "@/components/join/JoinCTAButtons";
+import { AgentPlan } from "@/components/join/AgentPlan";
 
 export const metadata: Metadata = {
   title: "Join CnC Realty | Agent Opportunities",
@@ -24,17 +25,17 @@ export default function JoinPage() {
       <div data-navbar-theme="light">
         <StatsBar />
         <FounderQuote />
-        <div className="bg-cnc-bg px-16 py-10">
-          <div className="h-px w-full bg-[#1B1B1B]/10" />
-        </div>
         <WhyCnCStacked />
       </div>
 
-      {/* ── How to Join ── */}
-      <HowToJoin />
+      {/* ── Agent Plan ── */}
+      <AgentPlan />
 
       {/* ── Steps Slider ── */}
       <JoinSteps />
+
+      {/* ── How to Join ── */}
+      <HowToJoin />
 
       {/* ── Final CTA ── */}
       <section data-navbar-theme="light" className="relative overflow-hidden bg-[#F2F0EF] px-8 py-28 lg:px-20">
