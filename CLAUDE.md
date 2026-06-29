@@ -4837,6 +4837,96 @@ The full placeholder carousel was accidentally removed in a previous session. Re
 
 ---
 
+## Session Notes — 2026-06-29
+
+### What Was Completed This Session
+
+All changes committed as `c97c752` on `main`.
+
+---
+
+### AgentPlan — City Photo Swap + Crop ✅
+
+**File:** `apps/web/src/components/join/AgentPlan.tsx`
+**Asset:** `apps/web/public/images/join-city.jpg`
+
+- Replaced the previous city photo with the LA skyline aerial shot (`pexels-mr-location-scout-22994825-6644764.jpg` from Downloads)
+- Crop adjusted to `object-[center_55%]` — frames the warm orange/pink sky + skyline band, cutting out the blue cloudy top (matching the panoramic strip style of Image #8)
+- Photo wrapper width reduced from `w-full` → `w-[80%]` — user said it looked "a little wide"
+
+---
+
+### BuyFeatures — Thumbs Up SVG + Feature Text ✅
+
+**File:** `apps/web/src/components/buy/BuyFeatures.tsx`
+
+- `IconThumbsUp` replaced with a clean stroke-based thumbs-up path (the original filled path was rendering as thumbs down)
+- Feature text updated:
+  - "Certified lenders for instant approval" → "Award-winning lenders for instant approval"
+  - "Award-winning Escrow officers" → "Certified escrow officers to close with confidence"
+
+---
+
+### HowToJoin — Top Gradient + Sticky House Photo ✅
+
+**File:** `apps/web/src/components/join/HowToJoin.tsx`
+
+- Added gradient at top (`from-white to-transparent`) to blend into JoinSteps white section above
+- House photo column is now `sticky top-28 self-start` — stays visible while scrolling through all 4 steps, mirroring the heading
+
+---
+
+### SellValues — Image Fix ✅
+
+**File:** `apps/web/src/components/sell/SellValues.tsx`
+
+- Replaced `<Image fill>` (next/image) with plain `<img>` tags for all 5 value cards
+- Root cause: `next/image` with `fill` mode fails silently inside Framer Motion `motion.div` elements — CSS transforms break the browser's IntersectionObserver so lazy-loaded images never render. Punctuality and Compassion photos were invisible.
+- Fix: plain `<img className="absolute inset-0 h-full w-full object-cover">` bypasses Next.js lazy loading entirely
+
+---
+
+### Contact Form — Sitewide Updates ✅
+
+Applied the same set of changes to all three contact form surfaces:
+- `apps/web/src/components/ui/ContactModal.tsx` (general popup)
+- `apps/web/src/components/manage/ManageContactModal.tsx` (manage page popup)
+- `apps/web/src/app/(marketing)/contact/page.tsx` (contact page)
+
+**Changes made to all three:**
+1. **Labels left-aligned** — added `text-left` to all field labels (First Name, Email, I am a, Message)
+2. **Placeholders removed** from First Name and Email fields (were "First name" / "your@email.com")
+3. **Message placeholder** changed to `"Type away..."`
+4. **Role options updated** — removed "Home" prefix: "Home Buyer" → "Buyer", "Home Seller" → "Seller", "Home Owner" → "Owner"
+5. **"Agent" added** as the first option in the "I am a" dropdown (above Buyer)
+
+**Final ROLE_OPTIONS order:** Agent, Buyer, Seller, Owner, Renter, Landlord, Property Manager
+
+---
+
+### Key Decisions Made
+
+1. **City photo crop:** `object-[center_55%]` on a `h-[260px] w-full object-cover` image gives the right panoramic strip framing the LA skyline
+2. **Photo width:** `w-[80%]` on the wrapper is the right size — not too wide
+3. **SellValues fix:** Plain `<img>` tags are the correct long-term approach for images inside Framer Motion transformed elements — do not use `next/image fill` there
+4. **Contact form labels:** All form labels across the site should be `text-left` — centered labels look wrong
+5. **"Agent" as first option:** Makes sense since agents may use the contact form to reach out about joining
+
+---
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. Open `localhost:3000`
+3. Ryan to direct next area of work — remaining items in priority order:
+   - **Join page** — review any remaining polish needed
+   - **Dashboard** — review any remaining work
+   - **Checklist templates** at `/admin/settings/checklists` (CA Purchase Buyer Side, CA Purchase Seller Side, CA Lease Tenant Side)
+   - **Phase 6 tasks** (`docs/superpowers/plans/2026-05-22-phase-6-launch.md`): ISR, skeleton loaders, sitemap, JSON-LD, rate limiting, Sentry, PostHog, deploy to Vercel + Railway
+   - **Phase 7 CRM Expansion** (required before launch): Smart Lists → Deal Pipeline → Lead Ponds → Action Plans → Trigger Automations → Reporting
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`
