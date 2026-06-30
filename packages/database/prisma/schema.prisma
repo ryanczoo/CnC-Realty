@@ -189,6 +189,26 @@ enum PlanStepStatus {
   PAUSED
 }
 
+// ─── Agent Application enums ─────────────────────────────────────────────────
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum LicenseType {
+  SALESPERSON
+  BROKER_ASSOCIATE
+}
+
+enum CommissionEntity {
+  PERSONAL
+  LLC
+  S_CORP
+  C_CORP
+}
+
 // ─── Auth models (unchanged) ─────────────────────────────────────────────────
 
 model User {
@@ -201,6 +221,8 @@ model User {
   role          UserRole  @default(BUYER)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  setupToken       String?   @unique
+  setupTokenExpiry DateTime?
 
   accounts           Account[]
   sessions           Session[]
@@ -900,4 +922,63 @@ model TriggerExecution {
   lead    Lead    @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
   @@unique([triggerId, leadId])
+}
+
+// ─── Agent Application ───────────────────────────────────────────────────────
+
+model AgentApplication {
+  id        String            @id @default(cuid())
+  createdAt DateTime          @default(now())
+  status    ApplicationStatus @default(PENDING)
+
+  // Personal
+  firstName   String
+  lastName    String
+  email       String
+  phone       String
+  address     String
+  city        String
+  state       String
+  zip         String
+  dateOfBirth String
+
+  // License
+  licenseNumber   String
+  licenseType     LicenseType
+  licenseExpDate  String
+  yearsLicensed   Int
+  formerBrokerage String
+  boardOfRealtors String?
+  mlsId           String?
+
+  // Transfer
+  hasActiveListings Boolean
+  hasActiveSales    Boolean
+
+  // Business / Tax
+  commissionEntity CommissionEntity
+
+  // Background / Legal
+  hasDisciplinaryHistory  Boolean
+  disciplinaryExplain     String?
+  hasInvestigationHistory Boolean
+  investigationExplain    String?
+  backgroundCheckConsent  Boolean
+  drePerJuryCert          Boolean
+
+  // Profile (carries over to Agent on approval)
+  specialties  String[]
+  bio          String?
+  instagramUrl String?
+  facebookUrl  String?
+
+  // ICA audit trail
+  icaOpenedAt  DateTime
+  icaAgreedAt  DateTime
+  submissionIp String
+
+  // Admin review
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  rejectionReason String?
 }
