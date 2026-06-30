@@ -7,7 +7,7 @@
 
 ## Goal
 
-Replace the current auth-gated 4-step agent onboarding form with a public single-page application at `/join/apply`. The application collects all legally required information, embeds the ICA for inline signing via HelloSign, and routes submissions to an admin approval queue. Agent accounts are created only after Ryan approves and countersigns the ICA.
+Replace the current auth-gated 4-step agent onboarding form with a public single-page application at `/join/apply`. The application collects all legally required information (matching Rise Realty + VRG standards), uses a link-gated ICA checkbox for legal acknowledgment, and routes submissions to an admin approval queue. Agent accounts are created only after Ryan approves.
 
 ---
 
@@ -174,30 +174,43 @@ Single mandatory checkbox with the full certification text:
 
 > "I certify under penalty of perjury that all information provided in this application is true and correct, and that I am not under investigation or prosecution by the DRE, State of California, any Realtor Association, MLS, or any government entity for acts including but not limited to complaints, ethics violations, fraud, misconduct, or misrepresentation."
 
+### Section 9 — reCAPTCHA
+- Google reCAPTCHA v3 embedded before the submit button
+- Free up to 1M assessments/month — no cost
+- Site key rendered client-side; secret key verified server-side on POST
+- Form submission blocked if reCAPTCHA score is below threshold (0.5)
+- Environment variables: `NEXT_PUBLIC_RECAPTCHA_SITE_KEY`, `RECAPTCHA_SECRET_KEY`
+
+---
+
+## Unlicensed Applicants
+
+If the agent leaves DRE License Number blank or enters an invalid format, the form displays an inline error and blocks submission. There is no "not licensed yet" option — CnC requires an active CA DRE license to apply.
+
 ---
 
 ## Post-Submission Flow
 
 ```
-Agent submits form + signs ICA
+Agent submits form (ICA agreed, reCAPTCHA passed)
+        ↓
+Server verifies reCAPTCHA token
         ↓
 AgentApplication created (status: PENDING)
-HelloSign ICA request stored (helloSignRequestId)
-Ryan receives email notification
+Audit trail stored (icaOpenedAt, icaAgreedAt, submissionIp)
+        ↓
+SendGrid notification email → Ryan
+("New agent application from [First Last] — review at /admin/applications")
         ↓
 Ryan reviews in Admin Dashboard → /admin/applications
         ↓
     APPROVE                     REJECT
         ↓                           ↓
-Ryan countersigns ICA         Rejection reason saved
-via HelloSign                 Agent notified by email
-        ↓
-HelloSign webhook fires
-        ↓
-Agent account created (User + Agent rows)
-Password-setup email sent to agent
-        ↓
-Agent sets password → /dashboard
+Agent account created         Rejection reason saved
+(User + Agent rows)           SendGrid email → Agent
+Password-setup email →        (polite rejection notice)
+Agent sets password →
+/dashboard
 ```
 
 ---
@@ -261,6 +274,18 @@ The ICA agreement is a clickwrap acknowledgment, legally valid under the federal
 
 **Removed:**
 - `apps/web/src/app/(agents)/join/agent/page.tsx` — replaced by `/join/apply`
+
+---
+
+## Environment Variables Required
+
+```
+# Google reCAPTCHA v3 (free — register at google.com/recaptcha)
+NEXT_PUBLIC_RECAPTCHA_SITE_KEY=
+RECAPTCHA_SECRET_KEY=
+```
+
+SendGrid is already configured in the project — no new env vars needed for email notifications.
 
 ---
 
