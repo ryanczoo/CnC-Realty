@@ -58,7 +58,7 @@ export async function sendApplicationNotification(app: {
   await sgMail.send({
     to: NOTIFY,
     from: FROM,
-    subject: `New Agent Application: ${app.firstName} ${app.lastName}`,
+    subject: `New Agent Application: ${safeName}`,
     html: `
       <h2>New agent application received</h2>
       <p><strong>Name:</strong> ${safeName}</p>
