@@ -15,13 +15,13 @@ export function JoinCTAButtons() {
     <>
       <div className="flex justify-center gap-4">
         <MotionLink
-          href="/join/agent"
+          href="/join/apply"
           animate={PULSE_ANIMATE}
           whileHover={{ scale: 1.05, transition: SPRING_HOVER }}
           transition={PULSE_TRANSITION}
           className="inline-flex items-center rounded-full bg-[#9E8C61] px-8 py-3.5 font-sans text-sm font-medium text-white"
         >
-          Join
+          Apply
         </MotionLink>
         <motion.button
           onClick={() => setModalOpen(true)}

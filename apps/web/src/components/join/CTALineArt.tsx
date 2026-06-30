@@ -43,19 +43,20 @@ export function CTALineArt() {
   });
 
   // Draw order: ridge → front gable → front walls → details → left slope → side
-  const pRidge      = useTransform(scrollYProgress, [0.00, 0.28], [0, 1]);
-  const pGable      = useTransform(scrollYProgress, [0.06, 0.34], [0, 1]);
-  const pFrontLeft  = useTransform(scrollYProgress, [0.18, 0.44], [0, 1]);
-  const pFrontBot   = useTransform(scrollYProgress, [0.20, 0.46], [0, 1]);
-  const pFrontRight = useTransform(scrollYProgress, [0.22, 0.48], [0, 1]);
-  const pFrontTop   = useTransform(scrollYProgress, [0.24, 0.50], [0, 1]);
-  const pWindow     = useTransform(scrollYProgress, [0.37, 0.60], [0, 1]);
-  const pDoor       = useTransform(scrollYProgress, [0.42, 0.65], [0, 1]);
-  const pLeftRoof   = useTransform(scrollYProgress, [0.52, 0.76], [0, 1]);
-  const pSideBot    = useTransform(scrollYProgress, [0.62, 0.84], [0, 1]);
-  const pSideRight  = useTransform(scrollYProgress, [0.65, 0.87], [0, 1]);
-  const pSideTop    = useTransform(scrollYProgress, [0.68, 0.90], [0, 1]);
-  const pRightRoof  = useTransform(scrollYProgress, [0.72, 1.00], [0, 1]);
+  // Ranges compressed to 0.65× so the house fully draws by 65% scroll through the section
+  const pRidge      = useTransform(scrollYProgress, [0.00, 0.18], [0, 1]);
+  const pGable      = useTransform(scrollYProgress, [0.04, 0.22], [0, 1]);
+  const pFrontLeft  = useTransform(scrollYProgress, [0.12, 0.29], [0, 1]);
+  const pFrontBot   = useTransform(scrollYProgress, [0.13, 0.30], [0, 1]);
+  const pFrontRight = useTransform(scrollYProgress, [0.14, 0.31], [0, 1]);
+  const pFrontTop   = useTransform(scrollYProgress, [0.16, 0.33], [0, 1]);
+  const pWindow     = useTransform(scrollYProgress, [0.24, 0.39], [0, 1]);
+  const pDoor       = useTransform(scrollYProgress, [0.27, 0.42], [0, 1]);
+  const pLeftRoof   = useTransform(scrollYProgress, [0.34, 0.49], [0, 1]);
+  const pSideBot    = useTransform(scrollYProgress, [0.40, 0.55], [0, 1]);
+  const pSideRight  = useTransform(scrollYProgress, [0.42, 0.57], [0, 1]);
+  const pSideTop    = useTransform(scrollYProgress, [0.44, 0.59], [0, 1]);
+  const pRightRoof  = useTransform(scrollYProgress, [0.47, 0.65], [0, 1]);
 
   return (
     <div
