@@ -83,6 +83,8 @@ describe('POST /api/agent-applications', () => {
     });
     const res = await POST(req);
     expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toContain("consent required");
   });
 
   it('returns 400 if drePerJuryCert is false', async () => {
@@ -93,6 +95,8 @@ describe('POST /api/agent-applications', () => {
     });
     const res = await POST(req);
     expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toContain("certification required");
   });
 
   it('creates application and returns 201 for valid submission', async () => {
