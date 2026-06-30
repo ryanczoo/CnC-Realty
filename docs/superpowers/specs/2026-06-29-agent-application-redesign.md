@@ -211,22 +211,24 @@ New page at `/admin/applications`:
 
 ---
 
-## HelloSign Integration
+## HelloSign (Dropbox Sign) Integration
 
 **Library:** `@dropbox/sign` (official Node SDK)
 
+**Pricing:** Dropbox Sign API — Free tier (3 requests/month) to start; upgrade to Essentials ($75/month, 50 requests) when volume justifies it. Embedded signing is included on all tiers including free.
+
 **Flow:**
-1. On form submit, server creates a HelloSign embedded sign request for the ICA template
-2. Client receives a `sign_url` and renders the HelloSign embedded widget in Section 7
-3. Agent signs inline
-4. On approval, Ryan countersigns via HelloSign API (or HelloSign email link)
+1. On form submit, server creates a Dropbox Sign embedded sign request for the ICA template
+2. Client receives a `sign_url` and renders the embedded signing widget in Section 7
+3. Agent signs inline — no redirect to Dropbox Sign
+4. On approval, Ryan countersigns via Dropbox Sign API (or Dropbox Sign email link)
 5. `signature_request_signed` webhook → account creation triggered
 
 **Environment variables needed:**
 ```
-HELLOSIGN_API_KEY=
-HELLOSIGN_CLIENT_ID=
-HELLOSIGN_ICA_TEMPLATE_ID=
+DROPBOX_SIGN_API_KEY=
+DROPBOX_SIGN_CLIENT_ID=
+DROPBOX_SIGN_ICA_TEMPLATE_ID=
 ```
 
 ---
