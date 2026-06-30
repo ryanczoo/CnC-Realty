@@ -72,9 +72,10 @@ model AgentApplication {
   instagramUrl     String?
   facebookUrl      String?
 
-  // HelloSign
-  helloSignRequestId  String?   // set when ICA signing request is created
-  icaSignedAt         DateTime? // set via webhook when agent signs
+  // ICA audit trail
+  icaOpenedAt         DateTime  // when agent clicked the ICA link
+  icaAgreedAt         DateTime  // when agent checked the agreement box
+  submissionIp        String    // captured server-side on POST
 
   // Admin
   reviewedBy      String?
@@ -161,10 +162,12 @@ All fields on a single scrollable page, grouped into visual sections. No steps, 
 | Instagram URL | ❌ | |
 | Facebook URL | ❌ | |
 
-### Section 7 — ICA Review & Signature
-- Renders the CnC ICA as a scrollable read-only document (from `docs/cnc-ica-draft.md` or a PDF embed)
-- HelloSign embedded signing widget below the ICA
-- Agent signs inline — no redirect to HelloSign
+### Section 7 — ICA Review & Agreement
+- A clearly labeled link/button opens the full CnC ICA (PDF or `/join/ica` page) in a new tab
+- Clicking the link sets an `icaOpened` state flag and captures an `icaOpenedAt` timestamp
+- The agreement checkbox below is **disabled** until the ICA link has been clicked
+- Once enabled, agent checks: *"I have read and agree to the CnC Realty Independent Contractor Agreement."*
+- `icaOpenedAt` timestamp stored with the application submission as part of the audit trail
 
 ### Section 8 — DRE Perjury Certification
 Single mandatory checkbox with the full certification text:
@@ -211,25 +214,23 @@ New page at `/admin/applications`:
 
 ---
 
-## HelloSign (Dropbox Sign) Integration
+## ICA Agreement — Checkbox with Link-Click Gate
 
-**Library:** `@dropbox/sign` (official Node SDK)
+**No third-party e-signature service required.**
 
-**Pricing:** Dropbox Sign API — Free tier (3 requests/month) to start; upgrade to Essentials ($75/month, 50 requests) when volume justifies it. Embedded signing is included on all tiers including free.
+The ICA agreement is a clickwrap acknowledgment, legally valid under the federal E-SIGN Act and California UETA. The link-click gate ensures the agent was presented with and opened the document before agreeing.
 
-**Flow:**
-1. On form submit, server creates a Dropbox Sign embedded sign request for the ICA template
-2. Client receives a `sign_url` and renders the embedded signing widget in Section 7
-3. Agent signs inline — no redirect to Dropbox Sign
-4. On approval, Ryan countersigns via Dropbox Sign API (or Dropbox Sign email link)
-5. `signature_request_signed` webhook → account creation triggered
+**Audit trail stored per submission:**
+- `icaOpenedAt` — timestamp when agent clicked the ICA link
+- `icaAgreedAt` — timestamp when agent checked the agreement checkbox
+- `submissionIp` — IP address captured server-side on form POST
 
-**Environment variables needed:**
-```
-DROPBOX_SIGN_API_KEY=
-DROPBOX_SIGN_CLIENT_ID=
-DROPBOX_SIGN_ICA_TEMPLATE_ID=
-```
+**UX behavior:**
+1. ICA link is displayed prominently with the text "Read the CnC Realty ICA →"
+2. Clicking the link opens the ICA in a new tab and enables the checkbox
+3. Checkbox label: *"I have read and agree to the CnC Realty Independent Contractor Agreement."*
+4. Checkbox remains disabled until `icaOpened` state is `true`
+5. Form cannot be submitted without the checkbox checked
 
 ---
 
@@ -248,11 +249,9 @@ DROPBOX_SIGN_ICA_TEMPLATE_ID=
 **New:**
 - `apps/web/src/app/(marketing)/join/apply/page.tsx` — public application page
 - `apps/web/src/components/join/ApplicationForm.tsx` — full form component
-- `apps/web/src/app/api/agent-applications/route.ts` — POST: create application + init HelloSign request
-- `apps/web/src/app/api/webhooks/hellosign/route.ts` — HelloSign webhook handler
+- `apps/web/src/app/api/agent-applications/route.ts` — POST: create application, capture IP + timestamps
 - `apps/web/src/app/(dashboard)/admin/applications/page.tsx` — admin queue
 - `apps/web/src/app/(dashboard)/admin/applications/[id]/page.tsx` — application detail + approve/reject
-- `apps/web/src/lib/hellosign.ts` — HelloSign SDK singleton + helper functions
 - `prisma/migrations/…` — AgentApplication table + enums
 
 **Modified:**
