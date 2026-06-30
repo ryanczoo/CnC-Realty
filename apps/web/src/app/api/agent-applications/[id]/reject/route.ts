@@ -15,6 +15,11 @@ export async function POST(
   const { session, error } = await requireAuth("ADMIN");
   if (error) return error;
 
+  const adminEmail = session.user?.email;
+  if (!adminEmail) {
+    return NextResponse.json({ error: "Admin email required" }, { status: 400 });
+  }
+
   const body = await req.json().catch(() => ({}));
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
@@ -32,7 +37,7 @@ export async function POST(
     data: {
       status: "REJECTED",
       rejectionReason: parsed.data.reason,
-      reviewedBy: session.user.email,
+      reviewedBy: adminEmail,
       reviewedAt: new Date(),
     },
   });

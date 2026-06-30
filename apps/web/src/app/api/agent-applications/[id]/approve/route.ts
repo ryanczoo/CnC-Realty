@@ -12,11 +12,13 @@ export async function POST(
   const { session, error } = await requireAuth("ADMIN");
   if (error) return error;
 
+  const adminEmail = session.user?.email;
+  if (!adminEmail) {
+    return NextResponse.json({ error: "Admin email required" }, { status: 400 });
+  }
+
   const app = await prisma.agentApplication.findUnique({ where: { id: params.id } });
   if (!app) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (app.status !== "PENDING") {
-    return NextResponse.json({ error: "Application already processed" }, { status: 409 });
-  }
 
   // Generate setup token (expires 72h)
   const setupToken = randomBytes(32).toString("hex");
@@ -29,43 +31,55 @@ export async function POST(
   // Temporary random password (agent will reset via setup link)
   const tempPassword = await bcrypt.hash(randomBytes(16).toString("hex"), 10);
 
-  await prisma.$transaction(async (tx) => {
-    const user = await tx.user.create({
-      data: {
-        email: app.email,
-        name: `${app.firstName} ${app.lastName}`,
-        password: tempPassword,
-        role: "AGENT",
-        setupToken,
-        setupTokenExpiry,
-      },
-    });
+  try {
+    await prisma.$transaction(async (tx) => {
+      // Atomic PENDING → APPROVED status check + update
+      const updated = await tx.agentApplication.updateMany({
+        where: { id: params.id, status: "PENDING" },
+        data: {
+          status: "APPROVED",
+          reviewedBy: adminEmail,
+          reviewedAt: new Date(),
+        },
+      });
 
-    await tx.agent.create({
-      data: {
-        userId: user.id,
-        slug,
-        displayName: `${app.firstName} ${app.lastName}`,
-        phone: app.phone,
-        licenseNum: app.licenseNumber,
-        licenseState: "CA",
-        yearsExp: app.yearsLicensed,
-        specialties: app.specialties,
-        bio: app.bio ?? undefined,
-        instagram: app.instagramUrl ?? undefined,
-        facebook: app.facebookUrl ?? undefined,
-      },
-    });
+      if (updated.count === 0) {
+        throw new Error("ALREADY_PROCESSED");
+      }
 
-    await tx.agentApplication.update({
-      where: { id: params.id },
-      data: {
-        status: "APPROVED",
-        reviewedBy: session.user.email,
-        reviewedAt: new Date(),
-      },
+      const user = await tx.user.create({
+        data: {
+          email: app.email,
+          name: `${app.firstName} ${app.lastName}`,
+          password: tempPassword,
+          role: "AGENT",
+          setupToken,
+          setupTokenExpiry,
+        },
+      });
+
+      await tx.agent.create({
+        data: {
+          userId: user.id,
+          slug,
+          displayName: `${app.firstName} ${app.lastName}`,
+          phone: app.phone,
+          licenseNum: app.licenseNumber,
+          licenseState: "CA",
+          yearsExp: app.yearsLicensed,
+          specialties: app.specialties,
+          bio: app.bio ?? undefined,
+          instagram: app.instagramUrl ?? undefined,
+          facebook: app.facebookUrl ?? undefined,
+        },
+      });
     });
-  });
+  } catch (err) {
+    if (err instanceof Error && err.message === "ALREADY_PROCESSED") {
+      return NextResponse.json({ error: "Application already processed" }, { status: 409 });
+    }
+    throw err;
+  }
 
   const setupUrl = `${process.env.NEXTAUTH_URL}/setup-account?token=${setupToken}`;
   sendApplicationApproved(app.email, app.firstName, setupUrl).catch(console.error);

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { formatDate } from "@/lib/utils";
 
 type ApplicationDetail = {
   id: string; status: string; createdAt: string;
