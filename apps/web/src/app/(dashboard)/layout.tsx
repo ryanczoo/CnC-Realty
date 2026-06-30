@@ -18,6 +18,7 @@ const ADMIN_NAV = [
   { href: "/admin/agents", label: "All Agents" },
   { href: "/admin/leads", label: "All Leads" },
   { href: "/admin/transactions", label: "All Files" },
+  { href: "/admin/applications", label: "Applications" },
   { href: "/admin/action-plans", label: "Action Plans" },
   { href: "/admin/settings/checklists", label: "Checklists" },
   { href: "/admin/settings/tags", label: "Tags" },
