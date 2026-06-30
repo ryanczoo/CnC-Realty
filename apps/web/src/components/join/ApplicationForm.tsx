@@ -155,14 +155,14 @@ function FormInner() {
         body: JSON.stringify({
           ...form,
           yearsLicensed: parseInt(form.yearsLicensed, 10) || 0,
-          icaOpenedAt,
+          icaOpenedAt: icaOpenedAt!,
           icaAgreedAt,
           recaptchaToken,
         }),
       });
 
       const data = await res.json();
-      if (!res.ok) {
+      if (res.status !== 201) {
         setError(data.error ?? "Something went wrong. Please try again.");
         return;
       }
