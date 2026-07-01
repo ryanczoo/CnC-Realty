@@ -4927,6 +4927,73 @@ Applied the same set of changes to all three contact form surfaces:
 
 ---
 
+## Session: 2026-06-29 / 2026-06-30 — Navbar Fixes, ICA Checkbox, /join/ica Page
+
+**Branch:** `feature/agent-application-redesign`
+**Commit:** `a728341`
+
+### What Was Done
+
+#### 1. SendGrid Plan Clarification
+- Ryan's SendGrid account is on **Free Trial** (Email API, unlimited until Aug 16, 2026) + auto-bundled **Marketing Campaigns** (unused, $0)
+- **Decision:** Upgrade Email API to **Essentials (~$19.95/mo) before Aug 16, 2026** — all CRM emails go through `@sendgrid/mail` npm package → Email API plan. Marketing Campaigns is a separate drag-and-drop newsletter UI product that CnC does not use.
+
+#### 2. Navbar Fix — /join/apply, /setup-account, /join/ica
+
+**Root cause (systematic-debugging):** Pages with an off-white (`bg-[#F2F0EF]`) background were being excluded from `isTransparent` in `Navbar.tsx` (correct) BUT still had `data-navbar-theme="light"` on their `<main>` element (wrong). That attribute sets `navTheme = "light"` → `useLightElements = true` → `filter: invert(1)` on logo = dark logo on dark navbar = invisible.
+
+**Fix applied to two files:**
+- `apps/web/src/app/(marketing)/join/apply/page.tsx` — removed `data-navbar-theme="light"` from `<main>`
+- `apps/web/src/app/(marketing)/setup-account/page.tsx` — removed `data-navbar-theme="light"` from `<main>`
+- `apps/web/src/components/layout/Navbar.tsx` — added `pathname !== "/join/ica"` to `isTransparent` exclusion list (already had `/join/apply` and `/setup-account`)
+
+**Rule going forward:** `data-navbar-theme` is ONLY for transparent-navbar pages that scroll over different-colored sections (homepage, sell page, join landing, etc.). Any page with a solid dark navbar exclusion must NOT have this attribute.
+
+#### 3. ICA Checkbox Label Legibility Fix
+
+**File:** `apps/web/src/components/join/ApplicationForm.tsx` (lines ~494–507)
+
+The checkbox label text was invisible (white on off-white) when the ICA had not been opened yet, because the `text-[#1B1B1B]` color class was inside the conditional that toggled `opacity-40`. Fixed by always applying `text-[#1B1B1B]` and only toggling the opacity:
+
+```jsx
+// Before — text color lost when !icaOpened
+className={`... ${!icaOpened ? "cursor-not-allowed opacity-40" : "text-[#1B1B1B]"}`}
+
+// After — text always dark, only opacity changes
+className={`... text-[#1B1B1B] ${!icaOpened ? "cursor-not-allowed opacity-40" : ""}`}
+```
+
+#### 4. /join/ica Page Created
+
+**File:** `apps/web/src/app/(marketing)/join/ica/page.tsx`
+
+- Created from `docs/cnc-ica-draft.md` (which also exists as `C:\Users\hey_r\Downloads\CnC-Realty-ICA-DRAFT.docx`)
+- Renders all 26 sections with clean legal document typography on `bg-[#F2F0EF]`
+- Includes E&O supplement fee table (Section 7.2) and Fee Schedule Summary table at bottom
+- Prominent DRAFT banner at top: "Pending attorney review — not legal advice"
+- Signature block with ruled lines for print/reference
+- The "Read the CnC ICA →" button in `ApplicationForm.tsx` opens this page in a new tab; clicking it gates the ICA agreement checkbox (`icaOpened` state + `icaOpenedAt` timestamp)
+
+### Key Decisions
+
+1. **No `data-navbar-theme` on solid-dark-navbar pages** — only transparent-navbar pages use this attribute
+2. **ICA is a link-gated checkbox, not an e-signature service** — applicant must click the ICA button (opening `/join/ica`) before the agreement checkbox enables; `icaOpenedAt` timestamp is stored with the application
+3. **ICA draft is pending real estate attorney review** — Ryan targeting review by 2026-06-07 (already passed); follow up. Do NOT use as binding legal document until reviewed.
+4. **SendGrid upgrade deadline: Aug 16, 2026** — Email API free trial ends; upgrade to Essentials before then
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. Open `localhost:3000`
+3. Test the full agent application flow end-to-end at `/join/apply`:
+   - Fill out form → click ICA button (opens `/join/ica`) → checkbox enables → submit
+   - Check admin queue at `/admin/applications`
+   - Approve → verify setup email sent → agent sets password → logs in
+4. Clean up test DB records (Test Applicant REJECTED, Jane Agent APPROVED) before launch
+5. Ryan to direct next area of work after testing
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`
