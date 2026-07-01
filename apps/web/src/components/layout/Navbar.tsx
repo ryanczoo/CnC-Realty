@@ -50,7 +50,10 @@ export function Navbar() {
     pathname !== "/accessibility" &&
     pathname !== "/privacy" &&
     pathname !== "/terms" &&
-    pathname !== "/fair-housing";
+    pathname !== "/fair-housing" &&
+    pathname !== "/join/apply" &&
+    pathname !== "/join/ica" &&
+    pathname !== "/setup-account";
   const [scrolled, setScrolled] = useState(false);
   const [pastHero, setPastHero] = useState(!isTransparent);
   const [menuOpen, setMenuOpen] = useState(false);

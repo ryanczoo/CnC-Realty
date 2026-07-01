@@ -492,8 +492,8 @@ function FormInner() {
           </p>
         )}
         <label
-          className={`flex cursor-pointer items-start gap-3 font-sans text-sm ${
-            !icaOpened ? "cursor-not-allowed opacity-40" : "text-[#1B1B1B]"
+          className={`flex cursor-pointer items-start gap-3 font-sans text-sm text-[#1B1B1B] ${
+            !icaOpened ? "cursor-not-allowed opacity-40" : ""
           }`}
         >
           <input

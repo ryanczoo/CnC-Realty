@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function ApplyPage() {
   return (
-    <main data-navbar-theme="light" className="min-h-screen bg-[#F2F0EF]">
+    <main className="min-h-screen bg-[#F2F0EF]">
       <ApplicationForm />
     </main>
   );

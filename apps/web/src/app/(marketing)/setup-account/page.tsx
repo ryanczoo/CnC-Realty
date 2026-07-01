@@ -96,7 +96,7 @@ function SetupForm() {
 
 export default function SetupAccountPage() {
   return (
-    <main data-navbar-theme="light" className="flex min-h-screen items-center justify-center bg-[#F2F0EF] px-4">
+    <main className="flex min-h-screen items-center justify-center bg-[#F2F0EF] px-4">
       <Suspense fallback={<p className="text-sm text-[#1B1B1B]/40">Loading…</p>}>
         <SetupForm />
       </Suspense>
