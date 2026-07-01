@@ -45,7 +45,7 @@ export function HowToJoin() {
                 <span className="block pl-[5.5rem] text-[3.5rem] font-medium"><RevealLine delay={0.15}>Join <span className="text-[#9E8C61]">CnC</span></RevealLine></span>
               </h2>
               <MotionLink
-                href="/join/agent"
+                href="/join/apply"
                 animate={PULSE_ANIMATE}
                 whileHover={{ scale: 1.1, transition: SPRING_HOVER }}
                 transition={PULSE_TRANSITION}

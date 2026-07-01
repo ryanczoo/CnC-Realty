@@ -92,7 +92,7 @@ export function AgentPlan() {
             whileHover={{ scale: 1.05, transition: SPRING_HOVER }}
           >
             <Link
-              href="/join/agent"
+              href="/join/apply"
               className="flex w-full items-center justify-center rounded-full bg-[#1B1B1B] px-8 py-4 font-sans text-base font-medium text-white"
             >
               Get Started →
