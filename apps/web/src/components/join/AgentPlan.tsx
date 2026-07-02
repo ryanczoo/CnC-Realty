@@ -45,7 +45,7 @@ export function AgentPlan() {
         <div className="flex-1 pt-6">
           <div className="sticky top-28">
             <h2 className="font-sans font-light leading-[1.0]">
-              <span className="block text-[2.5rem] xl:text-[3rem]">
+              <span className="block -ml-[4rem] text-[2.5rem] xl:-ml-[4.8rem] xl:text-[3rem]">
                 <RevealLine>For Agents,</RevealLine>
               </span>
               <span className="block text-[3.5rem] font-medium xl:text-[4.2rem]">

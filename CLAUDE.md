@@ -4922,8 +4922,8 @@ Applied the same set of changes to all three contact form surfaces:
    - **Join page** — review any remaining polish needed
    - **Dashboard** — review any remaining work
    - **Checklist templates** at `/admin/settings/checklists` (CA Purchase Buyer Side, CA Purchase Seller Side, CA Lease Tenant Side)
-   - **Phase 6 tasks** (`docs/superpowers/plans/2026-05-22-phase-6-launch.md`): ISR, skeleton loaders, sitemap, JSON-LD, rate limiting, Sentry, PostHog, deploy to Vercel + Railway
-   - **Phase 7 CRM Expansion** (required before launch): Smart Lists → Deal Pipeline → Lead Ponds → Action Plans → Trigger Automations → Reporting
+   - ~~Phase 6 tasks~~ ✅ Complete
+   - ~~Phase 7 CRM Expansion~~ ✅ Complete
 
 ---
 
@@ -4989,6 +4989,65 @@ className={`... text-[#1B1B1B] ${!icaOpened ? "cursor-not-allowed opacity-40" : 
    - Fill out form → click ICA button (opens `/join/ica`) → checkbox enables → submit
    - Check admin queue at `/admin/applications`
    - Approve → verify setup email sent → agent sets password → logs in
+4. Clean up test DB records (Test Applicant REJECTED, Jane Agent APPROVED) before launch
+5. Ryan to direct next area of work after testing
+
+---
+
+## Session: 2026-07-01 / 2026-07-02 — Join Page Polish, /join/ica Polish, ApplicationForm Overhaul
+
+**Branch:** `feature/agent-application-redesign`
+
+### What Was Done
+
+#### 1. AgentPlan.tsx — "For Agents, By Agents" heading alignment
+- Shifted "For Agents," left with `-ml-[4rem] xl:-ml-[4.8rem]` so "Agents," sits directly above "By" in the second row
+
+#### 2. /join/ica Page Polish
+- Widened container from `max-w-3xl` → `max-w-6xl`
+- Body text bumped from `text-sm` → `text-base`
+- Section headings bumped from `text-base` → `text-xl`
+- Title "Independent Contractor Agreement" — centered, `font-medium`, `text-3xl`
+- "CnC Realty Group" label above title — centered
+- Added `mt-14` spacing between title and intro paragraph
+- Filled in CnC DRE License No. `02439028` in the intro paragraph
+- **Fixed brokerage name throughout:** "CnC Realty Group" → "CnC Realty" (18 occurrences) — the brokerage is only called "CnC Realty"; "Group" only appears in the domain name
+
+#### 3. ApplicationForm.tsx — Major overhaul
+- Container widened: `max-w-2xl` → `max-w-4xl`
+- Title changed from "Apply to Join CnC Realty" → "Welcome to CnC Realty" using the same two-tone inline `RevealLine` pattern as "Exclusive Listings" on the homepage ("Welcome to" smaller at `text-[1.9rem]`, "CnC Realty" larger at `text-[2.5rem]` in gold `#9E8C61`)
+- Added `pt-32` top padding for breathing room below navbar
+- `* indicates required` moved to below the DOB field
+- Removed numbered section prefixes (`01 —`, `02 —`, etc.)
+- Section headings bumped to `text-xl`
+- All input fields changed from `bg-[#F2F0EF]` → `bg-white` for visibility
+- Phone field: auto-formats to `XXX-XXX-XXXX` as user types; placeholder removed
+- ZIP code: digits only, capped at 5 characters
+- DRE License #: digits only, capped at 8 characters; placeholder removed
+- Years Licensed: capped at 2 digits (max 99); placeholder "0" removed
+- DOB field: narrowed to one-third width (matches City field); grey text when empty, dark when filled
+- License Expiration Date: same grey/dark treatment as DOB
+- Email: format-validated on submit (`x@x.x` regex) — catches gibberish, setup email serves as real-world verification
+- "Broker Associate" → "Broker" for license type
+- "Former Brokerage" label → "Current or Most Recent Brokerage"; placeholder → "N/A if not applicable"
+- Commission entity buttons: switched from `grid-cols-2` to `flex flex-wrap gap-x-10` to eliminate excessive horizontal gap
+- **Removed entire "Specialties & Bio" section** — specialties had no connection to the agent dashboard or settings page; bio/Instagram/Facebook are already editable in agent Settings post-approval
+
+### Key Decisions
+
+1. **"CnC Realty" not "CnC Realty Group"** — the brokerage name is CnC Realty; "Group" only appears in the domain (cncrealtygroup.com). Fix everywhere it appears in UI copy.
+2. **Specialties removed from application** — were never wired to the agent dashboard. Agents manage bio/social links in their Settings page post-approval.
+3. **Email validation approach** — client-side format check only. The setup email sent on approval is the real-world verification; if the email is wrong the agent never receives the password link.
+4. **Railway DB proxy (kodama.proxy.rlwy.net:51294) was unreachable** — transient P1001 error, DB shows Online in Railway dashboard. Should resolve on its own; no action needed.
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. Open `localhost:3000`
+3. Test the full agent application flow end-to-end at `/join/apply`:
+   - Fill out form → click "Read the CnC ICA →" button (opens `/join/ica`) → checkbox enables → submit
+   - Check admin queue at `/admin/applications`
+   - Approve → verify setup email sent → agent sets password at `/setup-account` → logs in
 4. Clean up test DB records (Test Applicant REJECTED, Jane Agent APPROVED) before launch
 5. Ryan to direct next area of work after testing
 

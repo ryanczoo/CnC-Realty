@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Independent Contractor Agreement | CnC Realty Group",
-  description: "CnC Realty Group Independent Contractor Agreement for licensed real estate agents.",
+  title: "Independent Contractor Agreement | CnC Realty",
+  description: "CnC Realty Independent Contractor Agreement for licensed real estate agents.",
 };
 
 function Section({ num, title, children }: { num: string; title: string; children: React.ReactNode }) {
   return (
     <section className="mb-8">
-      <h2 className="mb-3 font-sans text-base font-semibold uppercase tracking-wide text-[#1B1B1B]">
+      <h2 className="mb-3 font-sans text-xl font-semibold uppercase tracking-wide text-[#1B1B1B]">
         {num}. {title}
       </h2>
-      <div className="space-y-3 font-sans text-sm leading-relaxed text-[#1B1B1B]/80">
+      <div className="space-y-3 font-sans text-base leading-relaxed text-[#1B1B1B]/80">
         {children}
       </div>
     </section>
@@ -97,7 +97,7 @@ function SummaryTable() {
 export default function IcaPage() {
   return (
     <main className="min-h-screen bg-[#F2F0EF]">
-      <div className="mx-auto max-w-3xl px-6 py-20">
+      <div className="mx-auto max-w-6xl px-6 py-20">
 
         {/* Draft banner */}
         <div className="mb-10 rounded-lg border border-[#9E8C61]/40 bg-[#9E8C61]/8 px-4 py-3 font-sans text-xs text-[#9E8C61]">
@@ -106,11 +106,11 @@ export default function IcaPage() {
 
         {/* Header */}
         <div className="mb-10 border-b border-[#1B1B1B]/15 pb-8">
-          <p className="mb-1 font-sans text-xs font-medium uppercase tracking-widest text-[#9E8C61]">CnC Realty Group</p>
-          <h1 className="font-sans text-3xl font-light text-[#1B1B1B]">Independent Contractor Agreement</h1>
-          <p className="mt-4 font-sans text-sm leading-relaxed text-[#1B1B1B]/60">
+          <p className="mb-1 text-center font-sans text-xs font-medium uppercase tracking-widest text-[#9E8C61]">CnC Realty</p>
+          <h1 className="text-center font-sans text-3xl font-medium text-[#1B1B1B]">Independent Contractor Agreement</h1>
+          <p className="mt-14 font-sans text-sm leading-relaxed text-[#1B1B1B]/60">
             This Independent Contractor Agreement (&ldquo;Agreement&rdquo;) is made between{" "}
-            <strong className="text-[#1B1B1B]">CnC Realty Group</strong> (DRE License No. ___________) (&ldquo;Broker&rdquo;), and{" "}
+            <strong className="text-[#1B1B1B]">CnC Realty</strong> (DRE License No. 02439028) (&ldquo;Broker&rdquo;), and{" "}
             <strong className="text-[#1B1B1B]">Associate-Licensee</strong>. In consideration of the covenants and representations contained in this Agreement, Broker and Associate-Licensee agree as follows:
           </p>
         </div>
@@ -126,7 +126,7 @@ export default function IcaPage() {
 
         <Section num="3" title="Broker and Associate-Licensee Relationship">
           <Sub id="3.1">Broker and Associate-Licensee are independent contracting parties. This Agreement does not constitute an employment agreement by either party, nor shall it be construed as a partnership. Broker shall not be liable for any obligation, injury, disability, or liability incurred by Associate-Licensee.</Sub>
-          <Sub id="3.2">Associate-Licensee agrees to follow the terms outlined in this Agreement, as well as CnC Realty Group&rsquo;s Office Policy Manual and Agent Resource materials published on the CnC Realty Group platform.</Sub>
+          <Sub id="3.2">Associate-Licensee agrees to follow the terms outlined in this Agreement, as well as CnC Realty&rsquo;s Office Policy Manual and Agent Resource materials published on the CnC Realty platform.</Sub>
           <Sub id="3.3">Associate-Licensee may solicit and obtain listings and sales of real estate for the mutual benefit of both parties. Associate-Licensee agrees to comply with all applicable laws, DRE regulations, and the ethical and professional standards of the California Association of REALTORS® and the National Association of REALTORS®. Associate-Licensee agrees to refrain from any act for which the Real Estate Commissioner of the State of California is authorized to suspend or revoke a real estate license.</Sub>
           <Sub id="3.4">Broker shall not limit Associate-Licensee&rsquo;s activities to geographical areas or the manner in which services are performed, except to the extent required by applicable laws, regulations, agreements, and procedures.</Sub>
           <Sub id="3.5">All lawful actions taken pursuant to this Agreement shall be taken in the name of Broker. Associate-Licensee agrees to contribute all rights and title to any listings to Broker for the benefit and use of Broker, Associate-Licensee, and other licensees of Broker. Associate-Licensee must provide Broker with a complete transaction file for each closing, including all required documentation per Broker&rsquo;s published checklists.</Sub>
@@ -176,21 +176,21 @@ export default function IcaPage() {
         </Section>
 
         <Section num="8" title="Optional CnC TC Service">
-          <Sub id="8.1">CnC Realty Group offers an optional Transaction Coordinator (&ldquo;TC&rdquo;) service for an additional fee of <strong>$350 per transaction</strong>, payable by the client through escrow at closing. This service is strongly recommended and includes document collection, deadline tracking, and compliance review by a licensed CnC TC coordinator.</Sub>
+          <Sub id="8.1">CnC Realty offers an optional Transaction Coordinator (&ldquo;TC&rdquo;) service for an additional fee of <strong>$350 per transaction</strong>, payable by the client through escrow at closing. This service is strongly recommended and includes document collection, deadline tracking, and compliance review by a licensed CnC TC coordinator.</Sub>
           <Sub id="8.2">Use of the CnC TC Service is voluntary. Associate-Licensee may use any licensed TC of their choosing, or may self-coordinate, provided all required documentation is submitted to Broker&rsquo;s platform within required timelines.</Sub>
           <Sub id="8.3">Broker reserves the right to require use of the CnC TC Service for any transaction in which Associate-Licensee has demonstrated a pattern of non-compliance with file submission deadlines or document requirements. In such cases, the $350 fee will be charged to the transaction regardless of client consent.</Sub>
           <Sub id="8.4">The CnC TC Service fee is separate from and in addition to the flat transaction fee described in Section 7.2.</Sub>
         </Section>
 
         <Section num="9" title="Errors &amp; Omissions Insurance">
-          <Sub id="9.1">Broker maintains an Errors &amp; Omissions (E&amp;O) insurance policy covering real estate transactions brokered through CnC Realty Group. Coverage limits are $1,000,000 per claim and $1,000,000 aggregate. The flat transaction fee described in Section 7.2 includes E&amp;O coverage for transactions with a sale or lease value up to and including $1,000,000. For transactions exceeding $1,000,000, the E&amp;O Supplement described in Section 7.2 covers the additional E&amp;O exposure — no further E&amp;O fee is charged beyond what is specified in the fee schedule.</Sub>
+          <Sub id="9.1">Broker maintains an Errors &amp; Omissions (E&amp;O) insurance policy covering real estate transactions brokered through CnC Realty. Coverage limits are $1,000,000 per claim and $1,000,000 aggregate. The flat transaction fee described in Section 7.2 includes E&amp;O coverage for transactions with a sale or lease value up to and including $1,000,000. For transactions exceeding $1,000,000, the E&amp;O Supplement described in Section 7.2 covers the additional E&amp;O exposure — no further E&amp;O fee is charged beyond what is specified in the fee schedule.</Sub>
           <Sub id="9.2">Associate-Licensee is responsible for any deductible that may be assessed against a claim arising from Associate-Licensee&rsquo;s transaction(s). Broker&rsquo;s E&amp;O policy does not cover: personal property transactions by Associate-Licensee (where Associate-Licensee is buying or selling their own property), prohibited activities listed in Section 6, or conduct found by a court or arbitration panel to constitute intentional fraud, misrepresentation, or gross negligence.</Sub>
           <Sub id="9.3">Associate-Licensee must receive written approval from Broker before filing any E&amp;O claim. Unauthorized claims will result in Associate-Licensee being solely responsible for the deductible.</Sub>
         </Section>
 
         <Section num="10" title="Transaction Management &amp; Activity Reporting">
           <Sub id="10.1">Associate-Licensee shall report all real estate activities to Broker within 48 hours of occurrence. Real estate activities include: listing agreements, newly opened escrows, accepted purchase agreements, cancelled or expired agreements, referral fee agreements, and any other business contract involving Associate-Licensee and a client.</Sub>
-          <Sub id="10.2">Proper reporting requires Associate-Licensee to open a new transaction record in CnC Realty Group&rsquo;s transaction management platform and upload all required documents per Broker&rsquo;s checklist. <strong>For dual agency transactions, Associate-Licensee must create two (2) separate transaction records — one for the listing/seller side and one for the buyer side.</strong></Sub>
+          <Sub id="10.2">Proper reporting requires Associate-Licensee to open a new transaction record in CnC Realty&rsquo;s transaction management platform and upload all required documents per Broker&rsquo;s checklist. <strong>For dual agency transactions, Associate-Licensee must create two (2) separate transaction records — one for the listing/seller side and one for the buyer side.</strong></Sub>
           <Sub id="10.3">Commission will not be released until Associate-Licensee has created a complete transaction record in the CnC platform and Broker has certified the file as complete. Closing a transaction without an open and certified transaction record is grounds for withholding of commission until the deficiency is corrected.</Sub>
         </Section>
 
@@ -199,7 +199,7 @@ export default function IcaPage() {
         </Section>
 
         <Section num="12" title="Trust Fund (Earnest Money) Handling">
-          <p>In accordance with the California Business and Professions Code and Commissioner&rsquo;s Regulations, trust funds received by Associate-Licensee must be placed into a neutral escrow depository (escrow or title company) or a trust account maintained by Broker, no later than three (3) business days after receipt. Associate-Licensee shall not accept earnest money deposits in Associate-Licensee&rsquo;s personal or business name, and shall not accept cash payments from clients. Associate-Licensee agrees to follow Broker&rsquo;s instructions regarding earnest money handling as published on the CnC Realty Group platform.</p>
+          <p>In accordance with the California Business and Professions Code and Commissioner&rsquo;s Regulations, trust funds received by Associate-Licensee must be placed into a neutral escrow depository (escrow or title company) or a trust account maintained by Broker, no later than three (3) business days after receipt. Associate-Licensee shall not accept earnest money deposits in Associate-Licensee&rsquo;s personal or business name, and shall not accept cash payments from clients. Associate-Licensee agrees to follow Broker&rsquo;s instructions regarding earnest money handling as published on the CnC Realty platform.</p>
         </Section>
 
         <Section num="13" title="Fictitious Business Names and Logos">
@@ -230,7 +230,7 @@ export default function IcaPage() {
         </Section>
 
         <Section num="19" title="Working Place">
-          <p>Broker does not provide office space for Associate-Licensee. Associate-Licensee may work from home, personal office, or any other location of Associate-Licensee&rsquo;s choice. Associate-Licensee must store all transaction documents securely and be able to present them to Broker within 24 hours of request. Associate-Licensee must be accessible by phone and email and maintain current contact information in the CnC Realty Group platform.</p>
+          <p>Broker does not provide office space for Associate-Licensee. Associate-Licensee may work from home, personal office, or any other location of Associate-Licensee&rsquo;s choice. Associate-Licensee must store all transaction documents securely and be able to present them to Broker within 24 hours of request. Associate-Licensee must be accessible by phone and email and maintain current contact information in the CnC Realty platform.</p>
         </Section>
 
         <Section num="20" title="Confidential Information and Non-Disclosure">
@@ -250,19 +250,19 @@ export default function IcaPage() {
         </Section>
 
         <Section num="24" title="Mentorship Program">
-          <Sub id="24.1">CnC Realty Group offers an optional Mentorship Program for Associate-Licensees with little or no transactional experience. Participation in the Mentorship Program requires a separate written Mentorship Agreement signed by the Associate-Licensee, the assigned Mentor, and Broker.</Sub>
+          <Sub id="24.1">CnC Realty offers an optional Mentorship Program for Associate-Licensees with little or no transactional experience. Participation in the Mentorship Program requires a separate written Mentorship Agreement signed by the Associate-Licensee, the assigned Mentor, and Broker.</Sub>
           <Sub id="24.2">Under the Mentorship Program, the commission split is <strong>70% to Associate-Licensee and 30% to the assigned Mentor</strong>. The flat transaction fee (Section 7.2) and the CnC TC Service fee (Section 8, if applicable) are deducted from the gross commission <strong>before</strong> the 70/30 split is applied.</Sub>
           <Sub id="24.3">The 70/30 mentorship split applies to <strong>both sides</strong> of any dual agency transaction. If Associate-Licensee represents both buyer and seller while enrolled in the Mentorship Program, the mentorship split applies to each side separately.</Sub>
           <Sub id="24.4">Upon successful completion of the Associate-Licensee&rsquo;s first closed transaction under the Mentorship Program, the Associate-Licensee will transition to 100% commission (less the applicable flat transaction fee) for all subsequent transactions, unless otherwise agreed in writing.</Sub>
         </Section>
 
         <Section num="25" title="Entire Agreement">
-          <p>This Agreement, together with CnC Realty Group&rsquo;s Office Policy Manual (incorporated herein by reference), constitutes the entire agreement of the parties regarding Associate-Licensee&rsquo;s affiliation with Broker. There are no other promises or conditions not set forth in writing herein. This Agreement supersedes all prior written or verbal agreements between the parties. This Agreement may be modified only by a written amendment signed by both parties. If any provision of this Agreement is held invalid or unenforceable, the remaining provisions shall remain valid and enforceable.</p>
+          <p>This Agreement, together with CnC Realty&rsquo;s Office Policy Manual (incorporated herein by reference), constitutes the entire agreement of the parties regarding Associate-Licensee&rsquo;s affiliation with Broker. There are no other promises or conditions not set forth in writing herein. This Agreement supersedes all prior written or verbal agreements between the parties. This Agreement may be modified only by a written amendment signed by both parties. If any provision of this Agreement is held invalid or unenforceable, the remaining provisions shall remain valid and enforceable.</p>
         </Section>
 
         <Section num="26" title="Associate-Licensee Agrees and Understands That">
           <ul className="ml-4 list-disc space-y-2 text-[#1B1B1B]/80">
-            <li>CnC Realty Group&rsquo;s Office Policy Manual contains important policies. Associate-Licensee is advised to read, understand, and follow all policies. Broker may update policies with or without prior notice.</li>
+            <li>CnC Realty&rsquo;s Office Policy Manual contains important policies. Associate-Licensee is advised to read, understand, and follow all policies. Broker may update policies with or without prior notice.</li>
             <li>Associate-Licensee agrees to all fees and charges set forth in this Agreement. The fee schedule in effect at the time a transaction is initiated applies to that transaction.</li>
             <li>Associate-Licensee&rsquo;s electronic or written signature below confirms that Associate-Licensee has read this Agreement and agrees to abide by its provisions.</li>
           </ul>
@@ -272,15 +272,15 @@ export default function IcaPage() {
         <div className="mb-10 border-t border-[#1B1B1B]/15 pt-8">
           <h2 className="mb-4 font-sans text-base font-semibold uppercase tracking-wide text-[#1B1B1B]">Acknowledgement and Signature</h2>
           <p className="mb-6 font-sans text-sm leading-relaxed text-[#1B1B1B]/80">
-            I, the undersigned Associate-Licensee, do hereby acknowledge that I have read CnC Realty Group&rsquo;s Independent Contractor Agreement and agree to abide by its provisions during my association with CnC Realty Group.
+            I, the undersigned Associate-Licensee, do hereby acknowledge that I have read CnC Realty&rsquo;s Independent Contractor Agreement and agree to abide by its provisions during my association with CnC Realty.
           </p>
           <div className="space-y-5 font-sans text-sm text-[#1B1B1B]/80">
             {[
               "Associate-Licensee Print Name",
               "Associate-Licensee DRE License #",
               "Associate-Licensee Signature / Date",
-              "CnC Realty Group Broker Print Name",
-              "CnC Realty Group Broker Signature / Date",
+              "CnC Realty Broker Print Name",
+              "CnC Realty Broker Signature / Date",
             ].map((label) => (
               <div key={label}>
                 <p className="mb-1 text-xs font-medium uppercase tracking-wide text-[#1B1B1B]/50">{label}</p>
@@ -296,13 +296,13 @@ export default function IcaPage() {
           <p className="mb-4 font-sans text-xs text-[#1B1B1B]/50">(Incorporated by reference)</p>
           <SummaryTable />
           <p className="mt-3 font-sans text-xs text-[#1B1B1B]/50">
-            CnC Realty Group reserves the right to update the Fee Schedule. The fee schedule in effect at the time a transaction is initiated applies to that transaction. Associate-Licensee will be notified of any fee changes via the CnC Realty Group platform.
+            CnC Realty reserves the right to update the Fee Schedule. The fee schedule in effect at the time a transaction is initiated applies to that transaction. Associate-Licensee will be notified of any fee changes via the CnC Realty platform.
           </p>
         </div>
 
         {/* Footer */}
         <div className="mt-10 border-t border-[#1B1B1B]/15 pt-6 font-sans text-xs text-[#1B1B1B]/40">
-          CnC Realty Group &middot; cncrealtygroup.com &middot; noreply@cncrealtygroup.com
+          CnC Realty &middot; cncrealtygroup.com &middot; noreply@cncrealtygroup.com
         </div>
 
       </div>

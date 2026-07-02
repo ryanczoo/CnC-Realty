@@ -2,19 +2,15 @@
 
 import { useState, useCallback } from "react";
 import { GoogleReCaptchaProvider, useGoogleReCaptcha } from "react-google-recaptcha-v3";
-
-const SPECIALTIES = [
-  "Residential","Commercial","Luxury","Investment",
-  "First-Time Buyers","Relocation","New Construction","Short Sales",
-] as const;
+import { RevealLine } from "@/components/ui/reveal-text";
 
 const inputClass =
-  "w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-4 py-3 text-sm text-[#1B1B1B] placeholder-[#1B1B1B]/40 focus:outline-none focus:ring-2 focus:ring-[#9E8C61]/40";
+  "w-full rounded-lg border border-[#1B1B1B]/10 bg-white px-4 py-3 text-sm text-[#1B1B1B] placeholder-[#1B1B1B]/40 focus:outline-none focus:ring-2 focus:ring-[#9E8C61]/40";
 const labelClass =
   "mb-1 block text-xs font-medium text-[#1B1B1B]/60 uppercase tracking-wide text-left";
 const sectionClass = "mb-10";
 const sectionHeadingClass =
-  "mb-6 font-sans text-base font-medium uppercase tracking-widest text-[#9E8C61]";
+  "mb-6 font-sans text-xl font-medium uppercase tracking-widest text-[#9E8C61]";
 
 type LicenseType = "SALESPERSON" | "BROKER_ASSOCIATE";
 type CommissionEntity = "PERSONAL" | "LLC" | "S_CORP" | "C_CORP";
@@ -44,10 +40,6 @@ interface FormState {
   hasInvestigationHistory: boolean | null;
   investigationExplain: string;
   backgroundCheckConsent: boolean;
-  specialties: string[];
-  bio: string;
-  instagramUrl: string;
-  facebookUrl: string;
   icaAgreed: boolean;
   drePerJuryCert: boolean;
 }
@@ -62,7 +54,6 @@ const INITIAL: FormState = {
   hasDisciplinaryHistory: null, disciplinaryExplain: "",
   hasInvestigationHistory: null, investigationExplain: "",
   backgroundCheckConsent: false,
-  specialties: [], bio: "", instagramUrl: "", facebookUrl: "",
   icaAgreed: false, drePerJuryCert: false,
 };
 
@@ -78,13 +69,15 @@ function FormInner() {
   const set = (field: keyof FormState, value: unknown) =>
     setForm((prev) => ({ ...prev, [field]: value }));
 
-  const toggleSpecialty = (s: string) =>
-    setForm((prev) => ({
-      ...prev,
-      specialties: prev.specialties.includes(s)
-        ? prev.specialties.filter((x) => x !== s)
-        : [...prev.specialties, s],
-    }));
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
+    const formatted =
+      digits.length <= 3 ? digits :
+      digits.length <= 6 ? `${digits.slice(0, 3)}-${digits.slice(3)}` :
+      `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+    set("phone", formatted);
+  };
+
 
   const handleIcaClick = () => {
     if (!icaOpened) {
@@ -100,6 +93,10 @@ function FormInner() {
     // Basic client-side validation
     if (!form.firstName || !form.lastName || !form.email || !form.phone) {
       setError("Please fill out all required personal information fields.");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      setError("Please enter a valid email address.");
       return;
     }
     if (!/^\d{8}$/.test(form.licenseNumber)) {
@@ -186,11 +183,13 @@ function FormInner() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-16">
-      <h1 className="mb-2 font-sans text-3xl font-light text-[#1B1B1B]">Apply to Join CnC Realty</h1>
-      <p className="mb-10 font-sans text-sm text-[#1B1B1B]/50">
-        All fields marked * are required.
-      </p>
+    <div className="mx-auto max-w-4xl px-4 pb-16 pt-32">
+      <h1 className="mb-20 text-center font-sans text-[2.5rem] font-light xl:text-[3rem]">
+        <RevealLine>
+          <span className="text-[1.9rem] xl:text-[2.2rem]">Welcome to </span>
+          <span className="font-medium text-[#9E8C61]">CnC Realty</span>
+        </RevealLine>
+      </h1>
 
       {error && (
         <div className="mb-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div>
@@ -198,7 +197,7 @@ function FormInner() {
 
       {/* ── Section 1: Personal Information ── */}
       <div className={sectionClass}>
-        <p className={sectionHeadingClass}>01 — Personal Information</p>
+        <p className={sectionHeadingClass}>Personal Information</p>
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className={labelClass}>First Name *</label>
@@ -216,7 +215,7 @@ function FormInner() {
           </div>
           <div>
             <label className={labelClass}>Cell Phone *</label>
-            <input className={inputClass} type="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="5551234567" />
+            <input className={inputClass} type="tel" value={form.phone} onChange={handlePhoneChange} />
           </div>
         </div>
         <div className="mt-4">
@@ -234,26 +233,29 @@ function FormInner() {
           </div>
           <div>
             <label className={labelClass}>ZIP Code *</label>
-            <input className={inputClass} value={form.zip} onChange={(e) => set("zip", e.target.value)} />
+            <input className={inputClass} value={form.zip} maxLength={5} onChange={(e) => set("zip", e.target.value.replace(/\D/g, "").slice(0, 5))} />
           </div>
         </div>
-        <div className="mt-4">
-          <label className={labelClass}>Date of Birth *</label>
-          <input className={inputClass} type="date" value={form.dateOfBirth} onChange={(e) => set("dateOfBirth", e.target.value)} />
+        <div className="mt-4 grid grid-cols-3 gap-4">
+          <div>
+            <label className={labelClass}>Date of Birth *</label>
+            <input className={inputClass} type="date" value={form.dateOfBirth} onChange={(e) => set("dateOfBirth", e.target.value)} style={{ color: form.dateOfBirth ? "#1B1B1B" : "rgba(27,27,27,0.4)" }} />
+          </div>
         </div>
+        <p className="mt-3 font-sans text-sm text-[#1B1B1B]/50">* indicates required</p>
       </div>
 
       {/* ── Section 2: License Information ── */}
       <div className={sectionClass}>
-        <p className={sectionHeadingClass}>02 — License Information</p>
+        <p className={sectionHeadingClass}>License Information</p>
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className={labelClass}>CA DRE License # *</label>
-            <input className={inputClass} value={form.licenseNumber} onChange={(e) => set("licenseNumber", e.target.value)} placeholder="01234567" />
+            <input className={inputClass} value={form.licenseNumber} maxLength={8} onChange={(e) => set("licenseNumber", e.target.value.replace(/\D/g, "").slice(0, 8))} />
           </div>
           <div>
             <label className={labelClass}>License Expiration Date *</label>
-            <input className={inputClass} type="date" value={form.licenseExpDate} onChange={(e) => set("licenseExpDate", e.target.value)} />
+            <input className={inputClass} type="date" value={form.licenseExpDate} onChange={(e) => set("licenseExpDate", e.target.value)} style={{ color: form.licenseExpDate ? "#1B1B1B" : "rgba(27,27,27,0.4)" }} />
           </div>
         </div>
         <div className="mt-4">
@@ -269,7 +271,7 @@ function FormInner() {
                   onChange={() => set("licenseType", t)}
                   className="accent-[#9E8C61]"
                 />
-                {t === "SALESPERSON" ? "Salesperson" : "Broker Associate"}
+                {t === "SALESPERSON" ? "Salesperson" : "Broker"}
               </label>
             ))}
           </div>
@@ -277,11 +279,11 @@ function FormInner() {
         <div className="mt-4 grid grid-cols-2 gap-4">
           <div>
             <label className={labelClass}>Years Licensed *</label>
-            <input className={inputClass} type="number" min={0} value={form.yearsLicensed} onChange={(e) => set("yearsLicensed", e.target.value)} placeholder="0" />
+            <input className={inputClass} type="number" min={0} max={99} value={form.yearsLicensed} onChange={(e) => set("yearsLicensed", e.target.value.slice(0, 2))} />
           </div>
           <div>
-            <label className={labelClass}>Former Brokerage *</label>
-            <input className={inputClass} value={form.formerBrokerage} onChange={(e) => set("formerBrokerage", e.target.value)} placeholder="Current or most recent brokerage" />
+            <label className={labelClass}>Current or Most Recent Brokerage *</label>
+            <input className={inputClass} value={form.formerBrokerage} onChange={(e) => set("formerBrokerage", e.target.value)} placeholder="N/A if not applicable" />
           </div>
         </div>
         <div className="mt-4 grid grid-cols-2 gap-4">
@@ -298,7 +300,7 @@ function FormInner() {
 
       {/* ── Section 3: Active Listings & Sales ── */}
       <div className={sectionClass}>
-        <p className={sectionHeadingClass}>03 — Active Listings & Sales</p>
+        <p className={sectionHeadingClass}>Active Listings & Sales</p>
         <p className="mb-4 font-sans text-sm text-[#1B1B1B]/50">
           If yes, your current broker will need to release them to CnC Realty.
         </p>
@@ -330,12 +332,12 @@ function FormInner() {
 
       {/* ── Section 4: Business & Tax ── */}
       <div className={sectionClass}>
-        <p className={sectionHeadingClass}>04 — Business & Tax Information</p>
+        <p className={sectionHeadingClass}>Business & Tax Information</p>
         <p className="mb-4 font-sans text-sm text-[#1B1B1B]/50">
           Required for W-9 purposes. A W-9 will be sent separately after approval.
         </p>
         <label className={labelClass}>Commission payments deposited to *</label>
-        <div className="mt-2 grid grid-cols-2 gap-3">
+        <div className="mt-2 flex flex-wrap gap-x-10 gap-y-2">
           {(
             [
               { value: "PERSONAL", label: "Personal Account" },
@@ -361,7 +363,7 @@ function FormInner() {
 
       {/* ── Section 5: Background & Disclosures ── */}
       <div className={sectionClass}>
-        <p className={sectionHeadingClass}>05 — Background & Disclosures</p>
+        <p className={sectionHeadingClass}>Background & Disclosures</p>
         <div className="mb-4">
           <label className={labelClass}>
             Have you ever been disciplined by any Local, State, or Federal entity? *
@@ -429,53 +431,9 @@ function FormInner() {
         </label>
       </div>
 
-      {/* ── Section 6: Specialties & Bio ── */}
+      {/* ── Section 6: ICA Review & Agreement ── */}
       <div className={sectionClass}>
-        <p className={sectionHeadingClass}>06 — Specialties & Bio (Optional)</p>
-        <div>
-          <label className={labelClass}>Specialties</label>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {SPECIALTIES.map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => toggleSpecialty(s)}
-                className={`rounded-full px-3 py-1.5 text-xs transition-colors ${
-                  form.specialties.includes(s)
-                    ? "bg-[#9E8C61] text-white"
-                    : "border border-[#1B1B1B]/15 bg-[#F2F0EF] text-[#1B1B1B]/70 hover:border-[#9E8C61]/50"
-                }`}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="mt-4">
-          <label className={labelClass}>Bio</label>
-          <textarea
-            className={`${inputClass} resize-none`}
-            rows={4}
-            placeholder="Tell clients a bit about yourself…"
-            value={form.bio}
-            onChange={(e) => set("bio", e.target.value)}
-          />
-        </div>
-        <div className="mt-4 grid grid-cols-2 gap-4">
-          <div>
-            <label className={labelClass}>Instagram URL</label>
-            <input className={inputClass} type="url" value={form.instagramUrl} onChange={(e) => set("instagramUrl", e.target.value)} placeholder="https://instagram.com/username" />
-          </div>
-          <div>
-            <label className={labelClass}>Facebook URL</label>
-            <input className={inputClass} type="url" value={form.facebookUrl} onChange={(e) => set("facebookUrl", e.target.value)} placeholder="https://facebook.com/username" />
-          </div>
-        </div>
-      </div>
-
-      {/* ── Section 7: ICA Review & Agreement ── */}
-      <div className={sectionClass}>
-        <p className={sectionHeadingClass}>07 — Independent Contractor Agreement</p>
+        <p className={sectionHeadingClass}>Independent Contractor Agreement</p>
         <p className="mb-4 font-sans text-sm text-[#1B1B1B]/50">
           Please read the CnC Realty ICA before agreeing below.
         </p>
@@ -509,7 +467,7 @@ function FormInner() {
 
       {/* ── Section 8: DRE Perjury Certification ── */}
       <div className={sectionClass}>
-        <p className={sectionHeadingClass}>08 — DRE Certification</p>
+        <p className={sectionHeadingClass}>DRE Certification</p>
         <label className="flex cursor-pointer items-start gap-3 font-sans text-sm text-[#1B1B1B]">
           <input
             type="checkbox"
