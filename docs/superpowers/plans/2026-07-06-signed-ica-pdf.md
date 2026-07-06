@@ -1339,7 +1339,9 @@ git commit -m "test: cover the phantom-space fix directly via tokenizeRichText"
 - Modify: `packages/database/prisma/schema.prisma`
 
 **Interfaces:**
-- Produces: `AgentApplication.signedName: String`, `AgentApplication.icaVersion: String`, `AgentApplication.signedIcaKey: String?`, `Agent.signedIcaKey: String?` — consumed by Tasks 7 and 9.
+- Produces: `AgentApplication.signedName: String?`, `AgentApplication.icaVersion: String?`, `AgentApplication.signedIcaKey: String?`, `Agent.signedIcaKey: String?` — consumed by Tasks 7 and 9.
+
+**Note (found before implementation, verified against the live Railway DB):** the plan originally called for `signedName`/`icaVersion` to be non-nullable, since every *new* application always generates a PDF before the row is created. But the `AgentApplication` table already has 4 pre-existing rows (legacy test applications from before this feature existed) and `Agent` has 3 — adding a required column to a table with existing rows makes `prisma migrate dev` either prompt interactively for a default (which would hang in a non-interactive context) or require a placeholder default value on real historical rows, which is worse than just making the columns nullable. All three new fields on `AgentApplication` are nullable at the DB level below; the application code (Task 7) still always populates them for every new submission, so this only affects the DB-level guarantee for those 4 legacy rows, not new behavior.
 
 - [ ] **Step 1: Edit the schema**
 
@@ -1350,8 +1352,8 @@ In `packages/database/prisma/schema.prisma`, add to the `AgentApplication` model
   icaOpenedAt  DateTime
   icaAgreedAt  DateTime
   submissionIp String
-  signedName   String
-  icaVersion   String
+  signedName   String?
+  icaVersion   String?
   signedIcaKey String?
 ```
 
