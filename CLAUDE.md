@@ -5092,6 +5092,42 @@ Ryan wants an automated email sent after he approves an agent application (separ
 
 ---
 
+## Session Notes — 2026-07-05 / 2026-07-06
+
+### What Was Completed
+
+Committed as `fd37ccc`, `069ae70`, `7a2eebf` on `main`.
+
+**`fd37ccc` — Membership association fields, typeable date inputs, drop background check consent** (the work left uncommitted at the end of the 2026-07-03 session — reviewed and approved):
+- Added Current/Desired Membership Association fields to the agent application (dropdown of CA associations + free-text fallback)
+- Made Current/Most Recent Brokerage optional
+- `DateField` component (see 2026-07-03 notes above) wired in for DOB (clamped 18–120 years) and License Expiration Date
+- Added ICA section 2.2 (perjury certification re: investigations)
+- Removed the background check consent requirement — not DRE-mandated, and the broker won't be performing one
+
+**`069ae70` — design spec doc** for the application-submitted page (planning doc only, no app code)
+
+**`7a2eebf` — Application-submitted page, reordered ICA section, branded emails:**
+- New page: `/join/apply/submitted` ("You're IN") — DRE eLicensing instructions + a `PageCTA` section; `PageCTA`'s `body` prop is now optional (this page doesn't use one)
+- `ApplicationForm.tsx`: State field hardcoded to CA (read-only, no more manual entry); ICA Review & Agreement section moved above Active Listings; the Legal/perjury checkbox merged into the Background section; "Welcome to CnC Realty" heading redone as a two-line staggered reveal; general spacing/copy polish
+- **Agent setup links no longer expire** — previously 72 hours; both `/api/setup-account` and the approve route now treat a `null` token expiry as "never expires"
+- **All system emails redesigned** with a shared branded layout — logo header + styled gold CTA button, via a new `emailLayout()` helper in `lib/email.ts`. Applies to: application-received notification, approval email, rejection email, deadline reminders, lead-assignment email. `FROM` now sends with a display name (e.g. "CnC Realty <noreply@cncrealtygroup.com>") instead of a bare address.
+- Fixed the deadline-reminder email's CTA link — was a hardcoded production domain, unusable when testing in local dev; now uses `NEXTAUTH_URL`
+- Removed the arrow from the `AgentPlan` "Get Started" button
+
+### Status Update — Agent Application Flow
+
+**Ryan has now tested the flow end-to-end** through admin approval — apply → ICA gate → submit → "You're IN" page → admin approve/reject → branded emails → setup-account → login all confirmed working. The one piece not yet built is the automated approval document email (see below).
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. **Decide the document packet** for the automated post-approval email — what fixed documents get attached and requested back from every newly-approved agent (W-9, onboarding paperwork, etc.)
+3. **Build the automated approval document email** — static attachments read from disk (e.g. `apps/web/src/lib/email/attachments/`) and sent via SendGrid using the new `emailLayout()` branded template; replies land directly in Ryan's inbox, no upload UI needed
+4. Older backlog, lower priority: checklist templates at `/admin/settings/checklists`; clean up test DB records (Test Applicant, Jane Agent) before launch
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`
