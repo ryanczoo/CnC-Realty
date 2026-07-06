@@ -62,7 +62,7 @@ function drawParagraph(w: Writer, text: string, opts: { bold?: boolean; indent?:
  * with no space (e.g. "$990" then ", inclusive...") must NOT get a phantom space inserted
  * at that run boundary, even though word-splitting elsewhere always implies a space.
  */
-function tokenizeRichText(text: RichText): { word: string; bold: boolean; spaceBefore: boolean }[] {
+export function tokenizeRichText(text: RichText): { word: string; bold: boolean; spaceBefore: boolean }[] {
   const runs = typeof text === "string" ? [text] : text;
   const tokens: { word: string; bold: boolean; spaceBefore: boolean }[] = [];
   let prevRunEndedWithSpace = true;
