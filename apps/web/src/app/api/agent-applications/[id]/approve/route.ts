@@ -20,9 +20,8 @@ export async function POST(
   const app = await prisma.agentApplication.findUnique({ where: { id: params.id } });
   if (!app) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  // Generate setup token (expires 72h)
+  // Generate setup token (does not expire)
   const setupToken = randomBytes(32).toString("hex");
-  const setupTokenExpiry = new Date(Date.now() + 72 * 60 * 60 * 1000);
 
   // Build slug from name — append random suffix to avoid collisions
   const baseSlug = `${app.firstName}-${app.lastName}`.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
@@ -54,7 +53,6 @@ export async function POST(
           password: tempPassword,
           role: "AGENT",
           setupToken,
-          setupTokenExpiry,
         },
       });
 

@@ -26,7 +26,7 @@ function CTAButton({ href, className, children }: { href: string; className: str
 
 interface PageCTAProps {
   heading: React.ReactNode;
-  body: string;
+  body?: string;
   primaryHref?: string;
   primaryLabel?: string;
   secondaryHref?: string;
@@ -55,10 +55,10 @@ export function PageCTA({
     <section data-navbar-theme="light" className="relative overflow-hidden bg-[#F2F0EF] px-8 py-28 lg:px-20">
       <CTALineArt />
       <div className="relative z-10 mx-auto max-w-3xl text-center">
-        <h2 className="mb-4 font-sans text-[2.5rem] font-light leading-tight">
+        <h2 className={`font-sans text-[2.5rem] font-light leading-tight ${body ? "mb-4" : "mb-10"}`}>
           <RevealLine>{heading}</RevealLine>
         </h2>
-        <p className="mb-10 font-sans text-base text-[#1B1B1B]/60">{body}</p>
+        {body && <p className="mb-10 font-sans text-base text-[#1B1B1B]/60">{body}</p>}
         <div className="flex justify-center gap-4">
           {primaryLabel && (
             primaryShowContactModal ? (

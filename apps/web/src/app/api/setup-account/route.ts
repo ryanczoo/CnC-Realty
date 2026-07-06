@@ -14,7 +14,7 @@ export async function POST(req: Request) {
     const { token, password } = schema.parse(body);
 
     const user = await prisma.user.findUnique({ where: { setupToken: token } });
-    if (!user || !user.setupTokenExpiry || user.setupTokenExpiry < new Date()) {
+    if (!user || (user.setupTokenExpiry && user.setupTokenExpiry < new Date())) {
       return NextResponse.json({ error: "This link has expired or is invalid. Please contact info@cncrealtygroup.com." }, { status: 400 });
     }
 

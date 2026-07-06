@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { GoogleReCaptchaProvider, useGoogleReCaptcha } from "react-google-recaptcha-v3";
 import { ChevronDown } from "lucide-react";
@@ -80,8 +81,8 @@ function FormInner() {
   const [icaOpenedAt, setIcaOpenedAt] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
   const { executeRecaptcha } = useGoogleReCaptcha();
+  const router = useRouter();
 
   const set = (field: keyof FormState, value: unknown) =>
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -180,33 +181,28 @@ function FormInner() {
         setError(data.error ?? "Something went wrong. Please try again.");
         return;
       }
-      setSuccess(true);
+      router.push("/join/apply/submitted");
     } catch {
       setError("Network error. Please try again.");
     } finally {
       setSubmitting(false);
     }
-  }, [form, icaOpened, icaOpenedAt, executeRecaptcha]);
-
-  if (success) {
-    return (
-      <div className="py-16 text-center">
-        <p className="font-sans text-2xl font-light text-[#1B1B1B]">Application submitted!</p>
-        <p className="mt-3 font-sans text-sm text-[#1B1B1B]/60">
-          We&apos;ll review your application and be in touch within 24 hours.
-        </p>
-      </div>
-    );
-  }
+  }, [form, icaOpened, icaOpenedAt, executeRecaptcha, router]);
 
   return (
     <div className="mx-auto max-w-4xl px-4 pt-32">
-      <h1 className="mb-20 text-center font-sans text-[2.5rem] font-light xl:text-[3rem]">
-        <RevealLine>
-          <span className="text-[1.9rem] xl:text-[2.2rem]">Welcome to </span>
-          <span className="font-medium text-[#9E8C61]">CnC Realty</span>
-        </RevealLine>
-      </h1>
+      <div className="mb-20 flex justify-center">
+        <h1 className="font-sans font-light leading-[1.05]">
+          <span className="block text-[1.9rem] xl:text-[2.2rem] text-[#1B1B1B]">
+            <RevealLine delay={0}>Welcome to</RevealLine>
+          </span>
+          <span className="ml-[8.1rem] block text-[3rem] xl:ml-[9.6rem] xl:text-[3.6rem]">
+            <RevealLine delay={0.15}>
+              <span className="font-medium text-[#9E8C61]">CnC Realty</span>
+            </RevealLine>
+          </span>
+        </h1>
+      </div>
 
       {error && (
         <div className="mb-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div>
@@ -246,7 +242,12 @@ function FormInner() {
           </div>
           <div>
             <label className={labelClass}>State *</label>
-            <input className={inputClass} value={form.state} onChange={(e) => set("state", e.target.value)} />
+            <input
+              className={`${inputClass} cursor-not-allowed bg-[#1B1B1B]/5 text-[#1B1B1B]/60`}
+              value="CA"
+              disabled
+              readOnly
+            />
           </div>
           <div>
             <label className={labelClass}>ZIP Code *</label>
@@ -288,7 +289,7 @@ function FormInner() {
             ))}
           </div>
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-4">
+        <div className="mt-8 grid grid-cols-2 gap-4">
           <div>
             <label className={labelClass}>CA DRE License # *</label>
             <input className={inputClass} value={form.licenseNumber} maxLength={8} onChange={(e) => set("licenseNumber", e.target.value.replace(/\D/g, "").slice(0, 8))} />
@@ -341,130 +342,7 @@ function FormInner() {
         </div>
       </div>
 
-      {/* ── Section 3: Active Listings & Sales ── */}
-      <div className={sectionClass}>
-        <p className={sectionHeadingClass}>Active Listings & Sales</p>
-        {(
-          [
-            { field: "hasActiveListings", label: "Do you have active listings to transfer? *" },
-            { field: "hasActiveSales", label: "Do you have pending sales to transfer? *" },
-          ] as const
-        ).map(({ field, label }) => (
-          <div key={field} className="mb-4">
-            <label className={labelClass}>{label}</label>
-            <div className="mt-2 flex gap-6">
-              {([true, false] as const).map((val) => (
-                <label key={String(val)} className="flex cursor-pointer items-center gap-2 font-sans text-sm text-[#1B1B1B]">
-                  <input
-                    type="radio"
-                    name={field}
-                    checked={form[field] === val}
-                    onChange={() => set(field, val)}
-                    className="accent-[#9E8C61]"
-                  />
-                  {val ? "Yes" : "No"}
-                </label>
-              ))}
-            </div>
-            {form[field] === true && (
-              <p className="mt-2 font-sans text-sm text-[#1B1B1B]/50">
-                Please request your current brokerage to release active listings to CnC Realty after submission
-              </p>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* ── Section 4: Business & Tax ── */}
-      <div className={sectionClass}>
-        <p className={sectionHeadingClass}>Business & Tax Information</p>
-        <label className={labelClass}>Where is your commission deposited to (For W-9 purposes)? *</label>
-        <div className="mt-2 flex flex-wrap gap-x-10 gap-y-2">
-          {(
-            [
-              { value: "PERSONAL", label: "Personal Account" },
-              { value: "LLC", label: "LLC" },
-              { value: "S_CORP", label: "S Corporation" },
-              { value: "C_CORP", label: "C Corporation" },
-            ] as { value: CommissionEntity; label: string }[]
-          ).map(({ value, label }) => (
-            <label key={value} className="flex cursor-pointer items-center gap-2 font-sans text-sm text-[#1B1B1B]">
-              <input
-                type="radio"
-                name="commissionEntity"
-                value={value}
-                checked={form.commissionEntity === value}
-                onChange={() => set("commissionEntity", value)}
-                className="accent-[#9E8C61]"
-              />
-              {label}
-            </label>
-          ))}
-        </div>
-      </div>
-
-      {/* ── Section 5: Background & Disclosures ── */}
-      <div className={sectionClass}>
-        <p className={sectionHeadingClass}>Background & Disclosures</p>
-        <div className="mb-4">
-          <label className={labelClass}>
-            Have you ever been disciplined by any Local, State, or Federal entity? *
-          </label>
-          <div className="mt-2 flex gap-6">
-            {([true, false] as const).map((val) => (
-              <label key={String(val)} className="flex cursor-pointer items-center gap-2 font-sans text-sm text-[#1B1B1B]">
-                <input
-                  type="radio"
-                  name="hasDisciplinaryHistory"
-                  checked={form.hasDisciplinaryHistory === val}
-                  onChange={() => set("hasDisciplinaryHistory", val)}
-                  className="accent-[#9E8C61]"
-                />
-                {val ? "Yes" : "No"}
-              </label>
-            ))}
-          </div>
-          {form.hasDisciplinaryHistory === true && (
-            <textarea
-              className={`${inputClass} mt-3 resize-none`}
-              rows={3}
-              placeholder="Please explain..."
-              value={form.disciplinaryExplain}
-              onChange={(e) => set("disciplinaryExplain", e.target.value)}
-            />
-          )}
-        </div>
-        <div className="mb-4">
-          <label className={labelClass}>
-            Are you currently under investigation or prosecution by the DRE or any government agency? *
-          </label>
-          <div className="mt-2 flex gap-6">
-            {([true, false] as const).map((val) => (
-              <label key={String(val)} className="flex cursor-pointer items-center gap-2 font-sans text-sm text-[#1B1B1B]">
-                <input
-                  type="radio"
-                  name="hasInvestigationHistory"
-                  checked={form.hasInvestigationHistory === val}
-                  onChange={() => set("hasInvestigationHistory", val)}
-                  className="accent-[#9E8C61]"
-                />
-                {val ? "Yes" : "No"}
-              </label>
-            ))}
-          </div>
-          {form.hasInvestigationHistory === true && (
-            <textarea
-              className={`${inputClass} mt-3 resize-none`}
-              rows={3}
-              placeholder="Please explain..."
-              value={form.investigationExplain}
-              onChange={(e) => set("investigationExplain", e.target.value)}
-            />
-          )}
-        </div>
-      </div>
-
-      {/* ── Section 6: ICA Review & Agreement ── */}
+      {/* ── Section 3: ICA Review & Agreement ── */}
       <div className={sectionClass}>
         <p className={sectionHeadingClass}>Independent Contractor Agreement</p>
         <p className="mb-4 font-sans text-sm text-[#1B1B1B]/50">
@@ -501,10 +379,128 @@ function FormInner() {
         </label>
       </div>
 
-      {/* ── Section 8: DRE Perjury Certification ── */}
+      {/* ── Section 4: Active Listings & Sales ── */}
       <div className={sectionClass}>
-        <p className={sectionHeadingClass}>Legal</p>
-        <label className="flex cursor-pointer items-start gap-3 font-sans text-sm text-[#1B1B1B]">
+        <p className={sectionHeadingClass}>Active Listings & Sales</p>
+        {(
+          [
+            { field: "hasActiveListings", label: "Do you have active listings to transfer? *" },
+            { field: "hasActiveSales", label: "Do you have pending sales to transfer? *" },
+          ] as const
+        ).map(({ field, label }) => (
+          <div key={field} className="mb-4">
+            <label className={labelClass}>{label}</label>
+            <div className="mt-2 flex gap-6">
+              {([true, false] as const).map((val) => (
+                <label key={String(val)} className="flex cursor-pointer items-center gap-2 font-sans text-sm text-[#1B1B1B]">
+                  <input
+                    type="radio"
+                    name={field}
+                    checked={form[field] === val}
+                    onChange={() => set(field, val)}
+                    className="accent-[#9E8C61]"
+                  />
+                  {val ? "Yes" : "No"}
+                </label>
+              ))}
+            </div>
+            {form[field] === true && (
+              <p className="mt-2 font-sans text-sm text-[#1B1B1B]/50">
+                Please request your current brokerage to release active listings to CnC Realty after submission
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* ── Section 5: Business & Tax ── */}
+      <div className={sectionClass}>
+        <p className={sectionHeadingClass}>Business & Tax Information</p>
+        <label className={labelClass}>Where is your commission deposited to (For W-9 purposes)? *</label>
+        <div className="mt-2 flex flex-wrap gap-x-10 gap-y-2">
+          {(
+            [
+              { value: "PERSONAL", label: "Personal Account" },
+              { value: "LLC", label: "LLC" },
+              { value: "S_CORP", label: "S Corporation" },
+              { value: "C_CORP", label: "C Corporation" },
+            ] as { value: CommissionEntity; label: string }[]
+          ).map(({ value, label }) => (
+            <label key={value} className="flex cursor-pointer items-center gap-2 font-sans text-sm text-[#1B1B1B]">
+              <input
+                type="radio"
+                name="commissionEntity"
+                value={value}
+                checked={form.commissionEntity === value}
+                onChange={() => set("commissionEntity", value)}
+                className="accent-[#9E8C61]"
+              />
+              {label}
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Section 6: Background ── */}
+      <div className={sectionClass}>
+        <p className={sectionHeadingClass}>Background</p>
+        <div className="mb-4">
+          <label className={labelClass}>
+            Have you ever been disciplined by any Local, State, or Federal entity? *
+          </label>
+          <div className="mt-2 flex gap-6">
+            {([true, false] as const).map((val) => (
+              <label key={String(val)} className="flex cursor-pointer items-center gap-2 font-sans text-sm text-[#1B1B1B]">
+                <input
+                  type="radio"
+                  name="hasDisciplinaryHistory"
+                  checked={form.hasDisciplinaryHistory === val}
+                  onChange={() => set("hasDisciplinaryHistory", val)}
+                  className="accent-[#9E8C61]"
+                />
+                {val ? "Yes" : "No"}
+              </label>
+            ))}
+          </div>
+          {form.hasDisciplinaryHistory === true && (
+            <textarea
+              className={`${inputClass} mt-3 resize-none`}
+              rows={3}
+              placeholder="Please explain..."
+              value={form.disciplinaryExplain}
+              onChange={(e) => set("disciplinaryExplain", e.target.value)}
+            />
+          )}
+        </div>
+        <div className="mb-8">
+          <label className={labelClass}>
+            Are you currently under investigation or prosecution by the DRE or any government agency? *
+          </label>
+          <div className="mt-2 flex gap-6">
+            {([true, false] as const).map((val) => (
+              <label key={String(val)} className="flex cursor-pointer items-center gap-2 font-sans text-sm text-[#1B1B1B]">
+                <input
+                  type="radio"
+                  name="hasInvestigationHistory"
+                  checked={form.hasInvestigationHistory === val}
+                  onChange={() => set("hasInvestigationHistory", val)}
+                  className="accent-[#9E8C61]"
+                />
+                {val ? "Yes" : "No"}
+              </label>
+            ))}
+          </div>
+          {form.hasInvestigationHistory === true && (
+            <textarea
+              className={`${inputClass} mt-3 resize-none`}
+              rows={3}
+              placeholder="Please explain..."
+              value={form.investigationExplain}
+              onChange={(e) => set("investigationExplain", e.target.value)}
+            />
+          )}
+        </div>
+        <label className="flex cursor-pointer items-start gap-3 font-sans text-sm text-[#1B1B1B]/60">
           <input
             type="checkbox"
             checked={form.drePerJuryCert}

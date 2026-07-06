@@ -52,6 +52,7 @@ export function Navbar() {
     pathname !== "/terms" &&
     pathname !== "/fair-housing" &&
     pathname !== "/join/apply" &&
+    pathname !== "/join/apply/submitted" &&
     pathname !== "/join/ica" &&
     pathname !== "/setup-account";
   const [scrolled, setScrolled] = useState(false);

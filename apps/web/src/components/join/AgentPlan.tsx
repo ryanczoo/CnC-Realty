@@ -95,7 +95,7 @@ export function AgentPlan() {
               href="/join/apply"
               className="flex w-full items-center justify-center rounded-full bg-[#1B1B1B] px-8 py-4 font-sans text-base font-medium text-white"
             >
-              Get Started →
+              Get Started
             </Link>
           </motion.div>
 
