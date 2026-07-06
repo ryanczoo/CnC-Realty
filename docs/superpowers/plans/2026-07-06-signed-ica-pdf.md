@@ -1102,7 +1102,7 @@ function drawParagraph(w: Writer, text: string, opts: { bold?: boolean; indent?:
  * with no space (e.g. "$990" then ", inclusive...") must NOT get a phantom space inserted
  * at that run boundary, even though word-splitting elsewhere always implies a space.
  */
-function tokenizeRichText(text: RichText): { word: string; bold: boolean; spaceBefore: boolean }[] {
+export function tokenizeRichText(text: RichText): { word: string; bold: boolean; spaceBefore: boolean }[] {
   const runs = typeof text === "string" ? [text] : text;
   const tokens: { word: string; bold: boolean; spaceBefore: boolean }[] = [];
   let prevRunEndedWithSpace = true;
@@ -1272,6 +1272,63 @@ Expected: PASS (1 test) — generation may take a second or two, that's expected
 ```bash
 git add apps/web/src/lib/ica-pdf.ts apps/web/src/__tests__/lib/ica-pdf.test.ts
 git commit -m "feat: generate signed ICA PDF via pdf-lib"
+```
+
+---
+
+### Task 5C: Direct unit test coverage for the phantom-space fix
+
+**Files:**
+- Modify: `apps/web/src/lib/ica-pdf.ts` (export `tokenizeRichText` — already applied above in the amended Task 5 code)
+- Modify: `apps/web/src/__tests__/lib/ica-pdf.test.ts`
+
+**Why:** The Task 5 reviewer found that the only committed test checks PDF structural validity (magic bytes, page count), which would NOT catch a regression of the phantom-space bug fixed in Task 5B (a stray space doesn't change page count or PDF validity). Since `tokenizeRichText` is a pure function, it's directly and cheaply testable without needing to parse rendered PDF bytes.
+
+- [ ] **Step 1: Add the test**
+
+Append to `apps/web/src/__tests__/lib/ica-pdf.test.ts`:
+
+```ts
+import { tokenizeRichText } from "@/lib/ica-pdf";
+
+describe("tokenizeRichText", () => {
+  it("does not insert a space when a bold run abuts punctuation with no whitespace", () => {
+    const tokens = tokenizeRichText(["is ", { bold: "$990" }, ", inclusive"]);
+    const dollarToken = tokens.find((t) => t.word === "$990")!;
+    const commaToken = tokens.find((t) => t.word === ",")!;
+    expect(dollarToken.bold).toBe(true);
+    expect(dollarToken.spaceBefore).toBe(true); // "is " ends with a space
+    expect(commaToken.bold).toBe(false);
+    expect(commaToken.spaceBefore).toBe(false); // "$990" has no trailing space, "," has no leading space
+  });
+
+  it("does not insert a space between a bold run and an immediately-following period", () => {
+    const tokens = tokenizeRichText([
+      "made between ",
+      { bold: "Associate-Licensee" },
+      ". In consideration",
+    ]);
+    const periodToken = tokens.find((t) => t.word === ".")!;
+    expect(periodToken.spaceBefore).toBe(false);
+  });
+
+  it("still spaces normal words within a single run", () => {
+    const tokens = tokenizeRichText("plain text with several words");
+    expect(tokens.every((t, i) => (i === 0 ? true : t.spaceBefore))).toBe(true);
+  });
+});
+```
+
+- [ ] **Step 2: Run the test**
+
+Run: `pnpm --filter web exec vitest run src/__tests__/lib/ica-pdf.test.ts`
+Expected: PASS (4 tests — the original PDF-validity test plus these 3 new ones)
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add apps/web/src/lib/ica-pdf.ts apps/web/src/__tests__/lib/ica-pdf.test.ts
+git commit -m "test: cover the phantom-space fix directly via tokenizeRichText"
 ```
 
 ---
