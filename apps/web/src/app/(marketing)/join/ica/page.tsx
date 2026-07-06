@@ -121,7 +121,8 @@ export default function IcaPage() {
         </Section>
 
         <Section num="2" title="Associate-Licensee">
-          <p>Associate-Licensee represents that he or she is duly licensed by the State of California as a real estate broker or salesperson (DRE License No. ___________). Associate-Licensee shall keep all applicable license(s), continuing education, and provisional license requirements current during the term of this Agreement. Associate-Licensee shall notify Broker immediately of any change to, suspension of, or revocation of their license.</p>
+          <Sub id="2.1">Associate-Licensee represents that he or she is duly licensed by the State of California as a real estate broker or salesperson (DRE License No. ___________). Associate-Licensee shall keep all applicable license(s), continuing education, and provisional license requirements current during the term of this Agreement. Associate-Licensee shall notify Broker immediately of any change to, suspension of, or revocation of their license.</Sub>
+          <Sub id="2.2">Associate-Licensee certifies under penalty of perjury that, as of the date of this Agreement, Associate-Licensee is not under investigation or prosecution by the DRE, the State of California, any Realtor Association, MLS service, or any other government entity for acts including but not limited to complaints, ethics violations, fraud, misconduct, or misrepresentation, and that all information provided to Broker in connection with Associate-Licensee&rsquo;s application and this Agreement is true and correct.</Sub>
         </Section>
 
         <Section num="3" title="Broker and Associate-Licensee Relationship">

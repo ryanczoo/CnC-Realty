@@ -9,11 +9,12 @@ type ApplicationDetail = {
   address: string; city: string; state: string; zip: string; dateOfBirth: string;
   licenseNumber: string; licenseType: string; licenseExpDate: string;
   yearsLicensed: number; formerBrokerage: string; boardOfRealtors: string | null;
+  desiredMembershipAssociation: string | null;
   mlsId: string | null; hasActiveListings: boolean; hasActiveSales: boolean;
   commissionEntity: string;
   hasDisciplinaryHistory: boolean; disciplinaryExplain: string | null;
   hasInvestigationHistory: boolean; investigationExplain: string | null;
-  backgroundCheckConsent: boolean; drePerJuryCert: boolean;
+  drePerJuryCert: boolean;
   specialties: string[]; bio: string | null;
   icaOpenedAt: string; icaAgreedAt: string; submissionIp: string;
   reviewedBy: string | null; reviewedAt: string | null; rejectionReason: string | null;
@@ -27,7 +28,7 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex gap-4 py-2 border-b border-[#1B1B1B]/5">
       <span className="w-48 shrink-0 text-xs font-medium uppercase tracking-wide text-[#1B1B1B]/40">{label}</span>
-      <span className="text-sm text-[#1B1B1B]/80">{value ?? "—"}</span>
+      <span className="text-sm text-[#1B1B1B]/80">{value === null || value === "" ? "—" : value}</span>
     </div>
   );
 }
@@ -100,6 +101,7 @@ export default function ApplicationDetailPage() {
         <Row label="Years Licensed" value={app.yearsLicensed} />
         <Row label="Former Brokerage" value={app.formerBrokerage} />
         <Row label="Board of Realtors" value={app.boardOfRealtors} />
+        <Row label="Desired Membership Association" value={app.desiredMembershipAssociation} />
         <Row label="MLS ID" value={app.mlsId} />
 
         <p className="mb-3 mt-6 text-xs font-medium uppercase tracking-wide text-[#9E8C61]">Transfers</p>
@@ -112,7 +114,6 @@ export default function ApplicationDetailPage() {
         <p className="mb-3 mt-6 text-xs font-medium uppercase tracking-wide text-[#9E8C61]">Background</p>
         <Row label="Disciplinary History" value={app.hasDisciplinaryHistory ? `Yes — ${app.disciplinaryExplain}` : "No"} />
         <Row label="DRE Investigation" value={app.hasInvestigationHistory ? `Yes — ${app.investigationExplain}` : "No"} />
-        <Row label="Background Check Consent" value={app.backgroundCheckConsent ? "Yes" : "No"} />
         <Row label="DRE Perjury Cert" value={app.drePerJuryCert ? "Certified" : "No"} />
 
         <p className="mb-3 mt-6 text-xs font-medium uppercase tracking-wide text-[#9E8C61]">ICA Audit Trail</p>

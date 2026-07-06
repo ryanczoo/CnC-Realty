@@ -1,11 +1,25 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { motion } from "motion/react";
 import { GoogleReCaptchaProvider, useGoogleReCaptcha } from "react-google-recaptcha-v3";
+import { ChevronDown } from "lucide-react";
 import { RevealLine } from "@/components/ui/reveal-text";
+import { DateField } from "@/components/ui/DateField";
+import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
 
 const inputClass =
   "w-full rounded-lg border border-[#1B1B1B]/10 bg-white px-4 py-3 text-sm text-[#1B1B1B] placeholder-[#1B1B1B]/40 focus:outline-none focus:ring-2 focus:ring-[#9E8C61]/40";
+const MEMBER_ASSOCIATIONS = [
+  "Arcadia", "Burbank", "Citrus Valley", "Coastal Mendocino", "Greater Downey", "Fresno",
+  "Glendale", "High Desert", "Inglewood", "Inland Valleys", "Joshua Tree Gateway", "Laguna",
+  "Lake County", "Mariposa County", "Merced County", "Montebello District", "Newport Beach",
+  "North San Diego County", "North San Luis Obispo County", "Orange County", "Oroville",
+  "Pacific Southwest", "Pacific West", "Palos Verdes Peninsula", "Paradise", "Pasadena-Foothills",
+  "Pismo Coast", "Rancho Southeast", "San Luis Obispo Coastal", "Sierra North Valley", "South Bay",
+  "Southland Regional", "Southwest Riverside County", "California Desert Inland Gateway",
+  "Tri-Counties", "Ventura County Coastal", "West San Gabriel Valley",
+] as const;
 const labelClass =
   "mb-1 block text-xs font-medium text-[#1B1B1B]/60 uppercase tracking-wide text-left";
 const sectionClass = "mb-10";
@@ -31,6 +45,7 @@ interface FormState {
   yearsLicensed: string;
   formerBrokerage: string;
   boardOfRealtors: string;
+  desiredMembershipAssociation: string;
   mlsId: string;
   hasActiveListings: boolean | null;
   hasActiveSales: boolean | null;
@@ -39,7 +54,6 @@ interface FormState {
   disciplinaryExplain: string;
   hasInvestigationHistory: boolean | null;
   investigationExplain: string;
-  backgroundCheckConsent: boolean;
   icaAgreed: boolean;
   drePerJuryCert: boolean;
 }
@@ -48,14 +62,17 @@ const INITIAL: FormState = {
   firstName: "", lastName: "", email: "", phone: "",
   address: "", city: "", state: "CA", zip: "", dateOfBirth: "",
   licenseNumber: "", licenseType: "", licenseExpDate: "", yearsLicensed: "",
-  formerBrokerage: "", boardOfRealtors: "", mlsId: "",
+  formerBrokerage: "", boardOfRealtors: "", desiredMembershipAssociation: "", mlsId: "",
   hasActiveListings: null, hasActiveSales: null,
   commissionEntity: "",
   hasDisciplinaryHistory: null, disciplinaryExplain: "",
   hasInvestigationHistory: null, investigationExplain: "",
-  backgroundCheckConsent: false,
   icaAgreed: false, drePerJuryCert: false,
 };
+
+const CURRENT_YEAR = new Date().getFullYear();
+const DOB_MIN_YEAR = CURRENT_YEAR - 120;
+const DOB_MAX_YEAR = CURRENT_YEAR - 18;
 
 function FormInner() {
   const [form, setForm] = useState<FormState>(INITIAL);
@@ -103,8 +120,12 @@ function FormInner() {
       setError("CA DRE License Number must be exactly 8 digits.");
       return;
     }
-    if (!form.licenseType || !form.licenseExpDate || !form.yearsLicensed || !form.formerBrokerage) {
+    if (!form.licenseType || !form.licenseExpDate || !form.yearsLicensed) {
       setError("Please fill out all required license information fields.");
+      return;
+    }
+    if (!form.boardOfRealtors) {
+      setError("Please select your Current Membership Association.");
       return;
     }
     if (form.hasActiveListings === null || form.hasActiveSales === null) {
@@ -117,10 +138,6 @@ function FormInner() {
     }
     if (form.hasDisciplinaryHistory === null || form.hasInvestigationHistory === null) {
       setError("Please answer all background disclosure questions.");
-      return;
-    }
-    if (!form.backgroundCheckConsent) {
-      setError("Background check consent is required.");
       return;
     }
     if (!icaOpened) {
@@ -183,7 +200,7 @@ function FormInner() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 pb-16 pt-32">
+    <div className="mx-auto max-w-4xl px-4 pt-32">
       <h1 className="mb-20 text-center font-sans text-[2.5rem] font-light xl:text-[3rem]">
         <RevealLine>
           <span className="text-[1.9rem] xl:text-[2.2rem]">Welcome to </span>
@@ -239,7 +256,12 @@ function FormInner() {
         <div className="mt-4 grid grid-cols-3 gap-4">
           <div>
             <label className={labelClass}>Date of Birth *</label>
-            <input className={inputClass} type="date" value={form.dateOfBirth} onChange={(e) => set("dateOfBirth", e.target.value)} style={{ color: form.dateOfBirth ? "#1B1B1B" : "rgba(27,27,27,0.4)" }} />
+            <DateField
+              value={form.dateOfBirth}
+              onChange={(v) => set("dateOfBirth", v)}
+              minYear={DOB_MIN_YEAR}
+              maxYear={DOB_MAX_YEAR}
+            />
           </div>
         </div>
         <p className="mt-3 font-sans text-sm text-[#1B1B1B]/50">* indicates required</p>
@@ -248,17 +270,7 @@ function FormInner() {
       {/* ── Section 2: License Information ── */}
       <div className={sectionClass}>
         <p className={sectionHeadingClass}>License Information</p>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className={labelClass}>CA DRE License # *</label>
-            <input className={inputClass} value={form.licenseNumber} maxLength={8} onChange={(e) => set("licenseNumber", e.target.value.replace(/\D/g, "").slice(0, 8))} />
-          </div>
-          <div>
-            <label className={labelClass}>License Expiration Date *</label>
-            <input className={inputClass} type="date" value={form.licenseExpDate} onChange={(e) => set("licenseExpDate", e.target.value)} style={{ color: form.licenseExpDate ? "#1B1B1B" : "rgba(27,27,27,0.4)" }} />
-          </div>
-        </div>
-        <div className="mt-4">
+        <div>
           <label className={labelClass}>License Type *</label>
           <div className="mt-2 flex gap-6">
             {(["SALESPERSON", "BROKER_ASSOCIATE"] as LicenseType[]).map((t) => (
@@ -278,32 +290,60 @@ function FormInner() {
         </div>
         <div className="mt-4 grid grid-cols-2 gap-4">
           <div>
-            <label className={labelClass}>Years Licensed *</label>
-            <input className={inputClass} type="number" min={0} max={99} value={form.yearsLicensed} onChange={(e) => set("yearsLicensed", e.target.value.slice(0, 2))} />
+            <label className={labelClass}>CA DRE License # *</label>
+            <input className={inputClass} value={form.licenseNumber} maxLength={8} onChange={(e) => set("licenseNumber", e.target.value.replace(/\D/g, "").slice(0, 8))} />
           </div>
           <div>
-            <label className={labelClass}>Current or Most Recent Brokerage *</label>
-            <input className={inputClass} value={form.formerBrokerage} onChange={(e) => set("formerBrokerage", e.target.value)} placeholder="N/A if not applicable" />
+            <label className={labelClass}>License Expiration Date *</label>
+            <DateField value={form.licenseExpDate} onChange={(v) => set("licenseExpDate", v)} />
           </div>
         </div>
         <div className="mt-4 grid grid-cols-2 gap-4">
           <div>
-            <label className={labelClass}>Board of Realtors</label>
-            <input className={inputClass} value={form.boardOfRealtors} onChange={(e) => set("boardOfRealtors", e.target.value)} placeholder="Optional" />
+            <label className={labelClass}>Years Licensed *</label>
+            <input className={inputClass} type="number" min={0} max={99} value={form.yearsLicensed} onChange={(e) => set("yearsLicensed", e.target.value.slice(0, 2))} />
+          </div>
+          <div>
+            <label className={labelClass}>Current/Most Recent Brokerage (if applicable)</label>
+            <input className={inputClass} value={form.formerBrokerage} onChange={(e) => set("formerBrokerage", e.target.value)} />
+          </div>
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-4">
+          <div>
+            <label className={labelClass}>Current Membership Association *</label>
+            <div className="relative">
+              <select
+                className={`${inputClass} appearance-none pr-10`}
+                value={form.boardOfRealtors}
+                onChange={(e) => set("boardOfRealtors", e.target.value)}
+                style={{ color: form.boardOfRealtors ? "#1B1B1B" : "rgba(27,27,27,0.4)" }}
+              >
+                <option value="" hidden></option>
+                <option value="None" style={{ color: "rgba(27,27,27,0.6)" }}>None</option>
+                {MEMBER_ASSOCIATIONS.map((a) => (
+                  <option key={a} value={a} style={{ color: "rgba(27,27,27,0.6)" }}>{a}</option>
+                ))}
+              </select>
+              <ChevronDown
+                size={16}
+                className="pointer-events-none absolute right-6 top-1/2 -translate-y-1/2 text-[#1B1B1B]/40"
+              />
+            </div>
           </div>
           <div>
             <label className={labelClass}>MLS ID</label>
-            <input className={inputClass} value={form.mlsId} onChange={(e) => set("mlsId", e.target.value)} placeholder="Optional" />
+            <input className={inputClass} value={form.mlsId} onChange={(e) => set("mlsId", e.target.value)} />
           </div>
+        </div>
+        <div className="mt-4">
+          <label className={labelClass}>Desired Membership Association if not listed</label>
+          <input className={inputClass} value={form.desiredMembershipAssociation} onChange={(e) => set("desiredMembershipAssociation", e.target.value)} />
         </div>
       </div>
 
       {/* ── Section 3: Active Listings & Sales ── */}
       <div className={sectionClass}>
         <p className={sectionHeadingClass}>Active Listings & Sales</p>
-        <p className="mb-4 font-sans text-sm text-[#1B1B1B]/50">
-          If yes, your current broker will need to release them to CnC Realty.
-        </p>
         {(
           [
             { field: "hasActiveListings", label: "Do you have active listings to transfer? *" },
@@ -326,6 +366,11 @@ function FormInner() {
                 </label>
               ))}
             </div>
+            {form[field] === true && (
+              <p className="mt-2 font-sans text-sm text-[#1B1B1B]/50">
+                Please request your current brokerage to release active listings to CnC Realty after submission
+              </p>
+            )}
           </div>
         ))}
       </div>
@@ -333,10 +378,7 @@ function FormInner() {
       {/* ── Section 4: Business & Tax ── */}
       <div className={sectionClass}>
         <p className={sectionHeadingClass}>Business & Tax Information</p>
-        <p className="mb-4 font-sans text-sm text-[#1B1B1B]/50">
-          Required for W-9 purposes. A W-9 will be sent separately after approval.
-        </p>
-        <label className={labelClass}>Commission payments deposited to *</label>
+        <label className={labelClass}>Where is your commission deposited to (For W-9 purposes)? *</label>
         <div className="mt-2 flex flex-wrap gap-x-10 gap-y-2">
           {(
             [
@@ -420,15 +462,6 @@ function FormInner() {
             />
           )}
         </div>
-        <label className="flex cursor-pointer items-start gap-3 font-sans text-sm text-[#1B1B1B]">
-          <input
-            type="checkbox"
-            checked={form.backgroundCheckConsent}
-            onChange={(e) => set("backgroundCheckConsent", e.target.checked)}
-            className="mt-0.5 accent-[#9E8C61]"
-          />
-          I consent to CnC Realty performing a background check before or after onboarding. *
-        </label>
       </div>
 
       {/* ── Section 6: ICA Review & Agreement ── */}
@@ -437,13 +470,16 @@ function FormInner() {
         <p className="mb-4 font-sans text-sm text-[#1B1B1B]/50">
           Please read the CnC Realty ICA before agreeing below.
         </p>
-        <button
+        <motion.button
           type="button"
           onClick={handleIcaClick}
+          animate={PULSE_ANIMATE}
+          transition={PULSE_TRANSITION}
+          whileHover={{ scale: 1.02, transition: SPRING_HOVER }}
           className="mb-4 inline-flex items-center gap-1 rounded-full border border-[#9E8C61] px-5 py-2.5 font-sans text-sm font-medium text-[#9E8C61] transition-colors hover:bg-[#9E8C61]/5"
         >
-          Read the CnC Realty ICA →
-        </button>
+          CnC Realty ICA
+        </motion.button>
         {icaOpened && (
           <p className="mb-3 font-sans text-xs text-[#1B1B1B]/40">
             Opened at {new Date(icaOpenedAt!).toLocaleTimeString()}
@@ -467,7 +503,7 @@ function FormInner() {
 
       {/* ── Section 8: DRE Perjury Certification ── */}
       <div className={sectionClass}>
-        <p className={sectionHeadingClass}>DRE Certification</p>
+        <p className={sectionHeadingClass}>Legal</p>
         <label className="flex cursor-pointer items-start gap-3 font-sans text-sm text-[#1B1B1B]">
           <input
             type="checkbox"
@@ -489,15 +525,18 @@ function FormInner() {
         {error && (
           <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div>
         )}
-        <button
+        <motion.button
           type="button"
           onClick={handleSubmit}
           disabled={submitting}
-          className="w-full rounded-full bg-[#1B1B1B] py-4 font-sans text-sm font-medium text-white transition-colors hover:bg-[#1B1B1B]/85 disabled:opacity-60"
+          animate={PULSE_ANIMATE}
+          transition={PULSE_TRANSITION}
+          whileHover={{ scale: 1.02, transition: SPRING_HOVER }}
+          className="mx-auto block rounded-full bg-[#1B1B1B] px-16 py-4 font-sans text-sm font-medium text-white transition-colors hover:bg-[#1B1B1B]/85 disabled:opacity-60"
         >
           {submitting ? "Submitting…" : "Submit Application"}
-        </button>
-        <p className="mt-3 text-center font-sans text-xs text-[#1B1B1B]/40">
+        </motion.button>
+        <p className="mt-16 text-center font-sans text-xs text-[#1B1B1B]/40">
           This site is protected by reCAPTCHA.
         </p>
       </div>

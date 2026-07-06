@@ -949,6 +949,7 @@ model AgentApplication {
   yearsLicensed   Int
   formerBrokerage String
   boardOfRealtors String?
+  desiredMembershipAssociation String?
   mlsId           String?
 
   // Transfer
@@ -963,7 +964,6 @@ model AgentApplication {
   disciplinaryExplain     String?
   hasInvestigationHistory Boolean
   investigationExplain    String?
-  backgroundCheckConsent  Boolean
   drePerJuryCert          Boolean
 
   // Profile (carries over to Agent on approval)

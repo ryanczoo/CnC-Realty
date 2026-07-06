@@ -5053,6 +5053,45 @@ className={`... text-[#1B1B1B] ${!icaOpened ? "cursor-not-allowed opacity-40" : 
 
 ---
 
+## Session Notes — 2026-07-03
+
+Ryan's computer died mid-session with the previous day's work (Membership Association fields, ICA section 2.2) uncommitted. Verified on resume: migration was already applied to the Railway DB, new test passed, no new TypeScript errors — nothing was lost. **Still uncommitted at end of this session** — Ryan wanted to review in-browser before committing.
+
+### DateField — Typeable Date Inputs (uncommitted)
+
+**New file:** `apps/web/src/components/ui/DateField.tsx`
+
+Native `<input type="date">` (esp. iOS Safari's wheel-only picker) made entering a birthdate painful. Built a reusable segmented MM/DD/YYYY text component:
+- Three separate segment inputs, auto-advances focus forward as each segment completes; Backspace on an empty segment moves focus back
+- Month clamps 1–12, Day clamps 1–31 (clamped once 2 digits are entered)
+- Year: optional `minYear`/`maxYear` props, clamped on blur once 4 digits are entered; no bounds if omitted
+- Calendar icon button still opens a hidden native `<input type="date">` via `.showPicker()`/`.click()` — so the native picker remains available for anyone who prefers it
+- `apps/web/src/components/join/ApplicationForm.tsx` uses it for both fields:
+  - Date of Birth: `minYear`/`maxYear` computed as `today − 120` / `today − 18` (18 is CA's minimum age to hold a real estate license)
+  - License Expiration Date: no min/max — it's a future date, not an age check
+
+### Automated Approval Document Email — Discussed, Not Yet Built
+
+Ryan wants an automated email sent after he approves an agent application (separate from or alongside the existing `sendApplicationApproved` account-setup email in `apps/web/src/lib/email.ts`) that:
+- Attaches a fixed packet of documents (same for every agent — W-9, onboarding docs, etc.)
+- Requests documents back from the agent — replies land in Ryan's inbox directly, no upload UI needed on our side
+- Text stays identical for every send except the agent's first name
+
+**Decision:** static attachment files will live in the repo (e.g. `apps/web/src/lib/email/attachments/`) and get read off disk + attached via SendGrid at send time — not Cloudflare R2. Reasoning: the packet rarely changes, and Ryan is fine asking me to swap a file and redeploy on the rare occasion it does, so the simpler option (no upload UI, no new infra) wins.
+
+**Not started — do NOT build until Ryan says go.** He wants to finish testing the full application flow first, then revisit this.
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. Open `localhost:3000`
+3. Ryan reviews the DateField change on `/join/apply`, compares fields against competitor applications, then approves
+4. Commit the Membership Association + DateField work once approved (nothing committed yet as of end of this session)
+5. Test the full agent application flow end-to-end (see 2026-07-01/07-02 session notes above for steps)
+6. **After the flow is fully tested:** build the automated approval document email (see decision above)
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`

@@ -41,7 +41,6 @@ const VALID_BODY = {
   disciplinaryExplain: '',
   hasInvestigationHistory: false,
   investigationExplain: '',
-  backgroundCheckConsent: true,
   drePerJuryCert: true,
   specialties: ['Residential'],
   bio: '',
@@ -75,18 +74,6 @@ describe('POST /api/agent-applications', () => {
     expect(res.status).toBe(400);
   });
 
-  it('returns 400 if backgroundCheckConsent is false', async () => {
-    const req = new Request('http://localhost/api/agent-applications', {
-      method: 'POST',
-      body: JSON.stringify({ ...VALID_BODY, backgroundCheckConsent: false }),
-      headers: { 'Content-Type': 'application/json' },
-    });
-    const res = await POST(req);
-    expect(res.status).toBe(400);
-    const body = await res.json();
-    expect(body.error).toContain("consent required");
-  });
-
   it('returns 400 if drePerJuryCert is false', async () => {
     const req = new Request('http://localhost/api/agent-applications', {
       method: 'POST',
@@ -97,6 +84,24 @@ describe('POST /api/agent-applications', () => {
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error).toContain("certification required");
+  });
+
+  it('persists desiredMembershipAssociation when provided', async () => {
+    vi.mocked(prisma.agentApplication.create).mockResolvedValue({ id: 'app-2' } as any);
+    const req = new Request('http://localhost/api/agent-applications', {
+      method: 'POST',
+      body: JSON.stringify({ ...VALID_BODY, boardOfRealtors: 'Undecided', desiredMembershipAssociation: 'Ventura Coastal Association of REALTORS' }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(201);
+    expect(prisma.agentApplication.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          desiredMembershipAssociation: 'Ventura Coastal Association of REALTORS',
+        }),
+      })
+    );
   });
 
   it('creates application and returns 201 for valid submission', async () => {
