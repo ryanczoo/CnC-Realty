@@ -1,11 +1,21 @@
 
 // apps/web/src/lib/ica-content.ts
 
+/** A run of text that's either plain or bold — lets a sentence mix both. */
+export type TextRun = string | { bold: string };
+/** Most paragraphs are a plain string; a few need inline bold spans mid-sentence. */
+export type RichText = string | TextRun[];
+
+export function richTextToPlain(text: RichText): string {
+  if (typeof text === "string") return text;
+  return text.map((run) => (typeof run === "string" ? run : run.bold)).join("");
+}
+
 export type IcaParagraph =
-  | { type: "p"; text: string }
+  | { type: "p"; text: RichText }
   | { type: "p-bold"; text: string }
-  | { type: "sub"; id: string; boldLead?: string; text: string }
-  | { type: "list"; items: string[] }
+  | { type: "sub"; id: string; boldLead?: string; text: RichText }
+  | { type: "list"; items: string[]; spacing?: "tight" | "loose" }
   | { type: "table"; headers: string[]; rows: string[][] };
 
 export type IcaSection = {
@@ -17,8 +27,13 @@ export type IcaSection = {
 /** Bump this (YYYY-MM-DD) any time the sections/tables below change. */
 export const ICA_VERSION = "2026-07-06";
 
-export const ICA_INTRO =
-  "This Independent Contractor Agreement (“Agreement”) is made between CnC Realty (DRE License No. 02439028) (“Broker”), and Associate-Licensee. In consideration of the covenants and representations contained in this Agreement, Broker and Associate-Licensee agree as follows:";
+export const ICA_INTRO: RichText = [
+  "This Independent Contractor Agreement (“Agreement”) is made between ",
+  { bold: "CnC Realty" },
+  " (DRE License No. 02439028) (“Broker”), and ",
+  { bold: "Associate-Licensee" },
+  ". In consideration of the covenants and representations contained in this Agreement, Broker and Associate-Licensee agree as follows:",
+];
 
 const FEE_TABLE: IcaParagraph = {
   type: "table",
@@ -96,7 +111,11 @@ export const ICA_SECTIONS: IcaSection[] = [
     num: "7", title: "Compensation / Broker Fees",
     content: [
       { type: "sub", id: "7.1", boldLead: "Compensation Structure.", text: "Compensation shall be charged to the parties who enter into listing or buyer agreements for services requiring a real estate license. Associate-Licensee may use its own discretion regarding the commission fee to charge its clients, subject to the minimum fee described below. Broker’s fee shall be deducted at closing before disbursement to Associate-Licensee." },
-      { type: "sub", id: "7.2", boldLead: "Flat Transaction Fee.", text: "Broker’s flat fee per closed transaction is $990, inclusive of Errors & Omissions (E&O) insurance coverage as described in Section 9 for sale or lease values up to and including $1,000,000. For transactions exceeding $1,000,000, an E&O Supplement is added to the base fee." },
+      { type: "sub", id: "7.2", boldLead: "Flat Transaction Fee.", text: [
+        "Broker’s flat fee per closed transaction is ",
+        { bold: "$990" },
+        ", inclusive of Errors & Omissions (E&O) insurance coverage as described in Section 9 for sale or lease values up to and including $1,000,000. For transactions exceeding $1,000,000, an E&O Supplement is added to the base fee.",
+      ] },
       { type: "p-bold", text: "E&O Supplement: $200 per $500,000 (or fraction thereof) of sale or lease price over $1,000,000." },
       FEE_TABLE,
       { type: "p", text: "No monthly fee is charged." },
@@ -113,7 +132,11 @@ export const ICA_SECTIONS: IcaSection[] = [
   {
     num: "8", title: "Optional CnC TC Service",
     content: [
-      { type: "sub", id: "8.1", text: "CnC Realty offers an optional Transaction Coordinator (“TC”) service for an additional fee of $350 per transaction, payable by the client through escrow at closing. This service is strongly recommended and includes document collection, deadline tracking, and compliance review by a licensed CnC TC coordinator." },
+      { type: "sub", id: "8.1", text: [
+        "CnC Realty offers an optional Transaction Coordinator (“TC”) service for an additional fee of ",
+        { bold: "$350 per transaction" },
+        ", payable by the client through escrow at closing. This service is strongly recommended and includes document collection, deadline tracking, and compliance review by a licensed CnC TC coordinator.",
+      ] },
       { type: "sub", id: "8.2", text: "Use of the CnC TC Service is voluntary. Associate-Licensee may use any licensed TC of their choosing, or may self-coordinate, provided all required documentation is submitted to Broker’s platform within required timelines." },
       { type: "sub", id: "8.3", text: "Broker reserves the right to require use of the CnC TC Service for any transaction in which Associate-Licensee has demonstrated a pattern of non-compliance with file submission deadlines or document requirements. In such cases, the $350 fee will be charged to the transaction regardless of client consent." },
       { type: "sub", id: "8.4", text: "The CnC TC Service fee is separate from and in addition to the flat transaction fee described in Section 7.2." },
@@ -131,7 +154,10 @@ export const ICA_SECTIONS: IcaSection[] = [
     num: "10", title: "Transaction Management & Activity Reporting",
     content: [
       { type: "sub", id: "10.1", text: "Associate-Licensee shall report all real estate activities to Broker within 48 hours of occurrence. Real estate activities include: listing agreements, newly opened escrows, accepted purchase agreements, cancelled or expired agreements, referral fee agreements, and any other business contract involving Associate-Licensee and a client." },
-      { type: "sub", id: "10.2", text: "Proper reporting requires Associate-Licensee to open a new transaction record in CnC Realty’s transaction management platform and upload all required documents per Broker’s checklist. For dual agency transactions, Associate-Licensee must create two (2) separate transaction records — one for the listing/seller side and one for the buyer side." },
+      { type: "sub", id: "10.2", text: [
+        "Proper reporting requires Associate-Licensee to open a new transaction record in CnC Realty’s transaction management platform and upload all required documents per Broker’s checklist. ",
+        { bold: "For dual agency transactions, Associate-Licensee must create two (2) separate transaction records — one for the listing/seller side and one for the buyer side." },
+      ] },
       { type: "sub", id: "10.3", text: "Commission will not be released until Associate-Licensee has created a complete transaction record in the CnC platform and Broker has certified the file as complete. Closing a transaction without an open and certified transaction record is grounds for withholding of commission until the deficiency is corrected." },
     ],
   },
@@ -220,8 +246,18 @@ export const ICA_SECTIONS: IcaSection[] = [
     num: "24", title: "Mentorship Program",
     content: [
       { type: "sub", id: "24.1", text: "CnC Realty offers an optional Mentorship Program for Associate-Licensees with little or no transactional experience. Participation in the Mentorship Program requires a separate written Mentorship Agreement signed by the Associate-Licensee, the assigned Mentor, and Broker." },
-      { type: "sub", id: "24.2", text: "Under the Mentorship Program, the commission split is 70% to Associate-Licensee and 30% to the assigned Mentor. The flat transaction fee (Section 7.2) and the CnC TC Service fee (Section 8, if applicable) are deducted from the gross commission before the 70/30 split is applied." },
-      { type: "sub", id: "24.3", text: "The 70/30 mentorship split applies to both sides of any dual agency transaction. If Associate-Licensee represents both buyer and seller while enrolled in the Mentorship Program, the mentorship split applies to each side separately." },
+      { type: "sub", id: "24.2", text: [
+        "Under the Mentorship Program, the commission split is ",
+        { bold: "70% to Associate-Licensee and 30% to the assigned Mentor" },
+        ". The flat transaction fee (Section 7.2) and the CnC TC Service fee (Section 8, if applicable) are deducted from the gross commission ",
+        { bold: "before" },
+        " the 70/30 split is applied.",
+      ] },
+      { type: "sub", id: "24.3", text: [
+        "The 70/30 mentorship split applies to ",
+        { bold: "both sides" },
+        " of any dual agency transaction. If Associate-Licensee represents both buyer and seller while enrolled in the Mentorship Program, the mentorship split applies to each side separately.",
+      ] },
       { type: "sub", id: "24.4", text: "Upon successful completion of the Associate-Licensee’s first closed transaction under the Mentorship Program, the Associate-Licensee will transition to 100% commission (less the applicable flat transaction fee) for all subsequent transactions, unless otherwise agreed in writing." },
     ],
   },
@@ -234,7 +270,7 @@ export const ICA_SECTIONS: IcaSection[] = [
   {
     num: "26", title: "Associate-Licensee Agrees and Understands That",
     content: [
-      { type: "list", items: [
+      { type: "list", spacing: "loose", items: [
         "CnC Realty’s Office Policy Manual contains important policies. Associate-Licensee is advised to read, understand, and follow all policies. Broker may update policies with or without prior notice.",
         "Associate-Licensee agrees to all fees and charges set forth in this Agreement. The fee schedule in effect at the time a transaction is initiated applies to that transaction.",
         "Associate-Licensee’s electronic or written signature below confirms that Associate-Licensee has read this Agreement and agrees to abide by its provisions.",

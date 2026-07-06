@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { ICA_VERSION, ICA_INTRO, ICA_SECTIONS, SIGNATURE_LABELS, SUMMARY_TABLE } from "@/lib/ica-content";
+import { ICA_VERSION, ICA_INTRO, ICA_SECTIONS, SIGNATURE_LABELS, SUMMARY_TABLE, richTextToPlain } from "@/lib/ica-content";
 
 describe("ica-content", () => {
   it("has a version string in YYYY-MM-DD format", () => {
@@ -7,7 +7,7 @@ describe("ica-content", () => {
   });
 
   it("has a non-empty intro paragraph", () => {
-    expect(ICA_INTRO.length).toBeGreaterThan(20);
+    expect(richTextToPlain(ICA_INTRO).length).toBeGreaterThan(20);
   });
 
   it("has exactly 26 numbered sections in order 1..26", () => {
@@ -33,5 +33,12 @@ describe("ica-content", () => {
   it("has a 2-column summary table with 10 rows", () => {
     expect(SUMMARY_TABLE.headers).toHaveLength(2);
     expect(SUMMARY_TABLE.rows).toHaveLength(10);
+  });
+
+  it("supports inline bold spans mid-sentence", () => {
+    const section7 = ICA_SECTIONS.find((s) => s.num === "7")!;
+    const item72 = section7.content.find((c) => c.type === "sub" && c.id === "7.2") as { text: unknown };
+    expect(Array.isArray(item72.text)).toBe(true);
+    expect(richTextToPlain(item72.text as Parameters<typeof richTextToPlain>[0])).toContain("$990");
   });
 });
