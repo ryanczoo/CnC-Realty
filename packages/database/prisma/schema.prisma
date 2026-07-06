@@ -295,6 +295,7 @@ model Agent {
   listingsClosed   Int      @default(0)
   volumeClosed     Float    @default(0)
   propertiesRented Int      @default(0)
+  signedIcaKey     String?
   createdAt        DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -976,6 +977,9 @@ model AgentApplication {
   icaOpenedAt  DateTime
   icaAgreedAt  DateTime
   submissionIp String
+  signedName   String?
+  icaVersion   String?
+  signedIcaKey String?
 
   // Admin review
   reviewedBy      String?
