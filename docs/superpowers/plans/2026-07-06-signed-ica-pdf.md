@@ -557,6 +557,368 @@ git commit -m "refactor: render /join/ica from the canonical content module"
 
 ---
 
+### Task 3B: Fix Task 3 review findings — inline bold, list spacing, table weight
+
+**Files:**
+- Modify: `apps/web/src/lib/ica-content.ts` (already committed in Task 2)
+- Modify: `apps/web/src/__tests__/lib/ica-content.test.ts` (already committed in Task 2)
+- Modify: `apps/web/src/app/(marketing)/join/ica/page.tsx` (already committed in Task 3)
+
+**Interfaces:**
+- Produces: `RichText` type and `richTextToPlain()` helper exported from `@/lib/ica-content` — consumed by Task 5's PDF generator (already amended above to expect this).
+
+**Why:** The Task 3 task-reviewer found that the original hardcoded JSX had `<strong>` bold spans *inside* several sentences (e.g. "$990" mid-sentence in Section 7.2, a whole bolded sentence in 10.2), which the Task 2 data model couldn't represent (it only supported one bold *label* at the very start of a sub-item, via `boldLead`). It also found two smaller regressions: Section 26's bullet list lost its extra spacing, and the Fee Schedule Summary table's "Amount" column became bold when the original was a lighter weight. Ryan reviewed this and asked to fix all three properly rather than skip them.
+
+- [ ] **Step 1: Add the `RichText` type and helper to `ica-content.ts`**
+
+Add near the top of `apps/web/src/lib/ica-content.ts`, right before the `IcaParagraph` type:
+
+```ts
+/** A run of text that's either plain or bold — lets a sentence mix both. */
+export type TextRun = string | { bold: string };
+/** Most paragraphs are a plain string; a few need inline bold spans mid-sentence. */
+export type RichText = string | TextRun[];
+
+export function richTextToPlain(text: RichText): string {
+  if (typeof text === "string") return text;
+  return text.map((run) => (typeof run === "string" ? run : run.bold)).join("");
+}
+```
+
+- [ ] **Step 2: Widen `IcaParagraph`'s `text` fields to `RichText`, add list spacing**
+
+Change the `IcaParagraph` type definition:
+
+```ts
+export type IcaParagraph =
+  | { type: "p"; text: RichText }
+  | { type: "p-bold"; text: string }
+  | { type: "sub"; id: string; boldLead?: string; text: RichText }
+  | { type: "list"; items: string[]; spacing?: "tight" | "loose" }
+  | { type: "table"; headers: string[]; rows: string[][] };
+```
+
+(Every existing entry with `text: "some plain string"` stays valid unchanged, since `RichText` includes `string`. Only the specific entries below need to change shape.)
+
+- [ ] **Step 3: Change `ICA_INTRO` to a `RichText` array**
+
+Replace:
+
+```ts
+export const ICA_INTRO =
+  "This Independent Contractor Agreement (“Agreement”) is made between CnC Realty (DRE License No. 02439028) (“Broker”), and Associate-Licensee. In consideration of the covenants and representations contained in this Agreement, Broker and Associate-Licensee agree as follows:";
+```
+
+With:
+
+```ts
+export const ICA_INTRO: RichText = [
+  "This Independent Contractor Agreement (“Agreement”) is made between ",
+  { bold: "CnC Realty" },
+  " (DRE License No. 02439028) (“Broker”), and ",
+  { bold: "Associate-Licensee" },
+  ". In consideration of the covenants and representations contained in this Agreement, Broker and Associate-Licensee agree as follows:",
+];
+```
+
+- [ ] **Step 4: Restore inline bold on the 5 affected sub-items**
+
+In the Section 7 entry, replace the `7.2` sub-item:
+
+```ts
+      { type: "sub", id: "7.2", boldLead: "Flat Transaction Fee.", text: "Broker’s flat fee per closed transaction is $990, inclusive of Errors & Omissions (E&O) insurance coverage as described in Section 9 for sale or lease values up to and including $1,000,000. For transactions exceeding $1,000,000, an E&O Supplement is added to the base fee." },
+```
+
+With:
+
+```ts
+      { type: "sub", id: "7.2", boldLead: "Flat Transaction Fee.", text: [
+        "Broker’s flat fee per closed transaction is ",
+        { bold: "$990" },
+        ", inclusive of Errors & Omissions (E&O) insurance coverage as described in Section 9 for sale or lease values up to and including $1,000,000. For transactions exceeding $1,000,000, an E&O Supplement is added to the base fee.",
+      ] },
+```
+
+In the Section 8 entry, replace the `8.1` sub-item:
+
+```ts
+      { type: "sub", id: "8.1", text: "CnC Realty offers an optional Transaction Coordinator (“TC”) service for an additional fee of $350 per transaction, payable by the client through escrow at closing. This service is strongly recommended and includes document collection, deadline tracking, and compliance review by a licensed CnC TC coordinator." },
+```
+
+With:
+
+```ts
+      { type: "sub", id: "8.1", text: [
+        "CnC Realty offers an optional Transaction Coordinator (“TC”) service for an additional fee of ",
+        { bold: "$350 per transaction" },
+        ", payable by the client through escrow at closing. This service is strongly recommended and includes document collection, deadline tracking, and compliance review by a licensed CnC TC coordinator.",
+      ] },
+```
+
+In the Section 10 entry, replace the `10.2` sub-item:
+
+```ts
+      { type: "sub", id: "10.2", text: "Proper reporting requires Associate-Licensee to open a new transaction record in CnC Realty’s transaction management platform and upload all required documents per Broker’s checklist. For dual agency transactions, Associate-Licensee must create two (2) separate transaction records — one for the listing/seller side and one for the buyer side." },
+```
+
+With:
+
+```ts
+      { type: "sub", id: "10.2", text: [
+        "Proper reporting requires Associate-Licensee to open a new transaction record in CnC Realty’s transaction management platform and upload all required documents per Broker’s checklist. ",
+        { bold: "For dual agency transactions, Associate-Licensee must create two (2) separate transaction records — one for the listing/seller side and one for the buyer side." },
+      ] },
+```
+
+In the Section 24 entry, replace the `24.2` and `24.3` sub-items:
+
+```ts
+      { type: "sub", id: "24.2", text: "Under the Mentorship Program, the commission split is 70% to Associate-Licensee and 30% to the assigned Mentor. The flat transaction fee (Section 7.2) and the CnC TC Service fee (Section 8, if applicable) are deducted from the gross commission before the 70/30 split is applied." },
+      { type: "sub", id: "24.3", text: "The 70/30 mentorship split applies to both sides of any dual agency transaction. If Associate-Licensee represents both buyer and seller while enrolled in the Mentorship Program, the mentorship split applies to each side separately." },
+```
+
+With:
+
+```ts
+      { type: "sub", id: "24.2", text: [
+        "Under the Mentorship Program, the commission split is ",
+        { bold: "70% to Associate-Licensee and 30% to the assigned Mentor" },
+        ". The flat transaction fee (Section 7.2) and the CnC TC Service fee (Section 8, if applicable) are deducted from the gross commission ",
+        { bold: "before" },
+        " the 70/30 split is applied.",
+      ] },
+      { type: "sub", id: "24.3", text: [
+        "The 70/30 mentorship split applies to ",
+        { bold: "both sides" },
+        " of any dual agency transaction. If Associate-Licensee represents both buyer and seller while enrolled in the Mentorship Program, the mentorship split applies to each side separately.",
+      ] },
+```
+
+- [ ] **Step 5: Fix Section 26's list spacing**
+
+In the Section 26 entry, replace:
+
+```ts
+      { type: "list", items: [
+```
+
+With:
+
+```ts
+      { type: "list", spacing: "loose", items: [
+```
+
+(This is the only `list` entry in `ICA_SECTIONS` that needs `spacing: "loose"` — Section 6's two lists stay as plain `{ type: "list", items: [...] }`, which defaults to tight spacing, matching their original `space-y-1`.)
+
+- [ ] **Step 6: Update the content module test**
+
+In `apps/web/src/__tests__/lib/ica-content.test.ts`, update the import and the intro-paragraph test:
+
+```ts
+import { ICA_VERSION, ICA_INTRO, ICA_SECTIONS, SIGNATURE_LABELS, SUMMARY_TABLE, richTextToPlain } from "@/lib/ica-content";
+```
+
+```ts
+  it("has a non-empty intro paragraph", () => {
+    expect(richTextToPlain(ICA_INTRO).length).toBeGreaterThan(20);
+  });
+```
+
+Add one new test confirming inline bold works:
+
+```ts
+  it("supports inline bold spans mid-sentence", () => {
+    const section7 = ICA_SECTIONS.find((s) => s.num === "7")!;
+    const item72 = section7.content.find((c) => c.type === "sub" && c.id === "7.2") as { text: unknown };
+    expect(Array.isArray(item72.text)).toBe(true);
+    expect(richTextToPlain(item72.text as Parameters<typeof richTextToPlain>[0])).toContain("$990");
+  });
+```
+
+- [ ] **Step 7: Run the content module test**
+
+Run: `pnpm --filter web exec vitest run src/__tests__/lib/ica-content.test.ts`
+Expected: PASS (8 tests — the original 7 plus the new inline-bold test)
+
+- [ ] **Step 8: Update `page.tsx` to render `RichText` and fix table/list styling**
+
+In `apps/web/src/app/(marketing)/join/ica/page.tsx`, add a `RichTextSpan` component and update `FeeTableBlock` and `ParagraphItem`:
+
+```tsx
+import type { Metadata } from "next";
+import { ICA_INTRO, ICA_SECTIONS, SIGNATURE_LABELS, SUMMARY_TABLE, type IcaParagraph, type RichText } from "@/lib/ica-content";
+
+export const metadata: Metadata = {
+  title: "Independent Contractor Agreement | CnC Realty",
+  description: "CnC Realty Independent Contractor Agreement for licensed real estate agents.",
+};
+
+function RichTextSpan({ text }: { text: RichText }) {
+  if (typeof text === "string") return <>{text}</>;
+  return (
+    <>
+      {text.map((run, i) =>
+        typeof run === "string" ? (
+          <span key={i}>{run}</span>
+        ) : (
+          <strong key={i} className="text-[#1B1B1B]">{run.bold}</strong>
+        )
+      )}
+    </>
+  );
+}
+
+function FeeTableBlock({
+  headers,
+  rows,
+  boldLastColumn = true,
+}: {
+  headers: string[];
+  rows: string[][];
+  boldLastColumn?: boolean;
+}) {
+  return (
+    <div className="my-4 overflow-x-auto">
+      <table className="w-full border-collapse font-sans text-sm">
+        <thead>
+          <tr className="border-b border-[#1B1B1B]/15 bg-[#1B1B1B]/5">
+            {headers.map((h, i) => (
+              <th
+                key={h}
+                className={`py-2 text-left font-semibold text-[#1B1B1B] ${i < headers.length - 1 ? "pr-4" : ""}`}
+              >
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, i) => (
+            <tr key={i} className="border-b border-[#1B1B1B]/10">
+              {row.map((cell, j) => {
+                const isLast = j === row.length - 1;
+                return (
+                  <td
+                    key={j}
+                    className={`py-2 text-[#1B1B1B]/80 ${isLast ? "" : "pr-4"} ${
+                      isLast ? (boldLastColumn ? "font-semibold text-[#1B1B1B]" : "font-medium text-[#1B1B1B]") : ""
+                    }`}
+                  >
+                    {cell}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function ParagraphItem({ item }: { item: IcaParagraph }) {
+  if (item.type === "p") return <p><RichTextSpan text={item.text} /></p>;
+  if (item.type === "p-bold") return <p className="font-semibold text-[#1B1B1B]">{item.text}</p>;
+  if (item.type === "sub") {
+    return (
+      <p>
+        <span className="font-semibold text-[#1B1B1B]">{item.id}.</span>{" "}
+        {item.boldLead && <strong className="text-[#1B1B1B]">{item.boldLead} </strong>}
+        <RichTextSpan text={item.text} />
+      </p>
+    );
+  }
+  if (item.type === "list") {
+    return (
+      <ul className={`ml-4 list-disc text-[#1B1B1B]/80 ${item.spacing === "loose" ? "space-y-2" : "space-y-1"}`}>
+        {item.items.map((li, i) => (
+          <li key={i}>{li}</li>
+        ))}
+      </ul>
+    );
+  }
+  return <FeeTableBlock headers={item.headers} rows={item.rows} />;
+}
+
+export default function IcaPage() {
+  return (
+    <main className="min-h-screen bg-[#F2F0EF]">
+      <div className="mx-auto max-w-6xl px-6 py-20">
+        <div className="mb-10 rounded-lg border border-[#9E8C61]/40 bg-[#9E8C61]/8 px-4 py-3 font-sans text-xs text-[#9E8C61]">
+          DRAFT — Pending attorney review. This document is provided for informational purposes only and does not constitute legal advice.
+        </div>
+
+        <div className="mb-10 border-b border-[#1B1B1B]/15 pb-8">
+          <p className="mb-1 text-center font-sans text-xs font-medium uppercase tracking-widest text-[#9E8C61]">CnC Realty</p>
+          <h1 className="text-center font-sans text-3xl font-medium text-[#1B1B1B]">Independent Contractor Agreement</h1>
+          <p className="mt-14 font-sans text-sm leading-relaxed text-[#1B1B1B]/60"><RichTextSpan text={ICA_INTRO} /></p>
+        </div>
+
+        {ICA_SECTIONS.map((section) => (
+          <section key={section.num} className="mb-8">
+            <h2 className="mb-3 font-sans text-xl font-semibold uppercase tracking-wide text-[#1B1B1B]">
+              {section.num}. {section.title}
+            </h2>
+            <div className="space-y-3 font-sans text-base leading-relaxed text-[#1B1B1B]/80">
+              {section.content.map((item, i) => (
+                <ParagraphItem key={i} item={item} />
+              ))}
+            </div>
+          </section>
+        ))}
+
+        <div className="mb-10 border-t border-[#1B1B1B]/15 pt-8">
+          <h2 className="mb-4 font-sans text-base font-semibold uppercase tracking-wide text-[#1B1B1B]">Acknowledgement and Signature</h2>
+          <p className="mb-6 font-sans text-sm leading-relaxed text-[#1B1B1B]/80">
+            I, the undersigned Associate-Licensee, do hereby acknowledge that I have read CnC Realty&rsquo;s Independent Contractor Agreement and agree to abide by its provisions during my association with CnC Realty.
+          </p>
+          <div className="space-y-5 font-sans text-sm text-[#1B1B1B]/80">
+            {SIGNATURE_LABELS.map((label) => (
+              <div key={label}>
+                <p className="mb-1 text-xs font-medium uppercase tracking-wide text-[#1B1B1B]/50">{label}</p>
+                <div className="h-px w-72 bg-[#1B1B1B]/20" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="border-t border-[#1B1B1B]/15 pt-8">
+          <h2 className="mb-2 font-sans text-base font-semibold uppercase tracking-wide text-[#1B1B1B]">Fee Schedule Summary</h2>
+          <p className="mb-4 font-sans text-xs text-[#1B1B1B]/50">(Incorporated by reference)</p>
+          <FeeTableBlock headers={SUMMARY_TABLE.headers} rows={SUMMARY_TABLE.rows} boldLastColumn={false} />
+          <p className="mt-3 font-sans text-xs text-[#1B1B1B]/50">
+            CnC Realty reserves the right to update the Fee Schedule. The fee schedule in effect at the time a transaction is initiated applies to that transaction. Associate-Licensee will be notified of any fee changes via the CnC Realty platform.
+          </p>
+        </div>
+
+        <div className="mt-10 border-t border-[#1B1B1B]/15 pt-6 font-sans text-xs text-[#1B1B1B]/40">
+          CnC Realty &middot; cncrealtygroup.com &middot; noreply@cncrealtygroup.com
+        </div>
+      </div>
+    </main>
+  );
+}
+```
+
+- [ ] **Step 9: Verify the build compiles**
+
+Run: `pnpm --filter web exec tsc --noEmit`
+Expected: no new errors referencing `join/ica/page.tsx` or `lib/ica-content.ts`
+
+- [ ] **Step 10: Run the content module test suite once more**
+
+Run: `pnpm --filter web exec vitest run src/__tests__/lib/ica-content.test.ts`
+Expected: PASS (8 tests)
+
+- [ ] **Step 11: Commit**
+
+```bash
+git add apps/web/src/lib/ica-content.ts apps/web/src/__tests__/lib/ica-content.test.ts "apps/web/src/app/(marketing)/join/ica/page.tsx"
+git commit -m "fix: restore inline bold, list spacing, and table weight lost in ica-content refactor"
+```
+
+---
+
 ### Task 4: Shared signature name-match validator
 
 **Files:**
@@ -636,8 +998,10 @@ git commit -m "feat: shared ICA signature name-match validator"
 - Test: `apps/web/src/__tests__/lib/ica-pdf.test.ts`
 
 **Interfaces:**
-- Consumes: `ICA_VERSION`, `ICA_INTRO`, `ICA_SECTIONS`, `SIGNATURE_LABELS`... only `ICA_VERSION`, `ICA_INTRO`, `ICA_SECTIONS`, `SUMMARY_TABLE` from `@/lib/ica-content` (Task 2)
+- Consumes: `ICA_VERSION`, `ICA_INTRO`, `ICA_SECTIONS`, `SUMMARY_TABLE`, `RichText`, `richTextToPlain` from `@/lib/ica-content` (Task 2, amended post-Task-3-review — see the "Task 2/3 Amendment" note after Task 3 above for why `RichText` exists)
 - Produces: `generateSignedIcaPdf(input: { signerName: string; signedAt: Date; signerIp: string }): Promise<Buffer>` — consumed by Task 7.
+
+**Note:** `ICA_INTRO` and the `text` field on `"p"`/`"sub"` paragraph items are typed `RichText` (`string | (string | { bold: string })[]`), not plain `string` — a handful of sentences have inline bold spans (e.g. "$990" in Section 7.2) that a plain string can't represent. The PDF must render those bold spans too, so the generator needs a rich-text-aware paragraph drawer (below), not the single-font `drawParagraph` used for section headings and labels.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -664,6 +1028,8 @@ describe("generateSignedIcaPdf", () => {
 });
 ```
 
+(This test is unchanged from the original — it doesn't need to know about `RichText` internals, only that the PDF is well-formed.)
+
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `pnpm --filter web exec vitest run src/__tests__/lib/ica-pdf.test.ts`
@@ -674,7 +1040,7 @@ Expected: FAIL with "Cannot find module '@/lib/ica-pdf'"
 ```ts
 // apps/web/src/lib/ica-pdf.ts
 import { PDFDocument, PDFFont, PDFPage, StandardFonts, rgb } from "pdf-lib";
-import { ICA_VERSION, ICA_INTRO, ICA_SECTIONS, SUMMARY_TABLE } from "./ica-content";
+import { ICA_VERSION, ICA_INTRO, ICA_SECTIONS, SUMMARY_TABLE, type RichText } from "./ica-content";
 
 const PAGE_WIDTH = 612; // US Letter, points
 const PAGE_HEIGHT = 792;
@@ -729,10 +1095,65 @@ function drawParagraph(w: Writer, text: string, opts: { bold?: boolean; indent?:
   }
 }
 
-function drawSub(w: Writer, id: string, boldLead: string | undefined, text: string) {
+/** Splits RichText into a flat token stream, tagging each word with whether it's bold. */
+function tokenizeRichText(text: RichText): { word: string; bold: boolean }[] {
+  const runs = typeof text === "string" ? [text] : text;
+  const tokens: { word: string; bold: boolean }[] = [];
+  for (const run of runs) {
+    const isBold = typeof run !== "string";
+    const str = typeof run === "string" ? run : run.bold;
+    for (const word of str.split(/\s+/).filter(Boolean)) {
+      tokens.push({ word, bold: isBold });
+    }
+  }
+  return tokens;
+}
+
+/** Word-wraps and draws RichText, switching font per word so inline bold spans render correctly. */
+function drawRichParagraph(w: Writer, text: RichText, opts: { indent?: number } = {}) {
+  const size = BODY_SIZE;
+  const indent = opts.indent ?? 0;
+  const maxWidth = CONTENT_WIDTH - indent;
+  const tokens = tokenizeRichText(text);
+  const spaceWidth = w.font.widthOfTextAtSize(" ", size);
+
+  let line: { word: string; bold: boolean }[] = [];
+  let lineWidth = 0;
+
+  function flushLine() {
+    if (line.length === 0) return;
+    ensureSpace(w, size + LINE_GAP);
+    let x = MARGIN + indent;
+    for (const tok of line) {
+      const font = tok.bold ? w.bold : w.font;
+      w.page.drawText(tok.word, { x, y: w.y - size, size, font });
+      x += font.widthOfTextAtSize(tok.word, size) + spaceWidth;
+    }
+    w.y -= size + LINE_GAP;
+    line = [];
+    lineWidth = 0;
+  }
+
+  for (const tok of tokens) {
+    const font = tok.bold ? w.bold : w.font;
+    const wordWidth = font.widthOfTextAtSize(tok.word, size);
+    const addedWidth = (line.length > 0 ? spaceWidth : 0) + wordWidth;
+    if (lineWidth + addedWidth > maxWidth && line.length > 0) {
+      flushLine();
+      line = [tok];
+      lineWidth = wordWidth;
+    } else {
+      lineWidth += addedWidth;
+      line.push(tok);
+    }
+  }
+  flushLine();
+}
+
+function drawSub(w: Writer, id: string, boldLead: string | undefined, text: RichText) {
   const label = boldLead ? `${id}. ${boldLead}` : `${id}.`;
   drawParagraph(w, label, { bold: true, indent: 8 });
-  drawParagraph(w, text, { indent: 8 });
+  drawRichParagraph(w, text, { indent: 8 });
   w.y -= 2;
 }
 
@@ -785,7 +1206,7 @@ export async function generateSignedIcaPdf(input: {
   drawParagraph(w, "CnC Realty", { bold: true });
   drawParagraph(w, "Independent Contractor Agreement", { bold: true });
   w.y -= 10;
-  drawParagraph(w, ICA_INTRO);
+  drawRichParagraph(w, ICA_INTRO);
   w.y -= 8;
 
   for (const section of ICA_SECTIONS) {
@@ -793,7 +1214,7 @@ export async function generateSignedIcaPdf(input: {
     drawParagraph(w, `${section.num}. ${section.title}`, { bold: true });
     w.y -= 2;
     for (const item of section.content) {
-      if (item.type === "p") drawParagraph(w, item.text);
+      if (item.type === "p") drawRichParagraph(w, item.text);
       else if (item.type === "p-bold") drawParagraph(w, item.text, { bold: true });
       else if (item.type === "sub") drawSub(w, item.id, item.boldLead, item.text);
       else if (item.type === "list") drawList(w, item.items);
@@ -823,6 +1244,8 @@ export async function generateSignedIcaPdf(input: {
   return Buffer.from(bytes);
 }
 ```
+
+**Note:** `{ type: "list" }` items may carry an optional `spacing?: "tight" | "loose"` field (added post-Task-3-review to fix a web-only CSS regression — see the "Task 2/3 Amendment" note after Task 3). This field only affects the web page's `space-y-1`/`space-y-2` Tailwind class; the PDF has no equivalent "original" spacing to regress from; `drawList` intentionally ignores it and uses uniform spacing for all lists. Similarly, `FeeTableBlock`'s web-only `boldLastColumn` prop (also added in that amendment) has no PDF equivalent — `drawTable` always uses `w.bold` for the header row and `w.font` for every body cell, for both the in-section fee table and the standalone summary table.
 
 - [ ] **Step 4: Run test to verify it passes**
 
