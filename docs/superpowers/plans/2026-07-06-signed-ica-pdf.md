@@ -1095,16 +1095,27 @@ function drawParagraph(w: Writer, text: string, opts: { bold?: boolean; indent?:
   }
 }
 
-/** Splits RichText into a flat token stream, tagging each word with whether it's bold. */
-function tokenizeRichText(text: RichText): { word: string; bold: boolean }[] {
+/**
+ * Splits RichText into a flat token stream, tagging each word with whether it's bold
+ * and whether a space should render before it. `spaceBefore` is computed from actual
+ * whitespace adjacency in the source text — a bold run directly followed by punctuation
+ * with no space (e.g. "$990" then ", inclusive...") must NOT get a phantom space inserted
+ * at that run boundary, even though word-splitting elsewhere always implies a space.
+ */
+function tokenizeRichText(text: RichText): { word: string; bold: boolean; spaceBefore: boolean }[] {
   const runs = typeof text === "string" ? [text] : text;
-  const tokens: { word: string; bold: boolean }[] = [];
+  const tokens: { word: string; bold: boolean; spaceBefore: boolean }[] = [];
+  let prevRunEndedWithSpace = true;
   for (const run of runs) {
     const isBold = typeof run !== "string";
     const str = typeof run === "string" ? run : run.bold;
-    for (const word of str.split(/\s+/).filter(Boolean)) {
-      tokens.push({ word, bold: isBold });
-    }
+    const startsWithSpace = /^\s/.test(str);
+    const words = str.split(/\s+/).filter(Boolean);
+    words.forEach((word, i) => {
+      const spaceBefore = i === 0 ? prevRunEndedWithSpace || startsWithSpace : true;
+      tokens.push({ word, bold: isBold, spaceBefore });
+    });
+    prevRunEndedWithSpace = str.length === 0 || /\s$/.test(str);
   }
   return tokens;
 }
@@ -1117,18 +1128,19 @@ function drawRichParagraph(w: Writer, text: RichText, opts: { indent?: number } 
   const tokens = tokenizeRichText(text);
   const spaceWidth = w.font.widthOfTextAtSize(" ", size);
 
-  let line: { word: string; bold: boolean }[] = [];
+  let line: { word: string; bold: boolean; spaceBefore: boolean }[] = [];
   let lineWidth = 0;
 
   function flushLine() {
     if (line.length === 0) return;
     ensureSpace(w, size + LINE_GAP);
     let x = MARGIN + indent;
-    for (const tok of line) {
+    line.forEach((tok, i) => {
       const font = tok.bold ? w.bold : w.font;
+      if (i > 0 && tok.spaceBefore) x += spaceWidth;
       w.page.drawText(tok.word, { x, y: w.y - size, size, font });
-      x += font.widthOfTextAtSize(tok.word, size) + spaceWidth;
-    }
+      x += font.widthOfTextAtSize(tok.word, size);
+    });
     w.y -= size + LINE_GAP;
     line = [];
     lineWidth = 0;
@@ -1137,7 +1149,8 @@ function drawRichParagraph(w: Writer, text: RichText, opts: { indent?: number } 
   for (const tok of tokens) {
     const font = tok.bold ? w.bold : w.font;
     const wordWidth = font.widthOfTextAtSize(tok.word, size);
-    const addedWidth = (line.length > 0 ? spaceWidth : 0) + wordWidth;
+    const sep = line.length > 0 && tok.spaceBefore ? spaceWidth : 0;
+    const addedWidth = sep + wordWidth;
     if (lineWidth + addedWidth > maxWidth && line.length > 0) {
       flushLine();
       line = [tok];
@@ -1246,6 +1259,8 @@ export async function generateSignedIcaPdf(input: {
 ```
 
 **Note:** `{ type: "list" }` items may carry an optional `spacing?: "tight" | "loose"` field (added post-Task-3-review to fix a web-only CSS regression — see the "Task 2/3 Amendment" note after Task 3). This field only affects the web page's `space-y-1`/`space-y-2` Tailwind class; the PDF has no equivalent "original" spacing to regress from; `drawList` intentionally ignores it and uses uniform spacing for all lists. Similarly, `FeeTableBlock`'s web-only `boldLastColumn` prop (also added in that amendment) has no PDF equivalent — `drawTable` always uses `w.bold` for the header row and `w.font` for every body cell, for both the in-section fee table and the standalone summary table.
+
+**Amendment (found during implementation, before formal task review):** the first draft of `tokenizeRichText` always inserted a space between every token, which produces a phantom space when a bold run butts directly against punctuation with no whitespace between them (e.g. "$990" immediately followed by ", inclusive..." in Section 7.2, and "Associate-Licensee" immediately followed by ". In consideration..." in `ICA_INTRO`). The version above tracks `spaceBefore` per token based on actual whitespace adjacency at each run boundary, fixing this. If you already implemented an earlier version without `spaceBefore`, replace `tokenizeRichText` and `drawRichParagraph` with the versions above exactly.
 
 - [ ] **Step 4: Run test to verify it passes**
 
