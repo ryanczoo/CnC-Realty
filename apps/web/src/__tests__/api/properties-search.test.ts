@@ -8,6 +8,12 @@ vi.mock("@/lib/prisma", () => ({
     },
   },
 }));
+vi.mock("@/lib/redis", () => ({
+  redis: {
+    get: vi.fn().mockResolvedValue(null),
+    setex: vi.fn().mockResolvedValue(undefined),
+  },
+}));
 
 import { prisma } from "@/lib/prisma";
 import { GET } from "../../app/api/properties/route";

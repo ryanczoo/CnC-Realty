@@ -26,7 +26,7 @@ function makeReq(auth?: string) {
   });
 }
 
-const LEAD = { id: "l1", firstName: "John", lastName: "Doe" };
+const LEAD = { id: "l1", firstName: "John", lastName: "Doe", email: "john@example.com" };
 const AGENT = { id: "a1", displayName: "Jane Agent", phone: "555-1234", user: { email: "agent@test.com" } };
 const EMAIL_STEP = {
   id: "ls1", enrollmentId: "e1", stepType: "EMAIL",

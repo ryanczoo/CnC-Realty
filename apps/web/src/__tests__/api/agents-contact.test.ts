@@ -6,6 +6,9 @@ vi.mock('@/lib/prisma', () => ({
     lead: { create: vi.fn() },
   },
 }));
+vi.mock('@/lib/rate-limit', () => ({
+  publicFormRateLimit: { limit: vi.fn().mockResolvedValue({ success: true, reset: Date.now() + 60000 }) },
+}));
 
 import { prisma } from '@/lib/prisma';
 import { POST } from '../../app/api/agents/[slug]/contact/route';
