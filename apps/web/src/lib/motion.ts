@@ -18,7 +18,7 @@ export function wordContainer(stagger: number) {
 }
 
 // Idle pulse — apply to all CTA/pill buttons. whileHover inline transition overrides this.
-export const PULSE_ANIMATE = { scale: [1, 1.04, 1] } as const;
+export const PULSE_ANIMATE = { scale: [1, 1.04, 1] };
 export const PULSE_TRANSITION = { duration: 2, repeat: Infinity, ease: "easeInOut" } as const;
 
 // Shared class strings for the dark dropdown panel — matches the navbar menu panel.
