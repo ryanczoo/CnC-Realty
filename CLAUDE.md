@@ -4522,16 +4522,66 @@ Found already sitting uncommitted in the working tree at session start (not done
 
 ---
 
+---
+
+## Session Notes — 2026-06-16 (Evening)
+
+### Third-Party Services Completed This Session
+
+All remaining third-party services are now fully set up and credentials are in `apps/web/.env.local`:
+
+**SendGrid** (completed earlier in session, carried over from prior context):
+- Domain authenticated (DKIM CNAMEs + DMARC TXT in Hostinger DNS) ✅
+- API key generated (Full Access) and added to `.env.local` ✅
+- Free tier: 100 emails/day
+
+**Upstash Redis** ✅
+- Database: "CnC Realty", region: N. California (us-west-1), AWS, Free tier
+- Used for: property search result caching + rate limiting on public forms
+- Credentials in `.env.local`: `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`
+- Free forever at CnC's traffic levels (500k commands/month)
+
+**Cloudflare R2** ✅
+- Account created (ryanvchong@outlook.com), credit card on file
+- Bucket: `cnc-realty`, Standard storage, Automatic region (Western North America)
+- API token: "R2 Account Token", Object Read & Write, all buckets, Forever TTL
+- Credentials in `.env.local`: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`
+- Free tier: 10GB/month storage, 1M writes, 10M reads
+- Used for: transaction document uploads, agent profile photos
+
+**Vercel** ✅ (project created, NOT yet deployed)
+- Account: ryanvchong@outlook.com, Hobby plan (free)
+- Project: `cnc-realty-web` at `cnc-realty-web.vercel.app`
+- GitHub connected: `ryanczoo/CnC-Realty`, branch `claude/real-estate-website-9bdWi`, root dir `apps/web`
+- All env vars loaded from `.env.local` (except `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` — deleted since empty, must be added before production deploy)
+- `NEXTAUTH_URL` set to `https://cncrealtygroup.com` (not localhost)
+- **NOT deployed yet** — Hobby plan blocks cron jobs (our IDX sync runs every 15 min)
+
+### Key Decisions Made
+
+- **Lead routing:** Ryan manually assigns all leads from the website. No auto round-robin. Lead Ponds (Phase 7) is optional fallback only.
+- **Vercel deploy blocked until:** (1) Upgrade to Pro ($20/mo), (2) Add `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET`, (3) Phase 6 + Phase 7 complete
+- **Google OAuth deferred** — not required for launch, add before going live
+- **Cloudflare R2 is required** — agents need document uploads almost immediately after launch
+
+### .env.local Status (as of this session)
+
+All vars populated except `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (intentionally deferred).
+
+---
+
 ### Next Session — Start Here
 
-1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty` (restart if already running, to clear the stale `.next/types` cache referencing the old `/news` route)
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
 2. Open `localhost:3000`
-3. **Review the legal pages/footer restructuring** (see flag above) — confirm `/do-not-sell` removal was intentional and that CCPA opt-out is still satisfied some other way; spot-check `/accessibility`, `/privacy`, `/terms`, `/fair-housing` content and the new EHO logo footer link
-4. **Visually check `/press`** — hero (video, "PRESS" text, overlay darkness/half-speed feel) and the post grid once posts exist
-5. **Continue with remaining work in order:**
+3. **Review the legal pages/footer restructuring** — confirm `/do-not-sell` removal was intentional and that CCPA opt-out is still satisfied; spot-check `/accessibility`, `/privacy`, `/terms`, `/fair-housing` content and EHO logo footer link
+4. **Visually check `/press`** — hero and post grid
+5. **Ryan's Join page fixes** — Ryan has changes he wants to make to the Join page
+6. **Continue with remaining work in order:**
    - Checklist templates at `/admin/settings/checklists` (CA Purchase Buyer Side, CA Purchase Seller Side, CA Lease Tenant Side) — Ryan's task
-   - Phase 6 tasks (`docs/superpowers/plans/2026-05-22-phase-6-launch.md`): ISR, skeleton loaders, sitemap, JSON-LD, rate limiting, deploy to Vercel + Railway
+   - Phase 6 tasks (`docs/superpowers/plans/2026-05-22-phase-6-launch.md`): ISR, skeleton loaders, sitemap, JSON-LD, rate limiting
    - Phase 7 CRM Expansion (Smart Lists → Deal Pipeline → Lead Ponds → Action Plans → Trigger Automations → Reporting) — **required before launch**
+   - When ready to go live: upgrade Vercel to Pro, set up Google OAuth, add missing env vars, deploy
 
 ---
 
