@@ -83,11 +83,19 @@ function FormInner() {
   const [icaOpenedAt, setIcaOpenedAt] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorFields, setErrorFields] = useState<Set<string>>(new Set());
   const { executeRecaptcha } = useGoogleReCaptcha();
   const router = useRouter();
 
   const set = (field: keyof FormState, value: unknown) =>
     setForm((prev) => ({ ...prev, [field]: value }));
+
+  const fail = (message: string, fields: string[] = []) => {
+    setError(message);
+    setErrorFields(new Set(fields));
+  };
+
+  const ring = (field: string) => (errorFields.has(field) ? "ring-2 ring-red-400" : "");
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
@@ -109,54 +117,55 @@ function FormInner() {
 
   const handleSubmit = useCallback(async () => {
     setError(null);
+    setErrorFields(new Set());
 
     // Basic client-side validation
     if (!form.firstName || !form.lastName || !form.email || !form.phone) {
-      setError("Please fill out all required personal information fields.");
+      fail("Please fill out all required personal information fields.", ["firstName", "lastName", "email", "phone"]);
       return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      setError("Please enter a valid email address.");
+      fail("Please enter a valid email address.", ["email"]);
       return;
     }
     if (!/^\d{8}$/.test(form.licenseNumber)) {
-      setError("CA DRE License Number must be exactly 8 digits.");
+      fail("CA DRE License Number must be exactly 8 digits.", ["licenseNumber"]);
       return;
     }
     if (!form.licenseType || !form.licenseExpDate || !form.yearsLicensed) {
-      setError("Please fill out all required license information fields.");
+      fail("Please fill out all required license information fields.", ["licenseType", "licenseExpDate", "yearsLicensed"]);
       return;
     }
     if (!form.boardOfRealtors) {
-      setError("Please select your Current Membership Association.");
+      fail("Please select your Current Membership Association.", ["boardOfRealtors"]);
       return;
     }
     if (form.hasActiveListings === null || form.hasActiveSales === null) {
-      setError("Please answer both transfer questions.");
+      fail("Please answer both transfer questions.", ["hasActiveListings", "hasActiveSales"]);
       return;
     }
     if (!form.commissionEntity) {
-      setError("Please select your commission deposit type.");
+      fail("Please select your commission deposit type.", ["commissionEntity"]);
       return;
     }
     if (form.hasDisciplinaryHistory === null || form.hasInvestigationHistory === null) {
-      setError("Please answer all background disclosure questions.");
+      fail("Please answer all background disclosure questions.", ["hasDisciplinaryHistory", "hasInvestigationHistory"]);
       return;
     }
     if (!icaOpened) {
-      setError("Please read the ICA before agreeing to it.");
+      fail("Please read the ICA before agreeing to it.", ["icaButton"]);
       return;
     }
     if (!form.icaAgreed) {
-      setError("You must agree to the Independent Contractor Agreement.");
+      fail("You must agree to the Independent Contractor Agreement.", ["icaAgreed"]);
       return;
     }
     if (!namesMatch(form.signatureName, form.firstName, form.lastName)) {
-      setError("Your signature must match your full legal name (First + Last Name) entered above.");
+      fail("Please type the same first and last name used in the Personal Information section.", ["signatureName"]);
       return;
     }
     if (!form.drePerJuryCert) {
-      setError("DRE perjury certification is required.");
+      fail("DRE perjury certification is required.", ["drePerJuryCert"]);
       return;
     }
 
@@ -220,21 +229,21 @@ function FormInner() {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className={labelClass}>First Name *</label>
-            <input className={inputClass} value={form.firstName} onChange={(e) => set("firstName", e.target.value)} />
+            <input className={`${inputClass} ${ring("firstName")}`} value={form.firstName} onChange={(e) => set("firstName", e.target.value)} />
           </div>
           <div>
             <label className={labelClass}>Last Name *</label>
-            <input className={inputClass} value={form.lastName} onChange={(e) => set("lastName", e.target.value)} />
+            <input className={`${inputClass} ${ring("lastName")}`} value={form.lastName} onChange={(e) => set("lastName", e.target.value)} />
           </div>
         </div>
         <div className="mt-4 grid grid-cols-2 gap-4">
           <div>
             <label className={labelClass}>Email *</label>
-            <input className={inputClass} type="email" value={form.email} onChange={(e) => set("email", e.target.value)} />
+            <input className={`${inputClass} ${ring("email")}`} type="email" value={form.email} onChange={(e) => set("email", e.target.value)} />
           </div>
           <div>
             <label className={labelClass}>Cell Phone *</label>
-            <input className={inputClass} type="tel" value={form.phone} onChange={handlePhoneChange} />
+            <input className={`${inputClass} ${ring("phone")}`} type="tel" value={form.phone} onChange={handlePhoneChange} />
           </div>
         </div>
         <div className="mt-4">
@@ -279,7 +288,7 @@ function FormInner() {
         <p className={sectionHeadingClass}>License Information</p>
         <div>
           <label className={labelClass}>License Type *</label>
-          <div className="mt-2 flex gap-6">
+          <div className={`mt-2 flex gap-6 rounded-lg p-1 -m-1 ${ring("licenseType")}`}>
             {(["SALESPERSON", "BROKER_ASSOCIATE"] as LicenseType[]).map((t) => (
               <label key={t} className="flex cursor-pointer items-center gap-2 font-sans text-sm text-[#1B1B1B]">
                 <input
@@ -298,17 +307,19 @@ function FormInner() {
         <div className="mt-8 grid grid-cols-2 gap-4">
           <div>
             <label className={labelClass}>CA DRE License # *</label>
-            <input className={inputClass} value={form.licenseNumber} maxLength={8} onChange={(e) => set("licenseNumber", e.target.value.replace(/\D/g, "").slice(0, 8))} />
+            <input className={`${inputClass} ${ring("licenseNumber")}`} value={form.licenseNumber} maxLength={8} onChange={(e) => set("licenseNumber", e.target.value.replace(/\D/g, "").slice(0, 8))} />
           </div>
           <div>
             <label className={labelClass}>License Expiration Date *</label>
-            <DateField value={form.licenseExpDate} onChange={(v) => set("licenseExpDate", v)} />
+            <div className={`rounded-lg ${ring("licenseExpDate")}`}>
+              <DateField value={form.licenseExpDate} onChange={(v) => set("licenseExpDate", v)} />
+            </div>
           </div>
         </div>
         <div className="mt-4 grid grid-cols-2 gap-4">
           <div>
             <label className={labelClass}>Years Licensed *</label>
-            <input className={inputClass} type="number" min={0} max={99} value={form.yearsLicensed} onChange={(e) => set("yearsLicensed", e.target.value.slice(0, 2))} />
+            <input className={`${inputClass} ${ring("yearsLicensed")}`} type="number" min={0} max={99} value={form.yearsLicensed} onChange={(e) => set("yearsLicensed", e.target.value.slice(0, 2))} />
           </div>
           <div>
             <label className={labelClass}>Current/Most Recent Brokerage (if applicable)</label>
@@ -320,7 +331,7 @@ function FormInner() {
             <label className={labelClass}>Current Membership Association *</label>
             <div className="relative">
               <select
-                className={`${inputClass} appearance-none pr-10`}
+                className={`${inputClass} appearance-none pr-10 ${ring("boardOfRealtors")}`}
                 value={form.boardOfRealtors}
                 onChange={(e) => set("boardOfRealtors", e.target.value)}
                 style={{ color: form.boardOfRealtors ? "#1B1B1B" : "rgba(27,27,27,0.4)" }}
@@ -360,7 +371,7 @@ function FormInner() {
           animate={PULSE_ANIMATE}
           transition={PULSE_TRANSITION}
           whileHover={{ scale: 1.02, transition: SPRING_HOVER }}
-          className="mb-4 inline-flex items-center gap-1 rounded-full border border-[#9E8C61] px-5 py-2.5 font-sans text-sm font-medium text-[#9E8C61] transition-colors hover:bg-[#9E8C61]/5"
+          className={`mb-4 inline-flex items-center gap-1 rounded-full border border-[#9E8C61] px-5 py-2.5 font-sans text-sm font-medium text-[#9E8C61] transition-colors hover:bg-[#9E8C61]/5 ${ring("icaButton")}`}
         >
           CnC Realty ICA
         </motion.button>
@@ -370,9 +381,9 @@ function FormInner() {
           </p>
         )}
         <label
-          className={`flex cursor-pointer items-start gap-3 font-sans text-sm text-[#1B1B1B] ${
+          className={`flex cursor-pointer items-start gap-3 rounded-lg p-2 -m-2 font-sans text-sm text-[#1B1B1B] ${
             !icaOpened ? "cursor-not-allowed opacity-40" : ""
-          }`}
+          } ${ring("icaAgreed")}`}
         >
           <input
             type="checkbox"
@@ -385,7 +396,7 @@ function FormInner() {
         </label>
         <div className="mt-8">
           <input
-            className={inputClass}
+            className={`${inputClass} ${ring("signatureName")}`}
             value={form.signatureName}
             onChange={(e) => set("signatureName", e.target.value)}
             disabled={!icaOpened}
@@ -408,7 +419,7 @@ function FormInner() {
         ).map(({ field, label }) => (
           <div key={field} className="mb-4">
             <label className={labelClass}>{label}</label>
-            <div className="mt-2 flex gap-6">
+            <div className={`mt-2 flex gap-6 rounded-lg p-1 -m-1 ${ring(field)}`}>
               {([true, false] as const).map((val) => (
                 <label key={String(val)} className="flex cursor-pointer items-center gap-2 font-sans text-sm text-[#1B1B1B]">
                   <input
@@ -435,7 +446,7 @@ function FormInner() {
       <div className={sectionClass}>
         <p className={sectionHeadingClass}>Business & Tax Information</p>
         <label className={labelClass}>Where is your commission deposited to (For W-9 purposes)? *</label>
-        <div className="mt-2 flex flex-wrap gap-x-10 gap-y-2">
+        <div className={`mt-2 flex flex-wrap gap-x-10 gap-y-2 rounded-lg p-1 -m-1 ${ring("commissionEntity")}`}>
           {(
             [
               { value: "PERSONAL", label: "Personal Account" },
@@ -466,7 +477,7 @@ function FormInner() {
           <label className={labelClass}>
             Have you ever been disciplined by any Local, State, or Federal entity? *
           </label>
-          <div className="mt-2 flex gap-6">
+          <div className={`mt-2 flex gap-6 rounded-lg p-1 -m-1 ${ring("hasDisciplinaryHistory")}`}>
             {([true, false] as const).map((val) => (
               <label key={String(val)} className="flex cursor-pointer items-center gap-2 font-sans text-sm text-[#1B1B1B]">
                 <input
@@ -494,7 +505,7 @@ function FormInner() {
           <label className={labelClass}>
             Are you currently under investigation or prosecution by the DRE or any government agency? *
           </label>
-          <div className="mt-2 flex gap-6">
+          <div className={`mt-2 flex gap-6 rounded-lg p-1 -m-1 ${ring("hasInvestigationHistory")}`}>
             {([true, false] as const).map((val) => (
               <label key={String(val)} className="flex cursor-pointer items-center gap-2 font-sans text-sm text-[#1B1B1B]">
                 <input
@@ -518,7 +529,7 @@ function FormInner() {
             />
           )}
         </div>
-        <label className="flex cursor-pointer items-start gap-3 font-sans text-sm text-[#1B1B1B]/60">
+        <label className={`flex cursor-pointer items-start gap-3 rounded-lg p-2 -m-2 font-sans text-sm text-[#1B1B1B]/60 ${ring("drePerJuryCert")}`}>
           <input
             type="checkbox"
             checked={form.drePerJuryCert}
