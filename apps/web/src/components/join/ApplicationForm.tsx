@@ -383,13 +383,13 @@ function FormInner() {
           />
           I have read and agree to the CnC Realty Independent Contractor Agreement. *
         </label>
-        <div className="mt-4">
+        <div className="mt-8">
           <input
             className={inputClass}
             value={form.signatureName}
             onChange={(e) => set("signatureName", e.target.value)}
             disabled={!icaOpened}
-            placeholder="First Last"
+            placeholder="Enter Full Name"
           />
           <p className="mt-1 font-sans text-xs text-[#1B1B1B]/40">
             By typing your name above, you are electronically signing the CnC Realty Independent Contractor Agreement. *
