@@ -47,14 +47,8 @@ export default async function AdminAgentsPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6">
         <h1 className="font-sans text-2xl font-light text-[#1B1B1B]">All Agents</h1>
-        <Link
-          href="/join"
-          className="rounded-full bg-[#1B1B1B] px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-75"
-        >
-          Invite Agent
-        </Link>
       </div>
 
       {agents.length === 0 ? (
