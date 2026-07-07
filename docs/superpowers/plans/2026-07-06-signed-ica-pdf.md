@@ -998,7 +998,7 @@ git commit -m "feat: shared ICA signature name-match validator"
 - Test: `apps/web/src/__tests__/lib/ica-pdf.test.ts`
 
 **Interfaces:**
-- Consumes: `ICA_VERSION`, `ICA_INTRO`, `ICA_SECTIONS`, `SUMMARY_TABLE`, `RichText`, `richTextToPlain` from `@/lib/ica-content` (Task 2, amended post-Task-3-review — see the "Task 2/3 Amendment" note after Task 3 above for why `RichText` exists)
+- Consumes: `ICA_VERSION`, `ICA_INTRO`, `ICA_SECTIONS`, `SUMMARY_TABLE`, `RichText`, `richTextToPlain` from `@/lib/ica-content` (Task 2, amended post-Task-3-review — see the "Task 3B" section for why `RichText` exists)
 - Produces: `generateSignedIcaPdf(input: { signerName: string; signedAt: Date; signerIp: string }): Promise<Buffer>` — consumed by Task 7.
 
 **Note:** `ICA_INTRO` and the `text` field on `"p"`/`"sub"` paragraph items are typed `RichText` (`string | (string | { bold: string })[]`), not plain `string` — a handful of sentences have inline bold spans (e.g. "$990" in Section 7.2) that a plain string can't represent. The PDF must render those bold spans too, so the generator needs a rich-text-aware paragraph drawer (below), not the single-font `drawParagraph` used for section headings and labels.
@@ -1258,7 +1258,7 @@ export async function generateSignedIcaPdf(input: {
 }
 ```
 
-**Note:** `{ type: "list" }` items may carry an optional `spacing?: "tight" | "loose"` field (added post-Task-3-review to fix a web-only CSS regression — see the "Task 2/3 Amendment" note after Task 3). This field only affects the web page's `space-y-1`/`space-y-2` Tailwind class; the PDF has no equivalent "original" spacing to regress from; `drawList` intentionally ignores it and uses uniform spacing for all lists. Similarly, `FeeTableBlock`'s web-only `boldLastColumn` prop (also added in that amendment) has no PDF equivalent — `drawTable` always uses `w.bold` for the header row and `w.font` for every body cell, for both the in-section fee table and the standalone summary table.
+**Note:** `{ type: "list" }` items may carry an optional `spacing?: "tight" | "loose"` field (added post-Task-3-review to fix a web-only CSS regression — see the "Task 3B" section). This field only affects the web page's `space-y-1`/`space-y-2` Tailwind class; the PDF has no equivalent "original" spacing to regress from; `drawList` intentionally ignores it and uses uniform spacing for all lists. Similarly, `FeeTableBlock`'s web-only `boldLastColumn` prop (also added in that amendment) has no PDF equivalent — `drawTable` always uses `w.bold` for the header row and `w.font` for every body cell, for both the in-section fee table and the standalone summary table.
 
 **Amendment (found during implementation, before formal task review):** the first draft of `tokenizeRichText` always inserted a space between every token, which produces a phantom space when a bold run butts directly against punctuation with no whitespace between them (e.g. "$990" immediately followed by ", inclusive..." in Section 7.2, and "Associate-Licensee" immediately followed by ". In consideration..." in `ICA_INTRO`). The version above tracks `spaceBefore` per token based on actual whitespace adjacency at each run boundary, fixing this. If you already implemented an earlier version without `spaceBefore`, replace `tokenizeRichText` and `drawRichParagraph` with the versions above exactly.
 
@@ -2235,6 +2235,154 @@ Run: `pnpm --filter web dev`, log in as ADMIN, open `/admin/agents` — confirm 
 ```bash
 git add "apps/web/src/app/(dashboard)/admin/agents/DownloadIcaButton.tsx" "apps/web/src/app/(dashboard)/admin/agents/page.tsx"
 git commit -m "feat: download signed ICA button on admin agents table"
+```
+
+---
+
+### Task 12: Final review fixes — server-authoritative signing time, R2 orphan cleanup
+
+**Files:**
+- Modify: `apps/web/src/app/api/agent-applications/route.ts`
+- Modify: `apps/web/src/__tests__/api/agent-applications.test.ts`
+
+**Why:** The whole-branch review (after all 11 tasks) found two Important issues:
+1. The PDF's "Date/Time" signature stamp used `data.icaAgreedAt` — a client-supplied value with only a format check, no bound — as the signing timestamp of a DRE-compliance document. An applicant could submit a manipulated timestamp into their own legally-signed record. Fix: use the server's clock (`new Date()`) for the PDF's signing time; keep `icaAgreedAt` on the DB row exactly as before (the client-reported acknowledgment time, a separate audit-trail field, unaffected by this fix).
+2. If the PDF uploads to R2 successfully but `prisma.agentApplication.create` then throws (duplicate email, DB blip), the signed PDF is orphaned in R2 with no referencing row, and accumulates across retries since each attempt gets a fresh UUID. Fix: on a create failure, best-effort delete the just-uploaded R2 object before re-throwing (the outer catch still returns 500 as before — this is pure cleanup, not a behavior change to the response).
+
+- [ ] **Step 1: Update the test file**
+
+In `apps/web/src/__tests__/api/agent-applications.test.ts`, add `deleteR2Object` to the R2 mock, import it, and add a new test:
+
+```ts
+vi.mock('@/lib/r2', () => ({
+  uploadToR2: vi.fn().mockResolvedValue(undefined),
+  deleteR2Object: vi.fn().mockResolvedValue(undefined),
+}));
+```
+
+```ts
+import { uploadToR2, deleteR2Object } from '@/lib/r2';
+```
+
+Add this test right after the existing `'creates application and returns 201...'` test, still inside the same `describe` block:
+
+```ts
+  it('cleans up the uploaded R2 object if the database insert fails', async () => {
+    vi.mocked(prisma.agentApplication.create).mockRejectedValue(new Error('DB unique constraint violation'));
+    const req = new Request('http://localhost/api/agent-applications', {
+      method: 'POST',
+      body: JSON.stringify(VALID_BODY),
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(500);
+    expect(deleteR2Object).toHaveBeenCalledWith(expect.stringMatching(/^signed-ica\/.+\.pdf$/));
+  });
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `pnpm --filter web exec vitest run src/__tests__/api/agent-applications.test.ts`
+Expected: FAIL — `deleteR2Object` not yet imported/called by the route.
+
+- [ ] **Step 3: Update the route**
+
+In `apps/web/src/app/api/agent-applications/route.ts`:
+
+Add `deleteR2Object` to the existing `@/lib/r2` import:
+
+```ts
+import { uploadToR2, deleteR2Object } from "@/lib/r2";
+```
+
+Change the `signedAt` line — use the server clock for the PDF's signing timestamp instead of the client-supplied `icaAgreedAt`:
+
+```ts
+    const applicationId = randomUUID();
+    const signedAt = new Date(); // server-authoritative signing time for the legal record — never trust a client-supplied timestamp here
+    const pdfBuffer = await generateSignedIcaPdf({
+      signerName: data.signatureName,
+      signedAt,
+      signerIp: ip,
+    });
+```
+
+Update the DB write so `icaAgreedAt` still stores the client-reported acknowledgment time (unchanged meaning, just no longer reusing the `signedAt` variable now that `signedAt` means something different):
+
+```ts
+        icaOpenedAt:    new Date(data.icaOpenedAt),
+        icaAgreedAt:    new Date(data.icaAgreedAt),
+        submissionIp:   ip,
+```
+
+Wrap the `prisma.agentApplication.create` call so a failure triggers best-effort R2 cleanup before re-throwing:
+
+```ts
+    let app;
+    try {
+      app = await prisma.agentApplication.create({
+        data: {
+          id:              applicationId,
+          firstName:       data.firstName,
+          lastName:        data.lastName,
+          email:           data.email,
+          phone:           data.phone,
+          address:         data.address,
+          city:            data.city,
+          state:           data.state,
+          zip:             data.zip,
+          dateOfBirth:     data.dateOfBirth,
+          licenseNumber:   data.licenseNumber,
+          licenseType:     data.licenseType,
+          licenseExpDate:  data.licenseExpDate,
+          yearsLicensed:   data.yearsLicensed,
+          formerBrokerage: data.formerBrokerage,
+          boardOfRealtors: data.boardOfRealtors || null,
+          desiredMembershipAssociation: data.desiredMembershipAssociation || null,
+          mlsId:           data.mlsId || null,
+          hasActiveListings:       data.hasActiveListings,
+          hasActiveSales:          data.hasActiveSales,
+          commissionEntity:        data.commissionEntity,
+          hasDisciplinaryHistory:  data.hasDisciplinaryHistory,
+          disciplinaryExplain:     data.disciplinaryExplain || null,
+          hasInvestigationHistory: data.hasInvestigationHistory,
+          investigationExplain:    data.investigationExplain || null,
+          drePerJuryCert:          data.drePerJuryCert,
+          specialties:    data.specialties,
+          bio:            data.bio || null,
+          instagramUrl:   data.instagramUrl || null,
+          facebookUrl:    data.facebookUrl || null,
+          icaOpenedAt:    new Date(data.icaOpenedAt),
+          icaAgreedAt:    new Date(data.icaAgreedAt),
+          submissionIp:   ip,
+          signedName:     data.signatureName,
+          icaVersion:     ICA_VERSION,
+          signedIcaKey,
+        },
+      });
+    } catch (createErr) {
+      await deleteR2Object(signedIcaKey).catch((cleanupErr) =>
+        console.error("[agent-applications] failed to clean up orphaned R2 object after DB error:", cleanupErr)
+      );
+      throw createErr;
+    }
+```
+
+(The outer `catch` block at the bottom of `POST` is unchanged — it still catches this re-thrown error and returns the existing 500 response, so external behavior on failure is identical; only the R2 side effect is new.)
+
+- [ ] **Step 4: Run test to verify it passes**
+
+Run: `pnpm --filter web exec vitest run src/__tests__/api/agent-applications.test.ts`
+Expected: PASS (7 tests — the original 6 plus the new cleanup test)
+
+Run the full suite once: `pnpm --filter web test`
+Expected: PASS (206 tests — 205 plus this new one)
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add apps/web/src/app/api/agent-applications/route.ts apps/web/src/__tests__/api/agent-applications.test.ts
+git commit -m "fix: use server clock for PDF signing time, clean up orphaned R2 object on DB failure"
 ```
 
 ---
