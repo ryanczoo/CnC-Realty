@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
+import { randomUUID } from "crypto";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { sendApplicationNotification } from "@/lib/email";
+import { namesMatch } from "@/lib/ica-signature";
+import { generateSignedIcaPdf } from "@/lib/ica-pdf";
+import { uploadToR2 } from "@/lib/r2";
+import { ICA_VERSION } from "@/lib/ica-content";
 
 const schema = z.object({
   firstName:      z.string().min(1, "First name required"),
@@ -35,6 +40,7 @@ const schema = z.object({
   facebookUrl:    z.string().optional().default(""),
   icaOpenedAt:    z.string().datetime(),
   icaAgreedAt:    z.string().datetime(),
+  signatureName:  z.string().min(1, "Signature required"),
   recaptchaToken: z.string().min(1, "reCAPTCHA token required"),
 });
 
@@ -53,6 +59,13 @@ export async function POST(req: Request) {
     const body = await req.json();
     const data = schema.parse(body);
 
+    if (!namesMatch(data.signatureName, data.firstName, data.lastName)) {
+      return NextResponse.json(
+        { error: "Signature must match your full legal name (First + Last Name) entered above." },
+        { status: 400 }
+      );
+    }
+
     const recaptchaOk = await verifyRecaptcha(data.recaptchaToken);
     if (!recaptchaOk) {
       return NextResponse.json({ error: "reCAPTCHA verification failed. Please try again." }, { status: 400 });
@@ -60,8 +73,19 @@ export async function POST(req: Request) {
 
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
 
+    const applicationId = randomUUID();
+    const signedAt = new Date(data.icaAgreedAt);
+    const pdfBuffer = await generateSignedIcaPdf({
+      signerName: data.signatureName,
+      signedAt,
+      signerIp: ip,
+    });
+    const signedIcaKey = `signed-ica/${applicationId}.pdf`;
+    await uploadToR2(signedIcaKey, pdfBuffer, "application/pdf");
+
     const app = await prisma.agentApplication.create({
       data: {
+        id:              applicationId,
         firstName:       data.firstName,
         lastName:        data.lastName,
         email:           data.email,
@@ -92,8 +116,11 @@ export async function POST(req: Request) {
         instagramUrl:   data.instagramUrl || null,
         facebookUrl:    data.facebookUrl || null,
         icaOpenedAt:    new Date(data.icaOpenedAt),
-        icaAgreedAt:    new Date(data.icaAgreedAt),
+        icaAgreedAt:    signedAt,
         submissionIp:   ip,
+        signedName:     data.signatureName,
+        icaVersion:     ICA_VERSION,
+        signedIcaKey,
       },
     });
 

@@ -8,6 +8,12 @@ vi.mock('@/lib/prisma', () => ({
 vi.mock('@/lib/email', () => ({
   sendApplicationNotification: vi.fn(),
 }));
+vi.mock('@/lib/ica-pdf', () => ({
+  generateSignedIcaPdf: vi.fn().mockResolvedValue(Buffer.from('%PDF-fake')),
+}));
+vi.mock('@/lib/r2', () => ({
+  uploadToR2: vi.fn().mockResolvedValue(undefined),
+}));
 
 // Mock reCAPTCHA verification — success by default
 global.fetch = vi.fn().mockResolvedValue({
@@ -15,6 +21,7 @@ global.fetch = vi.fn().mockResolvedValue({
 } as any);
 
 import { prisma } from '@/lib/prisma';
+import { uploadToR2 } from '@/lib/r2';
 import { POST } from '../../app/api/agent-applications/route';
 
 const VALID_BODY = {
@@ -48,6 +55,7 @@ const VALID_BODY = {
   facebookUrl: '',
   icaOpenedAt: '2026-06-30T14:00:00.000Z',
   icaAgreedAt: '2026-06-30T14:05:00.000Z',
+  signatureName: 'Jane Smith',
   recaptchaToken: 'valid-token',
 };
 
@@ -86,6 +94,18 @@ describe('POST /api/agent-applications', () => {
     expect(body.error).toContain("certification required");
   });
 
+  it('returns 400 if signatureName does not match firstName/lastName', async () => {
+    const req = new Request('http://localhost/api/agent-applications', {
+      method: 'POST',
+      body: JSON.stringify({ ...VALID_BODY, signatureName: 'John Doe' }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toContain('Signature must match');
+  });
+
   it('persists desiredMembershipAssociation when provided', async () => {
     vi.mocked(prisma.agentApplication.create).mockResolvedValue({ id: 'app-2' } as any);
     const req = new Request('http://localhost/api/agent-applications', {
@@ -104,7 +124,7 @@ describe('POST /api/agent-applications', () => {
     );
   });
 
-  it('creates application and returns 201 for valid submission', async () => {
+  it('creates application and returns 201 for valid submission, with a signed ICA PDF uploaded to R2', async () => {
     vi.mocked(prisma.agentApplication.create).mockResolvedValue({ id: 'app-1' } as any);
     const req = new Request('http://localhost/api/agent-applications', {
       method: 'POST',
@@ -115,12 +135,22 @@ describe('POST /api/agent-applications', () => {
     expect(res.status).toBe(201);
     const body = await res.json();
     expect(body.id).toBe('app-1');
+
+    expect(uploadToR2).toHaveBeenCalledWith(
+      expect.stringMatching(/^signed-ica\/.+\.pdf$/),
+      expect.any(Buffer),
+      'application/pdf'
+    );
+
     expect(prisma.agentApplication.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           email: 'jane@example.com',
           licenseNumber: '01234567',
           submissionIp: '1.2.3.4',
+          signedName: 'Jane Smith',
+          signedIcaKey: expect.stringMatching(/^signed-ica\/.+\.pdf$/),
+          icaVersion: expect.any(String),
         }),
       })
     );
