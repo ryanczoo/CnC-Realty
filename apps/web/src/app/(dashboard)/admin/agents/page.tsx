@@ -4,6 +4,7 @@ import { AdminTable } from "@/components/admin/AdminTable";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PromoteButton } from "./PromoteButton";
 import { AgentTitleEditor } from "./AgentTitleEditor";
+import { DownloadIcaButton } from "./DownloadIcaButton";
 import { formatDate } from "@/lib/utils";
 import { requireAdminPage } from "@/lib/server-utils";
 
@@ -24,6 +25,7 @@ export default async function AdminAgentsPage() {
     title: string | null;
     licenseNum: string | null;
     createdAt: Date;
+    signedIcaKey: string | null;
     user: { email: string; role: string; createdAt: Date };
     _count: { leads: number };
   };
@@ -59,7 +61,7 @@ export default async function AdminAgentsPage() {
         <EmptyState message="No agents yet" />
       ) : (
         <AdminTable
-          headers={["Agent Name", "Email", "Title", "License", "Leads", "Joined", "Role", "Actions"]}
+          headers={["Agent Name", "Email", "Title", "License", "Leads", "Joined", "Role", "Signed ICA", "Actions"]}
         >
           {agents.map((agent) => (
             <tr
@@ -88,6 +90,13 @@ export default async function AdminAgentsPage() {
                 >
                   {agent.user.role}
                 </span>
+              </td>
+              <td className="px-4 py-3">
+                {agent.signedIcaKey ? (
+                  <DownloadIcaButton agentId={agent.id} />
+                ) : (
+                  <span className="text-[#1B1B1B]/30">—</span>
+                )}
               </td>
               <td className="px-4 py-3">
                 {agent.user.role === "AGENT" ? (
