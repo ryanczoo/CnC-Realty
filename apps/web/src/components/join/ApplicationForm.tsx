@@ -384,7 +384,6 @@ function FormInner() {
           I have read and agree to the CnC Realty Independent Contractor Agreement. *
         </label>
         <div className="mt-4">
-          <label className={labelClass}>Enter your first &amp; last name *</label>
           <input
             className={inputClass}
             value={form.signatureName}
@@ -393,7 +392,7 @@ function FormInner() {
             placeholder="First Last"
           />
           <p className="mt-1 font-sans text-xs text-[#1B1B1B]/40">
-            By typing your name above, you are electronically signing the CnC Realty Independent Contractor Agreement.
+            By typing your name above, you are electronically signing the CnC Realty Independent Contractor Agreement. *
           </p>
         </div>
       </div>
