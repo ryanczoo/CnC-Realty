@@ -8,6 +8,7 @@ import { ChevronDown } from "lucide-react";
 import { RevealLine } from "@/components/ui/reveal-text";
 import { DateField } from "@/components/ui/DateField";
 import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
+import { namesMatch } from "@/lib/ica-signature";
 
 const inputClass =
   "w-full rounded-lg border border-[#1B1B1B]/10 bg-white px-4 py-3 text-sm text-[#1B1B1B] placeholder-[#1B1B1B]/40 focus:outline-none focus:ring-2 focus:ring-[#9E8C61]/40";
@@ -56,6 +57,7 @@ interface FormState {
   hasInvestigationHistory: boolean | null;
   investigationExplain: string;
   icaAgreed: boolean;
+  signatureName: string;
   drePerJuryCert: boolean;
 }
 
@@ -68,7 +70,7 @@ const INITIAL: FormState = {
   commissionEntity: "",
   hasDisciplinaryHistory: null, disciplinaryExplain: "",
   hasInvestigationHistory: null, investigationExplain: "",
-  icaAgreed: false, drePerJuryCert: false,
+  icaAgreed: false, signatureName: "", drePerJuryCert: false,
 };
 
 const CURRENT_YEAR = new Date().getFullYear();
@@ -147,6 +149,10 @@ function FormInner() {
     }
     if (!form.icaAgreed) {
       setError("You must agree to the Independent Contractor Agreement.");
+      return;
+    }
+    if (!namesMatch(form.signatureName, form.firstName, form.lastName)) {
+      setError("Your signature must match your full legal name (First + Last Name) entered above.");
       return;
     }
     if (!form.drePerJuryCert) {
@@ -377,6 +383,18 @@ function FormInner() {
           />
           I have read and agree to the CnC Realty Independent Contractor Agreement. *
         </label>
+        <div className="mt-4">
+          <label className={labelClass}>Type your full legal name to sign *</label>
+          <input
+            className={inputClass}
+            value={form.signatureName}
+            onChange={(e) => set("signatureName", e.target.value)}
+            disabled={!icaOpened}
+          />
+          <p className="mt-1 font-sans text-xs text-[#1B1B1B]/40">
+            By typing your name above, you are electronically signing the CnC Realty Independent Contractor Agreement.
+          </p>
+        </div>
       </div>
 
       {/* ── Section 4: Active Listings & Sales ── */}
