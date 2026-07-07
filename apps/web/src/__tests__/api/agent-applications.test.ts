@@ -13,6 +13,7 @@ vi.mock('@/lib/ica-pdf', () => ({
 }));
 vi.mock('@/lib/r2', () => ({
   uploadToR2: vi.fn().mockResolvedValue(undefined),
+  deleteR2Object: vi.fn().mockResolvedValue(undefined),
 }));
 
 // Mock reCAPTCHA verification — success by default
@@ -21,7 +22,7 @@ global.fetch = vi.fn().mockResolvedValue({
 } as any);
 
 import { prisma } from '@/lib/prisma';
-import { uploadToR2 } from '@/lib/r2';
+import { uploadToR2, deleteR2Object } from '@/lib/r2';
 import { POST } from '../../app/api/agent-applications/route';
 
 const VALID_BODY = {
@@ -154,5 +155,17 @@ describe('POST /api/agent-applications', () => {
         }),
       })
     );
+  });
+
+  it('cleans up the uploaded R2 object if the database insert fails', async () => {
+    vi.mocked(prisma.agentApplication.create).mockRejectedValue(new Error('DB unique constraint violation'));
+    const req = new Request('http://localhost/api/agent-applications', {
+      method: 'POST',
+      body: JSON.stringify(VALID_BODY),
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(500);
+    expect(deleteR2Object).toHaveBeenCalledWith(expect.stringMatching(/^signed-ica\/.+\.pdf$/));
   });
 });

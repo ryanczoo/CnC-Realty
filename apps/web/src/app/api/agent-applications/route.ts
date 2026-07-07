@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { sendApplicationNotification } from "@/lib/email";
 import { namesMatch } from "@/lib/ica-signature";
 import { generateSignedIcaPdf } from "@/lib/ica-pdf";
-import { uploadToR2 } from "@/lib/r2";
+import { uploadToR2, deleteR2Object } from "@/lib/r2";
 import { ICA_VERSION } from "@/lib/ica-content";
 
 const schema = z.object({
@@ -74,7 +74,7 @@ export async function POST(req: Request) {
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
 
     const applicationId = randomUUID();
-    const signedAt = new Date(data.icaAgreedAt);
+    const signedAt = new Date(); // server-authoritative signing time for the legal record — never trust a client-supplied timestamp here
     const pdfBuffer = await generateSignedIcaPdf({
       signerName: data.signatureName,
       signedAt,
@@ -83,46 +83,54 @@ export async function POST(req: Request) {
     const signedIcaKey = `signed-ica/${applicationId}.pdf`;
     await uploadToR2(signedIcaKey, pdfBuffer, "application/pdf");
 
-    const app = await prisma.agentApplication.create({
-      data: {
-        id:              applicationId,
-        firstName:       data.firstName,
-        lastName:        data.lastName,
-        email:           data.email,
-        phone:           data.phone,
-        address:         data.address,
-        city:            data.city,
-        state:           data.state,
-        zip:             data.zip,
-        dateOfBirth:     data.dateOfBirth,
-        licenseNumber:   data.licenseNumber,
-        licenseType:     data.licenseType,
-        licenseExpDate:  data.licenseExpDate,
-        yearsLicensed:   data.yearsLicensed,
-        formerBrokerage: data.formerBrokerage,
-        boardOfRealtors: data.boardOfRealtors || null,
-        desiredMembershipAssociation: data.desiredMembershipAssociation || null,
-        mlsId:           data.mlsId || null,
-        hasActiveListings:       data.hasActiveListings,
-        hasActiveSales:          data.hasActiveSales,
-        commissionEntity:        data.commissionEntity,
-        hasDisciplinaryHistory:  data.hasDisciplinaryHistory,
-        disciplinaryExplain:     data.disciplinaryExplain || null,
-        hasInvestigationHistory: data.hasInvestigationHistory,
-        investigationExplain:    data.investigationExplain || null,
-        drePerJuryCert:          data.drePerJuryCert,
-        specialties:    data.specialties,
-        bio:            data.bio || null,
-        instagramUrl:   data.instagramUrl || null,
-        facebookUrl:    data.facebookUrl || null,
-        icaOpenedAt:    new Date(data.icaOpenedAt),
-        icaAgreedAt:    signedAt,
-        submissionIp:   ip,
-        signedName:     data.signatureName,
-        icaVersion:     ICA_VERSION,
-        signedIcaKey,
-      },
-    });
+    let app;
+    try {
+      app = await prisma.agentApplication.create({
+        data: {
+          id:              applicationId,
+          firstName:       data.firstName,
+          lastName:        data.lastName,
+          email:           data.email,
+          phone:           data.phone,
+          address:         data.address,
+          city:            data.city,
+          state:           data.state,
+          zip:             data.zip,
+          dateOfBirth:     data.dateOfBirth,
+          licenseNumber:   data.licenseNumber,
+          licenseType:     data.licenseType,
+          licenseExpDate:  data.licenseExpDate,
+          yearsLicensed:   data.yearsLicensed,
+          formerBrokerage: data.formerBrokerage,
+          boardOfRealtors: data.boardOfRealtors || null,
+          desiredMembershipAssociation: data.desiredMembershipAssociation || null,
+          mlsId:           data.mlsId || null,
+          hasActiveListings:       data.hasActiveListings,
+          hasActiveSales:          data.hasActiveSales,
+          commissionEntity:        data.commissionEntity,
+          hasDisciplinaryHistory:  data.hasDisciplinaryHistory,
+          disciplinaryExplain:     data.disciplinaryExplain || null,
+          hasInvestigationHistory: data.hasInvestigationHistory,
+          investigationExplain:    data.investigationExplain || null,
+          drePerJuryCert:          data.drePerJuryCert,
+          specialties:    data.specialties,
+          bio:            data.bio || null,
+          instagramUrl:   data.instagramUrl || null,
+          facebookUrl:    data.facebookUrl || null,
+          icaOpenedAt:    new Date(data.icaOpenedAt),
+          icaAgreedAt:    new Date(data.icaAgreedAt),
+          submissionIp:   ip,
+          signedName:     data.signatureName,
+          icaVersion:     ICA_VERSION,
+          signedIcaKey,
+        },
+      });
+    } catch (createErr) {
+      await deleteR2Object(signedIcaKey).catch((cleanupErr) =>
+        console.error("[agent-applications] failed to clean up orphaned R2 object after DB error:", cleanupErr)
+      );
+      throw createErr;
+    }
 
     Promise.resolve(sendApplicationNotification(app)).catch(console.error);
 
