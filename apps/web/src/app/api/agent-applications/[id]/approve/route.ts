@@ -69,6 +69,7 @@ export async function POST(
           bio: app.bio ?? undefined,
           instagram: app.instagramUrl ?? undefined,
           facebook: app.facebookUrl ?? undefined,
+          signedIcaKey: app.signedIcaKey,
         },
       });
     });
