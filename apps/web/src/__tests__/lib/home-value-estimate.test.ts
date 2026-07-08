@@ -162,21 +162,37 @@ describe("findComps", () => {
     expect(prisma.property.findMany).toHaveBeenCalledTimes(2);
   });
 
-  it("drops the beds constraint as a final fallback after all time windows fail", async () => {
+  it("drops the beds and propertyType constraints as a final fallback after all time windows fail", async () => {
     const { prisma } = await import("@/lib/prisma");
     const { findComps } = await import("@/lib/home-value-estimate");
     vi.mocked(prisma.property.findMany)
       .mockResolvedValueOnce([] as any) // 6mo
       .mockResolvedValueOnce([{}] as any) // 12mo
       .mockResolvedValueOnce([{}] as any) // 24mo
-      .mockResolvedValueOnce([{}, {}] as any); // final fallback, no beds filter
+      .mockResolvedValueOnce([{}, {}] as any); // final fallback, no beds/propertyType filter
 
-    const result = await findComps(prisma as any, { zip: "91101", beds: 3 });
+    const result = await findComps(prisma as any, {
+      zip: "91101",
+      beds: 3,
+      propertyType: "SingleFamilyResidence",
+    });
 
     expect(result).toHaveLength(2);
     expect(prisma.property.findMany).toHaveBeenCalledTimes(4);
     const finalCall = vi.mocked(prisma.property.findMany).mock.calls[3][0] as any;
     expect(finalCall.where.beds).toBeUndefined();
+    expect(finalCall.where.propertyType).toBeUndefined();
+  });
+
+  it("includes propertyType in the where clause when provided", async () => {
+    const { prisma } = await import("@/lib/prisma");
+    const { findComps } = await import("@/lib/home-value-estimate");
+    vi.mocked(prisma.property.findMany).mockResolvedValue([{}, {}, {}] as any);
+
+    await findComps(prisma as any, { zip: "91101", beds: 3, propertyType: "Condominium" });
+
+    const call = vi.mocked(prisma.property.findMany).mock.calls[0][0] as any;
+    expect(call.where.propertyType).toBe("Condominium");
   });
 
   it("excludes the subject's own mlsNumber when provided", async () => {

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { computeEstimate, findComps } from "@/lib/home-value-estimate";
+import { computeEstimate, findComps, findSubjectProperty } from "@/lib/home-value-estimate";
 import { publicFormRateLimit } from "@/lib/rate-limit";
 import { sendLeadNotification } from "@/lib/email";
 
@@ -34,7 +34,15 @@ export async function POST(req: Request) {
     const body = await req.json();
     const data = revealSchema.parse(body);
 
-    const comps = await findComps(prisma, { zip: data.zip, beds: data.beds });
+    const matches = await findSubjectProperty(prisma, data.address, data.zip);
+    const latest = matches[0] ?? null;
+
+    const comps = await findComps(prisma, {
+      zip: data.zip,
+      beds: data.beds,
+      propertyType: latest?.propertyType ?? null,
+      excludeMlsNumber: latest?.mlsNumber,
+    });
     const estimate = computeEstimate(
       comps.map((c) => ({ closePrice: c.closePrice, sqft: c.sqft ?? 0 })),
       data.sqft

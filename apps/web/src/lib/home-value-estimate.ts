@@ -24,6 +24,7 @@ export interface SubjectRecord {
   closePrice: number | null;
   closeDate: Date | null;
   listedAt: Date | null;
+  propertyType: string | null;
 }
 
 export function percentile(sorted: number[], p: number): number {
@@ -82,6 +83,7 @@ export async function findSubjectProperty(
       closePrice: true,
       closeDate: true,
       listedAt: true,
+      propertyType: true,
     },
   });
 }
@@ -103,6 +105,7 @@ export interface CompRecord {
 export interface FindCompsParams {
   zip: string;
   beds: number | null;
+  propertyType?: string | null;
   excludeMlsNumber?: string;
 }
 
@@ -127,6 +130,7 @@ async function queryComps(
   zip: string,
   months: number,
   beds: number | null,
+  propertyType: string | null,
   excludeMlsNumber?: string
 ): Promise<CompRecord[]> {
   const closeDateAfter = new Date();
@@ -140,6 +144,7 @@ async function queryComps(
   };
   if (excludeMlsNumber) where.mlsNumber = { not: excludeMlsNumber };
   if (beds != null) where.beds = { gte: beds - 1, lte: beds + 1 };
+  if (propertyType) where.propertyType = propertyType;
 
   return prisma.property.findMany({
     where,
@@ -153,12 +158,20 @@ export async function findComps(
   prisma: PrismaClient,
   params: FindCompsParams
 ): Promise<CompRecord[]> {
+  const propertyType = params.propertyType ?? null;
   for (const months of WINDOW_MONTHS) {
-    const rows = await queryComps(prisma, params.zip, months, params.beds, params.excludeMlsNumber);
+    const rows = await queryComps(prisma, params.zip, months, params.beds, propertyType, params.excludeMlsNumber);
     if (rows.length >= MIN_COMPS) return rows;
   }
-  // Final fallback: widest window, no beds constraint
-  return queryComps(prisma, params.zip, WINDOW_MONTHS[WINDOW_MONTHS.length - 1], null, params.excludeMlsNumber);
+  // Final fallback: widest window, no beds or propertyType constraint
+  return queryComps(
+    prisma,
+    params.zip,
+    WINDOW_MONTHS[WINDOW_MONTHS.length - 1],
+    null,
+    null,
+    params.excludeMlsNumber
+  );
 }
 
 export interface QuarterStat {

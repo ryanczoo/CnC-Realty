@@ -42,7 +42,7 @@ export async function GET(req: Request) {
     }
 
     const [comps, marketSnapshot] = await Promise.all([
-      findComps(prisma, { zip, beds, excludeMlsNumber: latest?.mlsNumber }),
+      findComps(prisma, { zip, beds, propertyType: latest?.propertyType ?? null, excludeMlsNumber: latest?.mlsNumber }),
       getMarketSnapshot(prisma, zip),
     ]);
 
