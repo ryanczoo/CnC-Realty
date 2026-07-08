@@ -8,7 +8,7 @@ import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
 const BENEFITS: { label: string; muted?: string }[] = [
   { label: "100% Commission" },
   { label: "$990 Flat Broker Fee" },
-  { label: "E&O Insurance included through $1M", muted: "– $400 per $500k over $1M" },
+  { label: "E&O Insurance included through $1M" },
   { label: "Customer Relation Management System Access" },
   { label: "Transaction Management Software Access" },
   { label: "Personal Agent Profile Page" },
@@ -17,7 +17,7 @@ const BENEFITS: { label: string; muted?: string }[] = [
   { label: "No Desk Fees" },
   { label: "No Quotas" },
   { label: "No Long Term Commitment" },
-  { label: "Optional Transaction Coordinator Service", muted: "– $350 through escrow" },
+  { label: "Optional Transaction Coordinator Service" },
 ];
 
 function CheckIcon() {
@@ -116,7 +116,7 @@ export function AgentPlan() {
             ))}
           </ul>
 
-          <p className="mt-6 font-sans text-xs text-[#1B1B1B]">
+          <p className="mt-6 font-sans text-xs text-[#1B1B1B]/50">
             Additional terms apply, please refer to the{" "}
             <a href="/join/ica" className="underline underline-offset-2">ICA</a>
             {" "}for more details.
