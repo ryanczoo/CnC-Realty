@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { computeEstimate, percentile } from "@/lib/home-value-estimate";
 
 vi.mock("@/lib/prisma", () => ({
@@ -115,5 +115,78 @@ describe("findSubjectProperty", () => {
 
     const result = await findSubjectProperty(prisma as any, "123 Main St", "91101");
     expect(result).toEqual(fixture);
+  });
+});
+
+describe("findComps", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("queries Closed status, non-null closePrice, exact zip, and a 6-month window first", async () => {
+    const { prisma } = await import("@/lib/prisma");
+    const { findComps } = await import("@/lib/home-value-estimate");
+    vi.mocked(prisma.property.findMany).mockResolvedValue([{}, {}, {}] as any);
+
+    await findComps(prisma as any, { zip: "91101", beds: 3 });
+
+    const call = vi.mocked(prisma.property.findMany).mock.calls[0][0] as any;
+    expect(call.where.status).toBe("Closed");
+    expect(call.where.closePrice.not).toBeNull();
+    expect(call.where.zip).toBe("91101");
+    expect(call.where.beds).toEqual({ gte: 2, lte: 4 });
+    expect(call.orderBy).toEqual({ closeDate: "desc" });
+  });
+
+  it("returns immediately once a window yields >= 3 comps", async () => {
+    const { prisma } = await import("@/lib/prisma");
+    const { findComps } = await import("@/lib/home-value-estimate");
+    vi.mocked(prisma.property.findMany).mockResolvedValueOnce([{}, {}, {}] as any);
+
+    const result = await findComps(prisma as any, { zip: "91101", beds: 3 });
+
+    expect(result).toHaveLength(3);
+    expect(prisma.property.findMany).toHaveBeenCalledTimes(1);
+  });
+
+  it("widens the time window when fewer than 3 comps are found", async () => {
+    const { prisma } = await import("@/lib/prisma");
+    const { findComps } = await import("@/lib/home-value-estimate");
+    vi.mocked(prisma.property.findMany)
+      .mockResolvedValueOnce([{}] as any) // 6mo: 1 comp, not enough
+      .mockResolvedValueOnce([{}, {}, {}, {}] as any); // 12mo: 4 comps, enough
+
+    const result = await findComps(prisma as any, { zip: "91101", beds: 3 });
+
+    expect(result).toHaveLength(4);
+    expect(prisma.property.findMany).toHaveBeenCalledTimes(2);
+  });
+
+  it("drops the beds constraint as a final fallback after all time windows fail", async () => {
+    const { prisma } = await import("@/lib/prisma");
+    const { findComps } = await import("@/lib/home-value-estimate");
+    vi.mocked(prisma.property.findMany)
+      .mockResolvedValueOnce([] as any) // 6mo
+      .mockResolvedValueOnce([{}] as any) // 12mo
+      .mockResolvedValueOnce([{}] as any) // 24mo
+      .mockResolvedValueOnce([{}, {}] as any); // final fallback, no beds filter
+
+    const result = await findComps(prisma as any, { zip: "91101", beds: 3 });
+
+    expect(result).toHaveLength(2);
+    expect(prisma.property.findMany).toHaveBeenCalledTimes(4);
+    const finalCall = vi.mocked(prisma.property.findMany).mock.calls[3][0] as any;
+    expect(finalCall.where.beds).toBeUndefined();
+  });
+
+  it("excludes the subject's own mlsNumber when provided", async () => {
+    const { prisma } = await import("@/lib/prisma");
+    const { findComps } = await import("@/lib/home-value-estimate");
+    vi.mocked(prisma.property.findMany).mockResolvedValue([{}, {}, {}] as any);
+
+    await findComps(prisma as any, { zip: "91101", beds: 3, excludeMlsNumber: "ML1" });
+
+    const call = vi.mocked(prisma.property.findMany).mock.calls[0][0] as any;
+    expect(call.where.mlsNumber).toEqual({ not: "ML1" });
   });
 });
