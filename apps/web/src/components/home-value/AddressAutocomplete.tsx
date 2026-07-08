@@ -86,7 +86,7 @@ export function AddressAutocomplete({ onSelect, placeholder }: Props) {
         value={query}
         onChange={(e) => handleChange(e.target.value)}
         placeholder={placeholder ?? "Enter Your Address"}
-        className="w-full rounded-lg border border-[#1B1B1B]/15 bg-white px-5 py-4 text-[#1B1B1B] placeholder:text-[#1B1B1B]/40 focus:outline-none focus:ring-1 focus:ring-cnc-gold"
+        className="w-full rounded-lg border border-[#1B1B1B]/15 bg-white px-6 py-5 text-lg text-[#1B1B1B] placeholder:text-[#1B1B1B]/40 focus:outline-none focus:ring-1 focus:ring-cnc-gold"
       />
       {open && (
         <ul className="absolute left-0 right-0 top-full z-20 mt-1 max-h-64 overflow-y-auto rounded-lg border border-[#1B1B1B]/10 bg-white shadow-lg">
@@ -95,7 +95,7 @@ export function AddressAutocomplete({ onSelect, placeholder }: Props) {
               <button
                 type="button"
                 onClick={() => handleSelect(s)}
-                className="block w-full px-5 py-3 text-left text-sm text-[#1B1B1B] hover:bg-cnc-bg"
+                className="block w-full px-6 py-4 text-left text-base text-[#1B1B1B] hover:bg-cnc-bg"
               >
                 {s.fullAddress}
               </button>

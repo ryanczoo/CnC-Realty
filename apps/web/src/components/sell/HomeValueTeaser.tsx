@@ -68,28 +68,28 @@ export function HomeValueTeaser() {
   }
 
   return (
-    <section className="mx-auto max-w-4xl px-6 py-24 text-center">
-      <h2 className="font-sans text-[1.9rem] font-light text-[#1B1B1B] xl:text-[2.2rem]">
+    <section className="mx-auto max-w-5xl px-6 py-28 text-center">
+      <h2 className="font-sans text-[2.8rem] font-light text-[#1B1B1B] xl:text-[3.4rem]">
         <RevealLine>
-          <span className="text-[1.4rem] xl:text-[1.6rem]">Sell </span>
+          <span className="text-[2.1rem] xl:text-[2.5rem]">Sell </span>
           <span style={{ color: "#9E8C61", fontWeight: 500 }}>Smarter</span>
         </RevealLine>
       </h2>
-      <p className="mt-4 text-[#1B1B1B]/60">
+      <p className="mt-5 text-lg text-[#1B1B1B]/60 xl:text-xl">
         Instant home value report complete with MLS data and local insight of your home free
       </p>
 
-      <div className="mx-auto mt-10 max-w-xl">
+      <div className="mx-auto mt-12 max-w-2xl">
         <AddressAutocomplete onSelect={handleSelect} />
       </div>
 
-      <div className="mx-auto mt-14 grid max-w-2xl grid-cols-1 gap-x-10 gap-y-8 text-left sm:grid-cols-2">
+      <div className="mx-auto mt-16 grid max-w-4xl grid-cols-1 gap-x-14 gap-y-10 text-left sm:grid-cols-2">
         {FEATURES.map(({ icon: Icon, label, body }) => (
-          <div key={label} className="flex gap-4">
-            <Icon className="mt-1 h-5 w-5 shrink-0 text-[#1B1B1B]/70" />
+          <div key={label} className="flex gap-5">
+            <Icon className="mt-1 h-8 w-8 shrink-0 text-[#1B1B1B]/70" />
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-[#1B1B1B]">{label}</p>
-              <p className="mt-1 text-sm text-[#1B1B1B]/60">{body}</p>
+              <p className="text-base font-medium uppercase tracking-wide text-[#1B1B1B]">{label}</p>
+              <p className="mt-1.5 text-lg text-[#1B1B1B]/60">{body}</p>
             </div>
           </div>
         ))}
