@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { computeEstimate, percentile } from "@/lib/home-value-estimate";
 
 vi.mock("@/lib/prisma", () => ({
@@ -188,5 +188,54 @@ describe("findComps", () => {
 
     const call = vi.mocked(prisma.property.findMany).mock.calls[0][0] as any;
     expect(call.where.mlsNumber).toEqual({ not: "ML1" });
+  });
+});
+
+describe("getMarketSnapshot", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-08T12:00:00Z")); // mid Q3 2026
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("returns exactly 4 quarters, oldest to newest, ending in the current quarter", async () => {
+    const { prisma } = await import("@/lib/prisma");
+    const { getMarketSnapshot } = await import("@/lib/home-value-estimate");
+    vi.mocked(prisma.property.findMany).mockResolvedValue([]);
+
+    const result = await getMarketSnapshot(prisma as any, "91101");
+
+    expect(result).toHaveLength(4);
+    expect(result[3].label).toBe("2026 Q3");
+    expect(result[0].label).toBe("2025 Q4");
+  });
+
+  it("counts sales and computes median price per quarter", async () => {
+    const { prisma } = await import("@/lib/prisma");
+    const { getMarketSnapshot } = await import("@/lib/home-value-estimate");
+    vi.mocked(prisma.property.findMany).mockResolvedValue([
+      { closePrice: 700000, closeDate: new Date("2026-04-10") }, // Q2
+      { closePrice: 900000, closeDate: new Date("2026-04-20") }, // Q2
+      { closePrice: 800000, closeDate: new Date("2026-05-01") }, // Q2
+    ] as any);
+
+    const result = await getMarketSnapshot(prisma as any, "91101");
+    const q2 = result.find((q) => q.label === "2026 Q2")!;
+
+    expect(q2.count).toBe(3);
+    expect(q2.medianPrice).toBe(800000);
+  });
+
+  it("returns medianPrice null and count 0 for a quarter with no sales", async () => {
+    const { prisma } = await import("@/lib/prisma");
+    const { getMarketSnapshot } = await import("@/lib/home-value-estimate");
+    vi.mocked(prisma.property.findMany).mockResolvedValue([]);
+
+    const result = await getMarketSnapshot(prisma as any, "91101");
+
+    expect(result.every((q) => q.count === 0 && q.medianPrice === null)).toBe(true);
   });
 });

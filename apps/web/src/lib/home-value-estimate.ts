@@ -160,3 +160,49 @@ export async function findComps(
   // Final fallback: widest window, no beds constraint
   return queryComps(prisma, params.zip, WINDOW_MONTHS[WINDOW_MONTHS.length - 1], null, params.excludeMlsNumber);
 }
+
+export interface QuarterStat {
+  label: string;
+  count: number;
+  medianPrice: number | null;
+}
+
+function lastFourQuarters(): { label: string; start: Date; end: Date }[] {
+  const now = new Date();
+  const currentQuarterStartMonth = Math.floor(now.getMonth() / 3) * 3;
+  const result: { label: string; start: Date; end: Date }[] = [];
+  for (let i = 3; i >= 0; i--) {
+    const start = new Date(now.getFullYear(), currentQuarterStartMonth - i * 3, 1);
+    const end = new Date(now.getFullYear(), currentQuarterStartMonth - i * 3 + 3, 1);
+    const q = Math.floor(start.getMonth() / 3) + 1;
+    result.push({ label: `${start.getFullYear()} Q${q}`, start, end });
+  }
+  return result;
+}
+
+export async function getMarketSnapshot(
+  prisma: PrismaClient,
+  zip: string
+): Promise<QuarterStat[]> {
+  const quarters = lastFourQuarters();
+  const since = quarters[0].start;
+
+  const rows = await prisma.property.findMany({
+    where: { status: "Closed", zip, closePrice: { not: null }, closeDate: { gte: since } },
+    select: { closePrice: true, closeDate: true },
+  });
+
+  return quarters.map(({ label, start, end }) => {
+    const inQuarter = rows.filter(
+      (r) => r.closeDate && r.closeDate >= start && r.closeDate < end
+    );
+    const prices = inQuarter
+      .map((r) => r.closePrice as number)
+      .sort((a, b) => a - b);
+    return {
+      label,
+      count: inQuarter.length,
+      medianPrice: prices.length ? percentile(prices, 0.5) : null,
+    };
+  });
+}
