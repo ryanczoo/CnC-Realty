@@ -2,6 +2,8 @@ export interface ResoProperty {
   ListingKey: string;
   StandardStatus?: string;
   ListPrice?: number;
+  ClosePrice?: number;
+  CloseDate?: string;
   BedroomsTotal?: number;
   BathroomsTotalInteger?: number;
   BathroomsFull?: number;
@@ -90,6 +92,8 @@ export function mapResoToProperty(raw: ResoProperty) {
     status: raw.StandardStatus ?? "Unknown",
     listingType,
     listPrice: raw.ListPrice ?? 0,
+    closePrice: raw.ClosePrice ?? null,
+    closeDate: raw.CloseDate ? new Date(raw.CloseDate) : null,
     beds: raw.BedroomsTotal ?? null,
     baths: baths ?? null,
     sqft: raw.LivingArea ? Math.round(raw.LivingArea) : null,

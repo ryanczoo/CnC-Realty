@@ -4,7 +4,7 @@ import { mapResoToProperty, ResoProperty } from "./field-map";
 const BASE_URL = "https://api-trestle.corelogic.com/trestle/odata";
 const SELECT_FIELDS = [
   // Core listing fields
-  "ListingKey", "StandardStatus", "ListPrice",
+  "ListingKey", "StandardStatus", "ListPrice", "ClosePrice", "CloseDate",
   "BedroomsTotal", "BathroomsTotalInteger", "BathroomsFull", "BathroomsHalf",
   "LivingArea", "LotSizeSquareFeet", "YearBuilt",
   "PropertySubType", "PropertyType", "PublicRemarks",
