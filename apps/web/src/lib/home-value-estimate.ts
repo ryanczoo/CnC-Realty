@@ -1,3 +1,5 @@
+import type { PrismaClient } from "@prisma/client";
+
 export interface CompInput {
   closePrice: number;
   sqft: number;
@@ -8,6 +10,19 @@ export interface EstimateResult {
   rangeLow: number;
   rangeHigh: number;
   compCount: number;
+}
+
+export interface SubjectRecord {
+  mlsNumber: string;
+  status: string;
+  beds: number | null;
+  baths: number | null;
+  sqft: number | null;
+  lotSize: number | null;
+  listPrice: number;
+  closePrice: number | null;
+  closeDate: Date | null;
+  listedAt: Date | null;
 }
 
 export function percentile(sorted: number[], p: number): number {
@@ -42,4 +57,30 @@ export function computeEstimate(
     rangeHigh: Math.round(p75 * subjectSqft),
     compCount: pricesPerSqft.length,
   };
+}
+
+export async function findSubjectProperty(
+  prisma: PrismaClient,
+  address: string,
+  zip: string
+): Promise<SubjectRecord[]> {
+  return prisma.property.findMany({
+    where: {
+      zip,
+      address: { contains: address, mode: "insensitive" },
+    },
+    orderBy: { listedAt: "desc" },
+    select: {
+      mlsNumber: true,
+      status: true,
+      beds: true,
+      baths: true,
+      sqft: true,
+      lotSize: true,
+      listPrice: true,
+      closePrice: true,
+      closeDate: true,
+      listedAt: true,
+    },
+  });
 }

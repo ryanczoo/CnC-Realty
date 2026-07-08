@@ -1,5 +1,13 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { computeEstimate, percentile } from "@/lib/home-value-estimate";
+
+vi.mock("@/lib/prisma", () => ({
+  prisma: {
+    property: {
+      findMany: vi.fn(),
+    },
+  },
+}));
 
 describe("percentile", () => {
   it("returns the single value for a one-element array", () => {
@@ -68,5 +76,44 @@ describe("computeEstimate", () => {
   it("returns null when all comps are filtered out as invalid", () => {
     const comps = [{ closePrice: 0, sqft: 1000 }];
     expect(computeEstimate(comps, 1000)).toBeNull();
+  });
+});
+
+describe("findSubjectProperty", () => {
+  it("queries by zip-exact and address-contains, ordered by listedAt desc", async () => {
+    const { prisma } = await import("@/lib/prisma");
+    const { findSubjectProperty } = await import("@/lib/home-value-estimate");
+    vi.mocked(prisma.property.findMany).mockResolvedValue([]);
+
+    await findSubjectProperty(prisma as any, "123 Main St", "91101");
+
+    const call = vi.mocked(prisma.property.findMany).mock.calls[0][0] as any;
+    expect(call.where.zip).toBe("91101");
+    expect(call.where.address.contains).toBe("123 Main St");
+    expect(call.where.address.mode).toBe("insensitive");
+    expect(call.orderBy).toEqual({ listedAt: "desc" });
+  });
+
+  it("returns the matched records unchanged", async () => {
+    const { prisma } = await import("@/lib/prisma");
+    const { findSubjectProperty } = await import("@/lib/home-value-estimate");
+    const fixture = [
+      {
+        mlsNumber: "ML1",
+        status: "Closed",
+        beds: 4,
+        baths: 2,
+        sqft: 1800,
+        lotSize: 0.15,
+        listPrice: 950000,
+        closePrice: 940000,
+        closeDate: new Date("2025-01-10"),
+        listedAt: new Date("2024-11-01"),
+      },
+    ];
+    vi.mocked(prisma.property.findMany).mockResolvedValue(fixture as any);
+
+    const result = await findSubjectProperty(prisma as any, "123 Main St", "91101");
+    expect(result).toEqual(fixture);
   });
 });
