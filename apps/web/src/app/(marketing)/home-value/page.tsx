@@ -51,6 +51,7 @@ export default function HomeValuePage() {
 
   const [data, setData] = useState<EstimateResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [manualOverride, setManualOverride] = useState<{ beds: number; baths: number; sqft: number } | null>(null);
 
   useEffect(() => {
@@ -60,6 +61,7 @@ export default function HomeValuePage() {
     }
     const controller = new AbortController();
     setLoading(true);
+    setError(null);
     const params = new URLSearchParams({ address, zip });
     if (manualOverride) {
       params.set("beds", String(manualOverride.beds));
@@ -67,10 +69,22 @@ export default function HomeValuePage() {
       params.set("sqft", String(manualOverride.sqft));
     }
     fetch(`/api/home-value/estimate?${params.toString()}`, { signal: controller.signal })
-      .then((res) => res.json())
-      .then((json: EstimateResponse) => setData(json))
+      .then(async (res) => {
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.error ?? "Unable to load home value data");
+        }
+        return res.json();
+      })
+      .then((json: EstimateResponse) => {
+        setData(json);
+        setError(null);
+      })
       .catch((err) => {
-        if (!controller.signal.aborted) console.error("[home-value] fetch failed:", err);
+        if (!controller.signal.aborted) {
+          console.error("[home-value] fetch failed:", err);
+          setError(err instanceof Error ? err.message : "Unable to load home value data");
+        }
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
@@ -90,6 +104,16 @@ export default function HomeValuePage() {
     return (
       <main className="bg-cnc-bg px-6 py-32 text-center">
         <p className="text-[#1B1B1B]/60">Looking up your home…</p>
+      </main>
+    );
+  }
+
+  if (error) {
+    return (
+      <main className="bg-cnc-bg px-6 py-32 text-center">
+        <p className="text-[#1B1B1B]/60">
+          We couldn't load your home value estimate right now. Please try again in a moment.
+        </p>
       </main>
     );
   }
