@@ -4,20 +4,10 @@ import { requireAuth } from "@/lib/api-auth";
 import { leadsToCSV } from "@/lib/lead-export";
 
 export async function GET() {
-  const { session, error } = await requireAuth("AGENT");
+  const { error } = await requireAuth("ADMIN");
   if (error) return error;
 
-  const { id: userId, role } = session.user;
-
-  let where = {};
-  if (role !== "ADMIN") {
-    const agent = await prisma.agent.findUnique({ where: { userId } });
-    if (!agent) return NextResponse.json([]);
-    where = { agentId: agent.id };
-  }
-
   const leads = await prisma.lead.findMany({
-    where,
     include: {
       tags: { include: { tag: true } },
       agent: { include: { user: { select: { name: true } } } },
