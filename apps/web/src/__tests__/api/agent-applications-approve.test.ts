@@ -1,7 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/api-auth", () => ({ requireAuth: vi.fn() }));
-vi.mock("@/lib/email", () => ({ sendApplicationApproved: vi.fn().mockResolvedValue(undefined) }));
+vi.mock("@/lib/email", () => ({
+  sendApplicationApproved: vi.fn().mockResolvedValue(undefined),
+  sendApprovalDocuments: vi.fn().mockResolvedValue(undefined),
+}));
 vi.mock("bcryptjs", () => ({ default: { hash: vi.fn().mockResolvedValue("hashed-password") } }));
 vi.mock("@/lib/prisma", () => {
   const mockPrisma: any = {
@@ -15,6 +18,7 @@ vi.mock("@/lib/prisma", () => {
 
 import { requireAuth } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
+import { sendApprovalDocuments } from "@/lib/email";
 import { POST } from "../../app/api/agent-applications/[id]/approve/route";
 
 describe("POST /api/agent-applications/[id]/approve", () => {
@@ -86,5 +90,35 @@ describe("POST /api/agent-applications/[id]/approve", () => {
         data: expect.objectContaining({ signedIcaKey: null }),
       })
     );
+  });
+
+  it("sends the onboarding documents email to the newly-approved agent", async () => {
+    vi.mocked(requireAuth).mockResolvedValue({
+      session: { user: { email: "admin@cnc.com" } },
+      error: undefined,
+    } as any);
+    vi.mocked(prisma.agentApplication.findUnique).mockResolvedValue({
+      id: "app-3",
+      firstName: "Jane",
+      lastName: "Smith",
+      email: "jane@example.com",
+      phone: "555-123-4567",
+      licenseNumber: "01234567",
+      yearsLicensed: 5,
+      specialties: [],
+      bio: null,
+      instagramUrl: null,
+      facebookUrl: null,
+      signedIcaKey: null,
+    } as any);
+    vi.mocked(prisma.agentApplication.updateMany).mockResolvedValue({ count: 1 } as any);
+    vi.mocked(prisma.user.create).mockResolvedValue({ id: "user-3" } as any);
+    vi.mocked(prisma.agent.create).mockResolvedValue({ id: "agent-3" } as any);
+
+    const req = new Request("http://localhost/api/agent-applications/app-3/approve", { method: "POST" });
+    const res = await POST(req, { params: { id: "app-3" } });
+
+    expect(res.status).toBe(200);
+    expect(sendApprovalDocuments).toHaveBeenCalledWith("jane@example.com", "Jane");
   });
 });

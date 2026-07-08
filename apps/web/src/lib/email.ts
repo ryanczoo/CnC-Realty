@@ -1,4 +1,6 @@
 import sgMail from "@sendgrid/mail";
+import { readFileSync } from "fs";
+import { join } from "path";
 
 if (!process.env.SENDGRID_API_KEY) {
   console.error("[email] SENDGRID_API_KEY is not set — email sending will be skipped");
@@ -177,5 +179,61 @@ export async function sendApplicationRejected(
       heading: `Hi ${safeName},`,
       bodyHtml,
     }),
+  });
+}
+
+const ATTACHMENTS_DIR = join(process.cwd(), "src", "lib", "email", "attachments");
+
+export async function sendApprovalDocuments(to: string, firstName: string) {
+  if (!process.env.SENDGRID_API_KEY) return;
+  const safeName = escapeHtml(firstName);
+
+  const w9 = readFileSync(join(ATTACHMENTS_DIR, "w9-blank.pdf"));
+  const opm = readFileSync(join(ATTACHMENTS_DIR, "cnc-office-policy-manual.pdf"));
+
+  const bodyHtml = `
+    <p style="color: #4b4b4b; font-size: 15px; line-height: 1.6; text-align: left; margin: 0 0 16px;">
+      Welcome to CnC Realty! Attached you'll find:
+    </p>
+    <ul style="color: #4b4b4b; font-size: 15px; line-height: 1.8; margin: 0 0 16px; padding-left: 20px;">
+      <li>A blank IRS Form W-9</li>
+      <li>CnC Realty's Office Policy Manual</li>
+    </ul>
+    <p style="color: #4b4b4b; font-size: 15px; line-height: 1.6; text-align: left; margin: 0 0 16px;">
+      Please reply to this email with:
+    </p>
+    <ul style="color: #4b4b4b; font-size: 15px; line-height: 1.8; margin: 0 0 16px; padding-left: 20px;">
+      <li>Your completed W-9</li>
+      <li>A copy of your active California DRE license</li>
+      <li>A headshot for your agent profile page</li>
+    </ul>
+    <p style="color: #4b4b4b; font-size: 15px; line-height: 1.6; text-align: left; margin: 0;">
+      One more thing — if you haven't already, join the Board of REALTORS®/MLS association that covers the area(s) you work in. CnC doesn't select or pay for this membership, but it's required for MLS access.
+    </p>
+  `;
+
+  await sgMail.send({
+    to,
+    from: FROM,
+    replyTo: NOTIFY,
+    subject: "CnC Realty — Onboarding Documents",
+    html: emailLayout({
+      heading: `Welcome, ${safeName}!`,
+      bodyHtml,
+    }),
+    attachments: [
+      {
+        content: w9.toString("base64"),
+        filename: "CnC Realty - Blank W-9.pdf",
+        type: "application/pdf",
+        disposition: "attachment",
+      },
+      {
+        content: opm.toString("base64"),
+        filename: "CnC Realty - Office Policy Manual.pdf",
+        type: "application/pdf",
+        disposition: "attachment",
+      },
+    ],
   });
 }

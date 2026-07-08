@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/api-auth";
-import { sendApplicationApproved } from "@/lib/email";
+import { sendApplicationApproved, sendApprovalDocuments } from "@/lib/email";
 
 export async function POST(
   _req: Request,
@@ -82,6 +82,7 @@ export async function POST(
 
   const setupUrl = `${process.env.NEXTAUTH_URL}/setup-account?token=${setupToken}`;
   sendApplicationApproved(app.email, app.firstName, setupUrl).catch(console.error);
+  sendApprovalDocuments(app.email, app.firstName).catch(console.error);
 
   return NextResponse.json({ ok: true });
 }
