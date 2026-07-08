@@ -10,8 +10,8 @@ describe("ica-content", () => {
     expect(richTextToPlain(ICA_INTRO).length).toBeGreaterThan(20);
   });
 
-  it("has exactly 26 numbered sections in order 1..26", () => {
-    expect(ICA_SECTIONS).toHaveLength(26);
+  it("has exactly 28 numbered sections in order 1..28", () => {
+    expect(ICA_SECTIONS).toHaveLength(28);
     ICA_SECTIONS.forEach((s, i) => expect(s.num).toBe(String(i + 1)));
   });
 
@@ -30,9 +30,9 @@ describe("ica-content", () => {
     expect(SIGNATURE_LABELS).toHaveLength(5);
   });
 
-  it("has a 2-column summary table with 10 rows", () => {
+  it("has a 2-column summary table with 12 rows", () => {
     expect(SUMMARY_TABLE.headers).toHaveLength(2);
-    expect(SUMMARY_TABLE.rows).toHaveLength(10);
+    expect(SUMMARY_TABLE.rows).toHaveLength(12);
   });
 
   it("supports inline bold spans mid-sentence", () => {
