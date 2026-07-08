@@ -36,6 +36,7 @@ enum LeadSource {
   SOCIAL
   OPEN_HOUSE
   COLD_CALL
+  HOME_VALUATION
   OTHER
 }
 
@@ -334,6 +335,8 @@ model Property {
   listAgentName      String?
   listAgentLicense   String?
   listOfficeName     String?
+  closePrice         Float?
+  closeDate          DateTime?
   details            Json?
   listedAt           DateTime?
   modifiedAt   DateTime?
@@ -351,6 +354,7 @@ model Property {
   @@index([baths])
   @@index([listedAt])
   @@index([status, listingType, listedAt])
+  @@index([status, zip, closeDate])
 }
 
 model Lead {
