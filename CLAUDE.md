@@ -5178,6 +5178,145 @@ Committed as `fd37ccc`, `069ae70`, `7a2eebf` on `main`.
 
 ---
 
+## Session Notes — 2026-07-06 / 2026-07-07
+
+### What Was Completed
+
+Full implementation of the signed ICA PDF e-signature feature, from `docs/superpowers/plans/2026-07-06-signed-ica-pdf.md`. All 12 tasks complete, tested, and committed on `feature/agent-application-redesign` (commits `979a780` through `51ced65`/`a2a9937`).
+
+**Core feature — agents now e-sign the ICA as part of applying:**
+
+1. **Canonical ICA content module** (`1580c43`) — the full ICA text (26 sections + fee tables) now lives in a single typed content module (`IcaSection`/`IcaParagraph`/RichText shapes) instead of being duplicated between the `/join/ica` page and the PDF generator. `/join/ica` was refactored (`c5d14ab`, fixed in `1ff6c83`) to render from this module — inline bold, list spacing, and table weight all preserved.
+2. **Signature field on the application** (`75ad14b`) — typed full-name signature field added to `ApplicationForm.tsx`, gated the same way as before (must open `/join/ica` first). Copy/spacing/label polish across several follow-up commits (`ccda65d`, `670d586`, `f68a66c`).
+3. **Name-match validator** (`536164d`) — shared `namesMatch(signatureName, firstName, lastName)` helper used both client-side (immediate feedback) and server-side (can't be bypassed).
+4. **PDF generation** (`ae8c887`, phantom-space bug fixed in `7a35b16`/`8421a48`) — `generateSignedIcaPdf({ signerName, signedAt, signerIp })` renders the full ICA content module to a PDF via `pdf-lib`, embedding the signer's name, IP, and a server-authoritative timestamp.
+5. **Schema + submit flow** (`fa2f22c`, `40078ae`) — `AgentApplication` and `Agent` both gained `signedName`/`icaVersion`/`signedIcaKey` fields. On application submit: signature captured → PDF generated → uploaded to R2 → key stored on the application record.
+6. **Approval flow** (`49f7839`) — `signedIcaKey` is copied from the `AgentApplication` onto the new `Agent` record when Ryan approves, so the signed document travels with the agent permanently.
+7. **Admin download** (`777cc37`, `e63fb73`) — presigned-URL route + a "Download signed ICA" button on `/admin/agents`.
+8. **Final-review hardening** (`69d5db0`) — signing timestamp now uses the server clock (never trusts the client-supplied time) for the legal record; if the DB write fails after the PDF is already uploaded, the orphaned R2 object is cleaned up automatically instead of leaking storage.
+
+**Related cleanup:**
+- Removed the "Invite Agent" button from `/admin/agents` (`5bba1d3`) — it didn't do anything real; agents only enter the system via the application flow now.
+- Added field-level red-ring highlighting on application validation errors (`51ced65`) so applicants can see exactly which field failed.
+- Fixed a sitewide TypeScript error from `as const` on `PULSE_ANIMATE` (`a2a9937`) — unrelated to the ICA work but caught during this session.
+
+### Status
+
+**Feature is complete and committed but had NOT yet been visually/functionally verified in-browser as of end of session.** The 2026-07-01/07-02 session notes above describe the pre-signature version of the flow being tested end-to-end; the signature/PDF/R2/admin-download pieces are new since then.
+
+### Next Session — Start Here
+
+Ryan's stated priority order: **(1) ICA content/terms itself, (2) post-approval documents email, (3) E&O insurance.**
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. Work the ICA — review/finalize content, terms, and the signed-PDF flow (test end-to-end: apply → sign → approve → admin download)
+3. Then: automated approval document email (attach fixed doc packet, request docs back — see 2026-07-03/07-05 notes above for the R2-vs-repo-file decision)
+4. Then: E&O insurance (details TBD with Ryan)
+5. Older backlog, lower priority: checklist templates at `/admin/settings/checklists`; clean up test DB records (Test Applicant, Jane Agent) before launch; consider merging `feature/agent-application-redesign` to `main` (27+ commits ahead)
+
+---
+
+## Session Notes — 2026-07-07
+
+### What Was Completed
+
+**Competitor ICA gap analysis + CnC ICA content update.** Ryan provided three competitor ICAs for comparison: REeBroker (live via Puppeteer), Virtual Realty Group (local PDF — the DigiSigner invitation link he initially gave had expired, so he supplied `VRG-ICA-OPPM.pdf` instead), and West Shores Realty, his previous brokerage (local PDF — the first file he pointed to, `W9.pdf`, turned out to be the IRS W-9 tax form, not the ICA; the correct file was `Pay Plan 5.2023.pdf`, his own signed onboarding packet).
+
+Found and Ryan approved 10 gaps to close, all added to the **canonical ICA content module** (`apps/web/src/lib/ica-content.ts` — the single source of truth that both `/join/ica` and the signed-PDF generator render from) and mirrored into `docs/cnc-ica-draft.md`:
+
+1. **Compensation Disputes** (new §7.11, REeBroker-style) — Broker can hold disputed compensation until resolved, no liability for the delay.
+2. **Team and Co-Listing Transactions** (new §7.12, REeBroker-style) — fee charged once per side, split per agents' written agreement; Broker can withhold if no agreement exists; incorporated teams get one fee.
+3. **Multi-Parcel Transactions** (new §7.13, West Shores/VRG-style) — separate transaction fee per APN.
+4. **No Direct Compensation** (new §7.14, REeBroker-style) — no compensation directly from a client/other broker without Broker's written approval.
+5. **Broker-Assigned Reassignment** (new §7.15, West Shores-style, 25% split as Ryan specified) — Broker can reassign a mishandled transaction; reassigned agent gets 25%, original agent gets the balance (or a referral fee only, if the client requested the switch).
+6. **Departing-agent listings** (added to §21 Termination, West Shores model per Ryan's explicit choice) — active listings/pending transactions stay with CnC unless a written referral agreement is signed.
+7. **Harassment and Discrimination Policy** (new standalone §24, West Shores/VRG-style).
+8. **Waiver** (new standalone §25, REeBroker-style boilerplate).
+9. **License-lapse consequence** (added to §2.1, West Shores/VRG-style) — lapsed/suspended license = immediate cessation of licensed activity + suspended association until restored.
+10. **Platform credential confidentiality** (added to §18 Security and Cyber Fraud, REeBroker-style) — one sentence.
+11. **Return of confidential materials within 24 hours of termination** (added to §20, VRG-style — this was a rephrase of the existing clause, not a new section).
+
+**Renumbering:** inserting the two new standalone sections (Harassment, Waiver) between the old §23 and §24 pushed Mentorship Program → §26, Entire Agreement → §27, and the closing "Agrees and Understands" → §28. Total section count went from 26 → 28. Chose this insertion point specifically because the only internal cross-references in the document (`Section 6`, `Section 7.2`, `Section 8`, `Section 9`) all sit before it, so zero cross-references needed updating.
+
+**Test updates:** `apps/web/src/__tests__/lib/ica-content.test.ts` — updated the hardcoded section-count assertion from 26 → 28. Full suite (`pnpm --filter web test`) passes at 206/206. `ICA_VERSION` bumped to `2026-07-07`.
+
+**Verification:** confirmed all new section titles and the new termination sentence render correctly on the live `/join/ica` page (checked via a temporary second dev server on port 3001, killed after confirming — did not touch Ryan's existing dev server on port 3000).
+
+**SUMMARY_TABLE update:** added an 11th row — "Multi-Parcel (APN) Transaction: Full fee charged per APN" — placed after the Dual Agency row since it's the same category (a fee-multiplier scenario, not a new dollar amount). `ica-content.test.ts` row-count assertion bumped 10 → 11. Ryan reviewed and decided the 25% reassignment split doesn't need its own summary row (it's an exception-handling clause, not a standard fee schedule item).
+
+**Fee correction (same session, after Ryan reviewed the rendered page):** §7.9 Broker-Provided Leads and its SUMMARY_TABLE row previously said the 25% referral fee was charged **in addition to** the flat transaction fee — wrong. Ryan clarified the flat transaction fee does not apply at all to broker-provided leads; it's 25% of gross commission only. Fixed the clause text and the summary row in both `ica-content.ts` and `docs/cnc-ica-draft.md`.
+
+**SUMMARY_TABLE cleanup (same session):** removed the "E&O Insurance — Included in transaction fee" row — Ryan correctly flagged it as redundant with row 2 ("E&O included through — $1,000,000 sale/lease price"). Also moved "E&O Deductible (if claim)" to sit directly below the "E&O Supplement examples" row so all the E&O-related rows group together at the top, before the fee-multiplier rows (Dual Agency, Multi-Parcel, Broker-Provided Lead). Row count back down to 10; `ica-content.test.ts` assertion updated accordingly (11 → 10).
+
+### CA Statutory Compliance Pass (same session, continued)
+
+Ryan pushed back on "competitor parity = safe to launch without a lawyer" — correctly, since matching 3 competitors doesn't verify CnC's own novel fee combination is legally sound. Researched the actual controlling law instead of competitor practice:
+
+- **3-part independent-contractor test** (Unemployment Insurance Code §650 + Business & Professions Code §10162(a)): licensing, output-based pay, written non-employee tax statement. CnC's ICA passes cleanly (§2.1, §7 all-commission structure, §4.1).
+- **10 CCR §2726** requires the written broker-salesperson agreement to cover supervision of licensed activities, duties, and compensation. Found one real gap: no explicit supervision clause. Closed it with new **§3.7 Supervision of Licensed Activities**, tying together existing platform mechanics (file certification, checklist compliance, written-approval requirements) while explicitly preserving the independent-contractor control limitations so it doesn't undercut the UIC §650 test elsewhere.
+- Conclusion documented in this file's ICA notes: ICA is finalized on the strength of this statutory pass + the competitor gap analysis, **not** attorney-reviewed — that distinction should stay accurate in any future summary.
+
+### Post-Approval Onboarding Documents Email — Built
+
+The long-pending "automated approval document email" task (first scoped 2026-07-03) is done:
+
+- **Packet decided:** blank IRS W-9 (sourced fresh from irs.gov, current March 2024 revision) + a new **CnC Realty Office Policy Manual** (14 sections, written this session — Supervision, Transaction Management, Working Remotely, Trust Fund Handling, Marketing Approval, MLS/Board Membership, Document Checklist, Personal/Family Transactions, Confidentiality, Harassment Reporting Procedure, Personal Assistants, Termination, Amendments). Cross-references the matching ICA section throughout.
+- **`sendApprovalDocuments()`** built via TDD in `apps/web/src/lib/email.ts`, wired into the approve route (`api/agent-applications/[id]/approve/route.ts`) alongside the existing `sendApplicationApproved` call. Reply-to set to `info@cncrealtygroup.com` so agent replies (completed W-9, DRE license copy, headshot) land directly in Ryan's inbox. Static PDF attachments live in `apps/web/src/lib/email/attachments/` (`w9-blank.pdf`, `cnc-office-policy-manual.pdf`), read via `fs.readFileSync` at send time.
+- **Important process correction:** initially over-built this — started extracting a full PDF-generation pipeline (`doc-content.ts` + `pdf-writer.ts` shared modules, mirroring the ICA's pdf-lib renderer) to generate the manual dynamically. Ryan caught this ("aren't we making a whole new document that isn't found in the website at all?") and it was fully reverted — the manual doesn't need per-agent personalization the ICA does, so a static file is simpler and was the originally-agreed approach. Reverted cleanly, verified with a full test pass + live check before proceeding.
+- **Manual production:** written as `docs/cnc-office-policy-manual.md`, converted to Word via a new PowerShell + Word COM automation script (no pandoc/wkhtmltopdf/LibreOffice available on this machine), Ryan reviewed and hand-edited it, converted to PDF himself, handed back for the repo.
+- **Live-tested for real:** sent an actual test email to Ryan's own inbox via a one-off `tsx` script loading real `.env.local` SendGrid credentials — confirmed delivery, script deleted immediately after (never committed).
+
+### Security Fix — Leads Export Locked to ADMIN
+
+Mid-conversation, checking whether agents could export client data (relevant to the Office Policy Manual's confidentiality clause) surfaced that `GET /api/leads/export` was gated with `requireAuth("AGENT")` — not `ADMIN` — with zero UI exposure to agents (only linked from `/admin/leads`), but technically callable directly by any authenticated agent for their own leads. Ryan asked to lock it down regardless ("agents can just write the client's info down somewhere for their personal use" — so UI-hiding isn't a real control). Fixed via TDD: now `requireAuth("ADMIN")`, removed the now-dead per-agent scoping branch.
+
+### DRE Main Office Address — Discovered a Real Discrepancy, Unresolved
+
+While discussing whether agents should update their zipForms "office address" field, queried the DRE's public license lookup directly (not from memory):
+
+- Ryan's **individual** broker license (02202082): home address on file (12802 Cantrece Street, Cerritos) — compliant pattern.
+- **CnC Realty's corporate broker license (02439028)**: a Sacramento registered-agent address (1401 21st St STE R) on file — **not** the Vista, CA registered-agent address Ryan believed he'd used. A third, different address than either of the two he had in mind.
+- Researched B&P Code §10162(a): the statutory "definite place of business" must be "the place where the broker's license is displayed and where personal consultations with clients are held" — a registered-agent/mail-forwarding address is structurally incapable of satisfying that, since such services exist specifically so nobody visits.
+- **Ryan is calling the DRE tomorrow** to (a) get the wrong Sacramento address corrected and (b) ask directly whether a registered-agent address can ever satisfy the main-office requirement. **Do not assume an answer or take further action on this until Ryan reports back from that call.**
+
+### E&O Carrier Research — Deprioritized
+
+Read REeBroker's fee schedule, Rise Realty's RISE 100 program page, and re-confirmed Virtual Realty Group's OPPM terms. New finding: REeBroker's "risk management fee" bundles E&O **and** Workers' Compensation together (unlike CnC/Rise/VRG, which only cover E&O — agents are 1099 contractors with no workers' comp, per ICA §16). None of the three — nor CnC — discloses an actual insurance carrier anywhere in public materials. Ryan decided actual carrier-shopping can wait until after launch/deploy; this session's work stayed at the fee-structure/contract-language level.
+
+### ICA Fee Restructuring — Several Rounds, All Applied and Verified
+
+All changes below hit `apps/web/src/lib/ica-content.ts`, `docs/cnc-ica-draft.md`, and a regenerated dated Word doc after each round (per the dated-docx-versioning convention below):
+
+- **§7.5 split in two.** Was "Referral and Lease Transactions" (one clause, ambiguous fee model). Now:
+  - **§7.5 Outbound Referral Transactions** — renamed to make the direction explicit after Ryan asked whether "referral" meant CnC-to-agent or agent-to-agent (it's agent-to-agent/outside-brokerage, outbound only — inbound referrals that the CnC agent closes themselves are just normal §7.2 transactions). Fee model corrected from a sale-price-tiered flat fee (which was actually wrong — competitors REeBroker and West Shores both base referral fees on the referral commission *received*, not the underlying sale price) to **10% of referral commission received, or $200, whichever is greater**.
+  - **New §7.16 Lease Transactions** — matches REeBroker's rental treatment exactly: **10% of commission or $200, whichever is greater**, no flat transaction fee, no E&O supplement funding for leases (started at $100 minimum, raised to $200 to match the referral fee minimum).
+- **§7.9 Broker-Provided Leads:** 25% → **30%** of gross commission.
+- **§26 Mentorship Program:** split flipped **70/30 → 75/25** (mentee/mentor). Also fixed a leftover bug from the morning's section renumbering — the subsection IDs still said "24.1"–"24.4" internally despite living under section 26.
+- **E&O Supplement rate:** $200 → **$400** per $500k over $1M. Full fee table (all 8 tiers), §7.2, §9.1, and the summary table all recalculated. Considered moving the $1M inclusion threshold to $1.5M as an alternative (walked through the mechanics with Ryan — it would have largely offset the rate increase) but he chose to keep the **$1M threshold as-is** and just take the higher per-increment rate.
+- **§7.13 Multi-Parcel:** clause and summary row both clarified to explicitly state the per-APN fee includes "the base flat fee and any applicable E&O Supplement," matching how the Dual Agency row already spelled that out — removes an inference gap between the two similar fee-multiplier clauses.
+- **Cleanup:** removed three leftover "sale or lease" references (§7.2, §9.1, fee table header) now that leases have their own separate structure. Simplified summary-table wording: dropped the redundant "(flat fee does not apply)" from the Lease row, renamed "Outbound Referral Fee" → "Referral Fee" in the summary table (the outbound-only scope lives in §7.5's actual text; didn't need repeating in the quick-reference row label).
+
+### /join Pricing Card Cleanup
+
+`apps/web/src/components/join/AgentPlan.tsx` — removed the "$400 per $500k over $1M" and "$350 through escrow" sub-lines from the Professional plan card (parent benefit labels like "E&O Insurance included through $1M" stayed), and matched the "Additional terms apply..." disclaimer text color to "Forever" (both `text-[#1B1B1B]/50`).
+
+### New Standing Workflow: Dated ICA Word Doc Versioning
+
+Every ICA content change now regenerates `CnC-Realty-ICA-DRAFT-{date}.docx` in Downloads — no undated "current" file (Ryan chose dated-only history over dated-plus-pointer, so he can diff across attorney review rounds). Saved as memory. Also corrected mid-session: stop updating CLAUDE.md after every small change — batch into one entry at end of session instead (this is now a standing preference); this entry is the first full application of that.
+
+### Status
+
+All 210 tests passing (up from 206 this morning — added: leads-export ADMIN-lock test, `email.test.ts` for `sendApprovalDocuments`, one new approve-route test). Everything verified live on the dev server throughout. Not yet committed — committing at the very end of this session, all in one pass.
+
+### Next Session — Start Here
+
+1. **Follow up on Ryan's DRE call** — did he get CnC's Sacramento address corrected? Did DRE clarify whether a registered-agent address can satisfy the main-office requirement? This determines what (if anything) to tell agents about their zipForms office address field.
+2. **E&O insurance carrier research** — deprioritized until after launch/deploy per Ryan; revisit then, not before.
+3. CnC's ICA is now fee-finalized as of tonight (referral/lease/mentorship/E&O-rate/multi-parcel changes) — still not attorney-reviewed (see this file's ICA notes); flag that distinction if it comes up again.
+4. Older backlog, unchanged: checklist templates at `/admin/settings/checklists`; clean up test DB records (Test Applicant, Jane Agent); consider merging `feature/agent-application-redesign` to `main` (well past 30+ commits ahead now).
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`
