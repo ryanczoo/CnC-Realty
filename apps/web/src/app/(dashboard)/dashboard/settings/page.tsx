@@ -160,7 +160,7 @@ export default function AgentSettingsPage() {
 
   return (
     <div>
-      <h1 className="mb-8 font-sans text-2xl font-light text-[#1B1B1B]">Settings</h1>
+      <h1 className="mb-8 font-sans text-2xl font-medium text-[#1B1B1B]">Settings</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 max-w-5xl">
         {/* ── LEFT COLUMN ── */}
