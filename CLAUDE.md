@@ -5317,6 +5317,78 @@ All 210 tests passing (up from 206 this morning — added: leads-export ADMIN-lo
 
 ---
 
+## Session Notes — 2026-07-08 / 2026-07-09
+
+### Session Recovery
+
+Previous session was cut off mid-response by a Claude Code auto-update (not a Ryan-initiated exit). Verified on resume: `git log` showed the last commit (`bc4486b` — Tasks page layout fix) matched exactly what was on screen when the update hit, working tree was clean, nothing lost. Home value estimator (built the prior session) and the Pipeline dnd-kit rework were both already safely committed.
+
+### Dashboard Tab Titles — Bold Consistency (`7354ca1`)
+
+Ryan noticed Pipeline and Tasks used `font-medium` while Overview, Leads, Transactions, Campaigns, and Settings used `font-light`. Fixed all 5 to `font-medium`, plus added the missing `font-sans` class on Transactions for consistency. Files: `DashboardTabs.tsx` (Overview), `leads/page.tsx`, `campaigns/page.tsx`, `settings/page.tsx`, `transactions/page.tsx`.
+
+### Dashboard Tab-Switching Lag — Root Cause + Fix (`02a91c2`)
+
+Ryan reported the agent dashboard felt laggy switching between tabs. Used `superpowers:systematic-debugging` to investigate before proposing anything.
+
+**Root cause:** every dashboard tab independently re-queried Postgres for the exact same `prisma.agent.findUnique({ where: { userId } })` lookup on every navigation — Overview, Leads, Pipeline (via `/api/deals`), Tasks (via `/api/tasks`), Transactions (via `/api/listings` + `/api/transactions`), and Campaigns all did this separately, with zero caching or sharing across tabs. `leads/page.tsx` additionally ran 3 of its queries sequentially instead of in parallel. The DB itself is reached over Railway's public proxy (`kodama.proxy.rlwy.net`) with no connection pooler, so every one of these redundant round trips paid full network latency.
+
+**Fix:** `agentId` is now resolved once at sign-in and cached on the JWT/session (`auth.ts` `jwt`/`session` callbacks; typed via `next-auth.d.ts`). Every page/route now reads `session.user.agentId` instead of hitting the DB again, preserving the exact same ADMIN-sees-everything vs agent-scoped-to-self role gating that existed before — just backed by a cached value. `leads/page.tsx`'s independent queries were also parallelized with `Promise.all`.
+
+**Files touched:** `auth.ts`, `api-auth.ts`, `next-auth.d.ts`, `dashboard/page.tsx`, `leads/page.tsx`, `campaigns/page.tsx`, `api/deals/route.ts`, `api/tasks/route.ts`, `api/listings/route.ts`, `api/transactions/route.ts` — plus new/updated tests for all of them (`auth.test.ts`, `DashboardOverviewPage.test.ts`, `LeadsPage.test.ts`, `CampaignsPage.test.ts`, `deals.test.ts`, `tasks.test.ts`, `listings.test.ts`, `transactions.test.ts`). Full TDD (RED → GREEN per file). Checked `/api/account/profile` and `/api/account/agent-profile` too — left unchanged since those already do exactly one necessary query for real profile fields, not a redundant id-only lookup.
+
+**Verified:** 273/273 tests pass, `tsc --noEmit` shows zero new errors (cross-checked every pre-existing error against files touched — no overlap).
+
+### Why didn't `simplify` or `code-review` catch this?
+
+Ryan asked, reasonably, since both have been run repeatedly on this codebase. Answer: both are diff/branch-scoped by design — `simplify` reviews "the changed code," `code-review` (including `/code-review ultra`) reviews "the current diff"/"current branch." Neither does a whole-codebase sweep. Every individual file's query was correct in isolation; the problem only existed in aggregate across ~9 files built in different sessions weeks apart, which no diff-scoped tool would ever see. No existing skill does a full-codebase architectural audit — the only way to catch this class of issue is (a) a symptom getting reported and traced backward (what happened here), (b) an explicit one-off request for a whole-codebase pattern audit (offered, deferred for tonight), or (c) production performance monitoring — Sentry is already wired in, so once deployed it should start surfacing this kind of thing from real traffic.
+
+### Redis/Upstash Caching — Correction
+
+Ryan asked whether Redis caching could be done now even though not deployed yet. First answer was wrong — said it hadn't been built. Re-verified against actual code (not memory of old notes) per `superpowers:verification-before-completion`, and confirmed **Redis caching was already shipped** on 2026-06-15 (`d19c646`) — `lib/redis.ts` wraps Upstash, and `/api/properties` caches search results with a 5-minute TTL keyed off sorted search params. Lesson: verify current code state before answering, don't answer from memory of old session notes.
+
+### Phase 6 / Phase 7 — Verified Complete (Full Code Audit)
+
+Ryan pointed out CLAUDE.md already marked both phases complete (2026-06-29 session notes) and asked for a superpowers-verified re-check. Grepped the actual codebase (not just prose) for every item on both lists:
+
+**Phase 6 — all done:** ISR (`revalidate = 300` on property pages), Redis caching, rate limiting (Upstash `Ratelimit` on leads/home-value-reveal/agent-contact routes), Sentry (client/server/edge configs), PostHog, JSON-LD (agent/property/homepage), sitemap (`app/sitemap.ts`), skeleton loaders. CCPA cookie banner was built on 2026-06-15 then **deliberately removed** on 2026-06-16 as part of a legal-pages rework — not a gap, a considered decision already flagged at the time.
+
+**Phase 7 — all done:** Smart Lists, Deal Pipeline, Lead Ponds (under different naming — brokerage lead assign/dismiss routes + `BrokerageLeadsBanner`), Action Plans, Trigger Automations (`admin/triggers`), Reporting (`admin/reports` + `api/reports/my-stats`) — all confirmed as real, substantive implementations, not stubs.
+
+**The one real gap:** actual deployment to Vercel hasn't happened. No `.vercel` deploy artifact, and `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` in `.env.local` are still empty strings — the exact blocker flagged back on 2026-06-16. Everything else on the launch checklist is done; the deploy step itself is outstanding.
+
+### Home Value Estimator Bug — Address Suffix Mismatch (`0ec8be9`)
+
+Ryan tested `15595 Curtis Cir` on `/sell` per the plan from the interrupted session and got "we don't have this address on file yet." Used `superpowers:systematic-debugging` again.
+
+**Root cause:** the property genuinely exists in the DB (MLS# 1170039079, Sonora CA 95370, status Closed) — this was not a sync-completeness issue. Mapbox's geocoder returns the fully-spelled-out `"15595 Curtis Circle"`, while CRMLS stores the USPS-abbreviated `"15595 Curtis Cir"` (built directly from RESO's `StreetSuffix` field in `field-map.ts`). `findSubjectProperty`'s strict `contains` substring match can never succeed when the query string is *longer* than the stored value due to this abbreviation expansion. Confirmed via a direct DB query (not assumption) that the row exists and that the mismatch is exactly the suffix word.
+
+**Fix:** `findSubjectProperty` now tries the strict match first (unchanged behavior when it already works), and falls back to a suffix-stripped match (last word removed) only when the strict match returns empty. Guarded against bare street numbers with nothing left to search on. TDD throughout — new tests in `home-value-estimate.test.ts` (lib) cover the fallback, the guard, and confirm no fallback fires when the strict match already succeeds; updated one existing `api/home-value-estimate.test.ts` test whose mock sequence needed an extra queued response now that a genuine no-match case makes 2 calls instead of 1.
+
+**Confirmed this applies proactively going forward**, independent of the pending full IDX resync — it's a request-time query fix, not a data patch. CRMLS's `StreetSuffix` field mapping is stable across every sync (initial, delta, or full re-resync), so the abbreviated format — and this fix's ability to handle it — isn't tied to sync timing at all. Scope caveat: only handles "last word differs due to suffix abbreviation" specifically; wouldn't catch a misspelled street name or a missing directional (e.g. "N Curtis" vs "Curtis") if either ever comes up.
+
+### AddressAutocomplete — Loading Spinner (same commit)
+
+Added a `Loader2`/`animate-spin` spinner (gold `#9E8C61`, matches the existing pattern in `SearchResults.tsx`/`PropertyDrawer.tsx`) at the right edge of the address field, visible while the debounced Mapbox geocoding fetch is in flight.
+
+### Commits This Session
+
+| Hash | Description |
+|---|---|
+| `7354ca1` | style: bold Overview/Settings/Transactions tab titles to match Pipeline/Tasks |
+| `02a91c2` | perf: cache agentId on the session to fix dashboard tab-switching lag |
+| `0ec8be9` | fix: match addresses when geocoder spells out street suffix but MLS abbreviates it |
+
+### Next Session — Start Here
+
+1. **Retest `15595 Curtis Cir` on `/sell`** — confirm the address now resolves to the real MLS# 1170039079 match with price history, and that the loading spinner shows correctly while typing.
+2. **Full IDX resync before deployment** — this was the original next step from the interrupted session and is still outstanding; the address-matching fix is independent of it but the resync itself hasn't happened yet.
+3. **Deploy is the one remaining Phase 6/7 gap** — add real `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` to `.env.local`, then deploy to Vercel + Railway.
+4. Optional, offered but deferred: a full whole-codebase audit (agent-driven grep sweep) for similar N+1/redundant-query patterns elsewhere, now that today's fix established what to look for.
+5. Older backlog, unchanged: checklist templates at `/admin/settings/checklists`; clean up test DB records (Test Applicant, Jane Agent); consider merging `feature/agent-application-redesign` to `main` (well past 30+ commits ahead).
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`
