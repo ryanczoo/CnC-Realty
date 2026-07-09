@@ -27,7 +27,7 @@ type Props = {
 function DroppableStage({ stage, children }: { stage: string; children: ReactNode }) {
   const { setNodeRef } = useDroppable({ id: stage });
   return (
-    <div ref={setNodeRef} className="flex min-h-[80px] flex-col gap-2">
+    <div ref={setNodeRef} className="flex min-h-[120px] flex-col gap-2 rounded-2xl bg-[#1B1B1B]/5 p-2">
       {children}
     </div>
   );
@@ -101,8 +101,8 @@ export function DealBoard({ pipeline, initialDeals, onCardClick, onOfferAccepted
           {stages.map((stage) => {
             const stageDeals = deals.filter((d) => d.stage === stage);
             return (
-              <div key={stage} className="flex w-full flex-col rounded-xl bg-[#F2F0EF] p-4">
-                <div className="mb-3 flex items-center justify-between">
+              <div key={stage} className="flex w-full flex-col gap-3">
+                <div className="flex items-center justify-between">
                   <h3 className="font-sans text-sm font-medium text-[#1B1B1B]">
                     {STAGE_LABELS[stage as keyof typeof STAGE_LABELS]}
                   </h3>
