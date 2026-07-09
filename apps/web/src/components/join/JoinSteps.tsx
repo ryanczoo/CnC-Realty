@@ -19,8 +19,10 @@ function IconTransactionManagement() {
 function IconCRMSoftware() {
   return (
     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M8 13H16C17.7107 13 19.1506 14.2804 19.3505 15.9795L20 21.5M8 13C5.2421 12.3871 3.06717 10.2687 2.38197 7.52787L2 6M8 13V18C8 19.8856 8 20.8284 8.58579 21.4142C9.17157 22 10.1144 22 12 22C13.8856 22 14.8284 22 15.4142 21.4142C16 20.8284 16 19.8856 16 18V17" stroke="#9E8C61" strokeWidth="1.5" strokeLinecap="round"/>
-      <circle cx="12" cy="6" r="4" stroke="#9E8C61" strokeWidth="1.5"/>
+      <circle cx="10" cy="6" r="4" stroke="#9E8C61" strokeWidth="1.5"/>
+      <path d="M19 2C19 2 21 3.2 21 6C21 8.8 19 10 19 10" stroke="#9E8C61" strokeWidth="1.5" strokeLinecap="round"/>
+      <path d="M17 4C17 4 18 4.6 18 6C18 7.4 17 8 17 8" stroke="#9E8C61" strokeWidth="1.5" strokeLinecap="round"/>
+      <path d="M13 20.6151C12.0907 20.8619 11.0736 21 10 21C6.13401 21 3 19.2091 3 17C3 14.7909 6.13401 13 10 13C13.866 13 17 14.7909 17 17C17 17.3453 16.9234 17.6804 16.7795 18" stroke="#9E8C61" strokeWidth="1.5" strokeLinecap="round"/>
     </svg>
   );
 }
