@@ -112,10 +112,10 @@ export default function TasksDashboardPage() {
   const allEmpty = !loading && tasks.length === 0;
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 px-4 py-8">
-      <div>
-        <h1 className="font-sans text-2xl font-light text-[#1B1B1B]">Tasks</h1>
-        <p className="mt-1 text-sm text-[#1B1B1B]/40">Your open tasks across all leads</p>
+    <div className="max-w-2xl space-y-6">
+      <div className="mb-6">
+        <h1 className="font-sans text-2xl font-medium text-[#1B1B1B]">Tasks</h1>
+        <p className="mt-1 font-sans text-sm text-[#1B1B1B]/50">Your open tasks across all leads</p>
       </div>
 
       {loading && <p className="text-sm text-[#1B1B1B]/40">Loading…</p>}
