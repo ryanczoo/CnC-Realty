@@ -102,13 +102,13 @@ export function DealBoard({ pipeline, initialDeals, onCardClick, onOfferAccepted
             const stageDeals = deals.filter((d) => d.stage === stage);
             return (
               <div key={stage} className="flex w-full flex-col gap-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-sans text-sm font-medium text-[#1B1B1B]">
-                    {STAGE_LABELS[stage as keyof typeof STAGE_LABELS]}
-                  </h3>
+                <div className="flex items-center gap-2">
                   <span className="rounded-full bg-[#1B1B1B]/10 px-2 py-0.5 font-sans text-xs text-[#1B1B1B]/60">
                     {stageDeals.length}
                   </span>
+                  <h3 className="font-sans text-sm font-medium text-[#1B1B1B]">
+                    {STAGE_LABELS[stage as keyof typeof STAGE_LABELS]}
+                  </h3>
                 </div>
                 <SortableContext id={stage} items={stageDeals.map((d) => d.id)} strategy={verticalListSortingStrategy}>
                   <DroppableStage stage={stage}>
