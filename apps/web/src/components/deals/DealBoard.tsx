@@ -27,7 +27,7 @@ type Props = {
 function DroppableStage({ stage, children }: { stage: string; children: ReactNode }) {
   const { setNodeRef } = useDroppable({ id: stage });
   return (
-    <div ref={setNodeRef} className="flex min-h-[120px] flex-col gap-2 rounded-2xl bg-[#1B1B1B]/5 p-2">
+    <div ref={setNodeRef} className="flex w-56 min-h-[120px] flex-col gap-2 rounded-2xl bg-[#1B1B1B]/5 p-2">
       {children}
     </div>
   );
