@@ -138,16 +138,16 @@ export function NewLeadModal({ open, onClose, onSaved }: Props) {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="mb-1 block text-xs text-[#1B1B1B]/50">First Name *</label>
-                  <input required className={INPUT_CLS} value={form.firstName} onChange={set("firstName")} placeholder="Jane" />
+                  <input required className={INPUT_CLS} value={form.firstName} onChange={set("firstName")} />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs text-[#1B1B1B]/50">Last Name *</label>
-                  <input required className={INPUT_CLS} value={form.lastName} onChange={set("lastName")} placeholder="Smith" />
+                  <input required className={INPUT_CLS} value={form.lastName} onChange={set("lastName")} />
                 </div>
               </div>
               <div>
                 <label className="mb-1 block text-xs text-[#1B1B1B]/50">Email *</label>
-                <input required type="email" className={INPUT_CLS} value={form.email} onChange={set("email")} placeholder="jane@example.com" />
+                <input required type="email" className={INPUT_CLS} value={form.email} onChange={set("email")} />
               </div>
               <div>
                 <label className="mb-1 block text-xs text-[#1B1B1B]/50">Phone</label>
@@ -163,7 +163,7 @@ export function NewLeadModal({ open, onClose, onSaved }: Props) {
               </div>
               <div>
                 <label className="mb-1 block text-xs text-[#1B1B1B]/50">Notes</label>
-                <textarea rows={3} className={INPUT_CLS} value={form.notes} onChange={set("notes")} placeholder="How did you meet this lead?" />
+                <textarea rows={3} className={INPUT_CLS} value={form.notes} onChange={set("notes")} placeholder="Anything you would like to say about this lead?" />
               </div>
 
               {error && <p className="text-sm text-red-500">{error}</p>}
