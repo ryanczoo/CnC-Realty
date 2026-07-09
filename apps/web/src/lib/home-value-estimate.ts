@@ -61,30 +61,49 @@ export function computeEstimate(
   };
 }
 
+const SUBJECT_SELECT = {
+  mlsNumber: true,
+  status: true,
+  beds: true,
+  baths: true,
+  sqft: true,
+  lotSize: true,
+  listPrice: true,
+  closePrice: true,
+  closeDate: true,
+  listedAt: true,
+  propertyType: true,
+} as const;
+
 export async function findSubjectProperty(
   prisma: PrismaClient,
   address: string,
   zip: string
 ): Promise<SubjectRecord[]> {
-  return prisma.property.findMany({
+  const strict = await prisma.property.findMany({
     where: {
       zip,
       address: { contains: address, mode: "insensitive" },
     },
     orderBy: { listedAt: "desc" },
-    select: {
-      mlsNumber: true,
-      status: true,
-      beds: true,
-      baths: true,
-      sqft: true,
-      lotSize: true,
-      listPrice: true,
-      closePrice: true,
-      closeDate: true,
-      listedAt: true,
-      propertyType: true,
+    select: SUBJECT_SELECT,
+  });
+  if (strict.length > 0) return strict;
+
+  // Geocoders spell street types out in full (e.g. "Circle") while MLS data
+  // uses USPS abbreviations (e.g. "Cir") — retry without the trailing word so
+  // "15595 Curtis Circle" still matches a stored "15595 Curtis Cir".
+  const words = address.trim().split(/\s+/);
+  if (words.length < 2) return [];
+  const withoutSuffix = words.slice(0, -1).join(" ");
+
+  return prisma.property.findMany({
+    where: {
+      zip,
+      address: { contains: withoutSuffix, mode: "insensitive" },
     },
+    orderBy: { listedAt: "desc" },
+    select: SUBJECT_SELECT,
   });
 }
 

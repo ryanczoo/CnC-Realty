@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Loader2 } from "lucide-react";
 
 export interface AddressSuggestion {
   fullAddress: string;
@@ -27,6 +28,7 @@ export function AddressAutocomplete({ onSelect, placeholder }: Props) {
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -42,10 +44,12 @@ export function AddressAutocomplete({ onSelect, placeholder }: Props) {
     if (value.trim().length < 5) {
       setSuggestions([]);
       setOpen(false);
+      setLoading(false);
       return;
     }
 
     debounceRef.current = setTimeout(async () => {
+      setLoading(true);
       const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
       const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
         value
@@ -69,6 +73,8 @@ export function AddressAutocomplete({ onSelect, placeholder }: Props) {
         setOpen(parsed.length > 0);
       } catch (err) {
         console.error("[AddressAutocomplete] geocoding failed:", err);
+      } finally {
+        setLoading(false);
       }
     }, 400);
   }
@@ -86,8 +92,11 @@ export function AddressAutocomplete({ onSelect, placeholder }: Props) {
         value={query}
         onChange={(e) => handleChange(e.target.value)}
         placeholder={placeholder ?? "Enter Your Address"}
-        className="w-full rounded-lg border border-[#1B1B1B]/15 bg-white px-6 py-5 text-lg text-[#1B1B1B] placeholder:text-[#1B1B1B]/40 focus:outline-none focus:ring-1 focus:ring-cnc-gold"
+        className="w-full rounded-lg border border-[#1B1B1B]/15 bg-white px-6 py-5 pr-12 text-lg text-[#1B1B1B] placeholder:text-[#1B1B1B]/40 focus:outline-none focus:ring-1 focus:ring-cnc-gold"
       />
+      {loading && (
+        <Loader2 className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 animate-spin text-[#9E8C61]" />
+      )}
       {open && (
         <ul className="absolute left-0 right-0 top-full z-20 mt-1 max-h-64 overflow-y-auto rounded-lg border border-[#1B1B1B]/10 bg-white shadow-lg">
           {suggestions.map((s) => (

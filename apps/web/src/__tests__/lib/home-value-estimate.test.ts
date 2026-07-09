@@ -80,6 +80,8 @@ describe("computeEstimate", () => {
 });
 
 describe("findSubjectProperty", () => {
+  beforeEach(() => vi.clearAllMocks());
+
   it("queries by zip-exact and address-contains, ordered by listedAt desc", async () => {
     const { prisma } = await import("@/lib/prisma");
     const { findSubjectProperty } = await import("@/lib/home-value-estimate");
@@ -115,6 +117,57 @@ describe("findSubjectProperty", () => {
 
     const result = await findSubjectProperty(prisma as any, "123 Main St", "91101");
     expect(result).toEqual(fixture);
+  });
+
+  it("falls back to a suffix-stripped match when the geocoder spells out the street type but MLS data abbreviates it", async () => {
+    const { prisma } = await import("@/lib/prisma");
+    const { findSubjectProperty } = await import("@/lib/home-value-estimate");
+    const fixture = [
+      {
+        mlsNumber: "1170039079",
+        status: "Closed",
+        beds: 3,
+        baths: 2,
+        sqft: 1500,
+        lotSize: null,
+        listPrice: null,
+        closePrice: 500000,
+        closeDate: new Date("2025-02-01"),
+        listedAt: new Date("2024-12-01"),
+      },
+    ];
+
+    vi.mocked(prisma.property.findMany)
+      .mockResolvedValueOnce([]) // strict "15595 Curtis Circle" — DB has "15595 Curtis Cir", no match
+      .mockResolvedValueOnce(fixture as any); // fallback "15595 Curtis" — matches
+
+    const result = await findSubjectProperty(prisma as any, "15595 Curtis Circle", "95370");
+
+    expect(prisma.property.findMany).toHaveBeenCalledTimes(2);
+    const fallbackCall = vi.mocked(prisma.property.findMany).mock.calls[1][0] as any;
+    expect(fallbackCall.where.zip).toBe("95370");
+    expect(fallbackCall.where.address.contains).toBe("15595 Curtis");
+    expect(result).toEqual(fixture);
+  });
+
+  it("does not fall back when the strict match already finds results", async () => {
+    const { prisma } = await import("@/lib/prisma");
+    const { findSubjectProperty } = await import("@/lib/home-value-estimate");
+    vi.mocked(prisma.property.findMany).mockResolvedValueOnce([{ mlsNumber: "X" }] as any);
+
+    await findSubjectProperty(prisma as any, "15595 Curtis Circle", "95370");
+
+    expect(prisma.property.findMany).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not fall back when there is no street name left after stripping the last word", async () => {
+    const { prisma } = await import("@/lib/prisma");
+    const { findSubjectProperty } = await import("@/lib/home-value-estimate");
+    vi.mocked(prisma.property.findMany).mockResolvedValue([]);
+
+    await findSubjectProperty(prisma as any, "15595", "95370");
+
+    expect(prisma.property.findMany).toHaveBeenCalledTimes(1);
   });
 });
 

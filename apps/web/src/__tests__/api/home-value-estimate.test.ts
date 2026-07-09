@@ -54,7 +54,8 @@ describe("GET /api/home-value/estimate", () => {
 
   it("uses manual beds/sqft query params when no DB match exists", async () => {
     vi.mocked(prisma.property.findMany)
-      .mockResolvedValueOnce([]) // findSubjectProperty — no match
+      .mockResolvedValueOnce([]) // findSubjectProperty strict — no match
+      .mockResolvedValueOnce([]) // findSubjectProperty suffix-stripped fallback — no match
       .mockResolvedValueOnce([
         { mlsNumber: "ML2", address: "125 Main St", city: "Pasadena", state: "CA", zip: "91101", beds: 3, baths: 2, sqft: 1500, closePrice: 750000, closeDate: new Date("2026-01-01"), photos: [] },
         { mlsNumber: "ML3", address: "130 Main St", city: "Pasadena", state: "CA", zip: "91101", beds: 3, baths: 2, sqft: 1500, closePrice: 780000, closeDate: new Date("2026-02-01"), photos: [] },
