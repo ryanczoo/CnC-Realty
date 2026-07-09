@@ -7,11 +7,11 @@ export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const agent = await prisma.agent.findUnique({ where: { userId: session.user.id } });
-  if (!agent) return NextResponse.json({ error: "Agent not found" }, { status: 404 });
+  const agentId = session.user.agentId;
+  if (!agentId) return NextResponse.json({ error: "Agent not found" }, { status: 404 });
 
   const transactions = await prisma.transactionFile.findMany({
-    where: { agentId: agent.id },
+    where: { agentId },
     orderBy: { createdAt: "desc" },
     include: { checklistItems: { include: { documents: true } } },
   });
@@ -23,8 +23,8 @@ export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const agent = await prisma.agent.findUnique({ where: { userId: session.user.id } });
-  if (!agent) return NextResponse.json({ error: "Agent not found" }, { status: 404 });
+  const agentId = session.user.agentId;
+  if (!agentId) return NextResponse.json({ error: "Agent not found" }, { status: 404 });
 
   const body = await req.json();
   const {
@@ -55,7 +55,7 @@ export async function POST(req: Request) {
   try {
     const tx = await prisma.transactionFile.create({
       data: {
-        agentId: agent.id,
+        agentId,
         propertyAddress, city, state: state ?? "CA", zip,
         mlsNumber: mlsNumber || null,
         propertyType: propertyType || null,

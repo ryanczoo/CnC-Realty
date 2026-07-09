@@ -13,8 +13,8 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { GET } from "../../app/api/tasks/route";
 
-const SESSION_AGENT = { user: { id: "u1", role: "AGENT" } };
-const SESSION_ADMIN = { user: { id: "u2", role: "ADMIN" } };
+const SESSION_AGENT = { user: { id: "u1", role: "AGENT", agentId: "a1" } };
+const SESSION_ADMIN = { user: { id: "u2", role: "ADMIN", agentId: null } };
 const AGENT = { id: "a1" };
 
 const TASK_DB = {
@@ -35,7 +35,6 @@ describe("GET /api/tasks", () => {
 
   it("returns tasks with lead name for authenticated agent", async () => {
     vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
-    vi.mocked(prisma.agent.findUnique).mockResolvedValue(AGENT as any);
     vi.mocked(prisma.leadTask.findMany).mockResolvedValue([TASK_DB] as any);
 
     const res = await GET(new Request("http://localhost/api/tasks"));
@@ -46,6 +45,25 @@ describe("GET /api/tasks", () => {
     expect(data[0].leadLastName).toBe("Doe");
     expect(data[0].leadId).toBe("l1");
     expect(typeof data[0].createdAt).toBe("string");
+  });
+
+  it("uses session.agentId directly, without querying prisma.agent", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
+    vi.mocked(prisma.leadTask.findMany).mockResolvedValue([] as any);
+
+    await GET(new Request("http://localhost/api/tasks"));
+
+    expect(prisma.agent.findUnique).not.toHaveBeenCalled();
+    expect(prisma.leadTask.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ lead: { agentId: "a1" } }) })
+    );
+  });
+
+  it("returns 404 when agent session has no agentId", async () => {
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u3", role: "AGENT", agentId: null } } as any);
+
+    const res = await GET(new Request("http://localhost/api/tasks"));
+    expect(res.status).toBe(404);
   });
 
   it("filters by done=false", async () => {

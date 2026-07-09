@@ -45,6 +45,11 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.role = (user as any).role;
+        const agent = await prisma.agent.findUnique({
+          where: { userId: user.id },
+          select: { id: true },
+        });
+        token.agentId = agent?.id ?? null;
       }
       if (trigger === "update" && session?.name) {
         token.name = session.name;
@@ -55,6 +60,7 @@ export const authOptions: NextAuthOptions = {
       if (token && session.user) {
         (session.user as any).id = token.id;
         (session.user as any).role = token.role;
+        (session.user as any).agentId = token.agentId ?? null;
       }
       return session;
     },

@@ -17,30 +17,26 @@ export default async function LeadsPage({
   searchParams: { list?: string };
 }) {
   const session = await getServerSession(authOptions);
-  const userId = (session!.user as any).id;
   const role = (session!.user as any).role;
+  const agentId = role !== "ADMIN" ? ((session!.user as any).agentId as string | null) : null;
 
-  const agent =
-    role !== "ADMIN"
-      ? await prisma.agent.findUnique({ where: { userId } })
-      : null;
-
-  const customLists = agent
-    ? await prisma.smartList.findMany({
-        where: { agentId: agent.id },
-        orderBy: { createdAt: "asc" },
-        select: { id: true, name: true, filters: true },
-      })
-    : [];
-
-  const unseenBrokerageLeads = agent
-    ? await prisma.lead
-        .findMany({
-          where: { agentId: agent.id, brokerageFed: true, assignmentSeenAt: null },
-          select: { id: true, firstName: true, lastName: true },
+  const [customLists, unseenBrokerageLeads] = await Promise.all([
+    agentId
+      ? prisma.smartList.findMany({
+          where: { agentId },
+          orderBy: { createdAt: "asc" },
+          select: { id: true, name: true, filters: true },
         })
-        .catch(() => [])
-    : [];
+      : Promise.resolve([]),
+    agentId
+      ? prisma.lead
+          .findMany({
+            where: { agentId, brokerageFed: true, assignmentSeenAt: null },
+            select: { id: true, firstName: true, lastName: true },
+          })
+          .catch(() => [])
+      : Promise.resolve([]),
+  ]);
 
   const list = searchParams.list ?? null;
   const isValidList = list ? resolveListFilters(list, customLists) !== null : false;
@@ -58,7 +54,7 @@ export default async function LeadsPage({
   if (!list || !isValidList) {
     try {
       const leads = await prisma.lead.findMany({
-        where: agent ? { agentId: agent.id } : {},
+        where: agentId ? { agentId } : {},
         orderBy: { createdAt: "desc" },
         select: {
           id: true,
@@ -90,7 +86,7 @@ export default async function LeadsPage({
         ) : (
           <>
             <div className="mb-8">
-              <h1 className="font-sans text-2xl font-light text-[#1B1B1B]">Leads</h1>
+              <h1 className="font-sans text-2xl font-medium text-[#1B1B1B]">Leads</h1>
             </div>
             <LeadKanban initialLeads={kanbanLeads.map(l => ({ ...l, status: l.status as LeadStatus }))} />
           </>

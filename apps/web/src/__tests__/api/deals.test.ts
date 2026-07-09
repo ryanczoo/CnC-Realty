@@ -22,7 +22,7 @@ import { GET, POST } from "../../app/api/deals/route";
 import { GET as GET_ONE, PATCH, DELETE } from "../../app/api/deals/[id]/route";
 
 const AGENT = { id: "a1" };
-const SESSION_AGENT = { user: { id: "u1", role: "AGENT" } };
+const SESSION_AGENT = { user: { id: "u1", role: "AGENT", agentId: "a1" } };
 
 const MOCK_DEAL_DB = {
   id: "d1",
@@ -52,7 +52,6 @@ describe("GET /api/deals", () => {
 
   it("returns deal list for authenticated agent", async () => {
     vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
-    vi.mocked(prisma.agent.findUnique).mockResolvedValue(AGENT as any);
     vi.mocked(prisma.deal.findMany).mockResolvedValue([MOCK_DEAL_DB] as any);
 
     const res = await GET(new Request("http://localhost/api/deals"));
@@ -61,6 +60,18 @@ describe("GET /api/deals", () => {
     expect(data).toHaveLength(1);
     expect(data[0].leadName).toBe("Jane Doe");
     expect(typeof data[0].daysInStage).toBe("number");
+  });
+
+  it("uses session.agentId directly, without querying prisma.agent", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
+    vi.mocked(prisma.deal.findMany).mockResolvedValue([] as any);
+
+    await GET(new Request("http://localhost/api/deals"));
+
+    expect(prisma.agent.findUnique).not.toHaveBeenCalled();
+    expect(prisma.deal.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ agentId: "a1" }) })
+    );
   });
 
   it("filters by pipeline when ?pipeline=SELLERS", async () => {

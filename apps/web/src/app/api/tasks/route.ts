@@ -36,9 +36,8 @@ export async function GET(req: Request) {
 
   let agentId: string | undefined;
   if (!isAdmin) {
-    const agent = await prisma.agent.findUnique({ where: { userId: session.user.id } });
-    if (!agent) return NextResponse.json({ error: "Agent profile not found" }, { status: 404 });
-    agentId = agent.id;
+    if (!session.user.agentId) return NextResponse.json({ error: "Agent profile not found" }, { status: 404 });
+    agentId = session.user.agentId;
   }
 
   const tasks = await prisma.leadTask.findMany({

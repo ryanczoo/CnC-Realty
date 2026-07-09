@@ -5,7 +5,7 @@ import { authOptions } from "@/lib/auth";
 type Role = "BUYER" | "AGENT" | "ADMIN";
 
 interface AuthedSession {
-  user: { id: string; email: string; name?: string | null; role: Role };
+  user: { id: string; email: string; name?: string | null; role: Role; agentId: string | null };
 }
 
 export async function requireAuth(minRole?: "AGENT" | "ADMIN"): Promise<

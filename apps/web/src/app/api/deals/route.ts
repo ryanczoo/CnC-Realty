@@ -43,13 +43,9 @@ export async function GET(req: Request) {
   const leadId = url.searchParams.get("leadId");
 
   const role = (session.user as any).role;
-  let agentId: string | null = null;
+  const agentId = role !== "ADMIN" ? session.user.agentId : null;
 
-  if (role !== "ADMIN") {
-    const agent = await prisma.agent.findUnique({ where: { userId: session.user.id } });
-    if (!agent) return NextResponse.json([]);
-    agentId = agent.id;
-  }
+  if (role !== "ADMIN" && !agentId) return NextResponse.json([]);
 
   const where: Record<string, unknown> = {};
   if (agentId) where.agentId = agentId;
@@ -69,8 +65,8 @@ export async function POST(req: Request) {
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
-  const agent = await prisma.agent.findUnique({ where: { userId: session.user.id } });
-  if (!agent) return NextResponse.json({ error: "Agent profile not found" }, { status: 404 });
+  const agentId = session.user.agentId;
+  if (!agentId) return NextResponse.json({ error: "Agent profile not found" }, { status: 404 });
 
   const role = (session.user as any).role;
 
@@ -78,7 +74,7 @@ export async function POST(req: Request) {
     const body = createSchema.parse(await req.json());
 
     if (role !== "ADMIN") {
-      const lead = await prisma.lead.findFirst({ where: { id: body.leadId, agentId: agent.id } });
+      const lead = await prisma.lead.findFirst({ where: { id: body.leadId, agentId } });
       if (!lead) return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
@@ -88,7 +84,7 @@ export async function POST(req: Request) {
 
     const deal = await prisma.deal.create({
       data: {
-        agentId: agent.id,
+        agentId,
         leadId: body.leadId,
         pipeline: body.pipeline,
         stage: body.stage as any,

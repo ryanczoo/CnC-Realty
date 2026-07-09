@@ -7,9 +7,9 @@ import { CampaignCard } from "@/components/campaigns/CampaignCard";
 export default async function CampaignsPage() {
   const session = await getServerSession(authOptions);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const userId = (session!.user as any).id;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const role = (session!.user as any).role;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const agentId = role !== "ADMIN" ? ((session!.user as any).agentId as string | null) : null;
 
   let campaigns: {
     id: string;
@@ -21,12 +21,8 @@ export default async function CampaignsPage() {
   }[] = [];
 
   try {
-    const agent = role !== "ADMIN"
-      ? await prisma.agent.findUnique({ where: { userId } })
-      : null;
-
     campaigns = await prisma.campaign.findMany({
-      where: agent ? { agentId: agent.id } : {},
+      where: agentId ? { agentId } : {},
       include: { _count: { select: { contacts: true } } },
       orderBy: { createdAt: "desc" },
     });
@@ -37,7 +33,7 @@ export default async function CampaignsPage() {
   return (
     <div>
       <div className="mb-8 flex items-center justify-between">
-        <h1 className="font-sans text-2xl font-light text-[#1B1B1B]">Campaigns</h1>
+        <h1 className="font-sans text-2xl font-medium text-[#1B1B1B]">Campaigns</h1>
         <Link
           href="/dashboard/campaigns/new"
           className="rounded-full bg-[#1B1B1B] px-4 py-2 font-sans text-sm text-white hover:bg-[#1B1B1B]/80 transition-colors"

@@ -6,17 +6,13 @@ import { DashboardTabs } from "@/components/dashboard/DashboardTabs";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
-  const userId = (session!.user as any).id;
   const role = (session!.user as any).role;
+  const agentId = role !== "ADMIN" ? ((session!.user as any).agentId as string | null) : null;
 
   let total = 0, newThisWeek = 0, active = 0, closed = 0;
 
   try {
-    const agent = role !== "ADMIN"
-      ? await prisma.agent.findUnique({ where: { userId } })
-      : null;
-
-    const where = agent ? { agentId: agent.id } : {};
+    const where = agentId ? { agentId } : {};
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
     [total, newThisWeek, active, closed] = await Promise.all([
