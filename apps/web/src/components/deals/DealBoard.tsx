@@ -76,7 +76,7 @@ export function DealBoard({ pipeline, initialDeals, onCardClick, onOfferAccepted
       {error && (
         <p className="mb-3 rounded-lg bg-red-50 px-4 py-2 font-sans text-sm text-red-600">{error}</p>
       )}
-      <div className="flex gap-4 overflow-x-auto pb-4">
+      <div className="flex flex-col gap-4">
         {stages.map((stage) => {
           const columnDeals = deals.filter((d) => d.stage === stage);
           return (
@@ -84,7 +84,7 @@ export function DealBoard({ pipeline, initialDeals, onCardClick, onOfferAccepted
               key={stage}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, stage)}
-              className="flex w-64 flex-shrink-0 flex-col rounded-xl bg-[#F2F0EF] p-3"
+              className="flex w-full flex-col rounded-xl bg-[#F2F0EF] p-4"
             >
               <div className="mb-3 flex items-center justify-between">
                 <h3 className="font-sans text-sm font-medium text-[#1B1B1B]">
