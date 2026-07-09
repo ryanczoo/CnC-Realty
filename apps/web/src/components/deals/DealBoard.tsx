@@ -1,6 +1,17 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, type ReactNode } from "react";
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  useDroppable,
+  closestCorners,
+} from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { DealCard } from "./DealCard";
 import { PIPELINE_STAGES, STAGE_LABELS } from "@/lib/deal-pipeline";
 import type { DealRow } from "@/lib/deal-pipeline";
@@ -13,45 +24,53 @@ type Props = {
   onOfferAccepted?: (deal: DealRow) => void;
 };
 
+function DroppableStage({ stage, children }: { stage: string; children: ReactNode }) {
+  const { setNodeRef } = useDroppable({ id: stage });
+  return (
+    <div ref={setNodeRef} className="flex min-h-[80px] flex-col gap-2">
+      {children}
+    </div>
+  );
+}
+
 export function DealBoard({ pipeline, initialDeals, onCardClick, onOfferAccepted }: Props) {
   const [deals, setDeals] = useState<DealRow[]>(initialDeals);
   const [error, setError] = useState<string | null>(null);
-  const draggingId = useRef<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
 
   const stages = PIPELINE_STAGES[pipeline];
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
-  function handleDragStart(e: React.DragEvent, dealId: string) {
-    draggingId.current = dealId;
-    e.dataTransfer.effectAllowed = "move";
-  }
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    setActiveId(null);
+    if (!over || active.id === over.id) return;
 
-  function handleDragOver(e: React.DragEvent) {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  }
+    // over.id is the stage name for an empty/near-empty stage, or a deal id when dropped onto a card
+    let newStage = over.id as DealRow["stage"];
+    if (!stages.includes(newStage)) {
+      const overDeal = deals.find((d) => d.id === over.id);
+      if (!overDeal) return;
+      newStage = overDeal.stage;
+    }
 
-  async function handleDrop(e: React.DragEvent, targetStage: string) {
-    e.preventDefault();
-    const id = draggingId.current;
-    if (!id) return;
-
-    const deal = deals.find((d) => d.id === id);
-    if (!deal || deal.stage === targetStage) return;
+    const deal = deals.find((d) => d.id === active.id);
+    if (!deal || deal.stage === newStage) return;
 
     const prev = deals;
     setDeals((ds) =>
       ds.map((d) =>
-        d.id === id
-          ? { ...d, stage: targetStage as DealRow["stage"], stageUpdatedAt: new Date().toISOString(), daysInStage: 0 }
+        d.id === active.id
+          ? { ...d, stage: newStage, stageUpdatedAt: new Date().toISOString(), daysInStage: 0 }
           : d
       )
     );
     setError(null);
 
-    const res = await fetch(`/api/deals/${id}`, {
+    const res = await fetch(`/api/deals/${active.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ stage: targetStage }),
+      body: JSON.stringify({ stage: newStage }),
     });
 
     if (!res.ok) {
@@ -60,54 +79,52 @@ export function DealBoard({ pipeline, initialDeals, onCardClick, onOfferAccepted
       return;
     }
 
-    if (targetStage === "OFFER_ACCEPTED" && onOfferAccepted) {
-      const deal = deals.find((d) => d.id === id);
-      if (deal) onOfferAccepted({
-        ...deal,
-        stage: "OFFER_ACCEPTED" as DealRow["stage"],
-        stageUpdatedAt: new Date().toISOString(),
-        daysInStage: 0,
-      });
+    if (newStage === "OFFER_ACCEPTED" && onOfferAccepted) {
+      onOfferAccepted({ ...deal, stage: "OFFER_ACCEPTED" as DealRow["stage"], stageUpdatedAt: new Date().toISOString(), daysInStage: 0 });
     }
   }
+
+  const activeDeal = deals.find((d) => d.id === activeId);
 
   return (
     <div className="relative">
       {error && (
         <p className="mb-3 rounded-lg bg-red-50 px-4 py-2 font-sans text-sm text-red-600">{error}</p>
       )}
-      <div className="flex flex-col gap-4">
-        {stages.map((stage) => {
-          const columnDeals = deals.filter((d) => d.stage === stage);
-          return (
-            <div
-              key={stage}
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, stage)}
-              className="flex w-full flex-col rounded-xl bg-[#F2F0EF] p-4"
-            >
-              <div className="mb-3 flex items-center justify-between">
-                <h3 className="font-sans text-sm font-medium text-[#1B1B1B]">
-                  {STAGE_LABELS[stage as keyof typeof STAGE_LABELS]}
-                </h3>
-                <span className="rounded-full bg-[#1B1B1B]/10 px-2 py-0.5 font-sans text-xs text-[#1B1B1B]/60">
-                  {columnDeals.length}
-                </span>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCorners}
+        onDragStart={(e) => setActiveId(e.active.id as string)}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="flex flex-col gap-4">
+          {stages.map((stage) => {
+            const stageDeals = deals.filter((d) => d.stage === stage);
+            return (
+              <div key={stage} className="flex w-full flex-col rounded-xl bg-[#F2F0EF] p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="font-sans text-sm font-medium text-[#1B1B1B]">
+                    {STAGE_LABELS[stage as keyof typeof STAGE_LABELS]}
+                  </h3>
+                  <span className="rounded-full bg-[#1B1B1B]/10 px-2 py-0.5 font-sans text-xs text-[#1B1B1B]/60">
+                    {stageDeals.length}
+                  </span>
+                </div>
+                <SortableContext id={stage} items={stageDeals.map((d) => d.id)} strategy={verticalListSortingStrategy}>
+                  <DroppableStage stage={stage}>
+                    {stageDeals.map((deal) => (
+                      <DealCard key={deal.id} deal={deal} onClick={onCardClick} />
+                    ))}
+                  </DroppableStage>
+                </SortableContext>
               </div>
-              <div className="flex flex-col gap-2">
-                {columnDeals.map((deal) => (
-                  <DealCard
-                    key={deal.id}
-                    deal={deal}
-                    onClick={onCardClick}
-                    onDragStart={handleDragStart}
-                  />
-                ))}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+        <DragOverlay>
+          {activeDeal && <DealCard deal={activeDeal} onClick={onCardClick} />}
+        </DragOverlay>
+      </DndContext>
     </div>
   );
 }

@@ -1,24 +1,28 @@
 "use client";
 
 import Link from "next/link";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { formatDealPrice, formatCloseDate, calcDaysInStage } from "@/lib/deal-pipeline";
 import type { DealRow } from "@/lib/deal-pipeline";
 
 type Props = {
   deal: DealRow;
   onClick: (deal: DealRow) => void;
-  onDragStart: (e: React.DragEvent, dealId: string) => void;
 };
 
-export function DealCard({ deal, onClick, onDragStart }: Props) {
+export function DealCard({ deal, onClick }: Props) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: deal.id });
   const isAccepted = deal.stage === "OFFER_ACCEPTED";
 
   return (
     <div
-      draggable
-      onDragStart={(e) => onDragStart(e, deal.id)}
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }}
+      {...attributes}
+      {...listeners}
       onClick={() => onClick(deal)}
-      className={`cursor-pointer rounded-lg border bg-white p-3 shadow-sm transition-shadow hover:shadow-md ${
+      className={`cursor-grab rounded-lg border bg-white p-3 shadow-sm transition-shadow hover:shadow-md active:cursor-grabbing ${
         isAccepted ? "border-l-2 border-l-[#9E8C61] border-[#1B1B1B]/10" : "border-[#1B1B1B]/10"
       }`}
     >
