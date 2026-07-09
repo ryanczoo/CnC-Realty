@@ -48,6 +48,15 @@ export function NewLeadModal({ open, onClose, onSaved }: Props) {
       setForm((f) => ({ ...f, [field]: e.target.value }));
   }
 
+  function handlePhoneChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
+    const formatted =
+      digits.length <= 3 ? digits :
+      digits.length <= 6 ? `${digits.slice(0, 3)}-${digits.slice(3)}` :
+      `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+    setForm((f) => ({ ...f, phone: formatted }));
+  }
+
   function reset() {
     setForm({ firstName: "", lastName: "", email: "", phone: "", source: "OTHER", notes: "" });
     setError("");
@@ -60,12 +69,18 @@ export function NewLeadModal({ open, onClose, onSaved }: Props) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSaving(true);
     setError("");
+
+    const email = form.email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
+    setSaving(true);
     try {
       const firstName = form.firstName.trim();
       const lastName = form.lastName.trim();
-      const email = form.email.trim();
       const phone = form.phone.trim() || null;
       const res = await fetch("/api/leads", {
         method: "POST",
@@ -136,7 +151,7 @@ export function NewLeadModal({ open, onClose, onSaved }: Props) {
               </div>
               <div>
                 <label className="mb-1 block text-xs text-[#1B1B1B]/50">Phone</label>
-                <input type="tel" className={INPUT_CLS} value={form.phone} onChange={set("phone")} placeholder="(555) 000-0000" />
+                <input type="tel" className={INPUT_CLS} value={form.phone} onChange={handlePhoneChange} />
               </div>
               <div>
                 <label className="mb-1 block text-xs text-[#1B1B1B]/50">Source</label>
