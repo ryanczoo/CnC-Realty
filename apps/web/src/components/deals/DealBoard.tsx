@@ -15,7 +15,7 @@ import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { DealCard } from "./DealCard";
 import { PIPELINE_STAGES, STAGE_LABELS } from "@/lib/deal-pipeline";
 import type { DealRow } from "@/lib/deal-pipeline";
-import type { DealPipeline } from "@prisma/client";
+import type { DealPipeline } from "@cnc/database";
 
 type Props = {
   pipeline: DealPipeline;

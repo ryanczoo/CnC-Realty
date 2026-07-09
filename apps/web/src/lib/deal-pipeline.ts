@@ -1,4 +1,4 @@
-import type { DealPipeline, DealStage } from "@prisma/client";
+import type { DealPipeline, DealStage } from "@cnc/database";
 
 export const PIPELINE_STAGES: Record<DealPipeline, DealStage[]> = {
   BUYERS: ["PRE_APPROVAL", "TOURING", "OFFER_SUBMITTED", "OFFER_ACCEPTED", "FALLEN_OUT"],

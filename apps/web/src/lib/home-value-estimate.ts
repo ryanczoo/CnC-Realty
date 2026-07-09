@@ -1,5 +1,5 @@
-import type { PrismaClient } from "@prisma/client";
-import { Prisma } from "@prisma/client";
+import type { PrismaClient } from "@cnc/database";
+import { Prisma } from "@cnc/database";
 
 export interface CompInput {
   closePrice: number;

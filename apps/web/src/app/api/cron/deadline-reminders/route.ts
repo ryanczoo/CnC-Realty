@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendDeadlineReminder } from "@/lib/deadline-email";
-import { TransactionFileStatus } from "@prisma/client";
+import { TransactionFileStatus } from "@cnc/database";
 
 export const maxDuration = 60;
 

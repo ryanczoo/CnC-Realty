@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { TransactionFileStatus } from "@prisma/client";
+import { TransactionFileStatus } from "@cnc/database";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { requireAdminPage } from "@/lib/server-utils";
 

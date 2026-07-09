@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import type { Prisma } from "@prisma/client";
+import type { Prisma } from "@cnc/database";
 import { sendPropertyAlertEmail } from "@/lib/email/property-alert-email";
 
 export async function POST(req: Request) {

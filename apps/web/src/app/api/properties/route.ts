@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@cnc/database";
 import { MULTIFAMILY_TYPES } from "@/types/property";
 import { redis } from "@/lib/redis";
 

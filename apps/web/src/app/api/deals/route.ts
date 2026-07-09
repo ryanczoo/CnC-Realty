@@ -3,7 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/api-auth";
 import { calcDaysInStage, isValidStageForPipeline } from "@/lib/deal-pipeline";
-import type { DealPipeline } from "@prisma/client";
+import type { DealPipeline } from "@cnc/database";
 
 const createSchema = z.object({
   leadId: z.string().min(1),

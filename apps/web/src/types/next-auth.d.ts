@@ -1,4 +1,4 @@
-import type { UserRole } from "@prisma/client";
+import type { UserRole } from "@cnc/database";
 import "next-auth";
 import "next-auth/jwt";
 

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { TransactionFileStatus } from "@prisma/client";
+import { TransactionFileStatus } from "@cnc/database";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 

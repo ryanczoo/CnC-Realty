@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import type { Prisma } from "@cnc/database";
 
 export type FilterCondition =
   | { field: "status";         operator: "is" | "isNot";              value: string[] }
