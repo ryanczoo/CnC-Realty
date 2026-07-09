@@ -205,6 +205,32 @@ describe("findComps", () => {
     const call = vi.mocked(prisma.property.findMany).mock.calls[0][0] as any;
     expect(call.where.mlsNumber).toEqual({ not: "ML1" });
   });
+
+  it("only matches FOR_SALE listings, excluding closed rentals from comps", async () => {
+    const { prisma } = await import("@/lib/prisma");
+    const { findComps } = await import("@/lib/home-value-estimate");
+    vi.mocked(prisma.property.findMany).mockResolvedValue([{}, {}, {}] as any);
+
+    await findComps(prisma as any, { zip: "91101", beds: 3 });
+
+    const call = vi.mocked(prisma.property.findMany).mock.calls[0][0] as any;
+    expect(call.where.listingType).toBe("FOR_SALE");
+  });
+
+  it("keeps the FOR_SALE filter even at the final fallback that drops beds/propertyType", async () => {
+    const { prisma } = await import("@/lib/prisma");
+    const { findComps } = await import("@/lib/home-value-estimate");
+    vi.mocked(prisma.property.findMany)
+      .mockResolvedValueOnce([] as any) // 6mo
+      .mockResolvedValueOnce([] as any) // 12mo
+      .mockResolvedValueOnce([] as any) // 24mo
+      .mockResolvedValueOnce([{}, {}] as any); // final fallback
+
+    await findComps(prisma as any, { zip: "91101", beds: 3 });
+
+    const finalCall = vi.mocked(prisma.property.findMany).mock.calls[3][0] as any;
+    expect(finalCall.where.listingType).toBe("FOR_SALE");
+  });
 });
 
 describe("getMarketSnapshot", () => {
@@ -253,5 +279,16 @@ describe("getMarketSnapshot", () => {
     const result = await getMarketSnapshot(prisma as any, "91101");
 
     expect(result.every((q) => q.count === 0 && q.medianPrice === null)).toBe(true);
+  });
+
+  it("only counts FOR_SALE listings, excluding closed rentals from the market snapshot", async () => {
+    const { prisma } = await import("@/lib/prisma");
+    const { getMarketSnapshot } = await import("@/lib/home-value-estimate");
+    vi.mocked(prisma.property.findMany).mockResolvedValue([]);
+
+    await getMarketSnapshot(prisma as any, "91101");
+
+    const call = vi.mocked(prisma.property.findMany).mock.calls[0][0] as any;
+    expect(call.where.listingType).toBe("FOR_SALE");
   });
 });

@@ -138,6 +138,7 @@ async function queryComps(
 
   const where: Prisma.PropertyWhereInput = {
     status: "Closed",
+    listingType: "FOR_SALE",
     closePrice: { not: null },
     zip,
     closeDate: { gte: closeDateAfter },
@@ -201,7 +202,7 @@ export async function getMarketSnapshot(
   const since = quarters[0].start;
 
   const rows = await prisma.property.findMany({
-    where: { status: "Closed", zip, closePrice: { not: null }, closeDate: { gte: since } },
+    where: { status: "Closed", listingType: "FOR_SALE", zip, closePrice: { not: null }, closeDate: { gte: since } },
     select: { closePrice: true, closeDate: true },
   });
 
