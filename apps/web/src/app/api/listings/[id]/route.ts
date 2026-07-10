@@ -12,9 +12,8 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   const listing = await prisma.listingFile.findUnique({ where: { id: params.id }, include: FILE_DETAIL_INCLUDE });
   if (!listing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const agent = await prisma.agent.findUnique({ where: { userId: session.user.id } });
   const isAdmin = session.user.role === "ADMIN";
-  if (!isAdmin && listing.agentId !== agent?.id) {
+  if (!isAdmin && listing.agentId !== session.user.agentId) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -28,9 +27,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const listing = await prisma.listingFile.findUnique({ where: { id: params.id } });
   if (!listing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const agent = await prisma.agent.findUnique({ where: { userId: session.user.id } });
   const isAdmin = session.user.role === "ADMIN";
-  if (!isAdmin && listing.agentId !== agent?.id) {
+  if (!isAdmin && listing.agentId !== session.user.agentId) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -93,8 +91,7 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
     return NextResponse.json({ error: "Only INCOMPLETE files can be deleted" }, { status: 400 });
   }
 
-  const agent = await prisma.agent.findUnique({ where: { userId: session.user.id } });
-  if (listing.agentId !== agent?.id && session.user.role !== "ADMIN") {
+  if (listing.agentId !== session.user.agentId && session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

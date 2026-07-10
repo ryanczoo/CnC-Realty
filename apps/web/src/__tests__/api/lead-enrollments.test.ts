@@ -25,7 +25,7 @@ import { prisma } from "@/lib/prisma";
 import { GET, POST } from "../../app/api/leads/[id]/enrollments/route";
 import { PATCH } from "../../app/api/leads/[id]/enrollments/[enrollmentId]/route";
 
-const SESSION = { user: { id: "u1", role: "AGENT" } };
+const SESSION = { user: { id: "u1", role: "AGENT", agentId: "a1" } };
 const AGENT = { id: "a1" };
 const LEAD = { agentId: "a1" };
 const PLAN = { id: "pl1", name: "7-Day Drip", isActive: true };

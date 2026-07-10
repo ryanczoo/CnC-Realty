@@ -121,8 +121,7 @@ describe("PATCH /api/deals/[id]", () => {
 
   it("returns 404 when deal belongs to different agent", async () => {
     vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
-    vi.mocked(prisma.agent.findUnique).mockResolvedValue({ id: "a2" } as any);
-    vi.mocked(prisma.deal.findUnique).mockResolvedValue(MOCK_DEAL_DB as any);
+    vi.mocked(prisma.deal.findUnique).mockResolvedValue({ ...MOCK_DEAL_DB, agentId: "a2" } as any);
 
     const res = await PATCH(
       new Request("http://localhost", { method: "PATCH", body: JSON.stringify({ notes: "hi" }) }),

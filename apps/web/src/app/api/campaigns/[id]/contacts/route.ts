@@ -20,8 +20,7 @@ export async function POST(
   if (!campaign) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   if (session.user.role !== "ADMIN") {
-    const agent = await prisma.agent.findUnique({ where: { userId: session.user.id } });
-    if (!agent || campaign.agentId !== agent.id) {
+    if (!session.user.agentId || campaign.agentId !== session.user.agentId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
   }

@@ -3,17 +3,16 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-async function assertTaskAccess(taskId: string, userId: string, role: string) {
+async function assertTaskAccess(taskId: string, agentId: string | null, role: string) {
   const task = await prisma.fileTask.findUnique({ where: { id: taskId } });
   if (!task) return { error: "Not found", status: 404 } as const;
 
   if (role !== "ADMIN") {
-    const agent = await prisma.agent.findUnique({ where: { userId } });
     const parentAgentId = task.fileType === "LISTING"
       ? (await prisma.listingFile.findUnique({ where: { id: task.listingFileId! }, select: { agentId: true } }))?.agentId
       : (await prisma.transactionFile.findUnique({ where: { id: task.transactionFileId! }, select: { agentId: true } }))?.agentId;
 
-    if (parentAgentId !== agent?.id) return { error: "Forbidden", status: 403 } as const;
+    if (parentAgentId !== agentId) return { error: "Forbidden", status: 403 } as const;
   }
 
   return { task };
@@ -30,7 +29,7 @@ export async function PATCH(req: Request, { params }: { params: { taskId: string
     return NextResponse.json({ error: "title cannot be empty" }, { status: 400 });
   }
 
-  const check = await assertTaskAccess(params.taskId, session.user.id, session.user.role);
+  const check = await assertTaskAccess(params.taskId, session.user.agentId, session.user.role);
   if ("error" in check) return NextResponse.json({ error: check.error }, { status: check.status });
 
   const updated = await prisma.fileTask.update({
@@ -50,7 +49,7 @@ export async function DELETE(_req: Request, { params }: { params: { taskId: stri
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const check = await assertTaskAccess(params.taskId, session.user.id, session.user.role);
+  const check = await assertTaskAccess(params.taskId, session.user.agentId, session.user.role);
   if ("error" in check) return NextResponse.json({ error: check.error }, { status: check.status });
 
   await prisma.fileTask.delete({ where: { id: params.taskId } });

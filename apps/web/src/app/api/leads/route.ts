@@ -57,7 +57,7 @@ export async function GET(req: Request) {
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
-  const { id: userId, role } = session.user;
+  const { role, agentId: sessionAgentId } = session.user;
   const url = new URL(req.url);
   const filtersParam = url.searchParams.get("filters");
   const page = Math.max(1, Number(url.searchParams.get("page") ?? "1"));
@@ -72,11 +72,11 @@ export async function GET(req: Request) {
       });
       return NextResponse.json(leads);
     }
-    const agent = await prisma.agent.findUnique({ where: { userId } });
-    if (!agent) return NextResponse.json([]);
+    if (!sessionAgentId) return NextResponse.json([]);
     const leads = await prisma.lead.findMany({
-      where: { agentId: agent.id },
+      where: { agentId: sessionAgentId },
       orderBy: { createdAt: "desc" },
+      take: 200,
     });
     return NextResponse.json(leads);
   }
@@ -91,9 +91,8 @@ export async function GET(req: Request) {
 
   let agentId: string | null = null;
   if (role !== "ADMIN") {
-    const agent = await prisma.agent.findUnique({ where: { userId } });
-    if (!agent) return NextResponse.json({ leads: [], total: 0, page, pageSize });
-    agentId = agent.id;
+    if (!sessionAgentId) return NextResponse.json({ leads: [], total: 0, page, pageSize });
+    agentId = sessionAgentId;
   }
 
   const where = buildLeadWhere(filters, agentId);

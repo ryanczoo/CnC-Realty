@@ -14,8 +14,7 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { POST } from "../../app/api/deals/[id]/convert/route";
 
-const SESSION_AGENT = { user: { id: "u1", role: "AGENT" } };
-const AGENT = { id: "a1" };
+const SESSION_AGENT = { user: { id: "u1", role: "AGENT", agentId: "a1" } };
 const BUYERS_DEAL = {
   id: "d1", agentId: "a1", leadId: "l1",
   pipeline: "BUYERS", stage: "OFFER_ACCEPTED",
@@ -34,8 +33,7 @@ describe("POST /api/deals/[id]/convert", () => {
   });
 
   it("returns 404 when deal not found or not owned", async () => {
-    vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
-    vi.mocked(prisma.agent.findUnique).mockResolvedValue({ id: "a2" } as any);
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u1", role: "AGENT", agentId: "a2" } } as any);
     vi.mocked(prisma.deal.findUnique).mockResolvedValue(BUYERS_DEAL as any);
 
     const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "d1" } });
@@ -44,7 +42,6 @@ describe("POST /api/deals/[id]/convert", () => {
 
   it("returns 400 when stage is not OFFER_ACCEPTED", async () => {
     vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
-    vi.mocked(prisma.agent.findUnique).mockResolvedValue(AGENT as any);
     vi.mocked(prisma.deal.findUnique).mockResolvedValue({ ...BUYERS_DEAL, stage: "TOURING" } as any);
 
     const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "d1" } });
@@ -55,7 +52,6 @@ describe("POST /api/deals/[id]/convert", () => {
 
   it("returns 409 when deal already has a transactionFileId", async () => {
     vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
-    vi.mocked(prisma.agent.findUnique).mockResolvedValue(AGENT as any);
     vi.mocked(prisma.deal.findUnique).mockResolvedValue({ ...BUYERS_DEAL, transactionFileId: "tf1" } as any);
 
     const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "d1" } });
@@ -64,7 +60,6 @@ describe("POST /api/deals/[id]/convert", () => {
 
   it("creates a TransactionFile and links it to the deal", async () => {
     vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
-    vi.mocked(prisma.agent.findUnique).mockResolvedValue(AGENT as any);
     vi.mocked(prisma.deal.findUnique).mockResolvedValue(BUYERS_DEAL as any);
     vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "tf-new" } as any);
     vi.mocked(prisma.deal.update).mockResolvedValue({} as any);
@@ -88,7 +83,6 @@ describe("POST /api/deals/[id]/convert", () => {
   it("uses SELLER_SIDE for SELLERS pipeline", async () => {
     const sellersDeal = { ...BUYERS_DEAL, pipeline: "SELLERS", price: 750000 };
     vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
-    vi.mocked(prisma.agent.findUnique).mockResolvedValue(AGENT as any);
     vi.mocked(prisma.deal.findUnique).mockResolvedValue(sellersDeal as any);
     vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "tf-new" } as any);
     vi.mocked(prisma.deal.update).mockResolvedValue({} as any);

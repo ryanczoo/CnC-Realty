@@ -15,7 +15,7 @@ import { prisma } from "@/lib/prisma";
 import { GET } from "../../app/api/leads/[id]/tasks/route";
 import { PATCH } from "../../app/api/leads/[id]/tasks/[taskId]/route";
 
-const SESSION = { user: { id: "u1", role: "AGENT" } };
+const SESSION = { user: { id: "u1", role: "AGENT", agentId: "a1" } };
 const AGENT = { id: "a1" };
 const LEAD = { agentId: "a1" };
 const TASK = {

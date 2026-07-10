@@ -25,20 +25,18 @@ const patchSchema = z.object({
   timeframeToMove: z.string().nullable().optional(),
 });
 
-async function assertOwnership(leadId: string, userId: string, role: string) {
+async function assertOwnership(leadId: string, agentId: string | null, role: string) {
   if (role === "ADMIN") return true;
-  const [agent, lead] = await Promise.all([
-    prisma.agent.findUnique({ where: { userId } }),
-    prisma.lead.findUnique({ where: { id: leadId }, select: { agentId: true } }),
-  ]);
-  return agent && lead && lead.agentId === agent.id;
+  if (!agentId) return false;
+  const lead = await prisma.lead.findUnique({ where: { id: leadId }, select: { agentId: true } });
+  return !!lead && lead.agentId === agentId;
 }
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
-  const owns = await assertOwnership(params.id, session.user.id, session.user.role);
+  const owns = await assertOwnership(params.id, session.user.agentId, session.user.role);
   if (!owns) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const lead = await prisma.lead.findUnique({
@@ -60,7 +58,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
-  const owns = await assertOwnership(params.id, session.user.id, session.user.role);
+  const owns = await assertOwnership(params.id, session.user.agentId, session.user.role);
   if (!owns) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   let data: z.infer<typeof patchSchema>;

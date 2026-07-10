@@ -14,12 +14,10 @@ export async function GET() {
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
-  const userId = session.user.id;
-  const agent = await prisma.agent.findUnique({ where: { userId } });
-  if (!agent) return NextResponse.json([]);
+  if (!session.user.agentId) return NextResponse.json([]);
 
   const campaigns = await prisma.campaign.findMany({
-    where: { agentId: agent.id },
+    where: { agentId: session.user.agentId },
     include: { _count: { select: { contacts: true } } },
     orderBy: { createdAt: "desc" },
   });
@@ -31,11 +29,9 @@ export async function POST(req: Request) {
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
-  const userId = session.user.id;
+  const agentId = session.user.agentId;
 
-  const agent = await prisma.agent.findUnique({ where: { userId } });
-
-  if (!agent) {
+  if (!agentId) {
     return NextResponse.json({ error: "Agent profile not found" }, { status: 404 });
   }
 
@@ -50,7 +46,7 @@ export async function POST(req: Request) {
         subject: data.subject ?? null,
         body: "",
         status: "DRAFT",
-        agentId: agent.id,
+        agentId,
       },
     });
 

@@ -10,9 +10,8 @@ export async function DELETE(
   if (error) return error;
 
   if (session.user.role !== "ADMIN") {
-    const agent = await prisma.agent.findUnique({ where: { userId: session.user.id } });
     const lead = await prisma.lead.findUnique({ where: { id: params.id }, select: { agentId: true } });
-    if (!agent || !lead || lead.agentId !== agent.id) {
+    if (!session.user.agentId || !lead || lead.agentId !== session.user.agentId) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
   }

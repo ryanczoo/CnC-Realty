@@ -16,11 +16,10 @@ export async function GET() {
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
-  const agent = await prisma.agent.findUnique({ where: { userId: session.user.id } });
-  if (!agent) return NextResponse.json([]);
+  if (!session.user.agentId) return NextResponse.json([]);
 
   const lists = await prisma.smartList.findMany({
-    where: { agentId: agent.id },
+    where: { agentId: session.user.agentId },
     orderBy: { createdAt: "asc" },
   });
   return NextResponse.json(lists);
@@ -30,13 +29,13 @@ export async function POST(req: Request) {
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
-  const agent = await prisma.agent.findUnique({ where: { userId: session.user.id } });
-  if (!agent) return NextResponse.json({ error: "Agent profile not found" }, { status: 404 });
+  const agentId = session.user.agentId;
+  if (!agentId) return NextResponse.json({ error: "Agent profile not found" }, { status: 404 });
 
   try {
     const body = schema.parse(await req.json());
     const list = await prisma.smartList.create({
-      data: { agentId: agent.id, name: body.name, filters: body.filters },
+      data: { agentId, name: body.name, filters: body.filters },
     });
     return NextResponse.json(list, { status: 201 });
   } catch (err) {

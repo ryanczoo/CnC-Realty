@@ -10,8 +10,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
   const listing = await prisma.listingFile.findUnique({ where: { id: params.id } });
   if (!listing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const agent = await prisma.agent.findUnique({ where: { userId: session.user.id } });
-  if (listing.agentId !== agent?.id && session.user.role !== "ADMIN") {
+  if (listing.agentId !== session.user.agentId && session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

@@ -5,18 +5,18 @@ import { requireAuth } from "@/lib/api-auth";
 
 export const dynamic = "force-dynamic";
 
-async function assertOwnership(leadId: string, userId: string, role: string) {
+async function assertOwnership(leadId: string, agentId: string | null, role: string) {
   if (role === "ADMIN") return true;
-  const agent = await prisma.agent.findUnique({ where: { userId } });
+  if (!agentId) return false;
   const lead = await prisma.lead.findUnique({ where: { id: leadId }, select: { agentId: true } });
-  return agent && lead && lead.agentId === agent.id;
+  return !!lead && lead.agentId === agentId;
 }
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
-  const owns = await assertOwnership(params.id, session.user.id, session.user.role);
+  const owns = await assertOwnership(params.id, session.user.agentId, session.user.role);
   if (!owns) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const enrollments = await prisma.leadPlanEnrollment.findMany({
@@ -51,7 +51,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
-  const owns = await assertOwnership(params.id, session.user.id, session.user.role);
+  const owns = await assertOwnership(params.id, session.user.agentId, session.user.role);
   if (!owns) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const schema = z.object({ planId: z.string().min(1) });
@@ -71,10 +71,9 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   });
   if (existing) return NextResponse.json({ error: "Already enrolled in this plan" }, { status: 409 });
 
-  // Enrollment is an agent-only action — look up the agent record for the current user
-  const agent = await prisma.agent.findUnique({ where: { userId: session.user.id } });
-  if (!agent) return NextResponse.json({ error: "No agent record" }, { status: 403 });
-  const agentId = agent.id;
+  // Enrollment is an agent-only action — requires an agent record on the session
+  const agentId = session.user.agentId;
+  if (!agentId) return NextResponse.json({ error: "No agent record" }, { status: 403 });
 
   const templateSteps = await prisma.actionPlanStep.findMany({
     where: { planId },

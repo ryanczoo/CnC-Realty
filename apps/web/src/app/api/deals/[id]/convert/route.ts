@@ -11,8 +11,9 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
   if (!deal) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   if (role !== "ADMIN") {
-    const agent = await prisma.agent.findUnique({ where: { userId: session.user.id } });
-    if (!agent || deal.agentId !== agent.id) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!session.user.agentId || deal.agentId !== session.user.agentId) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
   }
 
   if (deal.stage !== "OFFER_ACCEPTED") {

@@ -15,8 +15,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
   });
   if (!listing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const agent = await prisma.agent.findUnique({ where: { userId: session.user.id } });
-  if (listing.agentId !== agent?.id) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (listing.agentId !== session.user.agentId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { satisfied, required } = getChecklistProgress(listing.checklistItems);
   if (satisfied < required) {

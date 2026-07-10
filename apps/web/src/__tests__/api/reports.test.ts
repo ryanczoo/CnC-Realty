@@ -16,8 +16,9 @@ import { prisma } from "@/lib/prisma";
 import { GET as GET_ADMIN } from "../../app/api/admin/reports/route";
 import { GET as GET_MY_STATS } from "../../app/api/reports/my-stats/route";
 
-const ADMIN_SESSION = { user: { id: "u1", role: "ADMIN" } };
-const AGENT_SESSION = { user: { id: "u2", role: "AGENT" } };
+const ADMIN_SESSION = { user: { id: "u1", role: "ADMIN", agentId: null } };
+const AGENT_SESSION = { user: { id: "u2", role: "AGENT", agentId: "a1" } };
+const NO_AGENT_SESSION = { user: { id: "u2", role: "AGENT", agentId: null } };
 
 function makeRequest(url: string) {
   return new Request(url, { method: "GET" });
@@ -112,15 +113,13 @@ describe("GET /api/reports/my-stats", () => {
   });
 
   it("returns 403 when no Agent record exists for the user", async () => {
-    vi.mocked(getServerSession).mockResolvedValue(AGENT_SESSION as any);
-    vi.mocked(prisma.agent.findUnique).mockResolvedValue(null);
+    vi.mocked(getServerSession).mockResolvedValue(NO_AGENT_SESSION as any);
     const res = await GET_MY_STATS(makeRequest("http://localhost/api/reports/my-stats"));
     expect(res.status).toBe(403);
   });
 
   it("returns 200 with summary, sourceBreakdown, activityBreakdown for agent", async () => {
     vi.mocked(getServerSession).mockResolvedValue(AGENT_SESSION as any);
-    vi.mocked(prisma.agent.findUnique).mockResolvedValue({ id: "a1" } as any);
     vi.mocked(prisma.lead.count).mockResolvedValueOnce(5);
     vi.mocked(prisma.deal.count)
       .mockResolvedValueOnce(2)   // dealsInPipeline
@@ -150,7 +149,6 @@ describe("GET /api/reports/my-stats", () => {
 
   it("returns 200 with range=week and correct structure", async () => {
     vi.mocked(getServerSession).mockResolvedValue(AGENT_SESSION as any);
-    vi.mocked(prisma.agent.findUnique).mockResolvedValue({ id: "a1" } as any);
     vi.mocked(prisma.lead.count).mockResolvedValue(0);
     vi.mocked(prisma.deal.count).mockResolvedValue(0);
     vi.mocked(prisma.activity.count).mockResolvedValue(0);

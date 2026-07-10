@@ -17,12 +17,11 @@ export async function POST(
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
-  const { id: userId, role } = session.user;
+  const { role, agentId } = session.user;
 
   if (role !== "ADMIN") {
-    const agent = await prisma.agent.findUnique({ where: { userId } });
     const lead = await prisma.lead.findUnique({ where: { id: params.id }, select: { agentId: true } });
-    if (!agent || !lead || lead.agentId !== agent.id) {
+    if (!agentId || !lead || lead.agentId !== agentId) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
   }

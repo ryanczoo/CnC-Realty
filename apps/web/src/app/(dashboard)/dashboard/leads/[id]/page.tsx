@@ -11,10 +11,9 @@ export const dynamic = "force-dynamic";
 
 export default async function LeadDetailPage({ params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
-  const userId = (session!.user as any).id;
   const role = (session!.user as any).role;
 
-  const agent = role !== "ADMIN" ? await prisma.agent.findUnique({ where: { userId } }) : null;
+  const agentId = role !== "ADMIN" ? ((session!.user as any).agentId as string | null) : null;
 
   const lead = await prisma.lead.findUnique({
     where: { id: params.id },
@@ -32,7 +31,7 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
   });
 
   if (!lead) notFound();
-  if (agent && lead.agentId !== agent.id) notFound();
+  if (agentId && lead.agentId !== agentId) notFound();
 
   // Serialize dates to strings for client components
   const sidebarLead = {

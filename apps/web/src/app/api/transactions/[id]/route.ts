@@ -12,8 +12,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   const tx = await prisma.transactionFile.findUnique({ where: { id: params.id }, include: FILE_DETAIL_INCLUDE });
   if (!tx) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const agent = await prisma.agent.findUnique({ where: { userId: session.user.id } });
-  if (session.user.role !== "ADMIN" && tx.agentId !== agent?.id) {
+  if (session.user.role !== "ADMIN" && tx.agentId !== session.user.agentId) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -27,9 +26,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const tx = await prisma.transactionFile.findUnique({ where: { id: params.id } });
   if (!tx) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const agent = await prisma.agent.findUnique({ where: { userId: session.user.id } });
   const isAdmin = session.user.role === "ADMIN";
-  if (!isAdmin && tx.agentId !== agent?.id) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!isAdmin && tx.agentId !== session.user.agentId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = await req.json();
   const role = isAdmin ? "ADMIN" : "AGENT";

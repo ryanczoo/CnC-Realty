@@ -11,16 +11,10 @@ const patchSchema = z.object({
   status: z.enum(["DRAFT", "SCHEDULED", "ACTIVE", "PAUSED", "COMPLETED"]).optional(),
 });
 
-async function getAgentId(userId: string) {
-  const agent = await prisma.agent.findUnique({ where: { userId }, select: { id: true } });
-  return agent?.id ?? null;
-}
-
-async function checkAccess(id: string, userId: string, role: string) {
+async function checkAccess(id: string, agentId: string | null, role: string) {
   const campaign = await prisma.campaign.findUnique({ where: { id }, select: { id: true, agentId: true } });
   if (!campaign) return { exists: false, forbidden: false };
   if (role === "ADMIN") return { exists: true, forbidden: false };
-  const agentId = await getAgentId(userId);
   return { exists: true, forbidden: agentId !== campaign.agentId };
 }
 
@@ -31,7 +25,7 @@ export async function GET(
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
-  const { exists, forbidden } = await checkAccess(params.id, session.user.id, session.user.role);
+  const { exists, forbidden } = await checkAccess(params.id, session.user.agentId, session.user.role);
   if (forbidden) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (!exists) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -57,7 +51,7 @@ export async function PATCH(
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
-  const { exists, forbidden } = await checkAccess(params.id, session.user.id, session.user.role);
+  const { exists, forbidden } = await checkAccess(params.id, session.user.agentId, session.user.role);
   if (forbidden) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (!exists) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -95,7 +89,7 @@ export async function DELETE(
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
-  const { exists, forbidden } = await checkAccess(params.id, session.user.id, session.user.role);
+  const { exists, forbidden } = await checkAccess(params.id, session.user.agentId, session.user.role);
   if (forbidden) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (!exists) return NextResponse.json({ error: "Not found" }, { status: 404 });
 

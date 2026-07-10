@@ -31,22 +31,21 @@ function serializeDeal(deal: any) {
   };
 }
 
-async function assertDealOwnership(dealId: string, userId: string, role: string) {
+async function assertDealOwnership(dealId: string, agentId: string | null, role: string) {
   const deal = await prisma.deal.findUnique({
     where: { id: dealId },
     include: { lead: { select: { firstName: true, lastName: true } } },
   });
   if (!deal) return { deal: null, owns: false };
   if (role === "ADMIN") return { deal, owns: true };
-  const agent = await prisma.agent.findUnique({ where: { userId } });
-  return { deal, owns: !!agent && deal.agentId === agent.id };
+  return { deal, owns: !!agentId && deal.agentId === agentId };
 }
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
-  const { deal, owns } = await assertDealOwnership(params.id, session.user.id, (session.user as any).role);
+  const { deal, owns } = await assertDealOwnership(params.id, session.user.agentId, (session.user as any).role);
   if (!deal || !owns) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   return NextResponse.json(serializeDeal(deal));
@@ -56,7 +55,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
-  const { deal, owns } = await assertDealOwnership(params.id, session.user.id, (session.user as any).role);
+  const { deal, owns } = await assertDealOwnership(params.id, session.user.agentId, (session.user as any).role);
   if (!deal || !owns) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   try {
@@ -93,7 +92,7 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
-  const { deal, owns } = await assertDealOwnership(params.id, session.user.id, (session.user as any).role);
+  const { deal, owns } = await assertDealOwnership(params.id, session.user.agentId, (session.user as any).role);
   if (!deal || !owns) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   try {
