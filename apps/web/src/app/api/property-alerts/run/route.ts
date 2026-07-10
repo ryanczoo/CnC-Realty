@@ -39,59 +39,66 @@ export async function POST(req: Request) {
     };
     const newAlertsByUser = new Map<string, { user: { email: string; name: string | null }; alerts: NewAlert[] }>();
 
-    let processed = 0;
+    const processed = savedSearches.length;
 
-    for (const search of savedSearches) {
-      processed++;
+    // Each saved search has independent filter criteria, so these queries
+    // can't be merged into one — but they're independent of each other and
+    // were previously awaited one at a time. Run them concurrently instead.
+    const perSearchResults = await Promise.all(
+      savedSearches.map(async (search) => {
+        // Build Prisma where clause from search criteria
+        const where: Prisma.PropertyWhereInput = {
+          status: { in: ["Active", "ComingSoon", "ActiveUnderContract"] },
+          createdAt: { gte: since },
+        };
 
-      // Build Prisma where clause from search criteria
-      const where: Prisma.PropertyWhereInput = {
-        status: { in: ["Active", "ComingSoon", "ActiveUnderContract"] },
-        createdAt: { gte: since },
-      };
+        if (search.minPrice !== null || search.maxPrice !== null) {
+          const priceFilter: Prisma.FloatFilter = {};
+          if (search.minPrice !== null) priceFilter.gte = search.minPrice;
+          if (search.maxPrice !== null) priceFilter.lte = search.maxPrice;
+          where.listPrice = priceFilter;
+        }
+        if (search.minBeds !== null) {
+          where.beds = { gte: search.minBeds };
+        }
+        if (search.minBaths !== null) {
+          where.baths = { gte: search.minBaths };
+        }
+        if (search.propertyType) {
+          where.propertyType = { contains: search.propertyType, mode: "insensitive" };
+        }
+        if (search.cities.length > 0) {
+          where.city = { in: search.cities };
+        }
+        if (search.zips.length > 0) {
+          where.zip = { in: search.zips };
+        }
 
-      if (search.minPrice !== null || search.maxPrice !== null) {
-        const priceFilter: Prisma.FloatFilter = {};
-        if (search.minPrice !== null) priceFilter.gte = search.minPrice;
-        if (search.maxPrice !== null) priceFilter.lte = search.maxPrice;
-        where.listPrice = priceFilter;
-      }
-      if (search.minBeds !== null) {
-        where.beds = { gte: search.minBeds };
-      }
-      if (search.minBaths !== null) {
-        where.baths = { gte: search.minBaths };
-      }
-      if (search.propertyType) {
-        where.propertyType = { contains: search.propertyType, mode: "insensitive" };
-      }
-      if (search.cities.length > 0) {
-        where.city = { in: search.cities };
-      }
-      if (search.zips.length > 0) {
-        where.zip = { in: search.zips };
-      }
+        // Find matching properties created in last 24h
+        const matchingProperties = await prisma.property.findMany({
+          where,
+          take: 50,
+          select: {
+            id: true,
+            mlsNumber: true,
+            address: true,
+            city: true,
+            listPrice: true,
+            photos: true,
+          },
+        });
 
-      // Find matching properties created in last 24h
-      const matchingProperties = await prisma.property.findMany({
-        where,
-        take: 50,
-        select: {
-          id: true,
-          mlsNumber: true,
-          address: true,
-          city: true,
-          listPrice: true,
-          photos: true,
-        },
-      });
+        // Already-alerted property IDs for this search
+        const alreadyAlerted = new Set(search.alerts.map((a) => a.propertyId));
 
-      // Already-alerted property IDs for this search
-      const alreadyAlerted = new Set(search.alerts.map((a) => a.propertyId));
+        // Filter to new ones only
+        const newProperties = matchingProperties.filter((p) => !alreadyAlerted.has(p.id));
 
-      // Filter to new ones only
-      const newProperties = matchingProperties.filter((p) => !alreadyAlerted.has(p.id));
+        return { search, newProperties };
+      })
+    );
 
+    for (const { search, newProperties } of perSearchResults) {
       if (newProperties.length === 0) continue;
 
       // Create PropertyAlert records

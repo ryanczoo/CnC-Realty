@@ -79,6 +79,29 @@ describe("POST /api/cron/action-plans", () => {
     expect(call.data.title).toBe("Call John");
   });
 
+  it("isolates a failing step so other steps still process", async () => {
+    const failingStep = { ...EMAIL_STEP, id: "ls-fail", enrollmentId: "e-fail" };
+    vi.mocked(prisma.leadPlanStep.findMany).mockResolvedValue([failingStep, TASK_STEP] as any);
+    vi.mocked(sgMail.send).mockRejectedValueOnce(new Error("SendGrid down"));
+    vi.mocked(prisma.leadTask.create).mockResolvedValue({} as any);
+    vi.mocked(prisma.leadPlanStep.update).mockResolvedValue({} as any);
+    vi.mocked(prisma.leadPlanEnrollment.findMany).mockResolvedValue([]);
+
+    const res = await POST(makeReq(CRON_SECRET));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.processed).toBe(1);
+    expect(body.errors).toBe(1);
+    // The failing step must never be marked DONE
+    expect(prisma.leadPlanStep.update).not.toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: "ls-fail" } })
+    );
+    // The other step still completes
+    expect(prisma.leadPlanStep.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: "ls2" }, data: expect.objectContaining({ status: "DONE" }) })
+    );
+  });
+
   it("marks enrollment COMPLETED when all steps done", async () => {
     vi.mocked(prisma.leadPlanStep.findMany)
       .mockResolvedValueOnce([]) // no pending steps
