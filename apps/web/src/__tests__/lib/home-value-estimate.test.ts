@@ -218,6 +218,23 @@ describe("findSubjectProperty", () => {
     expect(directionalCall.where.address.contains).toBe("500 NE Elm");
   });
 
+  it("does not drop the street name when there is no suffix word to strip (3-word directional address)", async () => {
+    const { prisma } = await import("@/lib/prisma");
+    const { findSubjectProperty } = await import("@/lib/home-value-estimate");
+    const fixture = [{ mlsNumber: "ML-DIR-3" }];
+
+    vi.mocked(prisma.property.findMany)
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce(fixture as any);
+
+    const result = await findSubjectProperty(prisma as any, "100 North Broadway", "90028");
+
+    const directionalCall = vi.mocked(prisma.property.findMany).mock.calls[2][0] as any;
+    expect(directionalCall.where.address.contains).toBe("100 N Broadway");
+    expect(result).toEqual(fixture);
+  });
+
   it("does not attempt a third query when no directional word is present", async () => {
     const { prisma } = await import("@/lib/prisma");
     const { findSubjectProperty } = await import("@/lib/home-value-estimate");

@@ -125,7 +125,8 @@ export async function findSubjectProperty(
   // the abbreviated form still present in the stored address.
   const directional = DIRECTIONALS[words[1]?.toLowerCase()];
   if (!directional) return [];
-  const withDirectionalAbbreviated = [words[0], directional, ...words.slice(2, -1)].join(" ");
+  const rest = words.length > 3 ? words.slice(2, -1) : words.slice(2);
+  const withDirectionalAbbreviated = [words[0], directional, ...rest].join(" ");
 
   return prisma.property.findMany({
     where: {
