@@ -5,7 +5,7 @@ import { ICA_VERSION, ICA_INTRO, ICA_SECTIONS, SUMMARY_TABLE, type RichText } fr
 const PAGE_WIDTH = 612; // US Letter, points
 const PAGE_HEIGHT = 792;
 const MARGIN = 56;
-const CONTENT_WIDTH = PAGE_WIDTH - MARGIN * 2;
+export const CONTENT_WIDTH = PAGE_WIDTH - MARGIN * 2;
 const BODY_SIZE = 10;
 const LINE_GAP = 4;
 
@@ -17,7 +17,7 @@ interface Writer {
   y: number;
 }
 
-function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
+export function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
   const words = text.split(/\s+/).filter(Boolean);
   const lines: string[] = [];
   let current = "";
@@ -142,8 +142,12 @@ function drawList(w: Writer, items: string[]) {
   }
 }
 
+// Column width minus a small gutter so wrapped text never touches the next column.
+const TABLE_CELL_GUTTER = 10;
+
 function drawTable(w: Writer, headers: string[], rows: string[][]) {
   const colWidth = CONTENT_WIDTH / headers.length;
+  const cellWidth = colWidth - TABLE_CELL_GUTTER;
   ensureSpace(w, BODY_SIZE + 14);
   headers.forEach((h, i) => {
     w.page.drawText(h, { x: MARGIN + i * colWidth, y: w.y - BODY_SIZE, size: BODY_SIZE, font: w.bold });
@@ -157,11 +161,21 @@ function drawTable(w: Writer, headers: string[], rows: string[][]) {
   });
   w.y -= 8;
   for (const row of rows) {
-    ensureSpace(w, BODY_SIZE + LINE_GAP);
-    row.forEach((cell, i) => {
-      w.page.drawText(cell, { x: MARGIN + i * colWidth, y: w.y - BODY_SIZE, size: BODY_SIZE, font: w.font });
+    const wrappedCells = row.map((cell) => wrapText(cell, w.font, BODY_SIZE, cellWidth));
+    const rowLines = Math.max(...wrappedCells.map((lines) => lines.length));
+    ensureSpace(w, rowLines * (BODY_SIZE + LINE_GAP));
+    const rowTop = w.y;
+    wrappedCells.forEach((lines, i) => {
+      lines.forEach((line, li) => {
+        w.page.drawText(line, {
+          x: MARGIN + i * colWidth,
+          y: rowTop - BODY_SIZE - li * (BODY_SIZE + LINE_GAP),
+          size: BODY_SIZE,
+          font: w.font,
+        });
+      });
     });
-    w.y -= BODY_SIZE + LINE_GAP;
+    w.y -= rowLines * (BODY_SIZE + LINE_GAP);
   }
   w.y -= 6;
 }
