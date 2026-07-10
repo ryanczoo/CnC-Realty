@@ -37,7 +37,13 @@ interface ODataResponse {
 
 export async function* fetchProperties(modifiedSince?: Date) {
   let token = await getResoToken();
-  const filter = modifiedSince ? `$filter=ModificationTimestamp gt ${modifiedSince.toISOString()}&` : "";
+
+  const closeDateCutoff = new Date();
+  closeDateCutoff.setFullYear(closeDateCutoff.getFullYear() - 8);
+  const ageCondition = `(StandardStatus ne 'Closed' or CloseDate ge ${closeDateCutoff.toISOString().slice(0, 10)})`;
+  const modifiedCondition = modifiedSince ? `ModificationTimestamp gt ${modifiedSince.toISOString()}` : null;
+  const filterExpr = modifiedCondition ? `${modifiedCondition} and ${ageCondition}` : ageCondition;
+  const filter = `$filter=${filterExpr}&`;
   let url: string | null = `${BASE_URL}/Property?${filter}$top=200&$select=${SELECT_FIELDS}&$expand=Media($select=MediaURL,Order)`;
   let retried = false;
   while (url) {
