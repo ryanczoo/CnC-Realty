@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { substituteVars, sendActionPlanEmail } from "@/lib/action-plan-email";
+import type { Prisma } from "@cnc/database";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -96,8 +97,8 @@ export async function POST(req: NextRequest) {
   }
 
   // Check for newly-completed enrollments (always run, not just when steps were processed)
-  const enrollmentIds = [...new Set(dueSteps.map((s) => s.enrollmentId))];
-  const enrollmentWhere =
+  const enrollmentIds = Array.from(new Set(dueSteps.map((s) => s.enrollmentId)));
+  const enrollmentWhere: Prisma.LeadPlanEnrollmentWhereInput =
     enrollmentIds.length > 0
       ? { id: { in: enrollmentIds }, status: "ACTIVE" }
       : { status: "ACTIVE" };
