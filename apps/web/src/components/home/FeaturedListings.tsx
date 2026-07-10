@@ -52,7 +52,7 @@ export function FeaturedListings({ listings: propListings }: Props) {
 
   return (
     <section data-navbar-theme="light" className="overflow-hidden bg-[#F2F0EF] py-10">
-      <div className="mb-12 px-4 text-center">
+      <div className="mb-12 pr-[8%] text-right">
         <h2 className="font-sans text-[2.5rem] font-light xl:text-[3rem]">
           <RevealLine>
             <span className="text-[1.9rem] xl:text-[2.2rem]">Exclusive </span>
