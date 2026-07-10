@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion } from "motion/react";
 import { Plus, Trash2 } from "lucide-react";
 import { SPRING_HOVER } from "@/lib/motion";
+import { TC_FEE, calcNetToAgent } from "@/lib/commission";
 
 const STEPS = ["File Type", "Property", "Details", "Parties", "Commission", "Review"] as const;
 
@@ -36,7 +37,6 @@ export default function NewTransactionPage() {
     listing: "pct",
   });
 
-  const TC_FEE = 350;
   const [tcFeeEnabled, setTcFeeEnabled] = useState(false);
 
   const [form, setForm] = useState({
@@ -76,7 +76,7 @@ export default function NewTransactionPage() {
       : parseFloat(form.listingCommission) || 0;
   const otherDeductionsAmt = parseFloat(form.otherDeductions) || 0;
   const totalGci = saleCommissionAmt + listingCommissionAmt;
-  const netToAgent = totalGci - otherDeductionsAmt - (tcFeeEnabled ? TC_FEE : 0);
+  const netToAgent = calcNetToAgent(totalGci, otherDeductionsAmt, tcFeeEnabled);
 
   const canAdvance = useMemo(() => {
     if (step === 0) return !!form.transactionSide;
@@ -356,7 +356,7 @@ export default function NewTransactionPage() {
             <div className="flex items-center justify-between rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-4 py-3">
               <div>
                 <p className="text-sm font-medium text-[#1B1B1B]">CnC TC Service</p>
-                <p className="text-xs text-[#1B1B1B]/40">In-house transaction coordinator — $350</p>
+                <p className="text-xs text-[#1B1B1B]/40">In-house transaction coordinator — ${TC_FEE}</p>
               </div>
               <button
                 type="button"
@@ -398,7 +398,7 @@ export default function NewTransactionPage() {
                   <BdRow label="Other Deductions" value={`−$${otherDeductionsAmt.toLocaleString()}`} muted />
                 )}
                 {tcFeeEnabled && (
-                  <BdRow label="CnC TC Service" value="−$350" muted />
+                  <BdRow label="CnC TC Service" value={`−$${TC_FEE}`} muted />
                 )}
                 <div className="border-t border-[#1B1B1B]/10 pt-2">
                   <div className="flex justify-between font-semibold text-[#1B1B1B]">
@@ -445,7 +445,7 @@ export default function NewTransactionPage() {
             <ReviewSection title="Commission">
               {totalGci > 0 && <ReviewRow label="Total GCI" value={`$${Math.round(totalGci).toLocaleString()}`} />}
               {otherDeductionsAmt > 0 && <ReviewRow label="Deductions" value={`$${otherDeductionsAmt.toLocaleString()}`} />}
-              {tcFeeEnabled && <ReviewRow label="CnC TC Service" value="$350" />}
+              {tcFeeEnabled && <ReviewRow label="CnC TC Service" value={`$${TC_FEE}`} />}
               {netToAgent > 0 && <ReviewRow label="Net to Agent" value={`$${Math.round(netToAgent).toLocaleString()}`} />}
             </ReviewSection>
           </div>

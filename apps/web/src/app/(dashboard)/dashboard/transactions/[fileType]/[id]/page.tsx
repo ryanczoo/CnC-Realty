@@ -14,6 +14,7 @@ import type {
   FileDocumentRecord,
   FileTaskRecord,
 } from "@/types/transaction";
+import { TC_FEE, calcNetToAgent } from "@/lib/commission";
 
 type Tab = "overview" | "checklist" | "parties" | "activity" | "commission" | "documents" | "tasks";
 
@@ -301,9 +302,7 @@ function CommissionTab({ transaction }: { transaction: TransactionFileDetail }) 
   const saleCommissionDollar = salePrice * (salePct / 100);
   const listingCommissionDollar = salePrice * (listingPct / 100);
   const totalGross = saleCommissionDollar + listingCommissionDollar;
-  const TC_FEE = 350;
-  const tcFee = transaction.tcFeeEnabled ? TC_FEE : 0;
-  const netToAgent = totalGross - deductions - tcFee;
+  const netToAgent = calcNetToAgent(totalGross, deductions, transaction.tcFeeEnabled);
 
   const fmt = (n: number) => n !== 0 ? `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—";
   const fmtPct = (n: number) => n !== 0 ? `${n}%` : "—";
@@ -319,7 +318,7 @@ function CommissionTab({ transaction }: { transaction: TransactionFileDetail }) 
         <InfoRow label="Listing Commission $" value={fmt(listingCommissionDollar)} />
         <InfoRow label="Other Deductions" value={deductions > 0 ? `-${fmt(deductions)}` : "—"} />
         {transaction.tcFeeEnabled && (
-          <InfoRow label="CnC TC Service" value="-$350.00" />
+          <InfoRow label="CnC TC Service" value={`-${fmt(TC_FEE)}`} />
         )}
       </div>
 
@@ -336,7 +335,7 @@ function CommissionTab({ transaction }: { transaction: TransactionFileDetail }) 
         {transaction.tcFeeEnabled && (
           <div className="flex items-center justify-between border-b border-[#1B1B1B]/5 pb-3">
             <span className="text-sm text-[#1B1B1B]/50">CnC TC Service</span>
-            <span className="font-medium text-red-500">-$350.00</span>
+            <span className="font-medium text-red-500">-{fmt(TC_FEE)}</span>
           </div>
         )}
         <div className="flex items-center justify-between pt-1">
