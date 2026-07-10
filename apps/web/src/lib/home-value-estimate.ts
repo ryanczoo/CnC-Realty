@@ -75,6 +75,17 @@ const SUBJECT_SELECT = {
   propertyType: true,
 } as const;
 
+const DIRECTIONALS: Record<string, string> = {
+  north: "N",
+  south: "S",
+  east: "E",
+  west: "W",
+  northeast: "NE",
+  northwest: "NW",
+  southeast: "SE",
+  southwest: "SW",
+};
+
 export async function findSubjectProperty(
   prisma: PrismaClient,
   address: string,
@@ -97,10 +108,29 @@ export async function findSubjectProperty(
   if (words.length < 2) return [];
   const withoutSuffix = words.slice(0, -1).join(" ");
 
-  return prisma.property.findMany({
+  const suffixDropped = await prisma.property.findMany({
     where: {
       zip,
       address: { contains: withoutSuffix, mode: "insensitive" },
+    },
+    orderBy: { listedAt: "desc" },
+    select: SUBJECT_SELECT,
+  });
+  if (suffixDropped.length > 0) return suffixDropped;
+
+  // Geocoders also spell directionals out in full (e.g. "North") while MLS
+  // data abbreviates them (e.g. "N"). Unlike the suffix, a directional sits
+  // mid-string (right after the house number), so it must be translated to
+  // its abbreviation rather than dropped — dropping it wouldn't realign with
+  // the abbreviated form still present in the stored address.
+  const directional = DIRECTIONALS[words[1]?.toLowerCase()];
+  if (!directional) return [];
+  const withDirectionalAbbreviated = [words[0], directional, ...words.slice(2, -1)].join(" ");
+
+  return prisma.property.findMany({
+    where: {
+      zip,
+      address: { contains: withDirectionalAbbreviated, mode: "insensitive" },
     },
     orderBy: { listedAt: "desc" },
     select: SUBJECT_SELECT,

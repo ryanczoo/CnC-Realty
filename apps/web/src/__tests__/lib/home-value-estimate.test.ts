@@ -169,6 +169,68 @@ describe("findSubjectProperty", () => {
 
     expect(prisma.property.findMany).toHaveBeenCalledTimes(1);
   });
+
+  it("falls back to a directional-translated match when the geocoder spells out the directional prefix but MLS data abbreviates it", async () => {
+    const { prisma } = await import("@/lib/prisma");
+    const { findSubjectProperty } = await import("@/lib/home-value-estimate");
+    const fixture = [
+      {
+        mlsNumber: "ML-DIR-1",
+        status: "Closed",
+        beds: 3,
+        baths: 2,
+        sqft: 1600,
+        lotSize: null,
+        listPrice: null,
+        closePrice: 900000,
+        closeDate: new Date("2025-03-01"),
+        listedAt: new Date("2024-10-01"),
+      },
+    ];
+
+    vi.mocked(prisma.property.findMany)
+      .mockResolvedValueOnce([]) // strict "1600 North Highland Avenue" — no match
+      .mockResolvedValueOnce([]) // suffix-dropped "1600 North Highland" — no match, "North" still unresolved
+      .mockResolvedValueOnce(fixture as any); // directional-translated "1600 N Highland" — matches
+
+    const result = await findSubjectProperty(prisma as any, "1600 North Highland Avenue", "90028");
+
+    expect(prisma.property.findMany).toHaveBeenCalledTimes(3);
+    const directionalCall = vi.mocked(prisma.property.findMany).mock.calls[2][0] as any;
+    expect(directionalCall.where.zip).toBe("90028");
+    expect(directionalCall.where.address.contains).toBe("1600 N Highland");
+    expect(result).toEqual(fixture);
+  });
+
+  it("translates other directional words too, not just North", async () => {
+    const { prisma } = await import("@/lib/prisma");
+    const { findSubjectProperty } = await import("@/lib/home-value-estimate");
+    const fixture = [{ mlsNumber: "ML-DIR-2" }];
+
+    vi.mocked(prisma.property.findMany)
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce(fixture as any);
+
+    await findSubjectProperty(prisma as any, "500 Northeast Elm Drive", "97201");
+
+    const directionalCall = vi.mocked(prisma.property.findMany).mock.calls[2][0] as any;
+    expect(directionalCall.where.address.contains).toBe("500 NE Elm");
+  });
+
+  it("does not attempt a third query when no directional word is present", async () => {
+    const { prisma } = await import("@/lib/prisma");
+    const { findSubjectProperty } = await import("@/lib/home-value-estimate");
+
+    vi.mocked(prisma.property.findMany)
+      .mockResolvedValueOnce([]) // strict — no match
+      .mockResolvedValueOnce([]); // suffix-dropped — no match, and no directional to try
+
+    const result = await findSubjectProperty(prisma as any, "123 Main Street", "91101");
+
+    expect(prisma.property.findMany).toHaveBeenCalledTimes(2);
+    expect(result).toEqual([]);
+  });
 });
 
 describe("findComps", () => {
