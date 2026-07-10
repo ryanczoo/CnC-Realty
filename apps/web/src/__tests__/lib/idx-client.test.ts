@@ -9,8 +9,8 @@ vi.mock("@/lib/idx/field-map", () => ({
 
 import { fetchProperties } from "@/lib/idx/client";
 
-function mockFetchOnce(url: string) {
-  global.fetch = vi.fn().mockImplementation((requestedUrl: string) => {
+function mockFetchOnce() {
+  global.fetch = vi.fn().mockImplementation(() => {
     return Promise.resolve({
       ok: true,
       status: 200,
@@ -31,7 +31,7 @@ describe("fetchProperties — CloseDate age filter", () => {
   });
 
   it("full sync excludes Closed listings older than 8 years, keeps other statuses unfiltered by date", async () => {
-    mockFetchOnce("");
+    mockFetchOnce();
     const gen = fetchProperties();
     await gen.next();
 
@@ -41,7 +41,7 @@ describe("fetchProperties — CloseDate age filter", () => {
   });
 
   it("delta sync combines ModificationTimestamp filter with the CloseDate age filter", async () => {
-    mockFetchOnce("");
+    mockFetchOnce();
     const gen = fetchProperties(new Date("2026-07-08T00:00:00.000Z"));
     await gen.next();
 

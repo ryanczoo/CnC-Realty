@@ -86,6 +86,10 @@ const DIRECTIONALS: Record<string, string> = {
   southwest: "SW",
 };
 
+// Note: this only resolves a directional *prefix* (the common case in CA
+// addressing). A trailing directional suffix (e.g. "123 Main St NE") is
+// stored by the IDX sync but not resolved here — out of scope for now.
+
 export async function findSubjectProperty(
   prisma: PrismaClient,
   address: string,
@@ -125,6 +129,9 @@ export async function findSubjectProperty(
   // the abbreviated form still present in the stored address.
   const directional = DIRECTIONALS[words[1]?.toLowerCase()];
   if (!directional) return [];
+  // A 3-word address (number + directional + street name) has no suffix
+  // word to drop; 4+ words means there's a real suffix beyond the street
+  // name, same as Pass 2's logic.
   const rest = words.length > 3 ? words.slice(2, -1) : words.slice(2);
   const withDirectionalAbbreviated = [words[0], directional, ...rest].join(" ");
 
