@@ -87,6 +87,7 @@ export default async function LeadsPage({
           <>
             <div className="mb-8">
               <h1 className="font-sans text-2xl font-medium text-[#1B1B1B]">Leads</h1>
+              <p className="mt-1 font-sans text-sm text-[#1B1B1B]/50">Manage all of your leads with this interactive tracker</p>
             </div>
             <LeadKanban initialLeads={kanbanLeads.map(l => ({ ...l, status: l.status as LeadStatus }))} />
           </>

@@ -99,7 +99,10 @@ export function DashboardTabs({ overviewStats, role }: DashboardTabsProps) {
       {/* Overview tab */}
       <div className={tab === "overview" ? "" : "hidden"}>
         <div className="mb-8 flex items-center justify-between">
-          <h1 className="font-sans text-2xl font-medium text-[#1B1B1B]">Overview</h1>
+          <div>
+            <h1 className="font-sans text-2xl font-medium text-[#1B1B1B]">Overview</h1>
+            <p className="mt-1 font-sans text-sm text-[#1B1B1B]/50">Quick snapshot of all your activity across the boards</p>
+          </div>
           {role !== "ADMIN" && (
             <button
               onClick={() => setTab("my-stats")}

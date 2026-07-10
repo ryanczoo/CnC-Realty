@@ -116,7 +116,7 @@ export default function TasksDashboardPage() {
     <div className="max-w-2xl space-y-6">
       <div className="mb-6">
         <h1 className="font-sans text-2xl font-medium text-[#1B1B1B]">Tasks</h1>
-        <p className="mt-1 font-sans text-sm text-[#1B1B1B]/50">Your open tasks across all leads</p>
+        <p className="mt-1 font-sans text-sm text-[#1B1B1B]/50">Follow-up on these open tasks</p>
       </div>
 
       {loading && <Loader2 className="h-6 w-6 animate-spin text-[#9E8C61]" />}

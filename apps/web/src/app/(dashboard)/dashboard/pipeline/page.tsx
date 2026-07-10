@@ -76,7 +76,7 @@ export default function PipelinePage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="font-sans text-2xl font-medium text-[#1B1B1B]">Pipeline</h1>
-          <p className="mt-1 font-sans text-sm text-[#1B1B1B]/50">Track deals from first contact to offer accepted</p>
+          <p className="mt-1 font-sans text-sm text-[#1B1B1B]/50">Track deals from beginning to end</p>
         </div>
         <button
           onClick={() => setModalOpen(true)}

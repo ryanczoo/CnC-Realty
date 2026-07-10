@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Plus } from "lucide-react";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -33,12 +34,15 @@ export default async function CampaignsPage() {
   return (
     <div>
       <div className="mb-8 flex items-center justify-between">
-        <h1 className="font-sans text-2xl font-medium text-[#1B1B1B]">Campaigns</h1>
+        <div>
+          <h1 className="font-sans text-2xl font-medium text-[#1B1B1B]">Campaigns</h1>
+          <p className="mt-1 font-sans text-sm text-[#1B1B1B]/50">Create and send emails or DRIP campaigns to your leads here</p>
+        </div>
         <Link
           href="/dashboard/campaigns/new"
-          className="rounded-full bg-[#1B1B1B] px-4 py-2 font-sans text-sm text-white hover:bg-[#1B1B1B]/80 transition-colors"
+          className="flex items-center gap-1.5 rounded-full bg-[#1B1B1B] px-4 py-2 font-sans text-sm text-white hover:bg-[#1B1B1B]/80 transition-colors"
         >
-          New Campaign →
+          <Plus className="h-4 w-4" /> New Campaign
         </Link>
       </div>
 
