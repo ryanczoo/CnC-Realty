@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import { ComparableSales, CompDisplay } from "@/components/home-value/ComparableSales";
 import { PriceHistory, PriceHistoryEntry } from "@/components/home-value/PriceHistory";
 import { LocalMarketSnapshot, QuarterStat } from "@/components/home-value/LocalMarketSnapshot";
@@ -94,7 +95,7 @@ export default function HomeValuePage() {
 
   if (!address || !zip) {
     return (
-      <main className="bg-cnc-bg px-6 py-32 text-center">
+      <main className="flex min-h-screen items-center justify-center bg-cnc-bg px-6 text-center">
         <p className="text-[#1B1B1B]/60">No address provided. Go back to /sell and enter your address.</p>
       </main>
     );
@@ -102,15 +103,16 @@ export default function HomeValuePage() {
 
   if (loading) {
     return (
-      <main className="bg-cnc-bg px-6 py-32 text-center">
-        <p className="text-[#1B1B1B]/60">Looking up your home…</p>
+      <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-cnc-bg px-6 text-center">
+        <p className="text-[#1B1B1B]/60">One moment while we build your custom home report</p>
+        <Loader2 className="h-6 w-6 animate-spin text-[#9E8C61]" />
       </main>
     );
   }
 
   if (error) {
     return (
-      <main className="bg-cnc-bg px-6 py-32 text-center">
+      <main className="flex min-h-screen items-center justify-center bg-cnc-bg px-6 text-center">
         <p className="text-[#1B1B1B]/60">
           We couldn't load your home value estimate right now. Please try again in a moment.
         </p>
@@ -120,7 +122,7 @@ export default function HomeValuePage() {
 
   if (data?.needsManualEntry) {
     return (
-      <main className="bg-cnc-bg px-6 py-32">
+      <main className="flex min-h-screen items-center justify-center bg-cnc-bg px-6">
         <ManualEntryForm onSubmit={(beds, baths, sqft) => setManualOverride({ beds, baths, sqft })} />
       </main>
     );
