@@ -8,7 +8,7 @@ const SELECT_FIELDS = [
   "BedroomsTotal", "BathroomsTotalInteger", "BathroomsFull", "BathroomsHalf",
   "LivingArea", "LotSizeSquareFeet", "YearBuilt",
   "PropertySubType", "PropertyType", "PublicRemarks",
-  "StreetNumber", "StreetName", "StreetSuffix", "UnitNumber",
+  "StreetNumber", "StreetName", "StreetSuffix", "StreetDirPrefix", "StreetDirSuffix", "UnitNumber",
   "City", "StateOrProvince", "PostalCode", "CountyOrParish",
   "Latitude", "Longitude", "ModificationTimestamp", "ListingContractDate",
   "ListAgentFullName", "ListOfficeName", "ListAgentStateLicense",

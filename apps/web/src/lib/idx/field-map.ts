@@ -17,6 +17,8 @@ export interface ResoProperty {
   StreetNumber?: string;
   StreetName?: string;
   StreetSuffix?: string;
+  StreetDirPrefix?: string;
+  StreetDirSuffix?: string;
   UnitNumber?: string;
   City?: string;
   StateOrProvince?: string;
@@ -72,7 +74,13 @@ export interface ResoProperty {
 }
 
 export function mapResoToProperty(raw: ResoProperty) {
-  const streetParts = [raw.StreetNumber, raw.StreetName, raw.StreetSuffix].filter(Boolean);
+  const streetParts = [
+    raw.StreetNumber,
+    raw.StreetDirPrefix,
+    raw.StreetName,
+    raw.StreetSuffix,
+    raw.StreetDirSuffix,
+  ].filter(Boolean);
   const address = raw.UnitNumber
     ? `${streetParts.join(" ")} #${raw.UnitNumber}`
     : streetParts.join(" ");

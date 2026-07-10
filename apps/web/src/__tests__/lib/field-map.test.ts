@@ -32,3 +32,29 @@ describe("mapResoToProperty — ClosePrice/CloseDate", () => {
     expect(result.closeDate).toBeNull();
   });
 });
+
+describe("mapResoToProperty — directional prefix/suffix in address", () => {
+  it("includes StreetDirPrefix in the address, right after the street number", () => {
+    const result = mapResoToProperty({ ...baseRaw(), StreetDirPrefix: "N" } as any);
+    expect(result.address).toBe("123 N Main St");
+  });
+
+  it("includes StreetDirSuffix in the address, after the street suffix", () => {
+    const result = mapResoToProperty({ ...baseRaw(), StreetDirSuffix: "NE" } as any);
+    expect(result.address).toBe("123 Main St NE");
+  });
+
+  it("includes both a directional prefix and suffix together", () => {
+    const result = mapResoToProperty({
+      ...baseRaw(),
+      StreetDirPrefix: "N",
+      StreetDirSuffix: "NE",
+    } as any);
+    expect(result.address).toBe("123 N Main St NE");
+  });
+
+  it("omits directional words entirely when the RESO data has none (existing behavior unchanged)", () => {
+    const result = mapResoToProperty(baseRaw() as any);
+    expect(result.address).toBe("123 Main St");
+  });
+});
