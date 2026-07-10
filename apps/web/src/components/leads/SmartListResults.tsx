@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Loader2 } from "lucide-react";
 import { LEAD_STATUS_COLORS } from "@/lib/campaign-ui";
 import { resolveListFilters, PREBUILT_LISTS } from "@/lib/smart-list-filters";
 import type { FilterCondition } from "@/lib/smart-list-filters";
@@ -136,8 +137,8 @@ export function SmartListResults({ activeList, customLists }: Props) {
 
       {/* Loading */}
       {loading ? (
-        <div className="py-12 text-center font-sans text-sm text-[#1B1B1B]/40">
-          Loading…
+        <div className="flex justify-center py-12">
+          <Loader2 className="h-6 w-6 animate-spin text-[#9E8C61]" />
         </div>
       ) : leads.length === 0 ? (
         /* Empty state */

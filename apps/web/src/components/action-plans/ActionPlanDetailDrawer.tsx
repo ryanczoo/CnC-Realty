@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
 import { ActionPlanStepDrawer } from "./ActionPlanStepDrawer";
@@ -105,7 +106,7 @@ export function ActionPlanDetailDrawer({ open, plan, onClose, onPlanChanged, onD
 
           <div className="flex-1 overflow-y-auto px-6 py-4 space-y-2">
             {error && <p className="text-sm text-red-500">{error}</p>}
-            {loading && <p className="text-sm text-[#1B1B1B]/40">Loading…</p>}
+            {loading && <Loader2 className="h-6 w-6 animate-spin text-[#9E8C61]" />}
             {!loading && steps.length === 0 && <p className="text-sm text-[#1B1B1B]/40">No steps yet. Add one above.</p>}
             {steps.map((s) => (
               <button

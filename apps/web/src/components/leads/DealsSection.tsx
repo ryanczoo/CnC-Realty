@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Loader2 } from "lucide-react";
 import { STAGE_LABELS, formatDealPrice } from "@/lib/deal-pipeline";
 import { NewDealModal } from "@/components/deals/NewDealModal";
 import type { DealRow } from "@/lib/deal-pipeline";
@@ -41,7 +42,7 @@ export function DealsSection({ leadId, leadName }: Props) {
       </div>
 
       {loading ? (
-        <p className="font-sans text-sm text-[#1B1B1B]/40">Loading…</p>
+        <Loader2 className="h-6 w-6 animate-spin text-[#9E8C61]" />
       ) : deals.length === 0 ? (
         <p className="font-sans text-sm text-[#1B1B1B]/40">No active deals</p>
       ) : (

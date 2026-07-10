@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 
 type PropertyCard = {
   mlsNumber: string;
@@ -54,7 +55,7 @@ export function HomesTab({ leadId }: { leadId: string }) {
       .catch(() => setData({ saved: [], viewed: [] }));
   }, [leadId]);
 
-  if (!data) return <p className="text-sm text-[#1B1B1B]/40">Loading...</p>;
+  if (!data) return <Loader2 className="h-6 w-6 animate-spin text-[#9E8C61]" />;
 
   if (data.saved.length === 0 && data.viewed.length === 0) {
     return <p className="text-sm text-[#1B1B1B]/40">This lead hasn&apos;t registered on the website yet or hasn&apos;t viewed any properties.</p>;

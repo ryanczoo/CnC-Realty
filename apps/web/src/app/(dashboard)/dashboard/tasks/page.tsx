@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Loader2 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -118,7 +119,7 @@ export default function TasksDashboardPage() {
         <p className="mt-1 font-sans text-sm text-[#1B1B1B]/50">Your open tasks across all leads</p>
       </div>
 
-      {loading && <p className="text-sm text-[#1B1B1B]/40">Loading…</p>}
+      {loading && <Loader2 className="h-6 w-6 animate-spin text-[#9E8C61]" />}
 
       {error && (
         <p className="text-center text-sm text-red-500 mt-8">{error}</p>
@@ -153,7 +154,7 @@ export default function TasksDashboardPage() {
       <details onToggle={(e) => { if ((e.currentTarget as HTMLDetailsElement).open) loadCompleted(); }}>
         <summary className="cursor-pointer text-xs text-[#1B1B1B]/40">Completed tasks</summary>
         <div className="mt-2 space-y-1">
-          {completedLoading && <p className="text-sm text-[#1B1B1B]/40">Loading…</p>}
+          {completedLoading && <Loader2 className="h-6 w-6 animate-spin text-[#9E8C61]" />}
           {completedError && (
             <p className="text-sm text-red-500 mt-2">{completedError}</p>
           )}

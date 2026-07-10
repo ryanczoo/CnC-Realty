@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import { DealBoard } from "@/components/deals/DealBoard";
 import { DealDrawer } from "@/components/deals/DealDrawer";
 import { NewDealModal } from "@/components/deals/NewDealModal";
@@ -102,7 +103,7 @@ export default function PipelinePage() {
       </div>
 
       {loading ? (
-        <p className="font-sans text-sm text-[#1B1B1B]/40">Loading…</p>
+        <Loader2 className="h-6 w-6 animate-spin text-[#9E8C61]" />
       ) : (
         <DealBoard
           pipeline={tab}

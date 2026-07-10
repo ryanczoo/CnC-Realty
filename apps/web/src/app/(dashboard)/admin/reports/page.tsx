@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -98,7 +99,7 @@ export default function AdminReportsPage() {
         </div>
       </div>
 
-      {loading && <p className="text-sm text-[#1B1B1B]/40">Loading…</p>}
+      {loading && <Loader2 className="h-6 w-6 animate-spin text-[#9E8C61]" />}
       {error && <p className="text-sm text-red-500">{error}</p>}
 
       {!loading && !error && data && (

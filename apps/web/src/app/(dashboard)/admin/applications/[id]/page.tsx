@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 
 type ApplicationDetail = {
   id: string; status: string; createdAt: string;
@@ -71,7 +72,7 @@ export default function ApplicationDetailPage() {
     else { const d = await res.json(); setActionError(d.error); setActing(false); }
   };
 
-  if (loading) return <div className="py-12 text-center text-sm text-[#1B1B1B]/40">Loading…</div>;
+  if (loading) return <div className="py-12 text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin text-[#9E8C61]" /></div>;
   if (!app) return <div className="py-12 text-center text-sm text-red-500">Application not found.</div>;
 
   return (
