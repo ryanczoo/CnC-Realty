@@ -19,7 +19,7 @@ export default function ManagePage() {
       <ManageHandle />
 
       <PageCTA
-        heading={<>Take Back Your <span className="text-cnc-gold font-medium">Time</span></>}
+        heading={<>Dare To Do <span className="text-cnc-gold font-medium">More</span></>}
         body="Chat with our management team"
         secondaryLabel="Message"
         secondaryClassName="inline-flex items-center rounded-full bg-[#9E8C61] px-8 py-3.5 font-sans text-sm font-medium text-white"

@@ -47,8 +47,8 @@ export default function SellPage() {
         <FAQ className="bg-[#DAD4D2]" faqs={SELL_FAQS} />
         <GradientBridge from="#DAD4D2" to="#F2F0EF" />
         <PageCTA
-          heading={<>Free Property-Value <span className="text-cnc-gold font-medium">Estimate</span></>}
-          body="By an experienced CnC agent"
+          heading={<>Take The First <span className="text-cnc-gold font-medium">Step</span></>}
+          body="With an experienced CnC agent"
           primaryLabel="Request Valuation"
           primaryShowContactModal
           secondaryLabel="Message"

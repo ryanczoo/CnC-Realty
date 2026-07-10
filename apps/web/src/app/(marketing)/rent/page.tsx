@@ -46,7 +46,7 @@ export default function RentPage() {
       <GradientBridge from="#DAD4D2" to="#F2F0EF" />
       <div data-navbar-theme="light">
         <PageCTA
-          heading={<>Take the First <span className="text-cnc-gold font-medium">Step</span></>}
+          heading={<>Make The <span className="text-cnc-gold font-medium">Move</span></>}
           body="We'll help you get there"
           primaryHref="/properties?listingType=FOR_RENT"
           primaryLabel="Search Rentals"
