@@ -13,6 +13,7 @@ export async function GET() {
       agent: { include: { user: { select: { name: true } } } },
     },
     orderBy: { createdAt: "desc" },
+    take: 50_000,
   });
 
   const csv = leadsToCSV(leads);

@@ -62,6 +62,7 @@ export default async function AdminLeadsPage() {
           source: true,
           createdAt: true,
         },
+        take: 200,
       }),
       prisma.agent.findMany({
         orderBy: { displayName: "asc" },

@@ -392,6 +392,11 @@ model Lead {
   deals             Deal[]
   enrollments       LeadPlanEnrollment[]
   triggerExecutions TriggerExecution[]
+
+  @@index([agentId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([agentId, createdAt])
 }
 
 model Activity {
@@ -404,6 +409,9 @@ model Activity {
 
   lead            Lead?            @relation(fields: [leadId], references: [id], onDelete: Cascade)
   transactionFile TransactionFile? @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([transactionId])
 }
 
 // ─── Phase 5A: File models ────────────────────────────────────────────────────
