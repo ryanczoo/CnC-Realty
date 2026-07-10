@@ -2,6 +2,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { motion } from "motion/react";
+import { SPRING_HOVER } from "@/lib/motion";
+import { DateField } from "@/components/ui/DateField";
 
 const STEPS = ["Property Info", "Commission", "Review"] as const;
 
@@ -35,60 +38,93 @@ export default function NewListingPage() {
   }
 
   return (
-    <div className="mx-auto max-w-xl">
-      <div className="mb-6 flex items-center gap-3">
-        <Link href="/dashboard/transactions" className="text-sm text-[#1B1B1B]/50 hover:text-[#1B1B1B]">← Back</Link>
-        <h1 className="text-xl font-light text-[#1B1B1B]">New Listing</h1>
+    <div className="w-full">
+      <div className="mb-16">
+        <h1 className="text-4xl font-semibold text-[#1B1B1B]">New Listing</h1>
+        <Link
+          href="/dashboard/transactions"
+          className="mt-1 inline-block text-sm text-[#1B1B1B]/40 hover:text-[#1B1B1B]"
+        >
+          ← Back
+        </Link>
       </div>
 
-      <div className="mb-8 flex gap-2">
-        {STEPS.map((s, i) => (
-          <div key={s} className="flex items-center gap-2">
-            <div className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium ${i <= step ? "bg-[#1B1B1B] text-white" : "bg-[#F2F0EF] text-[#1B1B1B]/40"}`}>{i + 1}</div>
-            <span className={`text-sm ${i === step ? "text-[#1B1B1B]" : "text-[#1B1B1B]/40"}`}>{s}</span>
-            {i < STEPS.length - 1 && <div className="h-px w-8 bg-[#1B1B1B]/10" />}
-          </div>
-        ))}
+      {/* Step bar */}
+      <div className="mb-20 mx-auto flex max-w-5xl items-center">
+        {STEPS.flatMap((s, i) => {
+          const done = i < step;
+          const active = i === step;
+          const el = (
+            <div key={s} className="flex shrink-0 items-center gap-2.5 whitespace-nowrap">
+              {active && <div className="h-3 w-3 rounded-full bg-[#1B1B1B]" />}
+              {done && <div className="h-3 w-3 rounded-full bg-[#9E8C61]" />}
+              <span
+                className={`text-base ${active ? "font-semibold text-[#1B1B1B]" : done ? "text-[#9E8C61]" : "text-[#1B1B1B]/30"}`}
+              >
+                {s}
+              </span>
+            </div>
+          );
+          if (i < STEPS.length - 1)
+            return [el, <div key={`ln-${i}`} className="mx-3 h-px flex-1 bg-[#1B1B1B]/10" />];
+          return [el];
+        })}
       </div>
 
-      <div className="rounded-xl border border-[#1B1B1B]/10 bg-white p-6 space-y-4">
+      {/* Card */}
+      <div className="mx-auto max-w-2xl rounded-2xl border border-[#1B1B1B]/8 bg-white p-10">
         {step === 0 && (
-          <>
-            <Field label="Property Address *" value={form.propertyAddress} onChange={(v) => set("propertyAddress", v)} />
-            <div className="grid grid-cols-3 gap-3">
+          <div className="space-y-4">
+            <Field label="Property Address *" value={form.propertyAddress} onChange={(v) => set("propertyAddress", v)} placeholder="123 Main St" />
+            <div className="grid grid-cols-3 gap-4">
               <Field label="City *" value={form.city} onChange={(v) => set("city", v)} />
               <Field label="State" value={form.state} onChange={(v) => set("state", v)} />
               <Field label="ZIP *" value={form.zip} onChange={(v) => set("zip", v)} />
             </div>
-            <Field label="MLS Number" value={form.mlsNumber} onChange={(v) => set("mlsNumber", v)} />
-            <Field label="List Price *" type="number" value={form.listPrice} onChange={(v) => set("listPrice", v)} />
+            <Field label="MLS Number" value={form.mlsNumber} onChange={(v) => set("mlsNumber", v)} placeholder="Optional" />
+            <Field label="List Price *" type="number" value={form.listPrice} onChange={(v) => set("listPrice", v)} placeholder="$" />
             <div>
-              <label className="mb-1 block text-xs font-medium text-[#1B1B1B]/60">Listing Type *</label>
-              <select value={form.listingType} onChange={(e) => set("listingType", e.target.value)} className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2 text-sm">
+              <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">Listing Type *</label>
+              <select
+                value={form.listingType}
+                onChange={(e) => set("listingType", e.target.value)}
+                className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2.5 text-sm text-[#1B1B1B] focus:outline-none focus:ring-2 focus:ring-[#9E8C61]/30"
+              >
                 <option value="RESIDENTIAL_SALE">Residential Sale</option>
                 <option value="RESIDENTIAL_LEASE">Residential Lease</option>
                 <option value="COMMERCIAL">Commercial</option>
               </select>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="List Date" type="date" value={form.listDate} onChange={(v) => set("listDate", v)} />
-              <Field label="Expiration Date" type="date" value={form.expirationDate} onChange={(v) => set("expirationDate", v)} />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">List Date</label>
+                <DateField value={form.listDate} onChange={(v) => set("listDate", v)} />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">Expiration Date</label>
+                <DateField value={form.expirationDate} onChange={(v) => set("expirationDate", v)} />
+              </div>
             </div>
-          </>
+          </div>
         )}
 
         {step === 1 && (
-          <>
-            <Field label="Commission %" type="number" value={form.commissionPercent} onChange={(v) => set("commissionPercent", v)} />
+          <div className="space-y-4">
+            <Field label="Commission %" type="number" value={form.commissionPercent} onChange={(v) => set("commissionPercent", v)} placeholder="e.g. 2.5" />
             <div>
-              <label className="mb-1 block text-xs font-medium text-[#1B1B1B]/60">Commission Notes</label>
-              <textarea value={form.commissionNotes} onChange={(e) => set("commissionNotes", e.target.value)} rows={3} className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2 text-sm" />
+              <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">Commission Notes</label>
+              <textarea
+                value={form.commissionNotes}
+                onChange={(e) => set("commissionNotes", e.target.value)}
+                rows={3}
+                className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2.5 text-sm text-[#1B1B1B] placeholder:text-[#1B1B1B]/25 focus:outline-none focus:ring-2 focus:ring-[#9E8C61]/30"
+              />
             </div>
-          </>
+          </div>
         )}
 
         {step === 2 && (
-          <div className="space-y-2 text-sm">
+          <div className="space-y-2 rounded-xl border border-[#1B1B1B]/8 p-4 text-sm">
             <ReviewRow label="Address" value={`${form.propertyAddress}, ${form.city}, ${form.state} ${form.zip}`} />
             <ReviewRow label="List Price" value={form.listPrice ? `$${Number(form.listPrice).toLocaleString()}` : "—"} />
             <ReviewRow label="Type" value={form.listingType} />
@@ -98,27 +134,56 @@ export default function NewListingPage() {
         )}
       </div>
 
-      <div className="mt-6 flex justify-between">
-        {step > 0 ? (
-          <button onClick={() => setStep((s) => s - 1)} className="rounded-full border border-[#1B1B1B]/20 px-5 py-2 text-sm text-[#1B1B1B]/60">Back</button>
-        ) : <div />}
-        {step < STEPS.length - 1 ? (
-          <button onClick={() => setStep((s) => s + 1)} className="rounded-full bg-[#1B1B1B] px-5 py-2 text-sm text-white">Next →</button>
-        ) : (
-          <button onClick={submit} disabled={saving} className="rounded-full bg-[#9E8C61] px-5 py-2 text-sm text-white disabled:opacity-50">
-            {saving ? "Creating…" : "Create Listing"}
+      {/* Navigation */}
+      <div className="mt-16 flex items-center justify-center gap-3">
+        {step > 0 && (
+          <button
+            onClick={() => setStep((s) => s - 1)}
+            className="rounded-full border border-[#1B1B1B]/20 px-6 py-2.5 text-sm text-[#1B1B1B]/60 hover:border-[#1B1B1B]/40 hover:text-[#1B1B1B]"
+          >
+            ← Back
           </button>
+        )}
+        {step < STEPS.length - 1 ? (
+          <motion.button
+            onClick={() => setStep((s) => s + 1)}
+            whileHover={{ scale: 1.1 }}
+            transition={SPRING_HOVER}
+            className="inline-flex items-center rounded-full bg-[#1B1B1B] px-7 py-3.5 text-sm font-medium text-white"
+          >
+            Next →
+          </motion.button>
+        ) : (
+          <motion.button
+            onClick={submit}
+            disabled={saving}
+            whileHover={{ scale: 1.1 }}
+            transition={SPRING_HOVER}
+            className="inline-flex items-center rounded-full bg-[#1B1B1B] px-7 py-3.5 text-sm font-medium text-white disabled:opacity-50"
+          >
+            {saving ? "Creating…" : "Create Listing"}
+          </motion.button>
         )}
       </div>
     </div>
   );
 }
 
-function Field({ label, value, onChange, type = "text" }: { label: string; value: string; onChange: (v: string) => void; type?: string }) {
+function Field({
+  label, value, onChange, type = "text", placeholder = "",
+}: {
+  label: string; value: string; onChange: (v: string) => void; type?: string; placeholder?: string;
+}) {
   return (
     <div>
-      <label className="mb-1 block text-xs font-medium text-[#1B1B1B]/60">{label}</label>
-      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#9E8C61]/30" />
+      <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">{label}</label>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2.5 text-sm text-[#1B1B1B] placeholder:text-[#1B1B1B]/25 focus:outline-none focus:ring-2 focus:ring-[#9E8C61]/30"
+      />
     </div>
   );
 }

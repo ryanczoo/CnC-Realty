@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { STAGE_LABELS, PIPELINE_STAGES } from "@/lib/deal-pipeline";
 import type { DealRow } from "@/lib/deal-pipeline";
+import { DateField } from "@/components/ui/DateField";
 
 type Props = {
   open: boolean;
@@ -201,12 +202,7 @@ export function DealDrawer({ open, deal, onClose, onSaved, onDeleted, onConverte
 
             <div>
               <label className="mb-1 block font-sans text-xs font-medium text-[#1B1B1B]/60">Expected Close Date</label>
-              <input
-                type="date"
-                value={expectedCloseDate}
-                onChange={(e) => setExpectedCloseDate(e.target.value)}
-                className="w-full rounded-lg border border-[#1B1B1B]/20 bg-[#F2F0EF] px-3 py-2 font-sans text-sm text-[#1B1B1B]"
-              />
+              <DateField value={expectedCloseDate} onChange={setExpectedCloseDate} />
             </div>
 
             <div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { PULSE_ANIMATE, PULSE_TRANSITION } from "@/lib/motion";
+import { DateField } from "@/components/ui/DateField";
 
 const TASK_TYPES = ["FOLLOW_UP","CALL","EMAIL","TEXT","SHOWING","THANK_YOU","OTHER"] as const;
 const TYPE_LABELS: Record<string, string> = {
@@ -131,12 +132,7 @@ export function LeadTaskDrawer({ open, task, leadId, onClose, onSaved, onDeleted
 
           <div>
             <label className="mb-1 block text-xs text-[#1B1B1B]/50">Due Date</label>
-            <input
-              type="datetime-local"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm"
-            />
+            <DateField value={dueDate} onChange={setDueDate} withTime />
           </div>
 
           <div>

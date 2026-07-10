@@ -7,6 +7,7 @@ import { ChecklistPanel } from "@/components/transactions/ChecklistPanel";
 import { PartiesTable } from "@/components/transactions/PartiesTable";
 import { ActivityFeed } from "@/components/transactions/ActivityFeed";
 import { getChecklistProgress } from "@/lib/transaction-helpers";
+import { DateField } from "@/components/ui/DateField";
 import type {
   ListingFileDetail,
   TransactionFileDetail,
@@ -513,12 +514,7 @@ function TasksTab({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="mb-1 block text-xs text-[#1B1B1B]/40">Due Date (optional)</label>
-              <input
-                type="date"
-                value={form.dueDate}
-                onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))}
-                className="w-full rounded-lg border border-[#1B1B1B]/15 bg-[#F2F0EF] px-3 py-2 text-sm text-[#1B1B1B] outline-none focus:border-[#1B1B1B]/40"
-              />
+              <DateField value={form.dueDate} onChange={(v) => setForm((f) => ({ ...f, dueDate: v }))} />
             </div>
             <div>
               <label className="mb-1 block text-xs text-[#1B1B1B]/40">Assignee (optional)</label>

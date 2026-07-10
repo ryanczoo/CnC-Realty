@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { TiptapEditor } from "@/components/campaigns/TiptapEditor";
 import { RecipientPicker } from "@/components/campaigns/RecipientPicker";
 import { DripSequenceEditor, type DripStepData } from "@/components/dashboard/DripSequenceEditor";
+import { DateField } from "@/components/ui/DateField";
 
 type CampaignType = "EMAIL" | "DRIP";
 
@@ -224,14 +225,7 @@ export default function NewCampaignPage() {
                   <p className="font-sans text-xs text-[#1B1B1B]/50">Choose a date and time.</p>
                 </div>
               </label>
-              {!sendNow && (
-                <input
-                  type="datetime-local"
-                  value={scheduledAt}
-                  onChange={(e) => setScheduledAt(e.target.value)}
-                  className="rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-4 py-2.5 font-sans text-sm text-[#1B1B1B] outline-none focus:border-[#9E8C61]"
-                />
-              )}
+              {!sendNow && <DateField value={scheduledAt} onChange={setScheduledAt} withTime />}
             </div>
             {error && (
               <p className="rounded-lg bg-red-50 px-4 py-3 font-sans text-sm text-red-600">{error}</p>

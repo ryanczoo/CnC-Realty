@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { LeadTaskDrawer } from "./LeadTaskDrawer";
+import { DateField } from "@/components/ui/DateField";
 
 type LeadTask = {
   id: string;
@@ -186,7 +187,7 @@ export function LeadTasksTab({ leadId, initialTasks }: Props) {
               <select value={newType} onChange={(e) => setNewType(e.target.value)} className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm">
                 {TASK_TYPES.map((t) => <option key={t} value={t}>{TYPE_LABELS[t]}</option>)}
               </select>
-              <input type="datetime-local" value={newDate} onChange={(e) => setNewDate(e.target.value)} className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm" />
+              <DateField value={newDate} onChange={setNewDate} withTime />
             </div>
             <div className="mt-4 flex gap-2">
               <button onClick={() => setNewTaskOpen(false)} className="flex-1 rounded-lg border border-[#1B1B1B]/10 py-2 text-sm">Cancel</button>

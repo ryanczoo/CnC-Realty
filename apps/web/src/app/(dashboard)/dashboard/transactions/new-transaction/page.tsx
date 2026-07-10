@@ -6,6 +6,7 @@ import { motion } from "motion/react";
 import { Plus, Trash2 } from "lucide-react";
 import { SPRING_HOVER } from "@/lib/motion";
 import { TC_FEE, calcNetToAgent } from "@/lib/commission";
+import { DateField } from "@/components/ui/DateField";
 
 const STEPS = ["File Type", "Property", "Details", "Parties", "Commission", "Review"] as const;
 
@@ -229,18 +230,18 @@ export default function NewTransactionPage() {
               <Field label="Sale / Purchase Price *" type="number" value={form.salePrice} onChange={(v) => set("salePrice", v)} placeholder="$" />
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <Field label="Acceptance Date" type="date" value={form.acceptanceDate} onChange={(v) => set("acceptanceDate", v)} />
-              <Field label="Close of Escrow" type="date" value={form.closeOfEscrow} onChange={(v) => set("closeOfEscrow", v)} />
+              <DateFieldRow label="Acceptance Date" value={form.acceptanceDate} onChange={(v) => set("acceptanceDate", v)} />
+              <DateFieldRow label="Close of Escrow" value={form.closeOfEscrow} onChange={(v) => set("closeOfEscrow", v)} />
             </div>
             <Field label="Escrow Number" value={form.escrowNumber} onChange={(v) => set("escrowNumber", v)} placeholder="Optional" />
             <div className="border-t border-[#1B1B1B]/5 pt-5">
               <SectionLabel>Key Deadlines</SectionLabel>
               <div className="grid grid-cols-2 gap-4">
-                <Field label="Inspection Deadline" type="date" value={form.inspectionDeadline} onChange={(v) => set("inspectionDeadline", v)} />
-                <Field label="Appraisal Deadline" type="date" value={form.appraisalDeadline} onChange={(v) => set("appraisalDeadline", v)} />
+                <DateFieldRow label="Inspection Deadline" value={form.inspectionDeadline} onChange={(v) => set("inspectionDeadline", v)} />
+                <DateFieldRow label="Appraisal Deadline" value={form.appraisalDeadline} onChange={(v) => set("appraisalDeadline", v)} />
               </div>
               <div className="mt-4">
-                <Field label="Loan Approval Deadline" type="date" value={form.loanApprovalDeadline} onChange={(v) => set("loanApprovalDeadline", v)} />
+                <DateFieldRow label="Loan Approval Deadline" value={form.loanApprovalDeadline} onChange={(v) => set("loanApprovalDeadline", v)} />
               </div>
             </div>
           </div>
@@ -509,6 +510,15 @@ function OptionCard({
       <p className="font-semibold text-[#1B1B1B]">{label}</p>
       <p className="mt-1 text-xs text-[#1B1B1B]/40">{desc}</p>
     </button>
+  );
+}
+
+function DateFieldRow({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <div>
+      <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">{label}</label>
+      <DateField value={value} onChange={onChange} />
+    </div>
   );
 }
 
