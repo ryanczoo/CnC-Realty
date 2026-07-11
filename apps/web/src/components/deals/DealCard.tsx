@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { formatDealPrice, formatCloseDate, calcDaysInStage } from "@/lib/deal-pipeline";
+import { formatDealPrice, formatCloseDate, calcDaysInStage, isTerminalStage } from "@/lib/deal-pipeline";
 import type { DealRow } from "@/lib/deal-pipeline";
 
 type Props = {
@@ -13,7 +13,7 @@ type Props = {
 
 export function DealCard({ deal, onClick }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: deal.id });
-  const isAccepted = deal.stage === "OFFER_ACCEPTED";
+  const isAccepted = isTerminalStage(deal.pipeline, deal.stage);
 
   return (
     <div

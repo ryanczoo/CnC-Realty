@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { STAGE_LABELS, PIPELINE_STAGES } from "@/lib/deal-pipeline";
+import { STAGE_LABELS, PIPELINE_STAGES, isTerminalStage } from "@/lib/deal-pipeline";
 import type { DealRow } from "@/lib/deal-pipeline";
+import type { DealStage } from "@cnc/database";
 import { DateField } from "@/components/ui/DateField";
 
 type Props = {
@@ -70,7 +71,7 @@ export function DealDrawer({ open, deal, onClose, onSaved, onDeleted, onConverte
     const updated: DealRow = await res.json();
     onSaved(updated);
 
-    if (stage === "OFFER_ACCEPTED" && prevStage !== "OFFER_ACCEPTED") {
+    if (isTerminalStage(deal.pipeline, stage as DealStage) && !isTerminalStage(deal.pipeline, prevStage)) {
       setShowConvertPrompt(true);
     } else {
       onClose();
@@ -127,7 +128,7 @@ export function DealDrawer({ open, deal, onClose, onSaved, onDeleted, onConverte
             {showConvertPrompt && !hasLinkedFile && (
               <div className="rounded-xl border border-[#9E8C61]/30 bg-[#9E8C61]/5 p-4">
                 <p className="mb-3 font-sans text-sm text-[#1B1B1B]">
-                  Offer accepted! Ready to open a Transaction File?
+                  {STAGE_LABELS[deal.stage as keyof typeof STAGE_LABELS]}! Ready to open a Transaction File?
                 </p>
                 <div className="flex gap-2">
                   <button
@@ -147,7 +148,7 @@ export function DealDrawer({ open, deal, onClose, onSaved, onDeleted, onConverte
               </div>
             )}
 
-            {deal.stage === "OFFER_ACCEPTED" && !hasLinkedFile && !showConvertPrompt && (
+            {isTerminalStage(deal.pipeline, deal.stage) && !hasLinkedFile && !showConvertPrompt && (
               <button
                 onClick={handleConvert}
                 disabled={converting}

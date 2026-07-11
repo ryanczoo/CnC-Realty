@@ -25,6 +25,11 @@ export function isValidStageForPipeline(stage: string, pipeline: string): boolea
   return (PIPELINE_STAGES as Record<string, string[]>)[pipeline]?.includes(stage) ?? false;
 }
 
+export function isTerminalStage(pipeline: DealPipeline, stage: DealStage): boolean {
+  const stages = PIPELINE_STAGES[pipeline];
+  return stages[stages.length - 2] === stage;
+}
+
 export function calcDaysInStage(stageUpdatedAt: Date | string): number {
   const updated = typeof stageUpdatedAt === "string" ? new Date(stageUpdatedAt) : stageUpdatedAt;
   return Math.floor((Date.now() - updated.getTime()) / 86400_000);

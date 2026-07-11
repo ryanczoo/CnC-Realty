@@ -13,9 +13,9 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { DealCard } from "./DealCard";
-import { PIPELINE_STAGES, STAGE_LABELS } from "@/lib/deal-pipeline";
+import { PIPELINE_STAGES, STAGE_LABELS, isTerminalStage } from "@/lib/deal-pipeline";
 import type { DealRow } from "@/lib/deal-pipeline";
-import type { DealPipeline } from "@cnc/database";
+import type { DealPipeline, DealStage } from "@cnc/database";
 
 type Props = {
   pipeline: DealPipeline;
@@ -79,8 +79,8 @@ export function DealBoard({ pipeline, initialDeals, onCardClick, onOfferAccepted
       return;
     }
 
-    if (newStage === "OFFER_ACCEPTED" && onOfferAccepted) {
-      onOfferAccepted({ ...deal, stage: "OFFER_ACCEPTED" as DealRow["stage"], stageUpdatedAt: new Date().toISOString(), daysInStage: 0 });
+    if (isTerminalStage(pipeline, newStage as DealStage) && onOfferAccepted) {
+      onOfferAccepted({ ...deal, stage: newStage, stageUpdatedAt: new Date().toISOString(), daysInStage: 0 });
     }
   }
 

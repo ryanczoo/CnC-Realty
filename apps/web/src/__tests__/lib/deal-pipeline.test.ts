@@ -6,6 +6,7 @@ import {
   calcDaysInStage,
   formatDealPrice,
   formatCloseDate,
+  isTerminalStage,
 } from "@/lib/deal-pipeline";
 
 describe("PIPELINE_STAGES", () => {
@@ -138,5 +139,26 @@ describe("lease pipelines", () => {
   it("isValidStageForPipeline rejects a buyer stage on a lease tenant pipeline", () => {
     expect(isValidStageForPipeline("PRE_APPROVAL", "LEASE_TENANT")).toBe(false);
     expect(isValidStageForPipeline("SEARCHING", "LEASE_TENANT")).toBe(true);
+  });
+});
+
+describe("isTerminalStage", () => {
+  it("BUYERS: OFFER_ACCEPTED is terminal, TOURING is not", () => {
+    expect(isTerminalStage("BUYERS", "OFFER_ACCEPTED")).toBe(true);
+    expect(isTerminalStage("BUYERS", "TOURING")).toBe(false);
+  });
+  it("SELLERS: OFFER_ACCEPTED is terminal", () => {
+    expect(isTerminalStage("SELLERS", "OFFER_ACCEPTED")).toBe(true);
+  });
+  it("LEASE_TENANT: LEASE_SIGNED is terminal, SEARCHING is not", () => {
+    expect(isTerminalStage("LEASE_TENANT", "LEASE_SIGNED")).toBe(true);
+    expect(isTerminalStage("LEASE_TENANT", "SEARCHING")).toBe(false);
+  });
+  it("LEASE_LANDLORD: LEASE_SIGNED is terminal", () => {
+    expect(isTerminalStage("LEASE_LANDLORD", "LEASE_SIGNED")).toBe(true);
+  });
+  it("FALLEN_OUT is never terminal for any pipeline", () => {
+    expect(isTerminalStage("BUYERS", "FALLEN_OUT")).toBe(false);
+    expect(isTerminalStage("LEASE_TENANT", "FALLEN_OUT")).toBe(false);
   });
 });
