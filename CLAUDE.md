@@ -5389,6 +5389,40 @@ Added a `Loader2`/`animate-spin` spinner (gold `#9E8C61`, matches the existing p
 
 ---
 
+## Session Notes — 2026-07-10
+
+### DateField sitewide rollout, checklist templates paused for ZipForm research
+
+**DateField year-overflow bug fixed sitewide.** The native `<input type="date">` year segment let users type unlimited digits (e.g. "222222"). `DateField` (built earlier for the agent application's DOB/License Expiration fields) already solved this with segmented MM/DD/YYYY inputs with real clamping. Extended it with an opt-in `withTime` prop (HH:MM segments, emits `datetime-local` format) via TDD — wrote a 31-test baseline for the existing date-only logic *before* touching it, then re-ran that exact baseline after adding `withTime` to prove the date-only path was unaffected. Rolled out to all remaining date fields sitewide: New Listing, New Transaction, file detail Tasks tab, Deal Drawer, New Deal Modal (plain dates), and Lead Task Drawer, Lead Tasks Tab, campaign "Schedule for Later" (datetime). 320/320 tests passing. Also redesigned New Listing's wizard to visually match New Transaction's layout (dot-indicator step bar, centered card, spring-hover pill buttons).
+
+### Upstash Redis token was rotated/expired — fixed
+
+`/api/properties` was throwing 500s (`WRONGPASS invalid or missing auth token`). Confirmed via direct curl against Upstash's REST API that the token itself was rejected (not an app-side bug). Ryan pulled a fresh token from the Upstash dashboard (database itself — "CnC Realty", `liked-moth-150001.upstash.io` — was still there, just the token had changed); updated `.env.local`, verified `/api/properties` returns 200 again.
+
+### ZipForm / checklist template work — IMPORTANT, mid-investigation, not yet actioned
+
+Ryan wanted to bulk-download every zipForm template from his C.A.R. membership and have them hosted inside CnC. **Verified via C.A.R.'s own published terms** (https://www.car.org/transactions/zipform/zf/standardformsterms) that this is explicitly prohibited — placing C.A.R. forms into any other software platform is called out by name as copyright infringement. The permitted exception: a *completed* form saved as a locked PDF for an actual transaction may exist outside zipForm — which is exactly how CnC's existing document-upload system already works (agents upload their own completed, transaction-specific documents; CnC never stores blank templates). **Decision: do not download or host any zipForm templates.** Checklist items are just name/label strings, not the forms themselves, and don't need verification against zipForm's actual content — they're generic CA legal disclosure category names.
+
+**Verified checklist item names via C.A.R.'s official standard-forms directory** (https://www.car.org/transactions/standard-forms/list-of-standard-forms) — corrects/replaces the unverified list from earlier sessions:
+- **Buyer-side purchase:** RPA-CA, BRBC, Agency Disclosure, AVID, SBSA, TDS, Proof of Funds, Loan Pre-Approval. (NHD is real and required but is NOT a C.A.R./zipForm form — it's ordered from a separate third-party NHD report vendor.)
+- **Seller-side listing:** Listing Agreement, TDS, SPQ (missed in the original list), SBSA, NHD, Agency Disclosure.
+- **Lease (tenant side):** RLMM, Agency Disclosure, Move-in Inspection.
+- **Lease Listing (landlord side) — this 4th template never existed at all before.** LL (Lease Listing Agreement), Agency Disclosure.
+
+**Ryan compared CnC's New Transaction/New Listing wizards against zipForm's actual "Transact" flow (14 screenshots) and surfaced real findings — NOT YET FIXED:**
+
+1. **Confirmed bug:** `packages/database/prisma/schema.prisma`'s `TransactionSide` enum has `BUYER_SIDE / SELLER_SIDE / DUAL / LEASE` — but in `new-transaction/page.tsx`'s `SIDES` array, `SELLER_SIDE` is mislabeled in the UI as **"Referral / Other"** ("Referral transaction or other representation type"). Anyone picking that option today gets miscategorized as `SELLER_SIDE` in the database. Needs a real fix, not just a checklist decision.
+2. **Structural gap:** the `LEASE` enum value doesn't distinguish tenant-side from landlord-side at all (one undifferentiated bucket), while zipForm explicitly splits Lease (tenant) from Lease Listing (landlord) the same way it splits Purchase from Listing on the sale side.
+3. **Missing Property-step fields** (present in zipForm, absent from both CnC wizards): Legal Description, Property Includes/Excludes, Tax ID, Annual Taxes, School District, Zoning Class, photo upload.
+4. **Missing Offer/Details-step fields:** Deposit amount, Offer Date, Offer Expiration Date, Final Walkthrough Date, Possession Date, and a free-form Conditions/Contingencies list (CnC only has 3 fixed deadline fields — Inspection/Appraisal/Loan — covering some but not all of this).
+5. **Lower priority / Ryan's call whether to build:** zipForm's "RentSpree Tenant Screening" toggle (third-party integration, lease-only) and "apply a transaction template" reuse feature.
+
+**Ryan's ask, not yet done:** read every single link from the Lone Wolf Transact resource hub (`https://community.lwolf.com/s/manage-transaction-resources`) for full context on how zipForm/Transact works — same depth as the earlier SkySlope research pass — before deciding what to adopt. **Blocked:** this is a Salesforce Experience Cloud site (fully JS-rendered; raw `curl`/`WebFetch` return an empty shell), so it requires Puppeteer. Puppeteer's MCP server had disconnected mid-session and needs a Claude Code restart to reconnect — that restart had not happened yet as of this note being written.
+
+**Explicit instruction: do NOT download, screenshot-scrape-into-code, or otherwise reproduce zipForm/C.A.R.'s actual form content or templates.** Only checklist item *names* and general workflow/field *structure* (step order, field labels, transaction-type categories) should be adapted from zipForm — never the forms' copyrighted content itself.
+
+---
+
 ## Verification / Testing
 
 1. **Auth:** Register → verify email → login → redirected to `/dashboard`
@@ -5400,3 +5434,34 @@ Added a `Loader2`/`animate-spin` spinner (gold `#9E8C61`, matches the existing p
 7. **Campaign:** Create email campaign → send to test lead → SendGrid delivers → stats update via webhook
 8. **Property alerts:** Create saved search → add matching property to DB → alert email sent
 9. **Admin:** Log in as ADMIN role → see all agents/leads/transactions across brokerage
+
+---
+
+## Lone Wolf Transact Research — Full Read-Through (2026-07-10)
+
+Read all 58 articles from the Lone Wolf community resource hub (`community.lwolf.com/s/manage-transaction-resources` + its Signings sub-page) via Puppeteer, same depth as the earlier SkySlope research pass. Confirms "Transact" is the actual current product name for what Ryan referred to as "zipForm" — the two screenshots he took (`transact-workflow.lwolf.com`, `formseditor.lwolf.com`) are this exact product.
+
+### Confirms and validates earlier findings
+- **Exactly 4 transaction types**, matching Ryan's screenshots precisely: Purchase (buyer), Listing (seller), Lease (tenant), Lease Listing (landlord) — validates that fixing CnC's `SELLER_SIDE` → "Referral/Other" mislabeling and adding the missing Lease Listing distinction are real, correct priorities.
+- **Confirms the missing Property-step fields**: Legal Description, Property Includes/Excludes, Tax ID, Annual Taxes, School District, Zoning Class, photo upload.
+- **Confirms the missing Offer-step fields**: Deposit, Offer Date, Offer Expiration Date, Final Walkthrough Date, Possession Date, and a free-form Conditions list (each condition: name, relative-or-specific due date, notes).
+- **CnC's property type list is also missing categories** Transact has: Industrial, Farm and Ranch, Manufactured Home, Co-Op (CnC only has Single Family/Condo/Townhouse/Multi-Family/Commercial/Land/Other).
+
+### New findings — genuinely valuable, achievable within CnC's architecture (no licensing/legal blockers)
+1. **Client Portal** (Transact's newest feature, June 2026) — invite external parties (buyer, seller, title co.) via a secure PIN-gated one-page link, no account needed; they can view paperwork/parties/details and upload documents directly. Solves the real "back-and-forth email for proof of funds / ID" pain point. High value, no licensing blockers — recommended as the best candidate to build.
+2. **"Reset and copy" for lost deals** — when an offer is rejected or a deal falls through but the agent is still working with the same client, Transact archives the old transaction to a "Lost Deals" section and auto-creates a new transaction, optionally copying over selected parties/property/paperwork/to-dos. CnC has no equivalent today.
+3. **Phase-triggered checklists** — Transact checklists apply to a specific transaction type *and* workflow phase (e.g., a separate checklist for "Under Contract" vs. "Closed"), and submission-for-review auto-triggers the moment status crosses into a phase with a checklist attached. CnC currently only applies one checklist upfront at file creation with no phase-based triggering — a real architectural gap, not just a naming one.
+4. **Checklists have 3 requirement dimensions**, not just paperwork: paperwork requirements, **party requirements** (which roles must be filled, e.g. must have a Title/Escrow party), and **transaction-details requirements** (which fields must be filled — and these can hard-block submission if left blank, unlike paperwork/party which just warn). CnC's checklist system today is paperwork-only.
+5. **Unified Timeline/Calendar tab** — aggregates to-dos with due dates, offer/condition dates, and custom events into one calendar+list view at the transaction level. CnC has no equivalent visual timeline on the file detail page.
+6. **Relative due dates** for to-dos and conditions (e.g., "17 days after acceptance," not just a fixed calendar date) — matches how CA contingency periods actually work contractually. CnC's `FileTask` only supports absolute dates.
+7. **Transaction templates bundle parties and to-do lists, not just paperwork** — CnC's `ChecklistTemplate` only covers document requirements; Transact's templates also pre-populate default parties (e.g., "always add the appraisal company") and default to-do lists.
+8. Minor/lower-priority: saved custom transaction-list views, unique per-transaction email-in address for documents, cloud storage upload sources (Google Drive/OneDrive/Dropbox/Box), PDF merge tool, one-click undo of a status change, soft-delete/restore for transactions (180-day window), parent/sub-transaction linking for dual-agency pairs.
+9. Since CnC already has 185k+ properties from its own IDX sync, CnC could actually implement "import property details" (Transact needs an external MLS/tax-source lookup for this) *more easily* than Transact did, using data already in the DB.
+
+### Explicitly NOT recommended to build — bigger separate undertakings, not part of this checklist work
+- **Interactive Forms Editor** (the thing in Ryan's screenshots — fillable fields, clause library, markup tools, watermarks) — only works because Transact has an official licensed integration with C.A.R./board form libraries. CnC cannot replicate this without its own equivalent licensing deal with C.A.R.
+- **Full e-signature engine** ("Authentisign," Transact's in-house tool — comparable in scope to DocuSign: field placement, multi-participant sequencing, signing certificates, reject/reset/resend workflows, 20 articles' worth of functionality). If CnC ever wants e-signature for transaction paperwork, integrate an established third-party API (Dropbox Sign, DocuSign) rather than build this from scratch.
+- **"Back Office"** — a separate, specialized Lone Wolf product for broker accounting/commission disbursement/trust accounting. Out of scope; CnC's existing Commission tab covers the basics already needed.
+- **Multi-tier sequential review** — only matters once CnC has multiple office managers/reviewers; not relevant while Ryan is the sole admin.
+
+**Status: research complete, nothing built yet.** Next step is for Ryan to decide what to prioritize from the list above, alongside the already-identified `SELLER_SIDE` bug fix and the 4 checklist templates (buyer/seller/lease-tenant/lease-listing) from the earlier verified C.A.R. forms-directory research.

@@ -9,7 +9,7 @@ describe("TransactionSide values", () => {
   });
 
   it("SIDES no longer contains the old mislabeled Referral/Other option", () => {
-    const referralOther = SIDES.find((s) => s.label === "Referral / Other");
+    const referralOther = SIDES.find((s) => (s.label as string) === "Referral / Other");
     expect(referralOther).toBeUndefined();
   });
 
