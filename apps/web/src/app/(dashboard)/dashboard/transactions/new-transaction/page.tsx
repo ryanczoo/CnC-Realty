@@ -25,7 +25,7 @@ const STAGES = [
   { value: "PRE_CONTRACT", label: "Pre-Contract", desc: "No signed contract yet — set up file early" },
 ] as const;
 
-const PROPERTY_TYPES = ["Single Family", "Condo", "Townhouse", "Multi-Family", "Commercial", "Land", "Other"];
+const PROPERTY_TYPES = ["Single Family", "Condo", "Townhouse", "Multi-Family", "Commercial", "Land", "Industrial", "Farm and Ranch", "Manufactured Home", "Co-Op", "Other"];
 
 type Party = { name: string; email: string; phone: string; company: string; licenseNumber: string };
 const emptyParty = (): Party => ({ name: "", email: "", phone: "", company: "", licenseNumber: "" });
@@ -42,12 +42,16 @@ export default function NewTransactionPage() {
   });
 
   const [tcFeeEnabled, setTcFeeEnabled] = useState(false);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoTempId] = useState(() => crypto.randomUUID());
 
   const [form, setForm] = useState({
     transactionSide: "",
     stage: "UNDER_CONTRACT",
     propertyAddress: "", city: "", state: "CA", zip: "",
     propertyType: "", mlsNumber: "", yearBuilt: "",
+    legalDescription: "", propertyIncludes: "", propertyExcludes: "",
+    taxId: "", annualTaxes: "", schoolDistrict: "", zoningClass: "", photoKey: "",
     listPrice: "", salePrice: "",
     acceptanceDate: "", closeOfEscrow: "",
     escrowNumber: "",
@@ -88,6 +92,27 @@ export default function NewTransactionPage() {
     if (step === 2) return !!form.salePrice;
     return true;
   }, [step, form.transactionSide, form.propertyAddress, form.city, form.zip, form.salePrice]);
+
+  async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhotoUploading(true);
+    try {
+      const params = new URLSearchParams({
+        fileType: "transaction",
+        fileId: photoTempId,
+        filename: file.name,
+        contentType: file.type,
+        size: String(file.size),
+      });
+      const { uploadUrl, key } = await fetch(`/api/upload-url?${params}`).then((r) => r.json());
+      await fetch(uploadUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+      set("photoKey", key);
+    } finally {
+      setPhotoUploading(false);
+      e.target.value = "";
+    }
+  }
 
   async function submit() {
     setSaving(true);
@@ -221,6 +246,59 @@ export default function NewTransactionPage() {
             <div className="grid grid-cols-2 gap-4">
               <Field label="MLS Number" value={form.mlsNumber} onChange={(v) => set("mlsNumber", v)} placeholder="Optional" />
               <Field label="Year Built" type="number" value={form.yearBuilt} onChange={(v) => set("yearBuilt", v)} placeholder="e.g. 2005" />
+            </div>
+            <div className="border-t border-[#1B1B1B]/5 pt-5 space-y-4">
+              <SectionLabel>Additional Property Details</SectionLabel>
+              <TextareaField
+                label="Legal Description"
+                value={form.legalDescription}
+                onChange={(v) => set("legalDescription", v)}
+                placeholder="Lot, block, tract…"
+              />
+              <div className="grid grid-cols-2 gap-4">
+                <TextareaField
+                  label="Property Includes"
+                  value={form.propertyIncludes}
+                  onChange={(v) => set("propertyIncludes", v)}
+                  placeholder="Refrigerator, washer/dryer…"
+                  rows={2}
+                />
+                <TextareaField
+                  label="Property Excludes"
+                  value={form.propertyExcludes}
+                  onChange={(v) => set("propertyExcludes", v)}
+                  placeholder="Wall-mounted TV brackets…"
+                  rows={2}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="Tax ID / APN" value={form.taxId} onChange={(v) => set("taxId", v)} placeholder="Optional" />
+                <Field label="Annual Taxes" type="number" value={form.annualTaxes} onChange={(v) => set("annualTaxes", v)} placeholder="$" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="School District" value={form.schoolDistrict} onChange={(v) => set("schoolDistrict", v)} placeholder="Optional" />
+                <Field label="Zoning Class" value={form.zoningClass} onChange={(v) => set("zoningClass", v)} placeholder="e.g. R-1" />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">Property Photo</label>
+                <label
+                  className={`inline-flex cursor-pointer items-center rounded-full px-4 py-2 text-xs font-medium transition-colors ${
+                    photoUploading ? "bg-zinc-100 text-zinc-400" : "bg-[#1B1B1B] text-white hover:bg-[#1B1B1B]/80"
+                  }`}
+                >
+                  {photoUploading ? "Uploading…" : form.photoKey ? "Replace Photo" : "Upload Photo"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="sr-only"
+                    disabled={photoUploading}
+                    onChange={handlePhotoChange}
+                  />
+                </label>
+                {form.photoKey && !photoUploading && (
+                  <p className="mt-1.5 text-xs text-[#9E8C61]">Photo uploaded ✓</p>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -427,6 +505,10 @@ export default function NewTransactionPage() {
               {form.propertyType && <ReviewRow label="Type" value={form.propertyType} />}
               {form.mlsNumber && <ReviewRow label="MLS #" value={form.mlsNumber} />}
               {form.yearBuilt && <ReviewRow label="Year Built" value={form.yearBuilt} />}
+              {form.taxId && <ReviewRow label="Tax ID / APN" value={form.taxId} />}
+              {form.annualTaxes && <ReviewRow label="Annual Taxes" value={`$${Number(form.annualTaxes).toLocaleString()}`} />}
+              {form.schoolDistrict && <ReviewRow label="School District" value={form.schoolDistrict} />}
+              {form.zoningClass && <ReviewRow label="Zoning Class" value={form.zoningClass} />}
             </ReviewSection>
             <ReviewSection title="Transaction Details">
               {form.salePrice && <ReviewRow label="Sale Price" value={`$${Number(form.salePrice).toLocaleString()}`} />}
@@ -538,6 +620,25 @@ function Field({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
+        className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2.5 text-sm text-[#1B1B1B] placeholder:text-[#1B1B1B]/25 focus:outline-none focus:ring-2 focus:ring-[#9E8C61]/30"
+      />
+    </div>
+  );
+}
+
+function TextareaField({
+  label, value, onChange, placeholder = "", rows = 3,
+}: {
+  label: string; value: string; onChange: (v: string) => void; placeholder?: string; rows?: number;
+}) {
+  return (
+    <div>
+      <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">{label}</label>
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        rows={rows}
         className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2.5 text-sm text-[#1B1B1B] placeholder:text-[#1B1B1B]/25 focus:outline-none focus:ring-2 focus:ring-[#9E8C61]/30"
       />
     </div>
