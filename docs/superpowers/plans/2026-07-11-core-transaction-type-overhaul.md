@@ -1077,6 +1077,175 @@ git commit -m "fix: New Transaction wizard captures leasePrice instead of forcin
 
 ---
 
+## Task 10: Expose Lease Tenant/Lease Landlord as selectable pipeline-page tabs
+
+**Added post-hoc:** Task 8's implementer discovered that `apps/web/src/app/(dashboard)/dashboard/pipeline/page.tsx` hardcodes its tab type as `"BUYERS" | "SELLERS"` and only renders 2 tab buttons — there is no way to select or view a `LEASE_TENANT`/`LEASE_LANDLORD` pipeline board anywhere in the dashboard UI, even though the backend (Task 7), Kanban trigger logic (Task 8), and wizard (Tasks 3, 9) are all already lease-aware. This is the last layer needed to make the lease pipeline feature reachable end-to-end.
+
+**Files:**
+- Modify: `apps/web/src/app/(dashboard)/dashboard/pipeline/page.tsx`
+- Test: `apps/web/src/__tests__/app/pipeline-page.test.tsx` (new, if no existing test file covers this page — check first; if one exists, extend it instead)
+
+**Interfaces:**
+- Consumes: `DealBoard`'s `pipeline` prop (already typed as the full `DealPipeline` enum since Task 3) and `NewDealModal`'s `initialPipeline` prop (same).
+
+This task also refactors the page's 2 parallel `buyerDeals`/`sellerDeals` state variables into a single `Record<PipelineTab, DealRow[]>` — with 4 pipelines, keeping 4 parallel state variables and 4-way duplicated branches in `fetchDeals`/`handleDrawerSaved`/`handleDrawerDeleted`/`handleModalSaved` would be significantly more error-prone than the existing 2-way version already is. This is a targeted improvement to code this task must modify anyway, not a speculative refactor.
+
+- [ ] **Step 1: Write the failing test**
+
+Check first whether `apps/web/src/__tests__/app/pipeline-page.test.tsx` or similar already exists (`grep -rl "PipelinePage" apps/web/src/__tests__`). If none exists, this is the first test for this page — write a minimal one covering the new behavior:
+
+```tsx
+// apps/web/src/__tests__/app/pipeline-page.test.tsx
+import { describe, it, expect } from "vitest";
+import { render, screen } from "@testing-library/react";
+import PipelinePage from "@/app/(dashboard)/dashboard/pipeline/page";
+
+// Mock next/navigation's useSearchParams/useRouter and global fetch following
+// the pattern already used in other client-page tests in this repo (grep for
+// "useSearchParams" mocks in apps/web/src/__tests__ if one exists as a
+// reference; otherwise a minimal vi.mock of "next/navigation" returning a
+// static searchParams/router is sufficient here).
+
+describe("PipelinePage tabs", () => {
+  it("renders all 4 pipeline tabs", () => {
+    render(<PipelinePage />);
+    expect(screen.getByText("Buyers")).toBeInTheDocument();
+    expect(screen.getByText("Sellers")).toBeInTheDocument();
+    expect(screen.getByText("Lease Tenant")).toBeInTheDocument();
+    expect(screen.getByText("Lease Landlord")).toBeInTheDocument();
+  });
+});
+```
+
+If mocking this client page's `useSearchParams`/`fetch`/`useRouter` turns out to be disproportionately heavy compared to the rest of this repo's test suite (check a couple of existing `(dashboard)` page tests for the established pattern first), it's acceptable to report `DONE_WITH_CONCERNS` on the test step specifically and rely on the manual smoke test in Step 4 instead — note this rather than spending excessive effort forcing a test pattern this codebase doesn't already have for client pages of this shape.
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `pnpm --filter web test pipeline-page -- --run`
+Expected: FAIL — only 2 tab labels exist today.
+
+- [ ] **Step 3: Rewrite the page**
+
+Replace the file's pipeline-related state and logic with:
+
+```ts
+const PIPELINES = ["BUYERS", "SELLERS", "LEASE_TENANT", "LEASE_LANDLORD"] as const;
+type PipelineTab = (typeof PIPELINES)[number];
+
+const TAB_LABELS: Record<PipelineTab, string> = {
+  BUYERS: "Buyers",
+  SELLERS: "Sellers",
+  LEASE_TENANT: "Lease Tenant",
+  LEASE_LANDLORD: "Lease Landlord",
+};
+```
+
+Replace the `tab` line:
+```ts
+const tab = (searchParams.get("pipeline") as PipelineTab) ?? "BUYERS";
+```
+
+Replace `buyerDeals`/`sellerDeals` state with:
+```ts
+const [dealsByPipeline, setDealsByPipeline] = useState<Record<PipelineTab, DealRow[]>>({
+  BUYERS: [], SELLERS: [], LEASE_TENANT: [], LEASE_LANDLORD: [],
+});
+```
+
+Replace `fetchDeals`:
+```ts
+const fetchDeals = useCallback(async () => {
+  setLoading(true);
+  const responses = await Promise.all(PIPELINES.map((p) => fetch(`/api/deals?pipeline=${p}`)));
+  const results = await Promise.all(responses.map((r) => (r.ok ? r.json() : [])));
+  setDealsByPipeline(Object.fromEntries(PIPELINES.map((p, i) => [p, results[i]])) as Record<PipelineTab, DealRow[]>);
+  setLoading(false);
+}, []);
+```
+
+Replace `setTab`:
+```ts
+function setTab(p: PipelineTab) {
+  router.push(`/dashboard/pipeline?pipeline=${p}`);
+}
+```
+
+Replace `handleDrawerSaved`:
+```ts
+function handleDrawerSaved(updated: DealRow) {
+  setDealsByPipeline((prev) => {
+    const next = { ...prev };
+    for (const p of PIPELINES) next[p] = prev[p].map((d) => (d.id === updated.id ? updated : d));
+    return next;
+  });
+  setSelectedDeal(updated);
+}
+```
+
+Replace `handleDrawerDeleted`:
+```ts
+function handleDrawerDeleted(dealId: string) {
+  setDealsByPipeline((prev) => {
+    const next = { ...prev };
+    for (const p of PIPELINES) next[p] = prev[p].filter((d) => d.id !== dealId);
+    return next;
+  });
+  setDrawerOpen(false);
+  setSelectedDeal(null);
+}
+```
+
+Replace `handleModalSaved`:
+```ts
+function handleModalSaved(deal: DealRow) {
+  setDealsByPipeline((prev) => ({ ...prev, [deal.pipeline]: [...prev[deal.pipeline], deal] }));
+}
+```
+
+Replace `currentDeals`:
+```ts
+const currentDeals = dealsByPipeline[tab];
+```
+
+Replace the tab-buttons JSX (the `{(["BUYERS", "SELLERS"] as const).map(...)}` block):
+```tsx
+{PIPELINES.map((p) => (
+  <button
+    key={p}
+    onClick={() => setTab(p)}
+    className={`rounded-lg px-5 py-2 font-sans text-sm transition-colors ${
+      tab === p
+        ? "bg-white font-medium text-[#1B1B1B] shadow-sm"
+        : "text-[#1B1B1B]/50 hover:text-[#1B1B1B]"
+    }`}
+  >
+    {TAB_LABELS[p]}
+  </button>
+))}
+```
+
+Everything else in the file (imports, `handleCardClick`, `handleConverted`, the `DealBoard`/`DealDrawer`/`NewDealModal` JSX at the bottom) is unchanged — `pipeline={tab}` and `initialPipeline={tab}` already accept the full 4-value type.
+
+- [ ] **Step 4: Manual smoke test**
+
+Run `pnpm --filter web dev`, open `/dashboard/pipeline`, confirm all 4 tabs render and clicking "Lease Tenant"/"Lease Landlord" switches the board (even if empty) without errors.
+
+- [ ] **Step 5: Run full suite and typecheck**
+
+```bash
+pnpm --filter web test -- --run
+pnpm --filter web exec tsc --noEmit
+```
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add "apps/web/src/app/(dashboard)/dashboard/pipeline/page.tsx" apps/web/src/__tests__/app/pipeline-page.test.tsx
+git commit -m "feat: expose Lease Tenant and Lease Landlord as selectable pipeline-page tabs"
+```
+
+---
+
 ## Self-Review Notes
 
 - **Spec coverage:** all 9 items from the design spec's "What ships" list map to a task — schema (Task 1 + part of Task 2), enum rename + literal fixes (Task 2), pipeline stages + Kanban (Task 3), Property fields (Task 4), Offer fields + conditions (Task 5), referral party (Task 6), convert route rewrite (Task 7).
