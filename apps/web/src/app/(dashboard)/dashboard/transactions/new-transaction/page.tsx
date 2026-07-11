@@ -52,13 +52,17 @@ export default function NewTransactionPage() {
     propertyType: "", mlsNumber: "", yearBuilt: "",
     legalDescription: "", propertyIncludes: "", propertyExcludes: "",
     taxId: "", annualTaxes: "", schoolDistrict: "", zoningClass: "", photoKey: "",
-    listPrice: "", salePrice: "",
+    listPrice: "", salePrice: "", deposit: "",
+    offerDate: "", offerExpirationDate: "",
     acceptanceDate: "", closeOfEscrow: "",
+    finalWalkthroughDate: "", possessionDate: "",
     escrowNumber: "",
     inspectionDeadline: "", appraisalDeadline: "", loanApprovalDeadline: "",
     saleCommission: "", listingCommission: "",
     otherDeductions: "", commissionNotes: "",
   });
+
+  const [conditions, setConditions] = useState<{ name: string; dueDate: string; notes: string }[]>([]);
 
   const [buyers, setBuyers] = useState<Party[]>([emptyParty()]);
   const [sellers, setSellers] = useState<Party[]>([emptyParty()]);
@@ -141,6 +145,18 @@ export default function NewTransactionPage() {
     });
     if (res.ok) {
       const { transaction } = await res.json();
+      const validConditions = conditions.filter((c) => c.name);
+      if (validConditions.length > 0) {
+        await Promise.all(
+          validConditions.map((c) =>
+            fetch(`/api/transactions/${transaction.id}/conditions`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(c),
+            })
+          )
+        );
+      }
       router.push(`/dashboard/transactions/transaction/${transaction.id}`);
     }
     setSaving(false);
@@ -311,19 +327,36 @@ export default function NewTransactionPage() {
               <Field label="Sale / Purchase Price *" type="number" value={form.salePrice} onChange={(v) => set("salePrice", v)} placeholder="$" />
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <DateFieldRow label="Acceptance Date" value={form.acceptanceDate} onChange={(v) => set("acceptanceDate", v)} />
-              <DateFieldRow label="Close of Escrow" value={form.closeOfEscrow} onChange={(v) => set("closeOfEscrow", v)} />
+              <Field label="Deposit" type="number" value={form.deposit} onChange={(v) => set("deposit", v)} placeholder="$" />
+              <Field label="Escrow Number" value={form.escrowNumber} onChange={(v) => set("escrowNumber", v)} placeholder="Optional" />
             </div>
-            <Field label="Escrow Number" value={form.escrowNumber} onChange={(v) => set("escrowNumber", v)} placeholder="Optional" />
+            <div className="border-t border-[#1B1B1B]/5 pt-5">
+              <SectionLabel>Offer</SectionLabel>
+              <div className="grid grid-cols-2 gap-4">
+                <DateFieldRow label="Offer Date" value={form.offerDate} onChange={(v) => set("offerDate", v)} />
+                <DateFieldRow label="Offer Expiration Date" value={form.offerExpirationDate} onChange={(v) => set("offerExpirationDate", v)} />
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-4">
+                <DateFieldRow label="Acceptance Date" value={form.acceptanceDate} onChange={(v) => set("acceptanceDate", v)} />
+                <DateFieldRow label="Close of Escrow" value={form.closeOfEscrow} onChange={(v) => set("closeOfEscrow", v)} />
+              </div>
+            </div>
             <div className="border-t border-[#1B1B1B]/5 pt-5">
               <SectionLabel>Key Deadlines</SectionLabel>
               <div className="grid grid-cols-2 gap-4">
                 <DateFieldRow label="Inspection Deadline" value={form.inspectionDeadline} onChange={(v) => set("inspectionDeadline", v)} />
                 <DateFieldRow label="Appraisal Deadline" value={form.appraisalDeadline} onChange={(v) => set("appraisalDeadline", v)} />
               </div>
-              <div className="mt-4">
+              <div className="mt-4 grid grid-cols-2 gap-4">
                 <DateFieldRow label="Loan Approval Deadline" value={form.loanApprovalDeadline} onChange={(v) => set("loanApprovalDeadline", v)} />
+                <DateFieldRow label="Final Walkthrough Date" value={form.finalWalkthroughDate} onChange={(v) => set("finalWalkthroughDate", v)} />
               </div>
+              <div className="mt-4">
+                <DateFieldRow label="Possession Date" value={form.possessionDate} onChange={(v) => set("possessionDate", v)} />
+              </div>
+            </div>
+            <div className="border-t border-[#1B1B1B]/5 pt-5">
+              <ConditionsSection conditions={conditions} onUpdate={setConditions} />
             </div>
           </div>
         )}
@@ -512,10 +545,22 @@ export default function NewTransactionPage() {
             </ReviewSection>
             <ReviewSection title="Transaction Details">
               {form.salePrice && <ReviewRow label="Sale Price" value={`$${Number(form.salePrice).toLocaleString()}`} />}
+              {form.deposit && <ReviewRow label="Deposit" value={`$${Number(form.deposit).toLocaleString()}`} />}
               {form.closeOfEscrow && <ReviewRow label="Close of Escrow" value={form.closeOfEscrow} />}
+              {form.offerDate && <ReviewRow label="Offer Date" value={form.offerDate} />}
+              {form.offerExpirationDate && <ReviewRow label="Offer Expiration Date" value={form.offerExpirationDate} />}
               {form.acceptanceDate && <ReviewRow label="Acceptance Date" value={form.acceptanceDate} />}
+              {form.finalWalkthroughDate && <ReviewRow label="Final Walkthrough Date" value={form.finalWalkthroughDate} />}
+              {form.possessionDate && <ReviewRow label="Possession Date" value={form.possessionDate} />}
               {form.escrowNumber && <ReviewRow label="Escrow #" value={form.escrowNumber} />}
             </ReviewSection>
+            {conditions.filter((c) => c.name).length > 0 && (
+              <ReviewSection title="Conditions / Contingencies">
+                {conditions.filter((c) => c.name).map((c, i) => (
+                  <ReviewRow key={i} label={c.name} value={c.dueDate || "—"} />
+                ))}
+              </ReviewSection>
+            )}
             <ReviewSection title="Parties">
               {buyers.filter((b) => b.name).map((b, i) => (
                 <ReviewRow key={i} label={`Buyer ${buyers.length > 1 ? i + 1 : ""}`} value={b.name} />
@@ -680,6 +725,51 @@ function PartySection({
               <Field label={`${singular} Name *`} value={p.name} onChange={(v) => update(i, "name", v)} />
               <Field label="Email" type="email" value={p.email} onChange={(v) => update(i, "email", v)} />
               <Field label="Phone" type="tel" value={p.phone} onChange={(v) => update(i, "phone", v)} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+type Condition = { name: string; dueDate: string; notes: string };
+const emptyCondition = (): Condition => ({ name: "", dueDate: "", notes: "" });
+
+function ConditionsSection({
+  conditions, onUpdate,
+}: {
+  conditions: Condition[]; onUpdate: (c: Condition[]) => void;
+}) {
+  function update(i: number, field: keyof Condition, value: string) {
+    onUpdate(conditions.map((c, idx) => (idx === i ? { ...c, [field]: value } : c)));
+  }
+  return (
+    <div>
+      <div className="mb-3 flex items-center justify-between">
+        <SectionLabel>Conditions / Contingencies</SectionLabel>
+        <button
+          onClick={() => onUpdate([...conditions, emptyCondition()])}
+          className="mb-4 flex items-center gap-1 text-xs font-medium text-[#9E8C61] hover:text-[#7a6d4a]"
+        >
+          <Plus size={13} /> Add Condition
+        </button>
+      </div>
+      <div className="space-y-3">
+        {conditions.map((c, i) => (
+          <div key={i} className="relative rounded-xl border border-[#1B1B1B]/8 p-4">
+            <button
+              onClick={() => onUpdate(conditions.filter((_, idx) => idx !== i))}
+              className="absolute right-3 top-3 text-[#1B1B1B]/25 hover:text-red-400"
+            >
+              <Trash2 size={14} />
+            </button>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Condition Name" value={c.name} onChange={(v) => update(i, "name", v)} placeholder="e.g. Inspection Contingency" />
+              <DateFieldRow label="Due Date" value={c.dueDate} onChange={(v) => update(i, "dueDate", v)} />
+            </div>
+            <div className="mt-3">
+              <Field label="Notes" value={c.notes} onChange={(v) => update(i, "notes", v)} placeholder="Optional" />
             </div>
           </div>
         ))}
