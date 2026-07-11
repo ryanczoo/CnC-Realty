@@ -80,4 +80,35 @@ describe("POST /api/transactions", () => {
     expect(body.transaction.legalDescription).toBe("Lot 4, Block 2, Tract 12345");
     expect(body.transaction.annualTaxes).toBe(8500);
   });
+
+  it("creates a REFERRAL_AGENT party when provided", async () => {
+    let capturedArgs: any;
+    vi.mocked(prisma.transactionFile.create).mockImplementation(
+      (async (args: any) => {
+        capturedArgs = args;
+        return { id: "t1", ...args.data };
+      }) as any
+    );
+
+    const res = await POST(makeRequest({
+      transactionSide: "PURCHASE",
+      propertyAddress: "1 Test St",
+      city: "Test",
+      zip: "00000",
+      parties: [
+        { role: "REFERRAL_AGENT", name: "Jane Outbound", email: "jane@otherbrokerage.com", company: "Other Realty" },
+      ],
+    }));
+
+    expect(res.status).toBe(201);
+
+    // Verify the referral agent party was included in the Prisma create call
+    expect(capturedArgs.data.parties).toBeDefined();
+    expect(capturedArgs.data.parties.create).toBeDefined();
+    const referralAgentParty = capturedArgs.data.parties.create.find((p: any) => p.role === "REFERRAL_AGENT");
+    expect(referralAgentParty).toBeDefined();
+    expect(referralAgentParty?.name).toBe("Jane Outbound");
+    expect(referralAgentParty?.email).toBe("jane@otherbrokerage.com");
+    expect(referralAgentParty?.company).toBe("Other Realty");
+  });
 });

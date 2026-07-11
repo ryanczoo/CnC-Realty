@@ -70,8 +70,10 @@ export default function NewTransactionPage() {
   const [titleEscrow, setTitleEscrow] = useState<TitleEscrowParty>({ ...emptyParty(), contactType: "Escrow" });
   const [loanOfficer, setLoanOfficer] = useState<Party>(emptyParty());
   const [tc, setTc] = useState<Party>(emptyParty());
+  const [referralAgent, setReferralAgent] = useState<Party>(emptyParty());
   const [showLoanOfficer, setShowLoanOfficer] = useState(false);
   const [showTc, setShowTc] = useState(false);
+  const [showReferralAgent, setShowReferralAgent] = useState(false);
 
   function set(field: string, value: string) {
     setForm((f) => ({ ...f, [field]: value }));
@@ -129,6 +131,7 @@ export default function NewTransactionPage() {
         : []),
       ...(showLoanOfficer && loanOfficer.name ? [{ role: "LENDER", ...loanOfficer }] : []),
       ...(showTc && tc.name ? [{ role: "TRANSACTION_COORDINATOR", ...tc }] : []),
+      ...(showReferralAgent && referralAgent.name ? [{ role: "REFERRAL_AGENT", ...referralAgent }] : []),
     ];
     const res = await fetch("/api/transactions", {
       method: "POST",
@@ -440,6 +443,25 @@ export default function NewTransactionPage() {
                 </div>
               )}
             </div>
+
+            {/* Optional: Referral Agent */}
+            <div>
+              <button
+                onClick={() => setShowReferralAgent((v) => !v)}
+                className="flex items-center gap-1.5 text-sm font-medium text-[#9E8C61] hover:text-[#7a6d4a]"
+              >
+                <Plus size={15} />
+                {showReferralAgent ? "Remove" : "Add"} Referral Agent
+              </button>
+              {showReferralAgent && (
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <Field label="Name" value={referralAgent.name} onChange={(v) => setReferralAgent((a) => ({ ...a, name: v }))} />
+                  <Field label="Email" type="email" value={referralAgent.email} onChange={(v) => setReferralAgent((a) => ({ ...a, email: v }))} />
+                  <Field label="Phone" type="tel" value={referralAgent.phone} onChange={(v) => setReferralAgent((a) => ({ ...a, phone: v }))} />
+                  <Field label="Company" value={referralAgent.company} onChange={(v) => setReferralAgent((a) => ({ ...a, company: v }))} />
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -572,6 +594,7 @@ export default function NewTransactionPage() {
               {titleEscrow.name && <ReviewRow label={titleEscrow.contactType} value={titleEscrow.name} />}
               {showLoanOfficer && loanOfficer.name && <ReviewRow label="Loan Officer" value={loanOfficer.name} />}
               {showTc && tc.name && <ReviewRow label="Transaction Coordinator" value={tc.name} />}
+              {showReferralAgent && referralAgent.name && <ReviewRow label="Referral Agent" value={referralAgent.name} />}
             </ReviewSection>
             <ReviewSection title="Commission">
               {totalGci > 0 && <ReviewRow label="Total GCI" value={`$${Math.round(totalGci).toLocaleString()}`} />}
