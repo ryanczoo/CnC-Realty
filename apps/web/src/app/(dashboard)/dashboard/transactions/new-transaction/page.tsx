@@ -10,11 +10,14 @@ import { DateField } from "@/components/ui/DateField";
 
 const STEPS = ["File Type", "Property", "Details", "Parties", "Commission", "Review"] as const;
 
-const SIDES = [
-  { value: "BUYER_SIDE", label: "Purchase", desc: "Representing the buyer in a purchase transaction" },
+export const SIDES = [
+  { value: "PURCHASE", label: "Purchase", desc: "Representing the buyer in a purchase transaction" },
+  { value: "LISTING", label: "Listing", desc: "Representing the seller in a sale transaction" },
   { value: "DUAL", label: "Both Purchase & Listing", desc: "Dual agency — representing buyer and seller" },
-  { value: "LEASE", label: "Lease", desc: "Residential or commercial lease transaction" },
-  { value: "SELLER_SIDE", label: "Referral / Other", desc: "Referral transaction or other representation type" },
+  { value: "LEASE_TENANT", label: "Lease Tenant", desc: "Representing the tenant in a lease transaction" },
+  { value: "LEASE_LANDLORD", label: "Lease Landlord", desc: "Representing the landlord in a lease transaction" },
+  { value: "LEASE_DUAL", label: "Both Lease Tenant & Landlord", desc: "Dual agency — representing tenant and landlord" },
+  { value: "REFERRAL", label: "Referral", desc: "Outbound referral to another agent or brokerage — no other role in this deal" },
 ] as const;
 
 const STAGES = [

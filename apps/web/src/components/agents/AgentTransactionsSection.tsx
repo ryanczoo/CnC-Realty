@@ -2,13 +2,15 @@
 
 import { useState } from "react";
 import { RevealLine } from "@/components/ui/reveal-text";
+import type { TransactionSide } from "@/types/transaction";
+import { ROLE_LABELS } from "@/types/transaction";
 
 export type AgentTransaction = {
   id: string;
   propertyAddress: string;
   city: string;
   state: string;
-  transactionSide: "BUYER_SIDE" | "SELLER_SIDE" | "DUAL" | "LEASE";
+  transactionSide: TransactionSide;
   salePrice: number | null;
   listPrice: number | null;
   closeOfEscrow: string | null;
@@ -24,14 +26,6 @@ type DisplayItem = {
   statsLine: string;
 };
 
-const SIDE_LABEL: Record<AgentTransaction["transactionSide"], string> = {
-  BUYER_SIDE:  "Buyer's Agent",
-  SELLER_SIDE: "Seller's Agent",
-  DUAL:        "Dual Agent",
-  LEASE:       "Lease",
-};
-
-
 function realToDisplay(tx: AgentTransaction): DisplayItem {
   const dateStr = tx.closeOfEscrow
     ? new Date(tx.closeOfEscrow).toLocaleDateString("en-US", { month: "short", year: "numeric" })
@@ -42,7 +36,7 @@ function realToDisplay(tx: AgentTransaction): DisplayItem {
     city: tx.city,
     state: tx.state,
     price: tx.salePrice ?? tx.listPrice ?? 0,
-    statsLine: [SIDE_LABEL[tx.transactionSide], dateStr && `Closed ${dateStr}`]
+    statsLine: [ROLE_LABELS[tx.transactionSide], dateStr && `Closed ${dateStr}`]
       .filter(Boolean)
       .join("  ·  "),
   };

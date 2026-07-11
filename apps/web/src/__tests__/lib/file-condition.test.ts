@@ -10,7 +10,7 @@ describe("FileCondition model", () => {
     const agent = await prisma.agent.create({ data: { userId: user.id, slug: `fc-test-${Date.now()}` } });
     agentId = agent.id;
     const tf = await prisma.transactionFile.create({
-      data: { agentId, propertyAddress: "1 Test St", city: "Test", zip: "00000", transactionSide: "BUYER_SIDE", status: "INCOMPLETE" },
+      data: { agentId, propertyAddress: "1 Test St", city: "Test", zip: "00000", transactionSide: "PURCHASE", status: "INCOMPLETE" },
     });
     transactionFileId = tf.id;
   });

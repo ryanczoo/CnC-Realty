@@ -107,10 +107,13 @@ enum ListingType {
 }
 
 enum TransactionSide {
-  BUYER_SIDE
-  SELLER_SIDE
+  PURCHASE
+  LISTING
   DUAL
-  LEASE
+  LEASE_TENANT
+  LEASE_LANDLORD
+  LEASE_DUAL
+  REFERRAL
 }
 
 enum DealPipeline {

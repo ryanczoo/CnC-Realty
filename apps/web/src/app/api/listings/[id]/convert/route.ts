@@ -15,7 +15,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
   }
 
   const template = await prisma.checklistTemplate.findFirst({
-    where: { fileType: "TRANSACTION", isActive: true, OR: [{ transactionSide: "SELLER_SIDE" }, { transactionSide: "ALL" }] },
+    where: { fileType: "TRANSACTION", isActive: true, OR: [{ transactionSide: "LISTING" }, { transactionSide: "ALL" }] },
     include: { items: { orderBy: { order: "asc" } } },
   });
 
@@ -31,7 +31,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
         state: listing.state,
         zip: listing.zip,
         mlsNumber: listing.mlsNumber,
-        transactionSide: "SELLER_SIDE",
+        transactionSide: "LISTING",
         listPrice: listing.listPrice,
         checklistItems: template ? {
           create: template.items.map((item) => ({

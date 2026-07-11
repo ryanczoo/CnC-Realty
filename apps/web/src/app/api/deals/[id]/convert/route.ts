@@ -34,7 +34,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
       city: "",
       state: "CA",
       zip: "",
-      transactionSide: isBuyers ? "BUYER_SIDE" : "SELLER_SIDE",
+      transactionSide: isBuyers ? "PURCHASE" : "LISTING",
       status: "INCOMPLETE",
       ...(isBuyers ? { salePrice: deal.price } : { listPrice: deal.price }),
     },

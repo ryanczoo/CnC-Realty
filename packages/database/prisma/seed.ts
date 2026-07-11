@@ -80,7 +80,7 @@ async function main() {
       name: "Residential Sale — Buyer Side",
       fileType: "TRANSACTION",
       listingType: "RESIDENTIAL_SALE",
-      transactionSide: "BUYER_SIDE",
+      transactionSide: "PURCHASE",
       isActive: true,
       items: {
         create: RESIDENTIAL_SALE_BUYER_ITEMS,
@@ -96,7 +96,7 @@ async function main() {
       name: "Residential Sale — Seller Side",
       fileType: "TRANSACTION",
       listingType: "RESIDENTIAL_SALE",
-      transactionSide: "SELLER_SIDE",
+      transactionSide: "LISTING",
       isActive: true,
       items: {
         create: RESIDENTIAL_SALE_SELLER_ITEMS,
@@ -112,7 +112,7 @@ async function main() {
       name: "Residential Lease",
       fileType: "LISTING",
       listingType: "RESIDENTIAL_LEASE",
-      transactionSide: "LEASE",
+      transactionSide: "LEASE_TENANT",
       isActive: true,
       items: {
         create: RESIDENTIAL_LEASE_ITEMS,

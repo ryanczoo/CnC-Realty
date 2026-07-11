@@ -73,14 +73,14 @@ describe("POST /api/deals/[id]/convert", () => {
         data: expect.objectContaining({
           agentId: "a1",
           originatingLeadId: "l1",
-          transactionSide: "BUYER_SIDE",
+          transactionSide: "PURCHASE",
           salePrice: 800000,
         }),
       })
     );
   });
 
-  it("uses SELLER_SIDE for SELLERS pipeline", async () => {
+  it("uses LISTING for SELLERS pipeline", async () => {
     const sellersDeal = { ...BUYERS_DEAL, pipeline: "SELLERS", price: 750000 };
     vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
     vi.mocked(prisma.deal.findUnique).mockResolvedValue(sellersDeal as any);
@@ -90,7 +90,7 @@ describe("POST /api/deals/[id]/convert", () => {
     await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "d1" } });
     expect(prisma.transactionFile.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ transactionSide: "SELLER_SIDE", listPrice: 750000, originatingLeadId: "l1" }),
+        data: expect.objectContaining({ transactionSide: "LISTING", listPrice: 750000, originatingLeadId: "l1" }),
       })
     );
   });

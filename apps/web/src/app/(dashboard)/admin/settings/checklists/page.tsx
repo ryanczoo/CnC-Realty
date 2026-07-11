@@ -86,10 +86,13 @@ export default function ChecklistTemplatesPage() {
               <label className="mb-1 block text-xs font-medium text-[#1B1B1B]/60">Transaction Side</label>
               <select value={newSide} onChange={(e) => setNewSide(e.target.value)} className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2 text-sm">
                 <option value="">Any</option>
-                <option value="BUYER_SIDE">Buyer Side</option>
-                <option value="SELLER_SIDE">Seller Side</option>
+                <option value="PURCHASE">Purchase</option>
+                <option value="LISTING">Listing</option>
                 <option value="DUAL">Dual Agency</option>
-                <option value="LEASE">Lease</option>
+                <option value="LEASE_TENANT">Lease Tenant</option>
+                <option value="LEASE_LANDLORD">Lease Landlord</option>
+                <option value="LEASE_DUAL">Lease Dual Agency</option>
+                <option value="REFERRAL">Referral</option>
               </select>
             </div>
           </div>

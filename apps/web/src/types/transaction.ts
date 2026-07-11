@@ -8,7 +8,17 @@ export type TransactionFileStatus =
 
 export type FileType = "LISTING" | "TRANSACTION";
 export type ListingType = "RESIDENTIAL_SALE" | "RESIDENTIAL_LEASE" | "COMMERCIAL";
-export type TransactionSide = "BUYER_SIDE" | "SELLER_SIDE" | "DUAL" | "LEASE";
+export type TransactionSide = "PURCHASE" | "LISTING" | "DUAL" | "LEASE_TENANT" | "LEASE_LANDLORD" | "LEASE_DUAL" | "REFERRAL";
+
+export const ROLE_LABELS: Record<TransactionSide, string> = {
+  PURCHASE: "Buyer's Agent",
+  LISTING: "Listing Agent",
+  DUAL: "Dual Agent",
+  LEASE_TENANT: "Buyer's Agent",
+  LEASE_LANDLORD: "Listing Agent",
+  LEASE_DUAL: "Dual Agent",
+  REFERRAL: "Referral Agent",
+};
 export type FilePartyRole =
   | "BUYER" | "SELLER" | "LISTING_AGENT" | "BUYERS_AGENT" | "CO_AGENT"
   | "TITLE_ESCROW" | "LENDER" | "TRANSACTION_COORDINATOR" | "OTHER";
