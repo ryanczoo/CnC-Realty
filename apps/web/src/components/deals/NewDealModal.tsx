@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import type { DealRow } from "@/lib/deal-pipeline";
+import { PIPELINE_STAGES } from "@/lib/deal-pipeline";
 import { DateField } from "@/components/ui/DateField";
 
 type Props = {
@@ -10,7 +11,7 @@ type Props = {
   onSaved: (deal: DealRow) => void;
   initialLeadId?: string;
   initialLeadName?: string;
-  initialPipeline?: "BUYERS" | "SELLERS";
+  initialPipeline?: "BUYERS" | "SELLERS" | "LEASE_TENANT" | "LEASE_LANDLORD";
 };
 
 type LeadOption = { id: string; name: string };
@@ -20,7 +21,7 @@ export function NewDealModal({ open, onClose, onSaved, initialLeadId, initialLea
   const [leadId, setLeadId] = useState(initialLeadId ?? "");
   const [leadOptions, setLeadOptions] = useState<LeadOption[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
-  const [pipeline, setPipeline] = useState<"BUYERS" | "SELLERS">(initialPipeline ?? "BUYERS");
+  const [pipeline, setPipeline] = useState<"BUYERS" | "SELLERS" | "LEASE_TENANT" | "LEASE_LANDLORD">(initialPipeline ?? "BUYERS");
   const [propertyAddress, setPropertyAddress] = useState("");
   const [price, setPrice] = useState("");
   const [expectedCloseDate, setExpectedCloseDate] = useState("");
@@ -61,7 +62,7 @@ export function NewDealModal({ open, onClose, onSaved, initialLeadId, initialLea
     setSaving(true);
     setError(null);
 
-    const firstStage = pipeline === "BUYERS" ? "PRE_APPROVAL" : "LISTING_APPOINTMENT";
+    const firstStage = PIPELINE_STAGES[pipeline][0];
 
     const res = await fetch("/api/deals", {
       method: "POST",
@@ -130,7 +131,7 @@ export function NewDealModal({ open, onClose, onSaved, initialLeadId, initialLea
           <div>
             <label className="mb-1 block font-sans text-xs font-medium text-[#1B1B1B]/60">Pipeline *</label>
             <div className="flex gap-2">
-              {(["BUYERS", "SELLERS"] as const).map((p) => (
+              {(["BUYERS", "SELLERS", "LEASE_TENANT", "LEASE_LANDLORD"] as const).map((p) => (
                 <button
                   key={p}
                   onClick={() => setPipeline(p)}
@@ -140,7 +141,7 @@ export function NewDealModal({ open, onClose, onSaved, initialLeadId, initialLea
                       : "border-[#1B1B1B]/20 text-[#1B1B1B]/60 hover:border-[#1B1B1B]/40"
                   }`}
                 >
-                  {p === "BUYERS" ? "Buyers" : "Sellers"}
+                  {p === "BUYERS" ? "Buyers" : p === "SELLERS" ? "Sellers" : p === "LEASE_TENANT" ? "Lease Tenant" : "Lease Landlord"}
                 </button>
               ))}
             </div>

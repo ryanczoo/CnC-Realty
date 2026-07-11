@@ -118,3 +118,25 @@ describe("STAGE_LABELS", () => {
     }
   });
 });
+
+describe("lease pipelines", () => {
+  it("LEASE_TENANT has the correct stage list", () => {
+    expect(PIPELINE_STAGES.LEASE_TENANT).toEqual(["SEARCHING", "TOURING", "APPLICATION_SUBMITTED", "LEASE_SIGNED", "FALLEN_OUT"]);
+  });
+
+  it("LEASE_LANDLORD has the correct stage list", () => {
+    expect(PIPELINE_STAGES.LEASE_LANDLORD).toEqual(["LISTING_APPOINTMENT", "ACTIVE_LISTING", "APPLICATION_RECEIVED", "LEASE_SIGNED", "FALLEN_OUT"]);
+  });
+
+  it("labels every new stage", () => {
+    expect(STAGE_LABELS.SEARCHING).toBe("Searching");
+    expect(STAGE_LABELS.APPLICATION_SUBMITTED).toBe("Application Submitted");
+    expect(STAGE_LABELS.APPLICATION_RECEIVED).toBe("Application Received");
+    expect(STAGE_LABELS.LEASE_SIGNED).toBe("Lease Signed");
+  });
+
+  it("isValidStageForPipeline rejects a buyer stage on a lease tenant pipeline", () => {
+    expect(isValidStageForPipeline("PRE_APPROVAL", "LEASE_TENANT")).toBe(false);
+    expect(isValidStageForPipeline("SEARCHING", "LEASE_TENANT")).toBe(true);
+  });
+});
