@@ -10,13 +10,24 @@ import { DealDrawer } from "@/components/deals/DealDrawer";
 import { NewDealModal } from "@/components/deals/NewDealModal";
 import type { DealRow } from "@/lib/deal-pipeline";
 
+const PIPELINES = ["BUYERS", "SELLERS", "LEASE_TENANT", "LEASE_LANDLORD"] as const;
+type PipelineTab = (typeof PIPELINES)[number];
+
+const TAB_LABELS: Record<PipelineTab, string> = {
+  BUYERS: "Buyers",
+  SELLERS: "Sellers",
+  LEASE_TENANT: "Lease Tenant",
+  LEASE_LANDLORD: "Lease Landlord",
+};
+
 export default function PipelinePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const tab = (searchParams.get("pipeline") as "BUYERS" | "SELLERS") ?? "BUYERS";
+  const tab = (searchParams.get("pipeline") as PipelineTab) ?? "BUYERS";
 
-  const [buyerDeals, setBuyerDeals] = useState<DealRow[]>([]);
-  const [sellerDeals, setSellerDeals] = useState<DealRow[]>([]);
+  const [dealsByPipeline, setDealsByPipeline] = useState<Record<PipelineTab, DealRow[]>>({
+    BUYERS: [], SELLERS: [], LEASE_TENANT: [], LEASE_LANDLORD: [],
+  });
   const [loading, setLoading] = useState(true);
   const [selectedDeal, setSelectedDeal] = useState<DealRow | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -24,18 +35,15 @@ export default function PipelinePage() {
 
   const fetchDeals = useCallback(async () => {
     setLoading(true);
-    const [buyersRes, sellersRes] = await Promise.all([
-      fetch("/api/deals?pipeline=BUYERS"),
-      fetch("/api/deals?pipeline=SELLERS"),
-    ]);
-    if (buyersRes.ok) setBuyerDeals(await buyersRes.json());
-    if (sellersRes.ok) setSellerDeals(await sellersRes.json());
+    const responses = await Promise.all(PIPELINES.map((p) => fetch(`/api/deals?pipeline=${p}`)));
+    const results = await Promise.all(responses.map((r) => (r.ok ? r.json() : [])));
+    setDealsByPipeline(Object.fromEntries(PIPELINES.map((p, i) => [p, results[i]])) as Record<PipelineTab, DealRow[]>);
     setLoading(false);
   }, []);
 
   useEffect(() => { fetchDeals(); }, [fetchDeals]);
 
-  function setTab(p: "BUYERS" | "SELLERS") {
+  function setTab(p: PipelineTab) {
     router.push(`/dashboard/pipeline?pipeline=${p}`);
   }
 
@@ -45,16 +53,20 @@ export default function PipelinePage() {
   }
 
   function handleDrawerSaved(updated: DealRow) {
-    const update = (ds: DealRow[]) => ds.map((d) => d.id === updated.id ? updated : d);
-    setBuyerDeals(update);
-    setSellerDeals(update);
+    setDealsByPipeline((prev) => {
+      const next = { ...prev };
+      for (const p of PIPELINES) next[p] = prev[p].map((d) => (d.id === updated.id ? updated : d));
+      return next;
+    });
     setSelectedDeal(updated);
   }
 
   function handleDrawerDeleted(dealId: string) {
-    const remove = (ds: DealRow[]) => ds.filter((d) => d.id !== dealId);
-    setBuyerDeals(remove);
-    setSellerDeals(remove);
+    setDealsByPipeline((prev) => {
+      const next = { ...prev };
+      for (const p of PIPELINES) next[p] = prev[p].filter((d) => d.id !== dealId);
+      return next;
+    });
     setDrawerOpen(false);
     setSelectedDeal(null);
   }
@@ -65,11 +77,10 @@ export default function PipelinePage() {
   }
 
   function handleModalSaved(deal: DealRow) {
-    if (deal.pipeline === "BUYERS") setBuyerDeals((ds) => [...ds, deal]);
-    else setSellerDeals((ds) => [...ds, deal]);
+    setDealsByPipeline((prev) => ({ ...prev, [deal.pipeline]: [...prev[deal.pipeline], deal] }));
   }
 
-  const currentDeals = tab === "BUYERS" ? buyerDeals : sellerDeals;
+  const currentDeals = dealsByPipeline[tab];
 
   return (
     <div>
@@ -87,7 +98,7 @@ export default function PipelinePage() {
       </div>
 
       <div className="mb-6 flex gap-1 rounded-xl bg-[#F2F0EF] p-1 w-fit">
-        {(["BUYERS", "SELLERS"] as const).map((p) => (
+        {PIPELINES.map((p) => (
           <button
             key={p}
             onClick={() => setTab(p)}
@@ -97,7 +108,7 @@ export default function PipelinePage() {
                 : "text-[#1B1B1B]/50 hover:text-[#1B1B1B]"
             }`}
           >
-            {p === "BUYERS" ? "Buyers" : "Sellers"}
+            {TAB_LABELS[p]}
           </button>
         ))}
       </div>
