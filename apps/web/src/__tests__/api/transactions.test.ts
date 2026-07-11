@@ -111,4 +111,19 @@ describe("POST /api/transactions", () => {
     expect(referralAgentParty?.email).toBe("jane@otherbrokerage.com");
     expect(referralAgentParty?.company).toBe("Other Realty");
   });
+
+  it("persists leasePrice (not salePrice) for a LEASE_TENANT transaction", async () => {
+    vi.mocked(prisma.transactionFile.create).mockImplementation(
+      (async (args: any) => ({ id: "t1", ...args.data })) as any
+    );
+
+    const res = await POST(makeRequest({
+      transactionSide: "LEASE_TENANT", propertyAddress: "1 Test St", city: "Test", zip: "00000",
+      leasePrice: "2800",
+    }));
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body.transaction.leasePrice).toBe(2800);
+    expect(body.transaction.salePrice).toBeNull();
+  });
 });

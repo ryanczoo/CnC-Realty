@@ -52,7 +52,7 @@ export default function NewTransactionPage() {
     propertyType: "", mlsNumber: "", yearBuilt: "",
     legalDescription: "", propertyIncludes: "", propertyExcludes: "",
     taxId: "", annualTaxes: "", schoolDistrict: "", zoningClass: "", photoKey: "",
-    listPrice: "", salePrice: "", deposit: "",
+    listPrice: "", salePrice: "", leasePrice: "", deposit: "",
     offerDate: "", offerExpirationDate: "",
     acceptanceDate: "", closeOfEscrow: "",
     finalWalkthroughDate: "", possessionDate: "",
@@ -79,6 +79,8 @@ export default function NewTransactionPage() {
     setForm((f) => ({ ...f, [field]: value }));
   }
 
+  const isLeaseSide = ["LEASE_TENANT", "LEASE_LANDLORD", "LEASE_DUAL"].includes(form.transactionSide);
+
   const salePrice = parseFloat(form.salePrice) || 0;
   const saleCommissionAmt =
     commissionMode.sale === "pct"
@@ -95,9 +97,9 @@ export default function NewTransactionPage() {
   const canAdvance = useMemo(() => {
     if (step === 0) return !!form.transactionSide;
     if (step === 1) return !!form.propertyAddress && !!form.city && !!form.zip;
-    if (step === 2) return !!form.salePrice;
+    if (step === 2) return isLeaseSide ? !!form.leasePrice : !!form.salePrice;
     return true;
-  }, [step, form.transactionSide, form.propertyAddress, form.city, form.zip, form.salePrice]);
+  }, [step, form.transactionSide, form.propertyAddress, form.city, form.zip, form.salePrice, form.leasePrice]);
 
   async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -326,8 +328,14 @@ export default function NewTransactionPage() {
         {step === 2 && (
           <div className="space-y-5">
             <div className="grid grid-cols-2 gap-4">
-              <Field label="List Price" type="number" value={form.listPrice} onChange={(v) => set("listPrice", v)} placeholder="$" />
-              <Field label="Sale / Purchase Price *" type="number" value={form.salePrice} onChange={(v) => set("salePrice", v)} placeholder="$" />
+              {isLeaseSide ? (
+                <Field label="Lease Price (Monthly Rent) *" type="number" value={form.leasePrice} onChange={(v) => set("leasePrice", v)} placeholder="$" />
+              ) : (
+                <>
+                  <Field label="List Price" type="number" value={form.listPrice} onChange={(v) => set("listPrice", v)} placeholder="$" />
+                  <Field label="Sale / Purchase Price *" type="number" value={form.salePrice} onChange={(v) => set("salePrice", v)} placeholder="$" />
+                </>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <Field label="Deposit" type="number" value={form.deposit} onChange={(v) => set("deposit", v)} placeholder="$" />
@@ -567,6 +575,7 @@ export default function NewTransactionPage() {
             </ReviewSection>
             <ReviewSection title="Transaction Details">
               {form.salePrice && <ReviewRow label="Sale Price" value={`$${Number(form.salePrice).toLocaleString()}`} />}
+              {form.leasePrice && <ReviewRow label="Lease Price" value={`$${Number(form.leasePrice).toLocaleString()}`} />}
               {form.deposit && <ReviewRow label="Deposit" value={`$${Number(form.deposit).toLocaleString()}`} />}
               {form.closeOfEscrow && <ReviewRow label="Close of Escrow" value={form.closeOfEscrow} />}
               {form.offerDate && <ReviewRow label="Offer Date" value={form.offerDate} />}
