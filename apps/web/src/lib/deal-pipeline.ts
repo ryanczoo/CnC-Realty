@@ -3,6 +3,8 @@ import type { DealPipeline, DealStage } from "@cnc/database";
 export const PIPELINE_STAGES: Record<DealPipeline, DealStage[]> = {
   BUYERS: ["PRE_APPROVAL", "TOURING", "OFFER_SUBMITTED", "OFFER_ACCEPTED", "FALLEN_OUT"],
   SELLERS: ["LISTING_APPOINTMENT", "ACTIVE_LISTING", "OFFER_ACCEPTED", "FALLEN_OUT"],
+  LEASE_TENANT: ["SEARCHING", "TOURING", "APPLICATION_SUBMITTED", "LEASE_SIGNED", "FALLEN_OUT"],
+  LEASE_LANDLORD: ["LISTING_APPOINTMENT", "ACTIVE_LISTING", "APPLICATION_RECEIVED", "LEASE_SIGNED", "FALLEN_OUT"],
 };
 
 export const STAGE_LABELS: Record<DealStage, string> = {
@@ -12,6 +14,10 @@ export const STAGE_LABELS: Record<DealStage, string> = {
   LISTING_APPOINTMENT: "Listing Appointment",
   ACTIVE_LISTING: "Active Listing",
   OFFER_ACCEPTED: "Offer Accepted",
+  SEARCHING: "Searching",
+  APPLICATION_SUBMITTED: "Application Submitted",
+  APPLICATION_RECEIVED: "Application Received",
+  LEASE_SIGNED: "Lease Signed",
   FALLEN_OUT: "Fallen Out",
 };
 
