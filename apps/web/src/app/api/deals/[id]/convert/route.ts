@@ -1,6 +1,21 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/api-auth";
+import { PIPELINE_STAGES } from "@/lib/deal-pipeline";
+import type { TransactionSide } from "@cnc/database";
+
+const SIDE_BY_PIPELINE: Record<string, TransactionSide> = {
+  BUYERS: "PURCHASE",
+  SELLERS: "LISTING",
+  LEASE_TENANT: "LEASE_TENANT",
+  LEASE_LANDLORD: "LEASE_LANDLORD",
+};
+const PRICE_FIELD_BY_PIPELINE: Record<string, "salePrice" | "listPrice" | "leasePrice"> = {
+  BUYERS: "salePrice",
+  SELLERS: "listPrice",
+  LEASE_TENANT: "leasePrice",
+  LEASE_LANDLORD: "leasePrice",
+};
 
 export async function POST(_req: Request, { params }: { params: { id: string } }) {
   const { session, error } = await requireAuth("AGENT");
@@ -16,15 +31,18 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     }
   }
 
-  if (deal.stage !== "OFFER_ACCEPTED") {
-    return NextResponse.json({ error: "Deal must be in OFFER_ACCEPTED stage to convert" }, { status: 400 });
+  const stages = PIPELINE_STAGES[deal.pipeline as keyof typeof PIPELINE_STAGES] ?? [];
+  const terminalStage = stages[stages.length - 2]; // last entry before FALLEN_OUT
+  if (deal.stage !== terminalStage) {
+    return NextResponse.json({ error: `Deal must be in the final stage to convert` }, { status: 400 });
   }
 
   if (deal.transactionFileId) {
     return NextResponse.json({ error: "Deal is already linked to a transaction file" }, { status: 409 });
   }
 
-  const isBuyers = deal.pipeline === "BUYERS";
+  const transactionSide = SIDE_BY_PIPELINE[deal.pipeline];
+  const priceField = PRICE_FIELD_BY_PIPELINE[deal.pipeline];
 
   const tf = await prisma.transactionFile.create({
     data: {
@@ -34,9 +52,9 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
       city: "",
       state: "CA",
       zip: "",
-      transactionSide: isBuyers ? "PURCHASE" : "LISTING",
+      transactionSide,
       status: "INCOMPLETE",
-      ...(isBuyers ? { salePrice: deal.price } : { listPrice: deal.price }),
+      [priceField]: deal.price,
     },
   });
 

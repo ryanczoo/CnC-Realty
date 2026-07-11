@@ -47,7 +47,7 @@ describe("POST /api/deals/[id]/convert", () => {
     const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "d1" } });
     expect(res.status).toBe(400);
     const data = await res.json();
-    expect(data.error).toMatch(/OFFER_ACCEPTED/);
+    expect(data.error).toMatch(/final stage/);
   });
 
   it("returns 409 when deal already has a transactionFileId", async () => {
@@ -93,5 +93,59 @@ describe("POST /api/deals/[id]/convert", () => {
         data: expect.objectContaining({ transactionSide: "LISTING", listPrice: 750000, originatingLeadId: "l1" }),
       })
     );
+  });
+
+  it("converts a LEASE_TENANT deal to a LEASE_TENANT transaction with leasePrice set", async () => {
+    const leaseTenantDeal = {
+      ...BUYERS_DEAL,
+      id: "d1",
+      pipeline: "LEASE_TENANT",
+      stage: "LEASE_SIGNED",
+      price: 2800,
+    };
+    vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
+    vi.mocked(prisma.deal.findUnique).mockResolvedValue(leaseTenantDeal as any);
+    vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "tf-new" } as any);
+    vi.mocked(prisma.deal.update).mockResolvedValue({} as any);
+
+    const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "d1" } });
+    expect(res.status).toBe(201);
+    expect(prisma.transactionFile.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ transactionSide: "LEASE_TENANT", leasePrice: 2800 }) })
+    );
+  });
+
+  it("converts a LEASE_LANDLORD deal to a LEASE_LANDLORD transaction with leasePrice set", async () => {
+    const leaseLandlordDeal = {
+      ...BUYERS_DEAL,
+      id: "d2",
+      pipeline: "LEASE_LANDLORD",
+      stage: "LEASE_SIGNED",
+      price: 3200,
+    };
+    vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
+    vi.mocked(prisma.deal.findUnique).mockResolvedValue(leaseLandlordDeal as any);
+    vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "tf-new" } as any);
+    vi.mocked(prisma.deal.update).mockResolvedValue({} as any);
+
+    const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "d2" } });
+    expect(res.status).toBe(201);
+    expect(prisma.transactionFile.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ transactionSide: "LEASE_LANDLORD", leasePrice: 3200 }) })
+    );
+  });
+
+  it("rejects converting a LEASE_TENANT deal that hasn't reached LEASE_SIGNED", async () => {
+    const notYetSignedDeal = {
+      ...BUYERS_DEAL,
+      id: "d3",
+      pipeline: "LEASE_TENANT",
+      stage: "TOURING",
+    };
+    vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
+    vi.mocked(prisma.deal.findUnique).mockResolvedValue(notYetSignedDeal as any);
+
+    const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "d3" } });
+    expect(res.status).toBe(400);
   });
 });
