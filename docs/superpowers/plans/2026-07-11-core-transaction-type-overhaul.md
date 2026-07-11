@@ -862,6 +862,221 @@ git commit -m "feat: deals/convert supports lease tenant/landlord pipelines with
 
 ---
 
+## Task 8: Kanban UI pipeline-aware terminal-stage trigger
+
+**Added post-hoc:** the final whole-branch review (after Task 7) found that `DealDrawer.tsx`, `DealCard.tsx`, and `DealBoard.tsx` all hardcode checks against the literal `"OFFER_ACCEPTED"` stage to trigger the convert-to-transaction UI and "accepted" styling. This meant a `LEASE_TENANT`/`LEASE_LANDLORD` deal reaching `LEASE_SIGNED` had no UI path to invoke Task 7's now-lease-aware `deals/convert` route. This task closes that gap.
+
+**Files:**
+- Modify: `apps/web/src/lib/deal-pipeline.ts`
+- Modify: `apps/web/src/components/deals/DealCard.tsx`
+- Modify: `apps/web/src/components/deals/DealDrawer.tsx`
+- Modify: `apps/web/src/components/deals/DealBoard.tsx`
+- Test: `apps/web/src/__tests__/lib/deal-pipeline.test.ts`
+
+**Interfaces:**
+- Produces: `isTerminalStage(pipeline: DealPipeline, stage: DealStage): boolean` — exported from `deal-pipeline.ts`, using the same `PIPELINE_STAGES[pipeline][length-2]` formula the `deals/convert` route (Task 7) already uses, so both can never drift apart again.
+
+- [ ] **Step 1: Write the failing test**
+
+```ts
+// apps/web/src/__tests__/lib/deal-pipeline.test.ts (add to existing file)
+import { isTerminalStage } from "@/lib/deal-pipeline";
+
+describe("isTerminalStage", () => {
+  it("BUYERS: OFFER_ACCEPTED is terminal, TOURING is not", () => {
+    expect(isTerminalStage("BUYERS", "OFFER_ACCEPTED")).toBe(true);
+    expect(isTerminalStage("BUYERS", "TOURING")).toBe(false);
+  });
+  it("SELLERS: OFFER_ACCEPTED is terminal", () => {
+    expect(isTerminalStage("SELLERS", "OFFER_ACCEPTED")).toBe(true);
+  });
+  it("LEASE_TENANT: LEASE_SIGNED is terminal, SEARCHING is not", () => {
+    expect(isTerminalStage("LEASE_TENANT", "LEASE_SIGNED")).toBe(true);
+    expect(isTerminalStage("LEASE_TENANT", "SEARCHING")).toBe(false);
+  });
+  it("LEASE_LANDLORD: LEASE_SIGNED is terminal", () => {
+    expect(isTerminalStage("LEASE_LANDLORD", "LEASE_SIGNED")).toBe(true);
+  });
+  it("FALLEN_OUT is never terminal for any pipeline", () => {
+    expect(isTerminalStage("BUYERS", "FALLEN_OUT")).toBe(false);
+    expect(isTerminalStage("LEASE_TENANT", "FALLEN_OUT")).toBe(false);
+  });
+});
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `pnpm --filter web test deal-pipeline -- --run`
+Expected: FAIL — `isTerminalStage` is not exported yet.
+
+- [ ] **Step 3: Add `isTerminalStage` to `deal-pipeline.ts`**
+
+```ts
+export function isTerminalStage(pipeline: DealPipeline, stage: DealStage): boolean {
+  const stages = PIPELINE_STAGES[pipeline];
+  return stages[stages.length - 2] === stage;
+}
+```
+
+- [ ] **Step 4: Run test to verify it passes**
+
+Run: `pnpm --filter web test deal-pipeline -- --run`
+Expected: PASS
+
+- [ ] **Step 5: Update `DealCard.tsx`**
+
+Replace line 16:
+```ts
+const isAccepted = isTerminalStage(deal.pipeline, deal.stage);
+```
+Add `isTerminalStage` to the existing `@/lib/deal-pipeline` import.
+
+- [ ] **Step 6: Update `DealDrawer.tsx`**
+
+Replace line 73's condition:
+```ts
+if (isTerminalStage(deal.pipeline, stage) && !isTerminalStage(deal.pipeline, prevStage)) {
+  setShowConvertPrompt(true);
+}
+```
+Replace line 150's condition:
+```tsx
+{isTerminalStage(deal.pipeline, deal.stage) && !hasLinkedFile && !showConvertPrompt && (
+```
+Add `isTerminalStage` to the existing `@/lib/deal-pipeline` import.
+
+Also update the convert-prompt copy at line 130 so it isn't sale-specific wording on a lease deal — replace the hardcoded `"Offer accepted! Ready to open a Transaction File?"` with a label derived from the deal's own terminal stage:
+```tsx
+<p className="mb-3 font-sans text-sm text-[#1B1B1B]">
+  {STAGE_LABELS[deal.stage as keyof typeof STAGE_LABELS]}! Ready to open a Transaction File?
+</p>
+```
+(`STAGE_LABELS` is already imported in this file.)
+
+- [ ] **Step 7: Update `DealBoard.tsx`**
+
+Replace line 82's condition:
+```ts
+if (isTerminalStage(pipeline, newStage as DealStage) && onOfferAccepted) {
+```
+Add `isTerminalStage` to the existing `@/lib/deal-pipeline` import. Leave the `onOfferAccepted` prop name and its type signature unchanged — it's an internal callback name, not user-facing, and renaming it would touch every caller for no functional benefit.
+
+- [ ] **Step 8: Run full suite and typecheck**
+
+```bash
+pnpm --filter web test -- --run
+pnpm --filter web exec tsc --noEmit
+```
+Expected: all pass, no new TypeScript errors.
+
+- [ ] **Step 9: Commit**
+
+```bash
+git add apps/web/src/lib/deal-pipeline.ts apps/web/src/components/deals/DealCard.tsx apps/web/src/components/deals/DealDrawer.tsx apps/web/src/components/deals/DealBoard.tsx apps/web/src/__tests__/lib/deal-pipeline.test.ts
+git commit -m "fix: make Kanban convert-trigger pipeline-aware so lease deals can convert to transactions"
+```
+
+---
+
+## Task 9: Wizard captures leasePrice instead of forcing salePrice for lease/referral sides
+
+**Added post-hoc:** the final whole-branch review also found that the New Transaction wizard's Details step (`canAdvance` at step 2) unconditionally requires `form.salePrice` and never captures the `leasePrice` field Task 1 added to the schema. A lease or referral file created manually through the wizard (not via `deals/convert`) is forced into a "Sale / Purchase Price" field and would have its rent stored under the wrong column. This task is narrowly scoped to fixing price *capture and storage*, not to redesigning commission math for lease deals — that is explicitly out of scope here.
+
+**Files:**
+- Modify: `apps/web/src/app/(dashboard)/dashboard/transactions/new-transaction/page.tsx`
+- Modify: `apps/web/src/app/api/transactions/route.ts`
+- Test: `apps/web/src/__tests__/api/transactions.test.ts`
+
+**Interfaces:**
+- Consumes: `TransactionFile.leasePrice` (already exists, Task 1).
+
+- [ ] **Step 1: Write the failing test**
+
+```ts
+// apps/web/src/__tests__/api/transactions.test.ts (add a case)
+it("persists leasePrice (not salePrice) for a LEASE_TENANT transaction", async () => {
+  const res = await POST(makeRequest({
+    transactionSide: "LEASE_TENANT", propertyAddress: "1 Test St", city: "Test", zip: "00000",
+    leasePrice: "2800",
+  }));
+  expect(res.status).toBe(201);
+  const body = await res.json();
+  expect(body.leasePrice).toBe(2800);
+  expect(body.salePrice).toBeNull();
+});
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `pnpm --filter web test transactions -- --run`
+Expected: FAIL — `leasePrice` isn't in the route's create payload yet.
+
+- [ ] **Step 3: Update `api/transactions/route.ts`**
+
+Add `leasePrice` alongside the existing `listPrice`/`salePrice` destructuring and create call, using the identical nullable pass-through pattern:
+```ts
+leasePrice: leasePrice ? parseFloat(leasePrice) : null,
+```
+
+- [ ] **Step 4: Run test to verify it passes**
+
+Run: `pnpm --filter web test transactions -- --run`
+Expected: PASS
+
+- [ ] **Step 5: Update the wizard**
+
+Add `leasePrice: ""` to the `form` state object (alongside `listPrice`/`salePrice`/`deposit`).
+
+Add a derived constant near the top of the component body, alongside the existing `salePrice` derived constant (line 82):
+```ts
+const isLeaseSide = ["LEASE_TENANT", "LEASE_LANDLORD", "LEASE_DUAL"].includes(form.transactionSide);
+```
+
+Update `canAdvance`'s step-2 check (currently `if (step === 2) return !!form.salePrice;`) to:
+```ts
+if (step === 2) return isLeaseSide ? !!form.leasePrice : !!form.salePrice;
+```
+Add `form.leasePrice` to the `useMemo` dependency array alongside `form.salePrice`.
+
+In the Details step's price fields (around the existing "List Price" / "Sale / Purchase Price *" `Field` pair), conditionally render: when `isLeaseSide`, show a single field instead of the List/Sale pair:
+```tsx
+{isLeaseSide ? (
+  <Field label="Lease Price (Monthly Rent) *" type="number" value={form.leasePrice} onChange={(v) => set("leasePrice", v)} placeholder="$" />
+) : (
+  <>
+    <Field label="List Price" type="number" value={form.listPrice} onChange={(v) => set("listPrice", v)} placeholder="$" />
+    <Field label="Sale / Purchase Price *" type="number" value={form.salePrice} onChange={(v) => set("salePrice", v)} placeholder="$" />
+  </>
+)}
+```
+
+Add a Review-step row for lease price, following the exact existing conditional pattern used for `form.salePrice`'s review row:
+```tsx
+{form.leasePrice && <ReviewRow label="Lease Price" value={`$${Number(form.leasePrice).toLocaleString()}`} />}
+```
+
+Do not modify the commission calculation section (the `salePrice`-derived GCI math) — that remains explicitly out of scope for this task, since redesigning how commission is calculated for lease deals is a separate product decision, not a price-storage bug.
+
+- [ ] **Step 6: Manual smoke test**
+
+Run `pnpm --filter web dev`, open `/dashboard/transactions/new-transaction`, select "Lease Tenant" as the type, confirm the Details step shows "Lease Price (Monthly Rent) *" instead of the List/Sale Price pair, submit, and confirm the created file's `leasePrice` (not `salePrice`) is populated.
+
+- [ ] **Step 7: Run full suite and typecheck**
+
+```bash
+pnpm --filter web test -- --run
+pnpm --filter web exec tsc --noEmit
+```
+
+- [ ] **Step 8: Commit**
+
+```bash
+git add "apps/web/src/app/(dashboard)/dashboard/transactions/new-transaction/page.tsx" apps/web/src/app/api/transactions/route.ts apps/web/src/__tests__/api/transactions.test.ts
+git commit -m "fix: New Transaction wizard captures leasePrice instead of forcing salePrice for lease/referral sides"
+```
+
+---
+
 ## Self-Review Notes
 
 - **Spec coverage:** all 9 items from the design spec's "What ships" list map to a task — schema (Task 1 + part of Task 2), enum rename + literal fixes (Task 2), pipeline stages + Kanban (Task 3), Property fields (Task 4), Offer fields + conditions (Task 5), referral party (Task 6), convert route rewrite (Task 7).
