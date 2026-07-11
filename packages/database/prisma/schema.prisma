@@ -116,6 +116,8 @@ enum TransactionSide {
 enum DealPipeline {
   BUYERS
   SELLERS
+  LEASE_TENANT
+  LEASE_LANDLORD
 }
 
 enum DealStage {
@@ -125,6 +127,10 @@ enum DealStage {
   LISTING_APPOINTMENT
   ACTIVE_LISTING
   OFFER_ACCEPTED
+  SEARCHING
+  APPLICATION_SUBMITTED
+  APPLICATION_RECEIVED
+  LEASE_SIGNED
   FALLEN_OUT
 }
 
@@ -137,6 +143,7 @@ enum FilePartyRole {
   TITLE_ESCROW
   LENDER
   TRANSACTION_COORDINATOR
+  REFERRAL_AGENT
   OTHER
 }
 
@@ -461,6 +468,19 @@ model TransactionFile {
   status               TransactionFileStatus @default(INCOMPLETE)
   listPrice            Float?
   salePrice            Float?
+  leasePrice           Float?
+  legalDescription     String?
+  propertyIncludes     String?
+  propertyExcludes     String?
+  taxId                String?
+  annualTaxes          Float?
+  schoolDistrict       String?
+  zoningClass          String?
+  photoKey             String?
+  deposit              Float?
+  offerExpirationDate  DateTime?
+  finalWalkthroughDate DateTime?
+  possessionDate       DateTime?
   offerDate            DateTime?
   acceptanceDate       DateTime?
   inspectionDeadline   DateTime?
@@ -487,6 +507,7 @@ model TransactionFile {
   activities         FileActivity[]
   crmActivities      Activity[]
   tasks              FileTask[]
+  conditions         FileCondition[]
   deal               Deal?
 }
 
@@ -504,6 +525,17 @@ model FileTask {
 
   listingFile     ListingFile?     @relation(fields: [listingFileId], references: [id], onDelete: Cascade)
   transactionFile TransactionFile? @relation(fields: [transactionFileId], references: [id], onDelete: Cascade)
+}
+
+model FileCondition {
+  id                String   @id @default(cuid())
+  transactionFileId String
+  name              String
+  dueDate           DateTime?
+  notes             String?
+  createdAt         DateTime @default(now())
+
+  transactionFile TransactionFile @relation(fields: [transactionFileId], references: [id], onDelete: Cascade)
 }
 
 model FileParty {
