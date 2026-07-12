@@ -1246,6 +1246,68 @@ git commit -m "feat: expose Lease Tenant and Lease Landlord as selectable pipeli
 
 ---
 
+## Task 11: Fix api/deals/route.ts's Zod schema still only accepting 2 pipelines
+
+**Added post-hoc:** Task 10's reviewer discovered that `apps/web/src/app/api/deals/route.ts:10` — `pipeline: z.enum(["BUYERS", "SELLERS"])` — was never widened despite `NewDealModal.tsx` (Task 3) already having a fully working 4-way pipeline picker that POSTs `LEASE_TENANT`/`LEASE_LANDLORD` to this exact endpoint. That POST fails Zod validation with a 400 before ever reaching `isValidStageForPipeline`. Confirmed via a repo-wide grep that this is the ONLY remaining spot still hardcoded to 2 pipelines — not an open-ended search, a single bounded fix.
+
+**Files:**
+- Modify: `apps/web/src/app/api/deals/route.ts`
+- Test: `apps/web/src/__tests__/api/deals.test.ts` (extend existing file — check it exists first)
+
+**Interfaces:**
+- Consumes: `DealPipeline` (already imported in this file as a type-only import at line 6 — the schema itself just needs its literal value set widened to match).
+
+- [ ] **Step 1: Write the failing test**
+
+```ts
+// apps/web/src/__tests__/api/deals.test.ts (add a case to the existing POST describe block)
+it("accepts LEASE_TENANT and LEASE_LANDLORD as valid pipeline values", async () => {
+  const resTenant = await POST(makeRequest({
+    leadId: "l1", pipeline: "LEASE_TENANT", stage: "SEARCHING",
+  }));
+  expect(resTenant.status).not.toBe(400);
+
+  const resLandlord = await POST(makeRequest({
+    leadId: "l1", pipeline: "LEASE_LANDLORD", stage: "LISTING_APPOINTMENT",
+  }));
+  expect(resLandlord.status).not.toBe(400);
+});
+```
+
+(Adapt `makeRequest`/mocking to whatever pattern the existing `deals.test.ts` file already uses for its other POST cases — follow that file's own conventions rather than inventing a new one.)
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `pnpm --filter web test deals -- --run`
+Expected: FAIL — Zod rejects `"LEASE_TENANT"`/`"LEASE_LANDLORD"` with a 400 "Invalid enum value" error.
+
+- [ ] **Step 3: Widen the schema**
+
+```ts
+pipeline: z.enum(["BUYERS", "SELLERS", "LEASE_TENANT", "LEASE_LANDLORD"]),
+```
+
+- [ ] **Step 4: Run test to verify it passes**
+
+Run: `pnpm --filter web test deals -- --run`
+Expected: PASS
+
+- [ ] **Step 5: Run full suite and typecheck**
+
+```bash
+pnpm --filter web test -- --run
+pnpm --filter web exec tsc --noEmit
+```
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add apps/web/src/app/api/deals/route.ts apps/web/src/__tests__/api/deals.test.ts
+git commit -m "fix: accept LEASE_TENANT and LEASE_LANDLORD in the deal-creation schema"
+```
+
+---
+
 ## Self-Review Notes
 
 - **Spec coverage:** all 9 items from the design spec's "What ships" list map to a task — schema (Task 1 + part of Task 2), enum rename + literal fixes (Task 2), pipeline stages + Kanban (Task 3), Property fields (Task 4), Offer fields + conditions (Task 5), referral party (Task 6), convert route rewrite (Task 7).
