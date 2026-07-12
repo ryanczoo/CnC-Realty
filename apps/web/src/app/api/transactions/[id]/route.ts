@@ -9,7 +9,10 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const tx = await prisma.transactionFile.findUnique({ where: { id: params.id }, include: FILE_DETAIL_INCLUDE });
+  const tx = await prisma.transactionFile.findUnique({
+    where: { id: params.id },
+    include: { ...FILE_DETAIL_INCLUDE, conditions: { orderBy: { dueDate: "asc" } } },
+  });
   if (!tx) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   if (session.user.role !== "ADMIN" && tx.agentId !== session.user.agentId) {

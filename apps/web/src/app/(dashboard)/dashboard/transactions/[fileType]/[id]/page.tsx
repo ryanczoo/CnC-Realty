@@ -102,7 +102,11 @@ export default function FileDetailPage() {
   const title = `${file.propertyAddress}, ${file.city}, ${file.state} ${file.zip}`;
   const price = isListing
     ? (listing?.listPrice ? `$${Number(listing.listPrice).toLocaleString()}` : null)
-    : (transaction?.salePrice ? `$${Number(transaction.salePrice).toLocaleString()}` : null);
+    : (transaction?.salePrice
+        ? `$${Number(transaction.salePrice).toLocaleString()}`
+        : transaction?.leasePrice
+          ? `$${Number(transaction.leasePrice).toLocaleString()}/mo`
+          : null);
 
   const { satisfied, required } = getChecklistProgress(file.checklistItems as FileChecklistItemWithDocs[]);
   const progressPct = required > 0 ? Math.round((satisfied / required) * 100) : 0;
@@ -260,9 +264,25 @@ function OverviewTab({
               <InfoRow label="Transaction Side" value={transaction.transactionSide ?? "—"} />
               <InfoRow label="List Price" value={transaction.listPrice ? `$${Number(transaction.listPrice).toLocaleString()}` : "—"} />
               <InfoRow label="Sale Price" value={transaction.salePrice ? `$${Number(transaction.salePrice).toLocaleString()}` : "—"} />
+              {transaction.leasePrice && <InfoRow label="Lease Price" value={`$${Number(transaction.leasePrice).toLocaleString()}/mo`} />}
+              {transaction.legalDescription && <InfoRow label="Legal Description" value={transaction.legalDescription} />}
+              {transaction.propertyIncludes && <InfoRow label="Property Includes" value={transaction.propertyIncludes} />}
+              {transaction.propertyExcludes && <InfoRow label="Property Excludes" value={transaction.propertyExcludes} />}
+              {transaction.taxId && <InfoRow label="Tax ID / APN" value={transaction.taxId} />}
+              {transaction.annualTaxes && <InfoRow label="Annual Taxes" value={`$${Number(transaction.annualTaxes).toLocaleString()}`} />}
+              {transaction.schoolDistrict && <InfoRow label="School District" value={transaction.schoolDistrict} />}
+              {transaction.zoningClass && <InfoRow label="Zoning Class" value={transaction.zoningClass} />}
             </>
           )}
         </div>
+
+        {!isListing && transaction && transaction.photoKey && (
+          <div className="rounded-xl border border-[#1B1B1B]/10 bg-white p-5 space-y-3">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Property Photo</h2>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={`/api/transactions/${file.id}/photo`} alt="Property" className="w-full rounded-lg object-cover" />
+          </div>
+        )}
 
         {!isListing && transaction && (
           <div className="rounded-xl border border-[#1B1B1B]/10 bg-white p-5 space-y-3">
@@ -273,6 +293,24 @@ function OverviewTab({
             <InfoRow label="Appraisal Deadline" value={transaction.appraisalDeadline ? new Date(transaction.appraisalDeadline).toLocaleDateString() : "—"} />
             <InfoRow label="Loan Approval" value={transaction.loanApprovalDeadline ? new Date(transaction.loanApprovalDeadline).toLocaleDateString() : "—"} />
             <InfoRow label="Close of Escrow" value={transaction.closeOfEscrow ? new Date(transaction.closeOfEscrow).toLocaleDateString() : "—"} />
+            {transaction.offerExpirationDate && <InfoRow label="Offer Expiration" value={new Date(transaction.offerExpirationDate).toLocaleDateString()} />}
+            {transaction.finalWalkthroughDate && <InfoRow label="Final Walkthrough" value={new Date(transaction.finalWalkthroughDate).toLocaleDateString()} />}
+            {transaction.possessionDate && <InfoRow label="Possession Date" value={new Date(transaction.possessionDate).toLocaleDateString()} />}
+          </div>
+        )}
+
+        {!isListing && transaction && transaction.conditions.length > 0 && (
+          <div className="rounded-xl border border-[#1B1B1B]/10 bg-white p-5 space-y-3">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Conditions / Contingencies</h2>
+            {transaction.conditions.map((c) => (
+              <div key={c.id} className="border-b border-[#1B1B1B]/5 pb-2 last:border-0 last:pb-0">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-[#1B1B1B]">{c.name}</span>
+                  {c.dueDate && <span className="text-xs text-[#1B1B1B]/50">{new Date(c.dueDate).toLocaleDateString()}</span>}
+                </div>
+                {c.notes && <p className="text-xs text-[#1B1B1B]/40">{c.notes}</p>}
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -313,6 +351,7 @@ function CommissionTab({ transaction }: { transaction: TransactionFileDetail }) 
       <div className="rounded-xl border border-[#1B1B1B]/10 bg-white p-5 space-y-3">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Commission Breakdown</h2>
         <InfoRow label="Sale Price" value={salePrice > 0 ? `$${salePrice.toLocaleString()}` : "—"} />
+        {transaction.deposit && <InfoRow label="Deposit" value={`$${Number(transaction.deposit).toLocaleString()}`} />}
         <InfoRow label="Sale Commission" value={fmtPct(salePct)} />
         <InfoRow label="Sale Commission $" value={fmt(saleCommissionDollar)} />
         <InfoRow label="Listing Commission" value={fmtPct(listingPct)} />

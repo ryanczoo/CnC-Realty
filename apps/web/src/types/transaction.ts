@@ -86,6 +86,20 @@ export interface TransactionFileDetail {
   status: TransactionFileStatus;
   listPrice: number | null;
   salePrice: number | null;
+  leasePrice: number | null;
+  legalDescription: string | null;
+  propertyIncludes: string | null;
+  propertyExcludes: string | null;
+  taxId: string | null;
+  annualTaxes: number | null;
+  schoolDistrict: string | null;
+  zoningClass: string | null;
+  photoKey: string | null;
+  deposit: number | null;
+  offerExpirationDate: string | null;
+  finalWalkthroughDate: string | null;
+  possessionDate: string | null;
+  conditions: FileConditionRecord[];
   offerDate: string | null;
   acceptanceDate: string | null;
   inspectionDeadline: string | null;
@@ -116,6 +130,13 @@ export interface FileTaskRecord {
   assigneeName: string | null;
   done: boolean;
   createdAt: string;
+}
+
+export interface FileConditionRecord {
+  id: string;
+  name: string;
+  dueDate: string | null;
+  notes: string | null;
 }
 
 export interface FileContextProps {
