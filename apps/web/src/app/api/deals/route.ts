@@ -7,7 +7,7 @@ import type { DealPipeline } from "@cnc/database";
 
 const createSchema = z.object({
   leadId: z.string().min(1),
-  pipeline: z.enum(["BUYERS", "SELLERS"]),
+  pipeline: z.enum(["BUYERS", "SELLERS", "LEASE_TENANT", "LEASE_LANDLORD"]),
   stage: z.string().min(1),
   propertyAddress: z.string().nullable().optional(),
   price: z.number().nullable().optional(),

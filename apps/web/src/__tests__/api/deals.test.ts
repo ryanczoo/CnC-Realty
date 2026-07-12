@@ -114,6 +114,33 @@ describe("POST /api/deals", () => {
     );
     expect(res.status).toBe(201);
   });
+
+  it("accepts LEASE_TENANT and LEASE_LANDLORD as valid pipeline values", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
+    vi.mocked(prisma.agent.findUnique).mockResolvedValue(AGENT as any);
+    vi.mocked(prisma.lead.findFirst).mockResolvedValue({ id: "l1" } as any);
+    vi.mocked(prisma.deal.create).mockResolvedValue(MOCK_DEAL_DB as any);
+
+    const resTenant = await POST(
+      new Request("http://localhost/api/deals", {
+        method: "POST",
+        body: JSON.stringify({ leadId: "l1", pipeline: "LEASE_TENANT", stage: "SEARCHING" }),
+      })
+    );
+    expect(resTenant.status).not.toBe(400);
+
+    const resLandlord = await POST(
+      new Request("http://localhost/api/deals", {
+        method: "POST",
+        body: JSON.stringify({
+          leadId: "l1",
+          pipeline: "LEASE_LANDLORD",
+          stage: "LISTING_APPOINTMENT",
+        }),
+      })
+    );
+    expect(resLandlord.status).not.toBe(400);
+  });
 });
 
 describe("PATCH /api/deals/[id]", () => {
