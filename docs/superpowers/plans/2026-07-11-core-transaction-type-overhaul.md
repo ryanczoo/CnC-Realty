@@ -1308,6 +1308,296 @@ git commit -m "fix: accept LEASE_TENANT and LEASE_LANDLORD in the deal-creation 
 
 ---
 
+## Task 12: Display all Task 4/5 fields + Conditions on the transaction detail page
+
+**Added post-hoc:** the second final whole-branch review (after Task 11) confirmed `leasePrice` is stored correctly everywhere but never displayed on the transaction detail page — the header and Overview "Property Details" card only read `salePrice`/`listPrice`. On checking further, this extends to EVERY field Tasks 4 and 5 added: Legal Description, Property Includes, Property Excludes, Tax ID, Annual Taxes, School District, Zoning Class, the uploaded photo, Deposit, Offer Expiration Date, Final Walkthrough Date, Possession Date, and the Conditions/Contingencies list — none of these appear anywhere on `/dashboard/transactions/[fileType]/[id]`. All are correctly captured and stored (verified in Tasks 4/5's own reviews); this task closes the display-side gap. Confirmed with Ryan this is not a legal/compliance requirement — it's a product-completeness gap, and he asked for full coverage.
+
+**Files:**
+- Modify: `apps/web/src/types/transaction.ts`
+- Modify: `apps/web/src/app/api/transactions/[id]/route.ts`
+- Create: `apps/web/src/app/api/transactions/[id]/photo/route.ts`
+- Modify: `apps/web/src/app/(dashboard)/dashboard/transactions/[fileType]/[id]/page.tsx`
+- Test: `apps/web/src/__tests__/api/transactions-id.test.ts` (extend existing file if present, else create), `apps/web/src/__tests__/api/transaction-photo.test.ts` (new)
+
+**Interfaces:**
+- Consumes: `TransactionFile.leasePrice/.legalDescription/.propertyIncludes/.propertyExcludes/.taxId/.annualTaxes/.schoolDistrict/.zoningClass/.photoKey/.deposit/.offerExpirationDate/.finalWalkthroughDate/.possessionDate` and the `FileCondition` model (all from Task 1); `getPresignedGetUrl` from `@/lib/r2`.
+
+- [ ] **Step 1: Extend `TransactionFileDetail` in `types/transaction.ts`**
+
+Add to the interface (after `otherDeductions`/near the existing price fields):
+```ts
+  leasePrice: number | null;
+  legalDescription: string | null;
+  propertyIncludes: string | null;
+  propertyExcludes: string | null;
+  taxId: string | null;
+  annualTaxes: number | null;
+  schoolDistrict: string | null;
+  zoningClass: string | null;
+  photoKey: string | null;
+  deposit: number | null;
+  offerExpirationDate: string | null;
+  finalWalkthroughDate: string | null;
+  possessionDate: string | null;
+  conditions: FileConditionRecord[];
+```
+
+Add a new exported type in the same file:
+```ts
+export interface FileConditionRecord {
+  id: string;
+  name: string;
+  dueDate: string | null;
+  notes: string | null;
+}
+```
+
+- [ ] **Step 2: Write the failing test for the GET route's `conditions` include**
+
+```ts
+// apps/web/src/__tests__/api/transactions-id.test.ts (add a case, or create the file following
+// the existing transactions.test.ts mocking pattern if no transactions-id test file exists yet)
+it("includes conditions in the GET response", async () => {
+  // arrange: mocked prisma.transactionFile.findUnique returning a tx with a conditions array
+  const res = await GET(makeRequest(), { params: { id: "tf1" } });
+  const body = await res.json();
+  expect(body.transaction.conditions).toBeDefined();
+});
+```
+
+- [ ] **Step 3: Run test to verify it fails**
+
+Run: `pnpm --filter web test transactions-id -- --run`
+Expected: FAIL — `conditions` is `undefined` (not included in the query yet).
+
+- [ ] **Step 4: Update `api/transactions/[id]/route.ts`'s GET handler**
+
+Do NOT add `conditions` to the shared `FILE_DETAIL_INCLUDE` in `transaction-helpers.ts` — `ListingFile` has no `conditions` relation, and that constant is shared with `api/listings/[id]/route.ts`. Instead, spread it locally in this file only:
+
+```ts
+const tx = await prisma.transactionFile.findUnique({
+  where: { id: params.id },
+  include: { ...FILE_DETAIL_INCLUDE, conditions: { orderBy: { dueDate: "asc" } } },
+});
+```
+
+- [ ] **Step 5: Run test to verify it passes**
+
+Run: `pnpm --filter web test transactions-id -- --run`
+Expected: PASS
+
+- [ ] **Step 6: Write the failing test for the photo proxy route**
+
+```ts
+// apps/web/src/__tests__/api/transaction-photo.test.ts
+import { describe, it, expect, vi } from "vitest";
+// Follow the exact mocking pattern in apps/web/src/app/api/headshot/[userId]/route.ts's
+// nearest existing test (if one exists) or the pattern used elsewhere for requireAuth +
+// prisma.transactionFile.findUnique mocks in this test suite.
+
+it("returns 404 when the transaction has no photoKey", async () => {
+  // arrange: mocked session (owning agent) + prisma.transactionFile.findUnique returning { agentId, photoKey: null }
+  const res = await GET(makeRequest(), { params: { id: "tf1" } });
+  expect(res.status).toBe(404);
+});
+
+it("returns 403 when the requester doesn't own the transaction file", async () => {
+  // arrange: mocked session for a different agent + prisma.transactionFile.findUnique returning { agentId: "other", photoKey: "key" }
+  const res = await GET(makeRequest(), { params: { id: "tf1" } });
+  expect(res.status).toBe(403);
+});
+```
+
+- [ ] **Step 7: Run test to verify it fails**
+
+Run: `pnpm --filter web test transaction-photo -- --run`
+Expected: FAIL — route file doesn't exist.
+
+- [ ] **Step 8: Create the photo proxy route**
+
+```ts
+// apps/web/src/app/api/transactions/[id]/photo/route.ts
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { getPresignedGetUrl } from "@/lib/r2";
+
+export const dynamic = "force-dynamic";
+
+export async function GET(_req: Request, { params }: { params: { id: string } }) {
+  const session = await getServerSession(authOptions);
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const tx = await prisma.transactionFile.findUnique({
+    where: { id: params.id },
+    select: { agentId: true, photoKey: true },
+  });
+  if (!tx) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (session.user.role !== "ADMIN" && tx.agentId !== session.user.agentId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  if (!tx.photoKey) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const url = await getPresignedGetUrl(tx.photoKey);
+  const r2Res = await fetch(url);
+  if (!r2Res.ok) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const contentType = r2Res.headers.get("content-type") ?? "image/jpeg";
+  return new Response(r2Res.body, {
+    headers: { "Content-Type": contentType, "Cache-Control": "no-store" },
+  });
+}
+```
+
+- [ ] **Step 9: Run test to verify it passes**
+
+Run: `pnpm --filter web test transaction-photo -- --run`
+Expected: PASS
+
+- [ ] **Step 10: Update the Overview tab display**
+
+In `apps/web/src/app/(dashboard)/dashboard/transactions/[fileType]/[id]/page.tsx`:
+
+Update the header `price` derivation (around line 103-105) to fall back to `leasePrice` when `salePrice` is absent:
+```ts
+const price = isListing
+  ? (listing?.listPrice ? `$${Number(listing.listPrice).toLocaleString()}` : null)
+  : (transaction?.salePrice
+      ? `$${Number(transaction.salePrice).toLocaleString()}`
+      : transaction?.leasePrice
+        ? `$${Number(transaction.leasePrice).toLocaleString()}/mo`
+        : null);
+```
+
+In `OverviewTab`, inside the existing `{!isListing && transaction && (...)}` block in the "Property Details" card (after the existing `Sale Price` row), add:
+```tsx
+{transaction.leasePrice && <InfoRow label="Lease Price" value={`$${Number(transaction.leasePrice).toLocaleString()}/mo`} />}
+{transaction.legalDescription && <InfoRow label="Legal Description" value={transaction.legalDescription} />}
+{transaction.propertyIncludes && <InfoRow label="Property Includes" value={transaction.propertyIncludes} />}
+{transaction.propertyExcludes && <InfoRow label="Property Excludes" value={transaction.propertyExcludes} />}
+{transaction.taxId && <InfoRow label="Tax ID / APN" value={transaction.taxId} />}
+{transaction.annualTaxes && <InfoRow label="Annual Taxes" value={`$${Number(transaction.annualTaxes).toLocaleString()}`} />}
+{transaction.schoolDistrict && <InfoRow label="School District" value={transaction.schoolDistrict} />}
+{transaction.zoningClass && <InfoRow label="Zoning Class" value={transaction.zoningClass} />}
+```
+
+Immediately after that card's closing `</div>` (still inside the `{!isListing && transaction && ...}` conditional region), add a photo card when `photoKey` is set:
+```tsx
+{transaction.photoKey && (
+  <div className="rounded-xl border border-[#1B1B1B]/10 bg-white p-5 space-y-3">
+    <h2 className="text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Property Photo</h2>
+    <img src={`/api/transactions/${file.id}/photo`} alt="Property" className="w-full rounded-lg object-cover" />
+  </div>
+)}
+```
+(Use a plain `<img>`, not `next/image` — this is a same-pattern decision to the one already made in `SellValues.tsx` for images inside non-standard layout contexts; a proxy-route image src isn't a static asset Next's image optimizer can process anyway.)
+
+In the existing "Key Dates" card (the block with Offer Date/Acceptance Date/etc.), add 3 more rows after `Close of Escrow`:
+```tsx
+{transaction.offerExpirationDate && <InfoRow label="Offer Expiration" value={new Date(transaction.offerExpirationDate).toLocaleDateString()} />}
+{transaction.finalWalkthroughDate && <InfoRow label="Final Walkthrough" value={new Date(transaction.finalWalkthroughDate).toLocaleDateString()} />}
+{transaction.possessionDate && <InfoRow label="Possession Date" value={new Date(transaction.possessionDate).toLocaleDateString()} />}
+```
+
+Add `Deposit` as a row in the Commission Breakdown section instead (it's a dollar figure tied to the offer, not a date) — in `CommissionTab`, after the existing `Sale Price` row:
+```tsx
+{transaction.deposit && <InfoRow label="Deposit" value={`$${Number(transaction.deposit).toLocaleString()}`} />}
+```
+
+Add a new "Conditions / Contingencies" card in `OverviewTab`, after the "Key Dates" card, only when there are any:
+```tsx
+{!isListing && transaction && transaction.conditions.length > 0 && (
+  <div className="rounded-xl border border-[#1B1B1B]/10 bg-white p-5 space-y-3">
+    <h2 className="text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Conditions / Contingencies</h2>
+    {transaction.conditions.map((c) => (
+      <div key={c.id} className="border-b border-[#1B1B1B]/5 pb-2 last:border-0 last:pb-0">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-[#1B1B1B]">{c.name}</span>
+          {c.dueDate && <span className="text-xs text-[#1B1B1B]/50">{new Date(c.dueDate).toLocaleDateString()}</span>}
+        </div>
+        {c.notes && <p className="text-xs text-[#1B1B1B]/40">{c.notes}</p>}
+      </div>
+    ))}
+  </div>
+)}
+```
+
+- [ ] **Step 11: Manual smoke test**
+
+Run `pnpm --filter web dev`, open a lease transaction created in an earlier task's testing (or create one fresh), confirm the header shows `$X,XXX/mo`, the Property Details card shows all new fields, the photo renders if one was uploaded, Key Dates shows the 3 new date rows, Commission tab shows Deposit, and Conditions render if any were added.
+
+- [ ] **Step 12: Run full suite and typecheck**
+
+```bash
+pnpm --filter web test -- --run
+pnpm --filter web exec tsc --noEmit
+```
+
+- [ ] **Step 13: Commit**
+
+```bash
+git add apps/web/src/types/transaction.ts \
+  apps/web/src/app/api/transactions/\[id\]/route.ts \
+  apps/web/src/app/api/transactions/\[id\]/photo/route.ts \
+  "apps/web/src/app/(dashboard)/dashboard/transactions/[fileType]/[id]/page.tsx" \
+  apps/web/src/__tests__/api/transactions-id.test.ts \
+  apps/web/src/__tests__/api/transaction-photo.test.ts
+git commit -m "feat: display all Task 4/5 fields and Conditions on the transaction detail page"
+```
+
+---
+
+## Task 13: Fix stale Kanban board on pipeline tab switch
+
+**Added post-hoc:** the second final whole-branch review flagged (as PLAUSIBLE, not confirmed via live browser) that `DealBoard` holds `useState(initialDeals)` with no resync effect, and `pipeline/page.tsx` renders it with no `key` prop — switching tabs may show the previous tab's deals until a full reload, since React's `useState` initializer ignores later `initialDeals` prop changes without a remount. Pre-existing pattern (same in the original 2-pipeline version), not introduced by this plan's lease work — Task 10 just exposed it to 2 more tabs. This is a one-line, unambiguously-safe fix regardless of whether the bug provably manifests.
+
+**Files:**
+- Modify: `apps/web/src/app/(dashboard)/dashboard/pipeline/page.tsx`
+
+**Interfaces:** none — this is a single JSX prop addition.
+
+- [ ] **Step 1: Add the `key` prop**
+
+Find the `<DealBoard ... />` usage (currently):
+```tsx
+<DealBoard
+  pipeline={tab}
+  initialDeals={currentDeals}
+  onCardClick={handleCardClick}
+  onOfferAccepted={(deal) => { setSelectedDeal(deal); setDrawerOpen(true); }}
+/>
+```
+Add `key={tab}` as the first prop:
+```tsx
+<DealBoard
+  key={tab}
+  pipeline={tab}
+  initialDeals={currentDeals}
+  onCardClick={handleCardClick}
+  onOfferAccepted={(deal) => { setSelectedDeal(deal); setDrawerOpen(true); }}
+/>
+```
+
+- [ ] **Step 2: Manual smoke test**
+
+Run `pnpm --filter web dev`, open `/dashboard/pipeline`, create or view deals in 2 different pipeline tabs, switch between tabs repeatedly, confirm each tab always shows its own deals immediately (no stale carryover from the previously-viewed tab).
+
+- [ ] **Step 3: Run full suite and typecheck**
+
+```bash
+pnpm --filter web test -- --run
+pnpm --filter web exec tsc --noEmit
+```
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add "apps/web/src/app/(dashboard)/dashboard/pipeline/page.tsx"
+git commit -m "fix: remount DealBoard on pipeline tab switch to prevent stale deal lists"
+```
+
+---
+
 ## Self-Review Notes
 
 - **Spec coverage:** all 9 items from the design spec's "What ships" list map to a task — schema (Task 1 + part of Task 2), enum rename + literal fixes (Task 2), pipeline stages + Kanban (Task 3), Property fields (Task 4), Offer fields + conditions (Task 5), referral party (Task 6), convert route rewrite (Task 7).
