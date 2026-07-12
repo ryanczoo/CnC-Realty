@@ -117,6 +117,7 @@ export default function PipelinePage() {
         <Loader2 className="h-6 w-6 animate-spin text-[#9E8C61]" />
       ) : (
         <DealBoard
+          key={tab}
           pipeline={tab}
           initialDeals={currentDeals}
           onCardClick={handleCardClick}
