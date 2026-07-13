@@ -60,6 +60,8 @@ export function HomeValueTeaser() {
   function handleSelect(s: AddressSuggestion) {
     const params = new URLSearchParams({
       address: s.street,
+      city: s.city,
+      state: s.state,
       zip: s.zip,
       lat: String(s.lat),
       lng: String(s.lng),

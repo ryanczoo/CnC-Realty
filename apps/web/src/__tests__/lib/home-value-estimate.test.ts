@@ -1,5 +1,25 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { computeEstimate, percentile } from "@/lib/home-value-estimate";
+import { computeEstimate, percentile, firstPhoto } from "@/lib/home-value-estimate";
+
+describe("firstPhoto", () => {
+  it("returns the first photo URL when photos is a non-empty string array", () => {
+    expect(firstPhoto(["https://a.jpg", "https://b.jpg"])).toBe("https://a.jpg");
+  });
+
+  it("returns null when photos is an empty array", () => {
+    expect(firstPhoto([])).toBeNull();
+  });
+
+  it("returns null when photos is not an array", () => {
+    expect(firstPhoto(null)).toBeNull();
+    expect(firstPhoto(undefined)).toBeNull();
+    expect(firstPhoto("not-an-array")).toBeNull();
+  });
+
+  it("returns null when the first element isn't a string", () => {
+    expect(firstPhoto([123])).toBeNull();
+  });
+});
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {

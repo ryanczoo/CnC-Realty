@@ -9,12 +9,7 @@ export interface CompDisplay {
   sqft: number | null;
   closePrice: number;
   closeDate: string;
-  photos: unknown;
-}
-
-function firstPhoto(photos: unknown): string | null {
-  if (Array.isArray(photos) && typeof photos[0] === "string") return photos[0];
-  return null;
+  photo: string | null;
 }
 
 function formatDate(iso: string) {
@@ -41,7 +36,7 @@ export function ComparableSales({ comps }: { comps: CompDisplay[] }) {
       </p>
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {comps.map((c) => {
-          const thumb = firstPhoto(c.photos);
+          const thumb = c.photo;
           return (
             <div key={c.mlsNumber} className="overflow-hidden rounded-xl border border-[#1B1B1B]/10 bg-white">
               <div className="relative aspect-[4/3] w-full bg-[#eae7e3]">

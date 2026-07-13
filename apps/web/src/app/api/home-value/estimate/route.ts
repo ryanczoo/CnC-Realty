@@ -5,7 +5,13 @@ import {
   findComps,
   findSubjectProperty,
   getMarketSnapshot,
+  firstPhoto,
 } from "@/lib/home-value-estimate";
+
+// The estimate's statistical sample (up to 25 comps, see findComps) is kept
+// separate from how many comp cards actually render — showing every comp
+// costs 25 real image downloads for a grid where only ~9 add visible value.
+const DISPLAY_COMP_COUNT = 9;
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -52,7 +58,17 @@ export async function GET(req: Request) {
     );
 
     return NextResponse.json({
-      subject: { beds, baths, sqft, lotSize, matched: matches.length > 0 },
+      subject: {
+        beds,
+        baths,
+        sqft,
+        lotSize,
+        yearBuilt: latest?.yearBuilt ?? null,
+        county: latest?.county ?? null,
+        propertyType: latest?.propertyType ?? null,
+        photo: firstPhoto(latest?.photos ?? null),
+        matched: matches.length > 0,
+      },
       needsManualEntry: false,
       priceHistory: matches.map((m) => ({
         mlsNumber: m.mlsNumber,
@@ -62,7 +78,7 @@ export async function GET(req: Request) {
         closeDate: m.closeDate ? m.closeDate.toISOString() : null,
         listedAt: m.listedAt ? m.listedAt.toISOString() : null,
       })),
-      comps: comps.map((c) => ({
+      comps: comps.slice(0, DISPLAY_COMP_COUNT).map((c) => ({
         mlsNumber: c.mlsNumber,
         address: c.address,
         city: c.city,
@@ -73,7 +89,7 @@ export async function GET(req: Request) {
         sqft: c.sqft,
         closePrice: c.closePrice,
         closeDate: c.closeDate.toISOString(),
-        photos: c.photos,
+        photo: firstPhoto(c.photos),
       })),
       range: estimate ? { low: estimate.rangeLow, high: estimate.rangeHigh, compCount: estimate.compCount } : null,
       marketSnapshot,

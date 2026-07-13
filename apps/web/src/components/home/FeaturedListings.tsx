@@ -153,7 +153,7 @@ export function FeaturedListings({ listings: propListings }: Props) {
           whileHover={{ scale: 1.1, transition: SPRING_HOVER }}
           className="inline-flex items-center rounded-full bg-[#1B1B1B] px-7 py-3.5 text-sm font-medium text-white"
         >
-          View All →
+          View All
         </MotionLink>
       </div>
     </section>

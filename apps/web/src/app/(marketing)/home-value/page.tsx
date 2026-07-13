@@ -7,9 +7,22 @@ import { ComparableSales, CompDisplay } from "@/components/home-value/Comparable
 import { PriceHistory, PriceHistoryEntry } from "@/components/home-value/PriceHistory";
 import { LocalMarketSnapshot, QuarterStat } from "@/components/home-value/LocalMarketSnapshot";
 import { RevealEstimateForm } from "@/components/home-value/RevealEstimateForm";
+import { RevealLine } from "@/components/ui/reveal-text";
+import { buildStatsFields } from "@/lib/property-ui-helpers";
+import { buildMapboxStaticImageUrl } from "@/lib/mapbox-static";
 
 interface EstimateResponse {
-  subject: { beds: number | null; baths: number | null; sqft: number | null; lotSize: number | null; matched: boolean } | null;
+  subject: {
+    beds: number | null;
+    baths: number | null;
+    sqft: number | null;
+    lotSize: number | null;
+    yearBuilt: number | null;
+    county: string | null;
+    propertyType: string | null;
+    photo: string | null;
+    matched: boolean;
+  } | null;
   needsManualEntry: boolean;
   priceHistory: PriceHistoryEntry[];
   comps: CompDisplay[];
@@ -48,7 +61,12 @@ function ManualEntryForm({ onSubmit }: { onSubmit: (beds: number, baths: number,
 export default function HomeValuePage() {
   const searchParams = useSearchParams();
   const address = searchParams.get("address") ?? "";
+  const city = searchParams.get("city") ?? "";
+  const state = searchParams.get("state") ?? "";
   const zip = searchParams.get("zip") ?? "";
+  const cityStateZip = [city, [state, zip].filter(Boolean).join(" ")].filter(Boolean).join(", ");
+  const lat = searchParams.get("lat") ? Number(searchParams.get("lat")) : null;
+  const lng = searchParams.get("lng") ? Number(searchParams.get("lng")) : null;
 
   const [data, setData] = useState<EstimateResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -128,25 +146,70 @@ export default function HomeValuePage() {
     );
   }
 
+  const housePhotoUrl =
+    data?.subject?.photo ??
+    buildMapboxStaticImageUrl({ lat, lng, token: process.env.NEXT_PUBLIC_MAPBOX_TOKEN });
+
   return (
-    <main className="bg-cnc-bg px-6 pb-24 pt-32">
-      <div className="mx-auto max-w-4xl">
-        <p className="text-sm text-[#1B1B1B]/50">Estimated Home Value for</p>
-        <h1 className="mt-1 text-2xl font-medium text-[#1B1B1B]">{address}</h1>
+    <main className="bg-cnc-bg px-8 pb-24 pt-32 lg:px-20">
+      <h1 className="font-sans font-light leading-[1.1]">
+        <RevealLine className="block text-[1.9rem] xl:text-[2.2rem]">Home-Value</RevealLine>
+        <span className="block pl-[4.5rem]">
+          <RevealLine className="text-[3rem] xl:text-[3.5rem] font-medium" color="#9E8C61" delay={0.15}>Report</RevealLine>
+        </span>
+      </h1>
+      <div className="mx-auto max-w-7xl">
+        <p className="mt-4 text-center text-2xl font-bold text-[#1B1B1B]">{address}</p>
+        {cityStateZip && <p className="text-center text-lg font-medium text-[#1B1B1B]/70">{cityStateZip}</p>}
 
         {data?.range && (
-          <section className="mt-8 rounded-xl border border-[#1B1B1B]/10 bg-white p-8 text-center">
-            <p className="text-sm text-[#1B1B1B]/50">Estimated Value Range</p>
-            <p className="mt-2 text-3xl font-bold text-[#1B1B1B]">
-              ${data.range.low.toLocaleString()} – ${data.range.high.toLocaleString()}
-            </p>
-            <p className="mt-1 text-xs text-[#1B1B1B]/40">
-              Based on {data.range.compCount} comparable recent sales nearby.
-            </p>
-          </section>
-        )}
+          <div className="mt-8 flex flex-col gap-6 md:flex-row md:items-stretch">
+            {/* Photo of the searched home — the subject property's own MLS
+                photo when available, else a Mapbox satellite still keyed
+                off the geocoded lat/lng */}
+            <div className="aspect-[4/3] w-full shrink-0 overflow-hidden rounded-2xl bg-[#E0DDD8] md:w-3/5">
+              {housePhotoUrl ? (
+                <img src={housePhotoUrl} alt={address} className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full items-center justify-center text-xs text-[#1B1B1B]/30">
+                  No photo available
+                </div>
+              )}
+            </div>
 
-        {data && <RevealEstimateForm address={address} zip={zip} beds={data.subject?.beds ?? null} sqft={data.subject?.sqft ?? 0} />}
+            <section className="flex flex-1 flex-col justify-center rounded-xl border border-[#1B1B1B]/10 bg-white p-8 text-center">
+              <p className="text-sm text-[#1B1B1B]/50">Estimated Value Range</p>
+              <p className="mt-2 text-3xl font-bold text-[#1B1B1B]">
+                ${data.range.low.toLocaleString()} – ${data.range.high.toLocaleString()}
+              </p>
+              {data.subject && (
+                <div className="mt-16 overflow-hidden rounded-xl">
+                  <div className="grid grid-cols-3">
+                    {buildStatsFields({
+                      beds: data.subject.beds,
+                      baths: data.subject.baths,
+                      sqft: data.subject.sqft,
+                      yearBuilt: data.subject.yearBuilt,
+                      county: data.subject.county,
+                      propertyType: data.subject.propertyType,
+                    }).map(({ icon: Icon, label, value }) => (
+                      <div key={label} className="flex items-center gap-2.5 px-4 py-3.5 text-left">
+                        <Icon className="h-4 w-4 shrink-0 text-[#9E8C61]" />
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-[#1B1B1B]" title={String(value)}>{value}</p>
+                          <p className="text-[11px] text-[#1B1B1B]/60">{label}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {data && (
+                <RevealEstimateForm address={address} zip={zip} beds={data.subject?.beds ?? null} sqft={data.subject?.sqft ?? 0} />
+              )}
+            </section>
+          </div>
+        )}
 
         {data && <ComparableSales comps={data.comps} />}
         {data && <PriceHistory history={data.priceHistory} />}

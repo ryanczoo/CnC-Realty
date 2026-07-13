@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Search, X } from "lucide-react";
+import { X } from "lucide-react";
 import { SearchFilters } from "@/types/property";
 
 interface Props {
@@ -117,14 +117,22 @@ export function FilterBar({
 
       {/* Search input */}
       <div className="relative w-56">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
         <input
           type="text"
           placeholder="City, zip…"
           value={filters.query}
           onChange={(e) => setFilter("query", e.target.value)}
-          className="w-full rounded-full bg-[#1a1a1a] py-1.5 pl-9 pr-4 text-sm text-white placeholder-white/30 outline-none focus:ring-1 focus:ring-[#9E8C61]/50"
+          className="w-full rounded-full bg-[#1a1a1a] py-1.5 pl-4 pr-9 text-sm text-white placeholder-white/30 outline-none focus:ring-1 focus:ring-[#9E8C61]/50"
         />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30"
+        >
+          <path d="M20 20L22 22" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          <path d="M6.75 3.27093C8.14732 2.46262 9.76964 2 11.5 2C16.7467 2 21 6.25329 21 11.5C21 16.7467 16.7467 21 11.5 21C6.25329 21 2 16.7467 2 11.5C2 9.76964 2.46262 8.14732 3.27093 6.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
       </div>
 
       {/* Price pill */}

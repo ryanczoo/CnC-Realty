@@ -9,6 +9,7 @@ import { RevealLine } from "@/components/ui/reveal-text";
 import { DateField } from "@/components/ui/DateField";
 import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
 import { namesMatch } from "@/lib/ica-signature";
+import { formatPhoneInput, isValidEmail } from "@/lib/form-validation";
 
 const inputClass =
   "w-full rounded-lg border border-[#1B1B1B]/10 bg-white px-4 py-3 text-sm text-[#1B1B1B] placeholder-[#1B1B1B]/40 focus:outline-none focus:ring-2 focus:ring-[#9E8C61]/40";
@@ -98,12 +99,7 @@ function FormInner() {
   const ring = (field: string) => (errorFields.has(field) ? "ring-2 ring-red-400" : "");
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
-    const formatted =
-      digits.length <= 3 ? digits :
-      digits.length <= 6 ? `${digits.slice(0, 3)}-${digits.slice(3)}` :
-      `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
-    set("phone", formatted);
+    set("phone", formatPhoneInput(e.target.value));
   };
 
 
@@ -124,7 +120,7 @@ function FormInner() {
       fail("Please fill out all required personal information fields.", ["firstName", "lastName", "email", "phone"]);
       return;
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+    if (!isValidEmail(form.email)) {
       fail("Please enter a valid email address.", ["email"]);
       return;
     }

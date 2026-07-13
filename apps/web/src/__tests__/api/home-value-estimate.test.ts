@@ -88,8 +88,93 @@ describe("GET /api/home-value/estimate", () => {
     expect(JSON.stringify(body)).not.toContain("pointEstimate");
   });
 
+  it("includes the subject property's first MLS photo when available", async () => {
+    vi.mocked(prisma.property.findMany)
+      .mockResolvedValueOnce([
+        {
+          mlsNumber: "ML1", status: "Closed", beds: 4, baths: 2, sqft: 1800, lotSize: 0.15,
+          listPrice: 950000, closePrice: 940000, closeDate: new Date(), listedAt: new Date(),
+          photos: ["https://subject-photo-a.jpg", "https://subject-photo-b.jpg"],
+        },
+      ] as any)
+      .mockResolvedValueOnce([
+        { mlsNumber: "ML2", address: "125 Main St", city: "Pasadena", state: "CA", zip: "91101", beds: 4, baths: 2, sqft: 1750, closePrice: 900000, closeDate: new Date("2026-01-01"), photos: [] },
+        { mlsNumber: "ML3", address: "130 Main St", city: "Pasadena", state: "CA", zip: "91101", beds: 3, baths: 2, sqft: 1600, closePrice: 800000, closeDate: new Date("2026-02-01"), photos: [] },
+        { mlsNumber: "ML4", address: "140 Main St", city: "Pasadena", state: "CA", zip: "91101", beds: 4, baths: 2, sqft: 1900, closePrice: 950000, closeDate: new Date("2026-03-01"), photos: [] },
+      ] as any)
+      .mockResolvedValueOnce([]);
+
+    const res = await GET(makeRequest("address=123 Main St&zip=91101"));
+    const body = await res.json();
+
+    expect(body.subject.photo).toBe("https://subject-photo-a.jpg");
+  });
+
+  it("subject.photo is null when the subject property has no photos", async () => {
+    vi.mocked(prisma.property.findMany)
+      .mockResolvedValueOnce([
+        {
+          mlsNumber: "ML1", status: "Closed", beds: 4, baths: 2, sqft: 1800, lotSize: 0.15,
+          listPrice: 950000, closePrice: 940000, closeDate: new Date(), listedAt: new Date(),
+          photos: [],
+        },
+      ] as any)
+      .mockResolvedValueOnce([
+        { mlsNumber: "ML2", address: "125 Main St", city: "Pasadena", state: "CA", zip: "91101", beds: 4, baths: 2, sqft: 1750, closePrice: 900000, closeDate: new Date("2026-01-01"), photos: [] },
+        { mlsNumber: "ML3", address: "130 Main St", city: "Pasadena", state: "CA", zip: "91101", beds: 3, baths: 2, sqft: 1600, closePrice: 800000, closeDate: new Date("2026-02-01"), photos: [] },
+        { mlsNumber: "ML4", address: "140 Main St", city: "Pasadena", state: "CA", zip: "91101", beds: 4, baths: 2, sqft: 1900, closePrice: 950000, closeDate: new Date("2026-03-01"), photos: [] },
+      ] as any)
+      .mockResolvedValueOnce([]);
+
+    const res = await GET(makeRequest("address=123 Main St&zip=91101"));
+    const body = await res.json();
+
+    expect(body.subject.photo).toBeNull();
+  });
+
   it("returns 400 when address or zip is missing", async () => {
     const res = await GET(makeRequest("address=123 Main St"));
     expect(res.status).toBe(400);
+  });
+
+  it("caps the displayed comps while the estimate's compCount reflects the full fetched sample", async () => {
+    const manyComps = Array.from({ length: 25 }, (_, i) => ({
+      mlsNumber: `ML${i}`, address: `${100 + i} Main St`, city: "Pasadena", state: "CA", zip: "91101",
+      beds: 4, baths: 2, sqft: 1800, closePrice: 900000 + i * 1000, closeDate: new Date("2026-01-01"),
+      photos: [`https://photo-${i}-a.jpg`, `https://photo-${i}-b.jpg`],
+    }));
+
+    vi.mocked(prisma.property.findMany)
+      .mockResolvedValueOnce([
+        { mlsNumber: "ML1", status: "Closed", beds: 4, baths: 2, sqft: 1800, lotSize: 0.15, listPrice: 950000, closePrice: 940000, closeDate: new Date(), listedAt: new Date() },
+      ] as any)
+      .mockResolvedValueOnce(manyComps as any)
+      .mockResolvedValueOnce([]);
+
+    const res = await GET(makeRequest("address=123 Main St&zip=91101"));
+    const body = await res.json();
+
+    expect(body.range.compCount).toBe(25);
+    expect(body.comps.length).toBeLessThan(25);
+    expect(body.comps.length).toBeGreaterThan(0);
+  });
+
+  it("sends only the first photo per comp, not the full photos array", async () => {
+    vi.mocked(prisma.property.findMany)
+      .mockResolvedValueOnce([
+        { mlsNumber: "ML1", status: "Closed", beds: 4, baths: 2, sqft: 1800, lotSize: 0.15, listPrice: 950000, closePrice: 940000, closeDate: new Date(), listedAt: new Date() },
+      ] as any)
+      .mockResolvedValueOnce([
+        { mlsNumber: "ML2", address: "125 Main St", city: "Pasadena", state: "CA", zip: "91101", beds: 4, baths: 2, sqft: 1750, closePrice: 900000, closeDate: new Date("2026-01-01"), photos: ["https://first.jpg", "https://second.jpg"] },
+        { mlsNumber: "ML3", address: "130 Main St", city: "Pasadena", state: "CA", zip: "91101", beds: 3, baths: 2, sqft: 1600, closePrice: 800000, closeDate: new Date("2026-02-01"), photos: [] },
+        { mlsNumber: "ML4", address: "140 Main St", city: "Pasadena", state: "CA", zip: "91101", beds: 4, baths: 2, sqft: 1900, closePrice: 950000, closeDate: new Date("2026-03-01"), photos: [] },
+      ] as any)
+      .mockResolvedValueOnce([]);
+
+    const res = await GET(makeRequest("address=123 Main St&zip=91101"));
+    const body = await res.json();
+
+    expect(body.comps[0].photo).toBe("https://first.jpg");
+    expect(body.comps[0]).not.toHaveProperty("photos");
   });
 });

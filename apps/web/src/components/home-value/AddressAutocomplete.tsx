@@ -6,6 +6,8 @@ import { Loader2 } from "lucide-react";
 export interface AddressSuggestion {
   fullAddress: string;
   street: string;
+  city: string;
+  state: string;
   zip: string;
   lat: number;
   lng: number;
@@ -19,7 +21,7 @@ interface Props {
 interface MapboxFeature {
   place_name: string;
   center: [number, number];
-  context?: { id: string; text: string }[];
+  context?: { id: string; text: string; short_code?: string }[];
   text: string;
   address?: string;
 }
@@ -60,10 +62,14 @@ export function AddressAutocomplete({ onSelect, placeholder }: Props) {
         const features: MapboxFeature[] = json.features ?? [];
         const parsed = features.map((f) => {
           const zipContext = f.context?.find((c) => c.id.startsWith("postcode"));
+          const cityContext = f.context?.find((c) => c.id.startsWith("place"));
+          const regionContext = f.context?.find((c) => c.id.startsWith("region"));
           const streetPart = f.address ? `${f.address} ${f.text}` : f.text;
           return {
             fullAddress: f.place_name,
             street: streetPart,
+            city: cityContext?.text ?? "",
+            state: regionContext?.short_code?.replace(/^US-/, "") ?? regionContext?.text ?? "",
             zip: zipContext?.text ?? "",
             lat: f.center[1],
             lng: f.center[0],

@@ -26,7 +26,7 @@ export function LocalMarketSnapshot({ quarters }: { quarters: QuarterStat[] }) {
           <div key={q.label} className="flex flex-1 flex-col items-center gap-2">
             <div className="flex h-32 w-full items-end">
               <div
-                className="w-full rounded-t bg-cnc-gold/70"
+                className="w-full rounded-t bg-[#9E8C61]/70"
                 style={{ height: `${heights[i]}%` }}
               />
             </div>

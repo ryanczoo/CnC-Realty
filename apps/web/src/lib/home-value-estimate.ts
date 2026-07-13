@@ -25,6 +25,14 @@ export interface SubjectRecord {
   closeDate: Date | null;
   listedAt: Date | null;
   propertyType: string | null;
+  yearBuilt: number | null;
+  county: string | null;
+  photos: unknown;
+}
+
+export function firstPhoto(photos: unknown): string | null {
+  if (Array.isArray(photos) && typeof photos[0] === "string") return photos[0];
+  return null;
 }
 
 export function percentile(sorted: number[], p: number): number {
@@ -73,6 +81,9 @@ const SUBJECT_SELECT = {
   closeDate: true,
   listedAt: true,
   propertyType: true,
+  yearBuilt: true,
+  county: true,
+  photos: true,
 } as const;
 
 const DIRECTIONALS: Record<string, string> = {
