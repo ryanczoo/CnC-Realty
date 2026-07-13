@@ -459,6 +459,7 @@ describe("buildPriceBars", () => {
 
 describe("getMarketSnapshot", () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-07-12T12:00:00Z"));
   });
