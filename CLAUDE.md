@@ -5464,4 +5464,55 @@ Read all 58 articles from the Lone Wolf community resource hub (`community.lwolf
 - **"Back Office"** — a separate, specialized Lone Wolf product for broker accounting/commission disbursement/trust accounting. Out of scope; CnC's existing Commission tab covers the basics already needed.
 - **Multi-tier sequential review** — only matters once CnC has multiple office managers/reviewers; not relevant while Ryan is the sole admin.
 
+---
+
+## Session Notes — 2026-07-13
+
+### What Was Completed This Session
+
+All changes committed on `feature/agent-application-redesign` (commits `4b3a191` through `03d0b54`). Working tree clean, nothing uncommitted.
+
+#### Home Value page polish (`4b3a191`)
+- Extracted `formatPhoneInput`/`isValidEmail` into shared `apps/web/src/lib/form-validation.ts` (TDD, 11 tests), reused in both `ApplicationForm.tsx` and `RevealEstimateForm.tsx` — phone auto-formats to `XXX-XXX-XXXX` as typed (capped at 10 digits), email is format-validated before submit.
+- `RevealEstimateForm.tsx`: tried a notched "ribbon" button shape (CSS `clip-path` polygon) per a reference screenshot, then reverted to a plain rounded pill per Ryan's explicit correction ("get rid of the ribbon style, just make it round like all the other buttons") — button uses `self-center` so it doesn't stretch to fill its flex parent. Added a `Loader2` spinner next to "Getting your estimate…" during submit. Copy: "Your Estimated Home Value" → "Estimated Home Value"; "A CnC agent will follow up shortly with a full comparative market analysis." → "Based off MLS data and actual transactions within your area".
+- **Bug fix:** `LocalMarketSnapshot`'s bars were invisible — root cause: `bg-cnc-gold/70` doesn't work because `--cnc-gold` is a raw hex CSS variable, not the `rgb(var(--x) / <alpha-value>)` format Tailwind needs for opacity modifiers to resolve. Fixed to `bg-[#9E8C61]/70`.
+- `FeaturedListings.tsx`: removed the arrow from "View All".
+
+#### Local Market Snapshot rebuilt as a price histogram (`f684bf9`..`ada0df7`, subagent-driven-development)
+Ryan noticed 2025 Q4 and 2026 Q1 always showed 0 sales in the quarterly chart. Root-cause investigation initially (incorrectly) concluded CRMLS only feeds closed-sale data for a trailing ~90 days — see correction below. Built full spec (`docs/superpowers/specs/2026-07-12-local-market-price-histogram-design.md`) + plan (`docs/superpowers/plans/2026-07-12-local-market-price-histogram.md`), executed via 2 subagent-driven tasks + a final whole-plan review (opus):
+- `getMarketSnapshot` rewritten: instead of grouping by calendar quarter, buckets sales into price bands. 5+ sales → real histogram (`buildPriceBars`, ~5-6 bins, width picked from a "nice number" step table). 1-4 sales → one bar per sale (bar height = that sale's price, no count badge). 0 sales → text message replaces the chart.
+- `LocalMarketSnapshot.tsx` renders whichever shape it's given; `QuarterStat` renamed/consolidated to a single `PriceBar` type in `lib/home-value-estimate.ts` (was duplicated in two files before).
+- **Process note — implementer misdiagnosis caught:** Task 1's implementer reported a failing test as "environmental fake timer behavior, not a code defect." Controller didn't accept that at face value, investigated directly, and found the real bug: that describe block's `beforeEach` was missing `vi.clearAllMocks()` (unlike the file's other two describe blocks), so `mock.calls[0][0]` was reading a stale call left over from an earlier `findComps` test. Fixed with a one-line addition matching the existing pattern; reviewer independently re-verified.
+- Final whole-plan review (opus, "Ready to merge: With fixes") found 3 Minor issues, all fixed directly: `route.ts`'s manual-entry early-return still emitted the old array shape (unreachable today, but a landmine); `key={b.label}` could collide in sparse mode (two sales rounding to the same price label) — fixed to include index; `[...bins.entries()]` triggered a non-build-blocking `tsc` error — changed to `Array.from(...)`.
+
+#### CRMLS 90-day claim — corrected (important, read before touching sync code again)
+Ryan pushed back on the "CRMLS restricts us to 90 days" premise the histogram rebuild was based on. Investigated directly: **queried CRMLS/Trestle's live API** (not our own DB) for closed listings older than 90 days. Result: **CRMLS reports 4,655,136 closed listings older than 90 days**, including samples from 2012 and 107,030 from just the first half of 2023. CRMLS does **not** restrict closed-sale history at all.
+**The real reason our DB only has ~90 days of real closed-sale data:** our own sync has never pulled the older history. `apps/web/src/lib/idx/client.ts`'s full-resync query has no date filter and no `$orderby`, so it just pages through whatever default order CRMLS's API returns — which apparently biases toward recent listings rather than exhaustively crawling all statewide history. Per earlier session notes, the last full IDX resync attempt also failed/didn't complete cleanly.
+**Decision (Ryan's call):** don't backfill now. A full, successful IDX resync will happen before launch, and that will populate real history. Widen the code's query windows now so they're *ready* for that data, and accept 0/sparse results in the meantime.
+
+#### Time windows widened to 1 year (`ab2c9c2`)
+- `getMarketSnapshot`: 90-day window → 1 year (`setFullYear(getFullYear() - 1)`). Copy updated: "last 90 days" → "past year" (subtitle, zero-state message, median-price line).
+- `findComps`: `WINDOW_MONTHS` changed from `[6, 12, 24]` → `[6, 12]`, capping the widest fallback at 1 year instead of 2.
+- **Considered and declined:** Ryan asked about raising `MIN_COMPS` from 3 to 18 (to guarantee a full display grid) with a 24-month fallback if needed. Discussed the tradeoff directly: 18 is a much higher bar than 3, so most ZIPs would routinely need 2-3 sequential DB round-trips per page load instead of usually just 1 (the window-widening loop is sequential, not parallel). Ryan decided against it specifically because of that latency cost — `MIN_COMPS` stays at 3, `WINDOW_MONTHS` stays `[6, 12]`.
+
+#### Comparable Sales pagination (`03d0b54`)
+Ryan noticed `findComps` fetches up to 25 comps but the page only ever displayed 9 (`DISPLAY_COMP_COUNT` slice in `route.ts`). Confirmed comps only ever send 1 photo per comp (`firstPhoto()`) — explicitly kept as-is, not expanded to a per-card gallery.
+- `route.ts`: removed the `DISPLAY_COMP_COUNT` slice — sends every fetched comp (up to 25) to the client. No new DB query (the single `findComps` call already fetched all 25); only a marginally larger JSON payload.
+- `ComparableSales.tsx`: new `paginate()` helper (TDD-tested), pages client-side at 9 per page (matches the existing 3×3 grid) — so only the *currently visible* page's photos are ever downloaded; clicking "next" is what triggers the next batch of image requests, not the initial load. Prev/next arrow buttons reuse `RentCitiesSlider.tsx`'s exact `ArrowIcon` SVG and circular button shape (rotated ±90°, pulse-then-spring-hover), recolored from white-on-dark to dark-on-light to match this section's background. "Page X of Y" label centered between the arrows. Pagination controls only render when there are more than 9 comps.
+- Live-verified: page 1 → page 2 shows genuinely different homes (different address/price/date), not just relabeled.
+
+### Key Decisions Made
+1. **CRMLS does not limit closed-sale history to 90 days** — verified via live API, not assumption. The gap is entirely on our own sync's side (never fully backfilled). Correct this framing in any future discussion of the topic.
+2. **Local Market Snapshot and Comparable Sales windows are both capped at 1 year now**, code-ready for when the full IDX resync happens — deliberately not backfilling before then.
+3. **`MIN_COMPS` stays at 3`, not raised to 18** — a deliberate performance tradeoff Ryan chose after understanding the sequential-query cost.
+4. **Comps show all fetched results (paginated), not a hard 9-cap** — but still only 1 photo per comp card (no per-card photo gallery).
+5. Ryan reiterated a process preference mid-session: he'll say "don't code anything, just talk" when he wants pure discussion before implementation — respect that literally until he explicitly says "build it" / "go ahead."
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. **Full IDX resync is now more urgent than before** — Local Market Snapshot and Comparable Sales both depend on it for real 1-year history (currently sparse/zero for most quarters/older comps since the last resync attempt failed). Investigate why the last full resync failed before retrying — likely related to `idx/client.ts`'s pagination/`$orderby` behavior noted above.
+3. Consider whether `idx/client.ts`'s full-resync query needs an explicit `$orderby=ModificationTimestamp desc` or a deliberate historical-closed-sales crawl strategy, given CRMLS's default ordering doesn't appear to favor completeness — this wasn't fixed this session, just diagnosed.
+4. Older backlog, unchanged: checklist templates at `/admin/settings/checklists`; the zipForm/Transact gap-analysis findings (SELLER_SIDE mislabel bug, missing Lease Listing distinction, Client Portal candidate feature — see 2026-07-10 notes above); clean up test DB records; consider merging `feature/agent-application-redesign` to `main` (very far ahead now).
+
 **Status: research complete, nothing built yet.** Next step is for Ryan to decide what to prioritize from the list above, alongside the already-identified `SELLER_SIDE` bug fix and the 4 checklist templates (buyer/seller/lease-tenant/lease-listing) from the earlier verified C.A.R. forms-directory research.
