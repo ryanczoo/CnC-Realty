@@ -8,11 +8,6 @@ import {
   firstPhoto,
 } from "@/lib/home-value-estimate";
 
-// The estimate's statistical sample (up to 25 comps, see findComps) is kept
-// separate from how many comp cards actually render — showing every comp
-// costs 25 real image downloads for a grid where only ~9 add visible value.
-const DISPLAY_COMP_COUNT = 9;
-
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const address = searchParams.get("address");
@@ -78,7 +73,7 @@ export async function GET(req: Request) {
         closeDate: m.closeDate ? m.closeDate.toISOString() : null,
         listedAt: m.listedAt ? m.listedAt.toISOString() : null,
       })),
-      comps: comps.slice(0, DISPLAY_COMP_COUNT).map((c) => ({
+      comps: comps.map((c) => ({
         mlsNumber: c.mlsNumber,
         address: c.address,
         city: c.city,

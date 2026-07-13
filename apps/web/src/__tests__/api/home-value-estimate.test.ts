@@ -137,7 +137,7 @@ describe("GET /api/home-value/estimate", () => {
     expect(res.status).toBe(400);
   });
 
-  it("caps the displayed comps while the estimate's compCount reflects the full fetched sample", async () => {
+  it("sends every fetched comp to the client (not capped) so the UI can paginate through all of them", async () => {
     const manyComps = Array.from({ length: 25 }, (_, i) => ({
       mlsNumber: `ML${i}`, address: `${100 + i} Main St`, city: "Pasadena", state: "CA", zip: "91101",
       beds: 4, baths: 2, sqft: 1800, closePrice: 900000 + i * 1000, closeDate: new Date("2026-01-01"),
@@ -155,8 +155,7 @@ describe("GET /api/home-value/estimate", () => {
     const body = await res.json();
 
     expect(body.range.compCount).toBe(25);
-    expect(body.comps.length).toBeLessThan(25);
-    expect(body.comps.length).toBeGreaterThan(0);
+    expect(body.comps.length).toBe(25);
   });
 
   it("sends only the first photo per comp, not the full photos array", async () => {
