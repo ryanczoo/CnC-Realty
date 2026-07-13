@@ -30,7 +30,7 @@ export function LocalMarketSnapshot({ bars, medianPrice, zip }: Props) {
         <>
           <div className="mt-8 flex h-40 items-end gap-6">
             {bars.map((b, i) => (
-              <div key={b.label} className="flex flex-1 flex-col items-center gap-2">
+              <div key={`${b.label}-${i}`} className="flex flex-1 flex-col items-center gap-2">
                 <div className="flex h-32 w-full items-end">
                   <div
                     className="w-full rounded-t bg-[#9E8C61]/70"

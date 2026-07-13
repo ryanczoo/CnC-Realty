@@ -43,7 +43,7 @@ export async function GET(req: Request) {
         priceHistory: [],
         comps: [],
         range: null,
-        marketSnapshot: [],
+        marketSnapshot: { bars: [], medianPrice: null },
       });
     }
 

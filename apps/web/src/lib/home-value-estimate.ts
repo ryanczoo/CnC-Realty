@@ -290,7 +290,7 @@ export function buildPriceBars(sales: { closePrice: number }[]): PriceBar[] {
     bins.set(binStart, (bins.get(binStart) ?? 0) + 1);
   }
 
-  return [...bins.entries()]
+  return Array.from(bins.entries())
     .sort(([a], [b]) => a - b)
     .map(([binStart, count]) => ({
       label: `${formatPriceShort(binStart)}–${formatPriceShort(binStart + width)}`,
