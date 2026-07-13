@@ -5,7 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { ComparableSales, CompDisplay } from "@/components/home-value/ComparableSales";
 import { PriceHistory, PriceHistoryEntry } from "@/components/home-value/PriceHistory";
-import { LocalMarketSnapshot, QuarterStat } from "@/components/home-value/LocalMarketSnapshot";
+import { LocalMarketSnapshot } from "@/components/home-value/LocalMarketSnapshot";
+import type { PriceBar } from "@/lib/home-value-estimate";
 import { RevealEstimateForm } from "@/components/home-value/RevealEstimateForm";
 import { RevealLine } from "@/components/ui/reveal-text";
 import { buildStatsFields } from "@/lib/property-ui-helpers";
@@ -27,7 +28,7 @@ interface EstimateResponse {
   priceHistory: PriceHistoryEntry[];
   comps: CompDisplay[];
   range: { low: number; high: number; compCount: number } | null;
-  marketSnapshot: QuarterStat[];
+  marketSnapshot: { bars: PriceBar[]; medianPrice: number | null };
 }
 
 function ManualEntryForm({ onSubmit }: { onSubmit: (beds: number, baths: number, sqft: number) => void }) {
@@ -213,7 +214,13 @@ export default function HomeValuePage() {
 
         {data && <ComparableSales comps={data.comps} />}
         {data && <PriceHistory history={data.priceHistory} />}
-        {data && <LocalMarketSnapshot quarters={data.marketSnapshot} />}
+        {data && (
+          <LocalMarketSnapshot
+            bars={data.marketSnapshot.bars}
+            medianPrice={data.marketSnapshot.medianPrice}
+            zip={zip}
+          />
+        )}
       </div>
     </main>
   );
