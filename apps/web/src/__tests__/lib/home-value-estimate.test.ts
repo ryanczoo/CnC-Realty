@@ -320,7 +320,6 @@ describe("findComps", () => {
     vi.mocked(prisma.property.findMany)
       .mockResolvedValueOnce([] as any) // 6mo
       .mockResolvedValueOnce([{}] as any) // 12mo
-      .mockResolvedValueOnce([{}] as any) // 24mo
       .mockResolvedValueOnce([{}, {}] as any); // final fallback, no beds/propertyType filter
 
     const result = await findComps(prisma as any, {
@@ -330,10 +329,28 @@ describe("findComps", () => {
     });
 
     expect(result).toHaveLength(2);
-    expect(prisma.property.findMany).toHaveBeenCalledTimes(4);
-    const finalCall = vi.mocked(prisma.property.findMany).mock.calls[3][0] as any;
+    expect(prisma.property.findMany).toHaveBeenCalledTimes(3);
+    const finalCall = vi.mocked(prisma.property.findMany).mock.calls[2][0] as any;
     expect(finalCall.where.beds).toBeUndefined();
     expect(finalCall.where.propertyType).toBeUndefined();
+  });
+
+  it("caps the widest window at 12 months (one year), never reaching further back", async () => {
+    const { prisma } = await import("@/lib/prisma");
+    const { findComps } = await import("@/lib/home-value-estimate");
+    vi.mocked(prisma.property.findMany)
+      .mockResolvedValueOnce([] as any) // 6mo
+      .mockResolvedValueOnce([] as any) // 12mo
+      .mockResolvedValueOnce([] as any); // final fallback, still 12mo
+
+    await findComps(prisma as any, { zip: "91101", beds: 3 });
+
+    const finalCall = vi.mocked(prisma.property.findMany).mock.calls[2][0] as any;
+    const twelveMonthsAgo = new Date();
+    twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+    expect(finalCall.where.closeDate.gte.toISOString().slice(0, 10)).toBe(
+      twelveMonthsAgo.toISOString().slice(0, 10)
+    );
   });
 
   it("includes propertyType in the where clause when provided", async () => {
@@ -375,12 +392,11 @@ describe("findComps", () => {
     vi.mocked(prisma.property.findMany)
       .mockResolvedValueOnce([] as any) // 6mo
       .mockResolvedValueOnce([] as any) // 12mo
-      .mockResolvedValueOnce([] as any) // 24mo
       .mockResolvedValueOnce([{}, {}] as any); // final fallback
 
     await findComps(prisma as any, { zip: "91101", beds: 3 });
 
-    const finalCall = vi.mocked(prisma.property.findMany).mock.calls[3][0] as any;
+    const finalCall = vi.mocked(prisma.property.findMany).mock.calls[2][0] as any;
     expect(finalCall.where.listingType).toBe("FOR_SALE");
   });
 });
@@ -468,7 +484,7 @@ describe("getMarketSnapshot", () => {
     vi.useRealTimers();
   });
 
-  it("queries a flat trailing-90-day window", async () => {
+  it("queries a flat trailing-one-year window", async () => {
     const { prisma } = await import("@/lib/prisma");
     const { getMarketSnapshot } = await import("@/lib/home-value-estimate");
     vi.mocked(prisma.property.findMany).mockResolvedValue([]);
@@ -477,7 +493,7 @@ describe("getMarketSnapshot", () => {
 
     const call = vi.mocked(prisma.property.findMany).mock.calls[0][0] as any;
     const expectedSince = new Date("2026-07-12T12:00:00Z");
-    expectedSince.setDate(expectedSince.getDate() - 90);
+    expectedSince.setFullYear(expectedSince.getFullYear() - 1);
     expect(call.where.closeDate.gte.toISOString().slice(0, 10)).toBe(
       expectedSince.toISOString().slice(0, 10)
     );

@@ -19,12 +19,12 @@ export function LocalMarketSnapshot({ bars, medianPrice, zip }: Props) {
     <section className="py-10">
       <h3 className="text-xl font-medium text-[#1B1B1B]">Local Market Snapshot</h3>
       <p className="mt-1 text-sm text-[#1B1B1B]/50">
-        Homes sold by price in the last 90 days.
+        Homes sold by price in the past year.
       </p>
 
       {bars.length === 0 ? (
         <p className="mt-8 text-sm text-[#1B1B1B]/60">
-          No sales within 90 days in {zip}
+          No sales within the past year in {zip}
         </p>
       ) : (
         <>
@@ -50,7 +50,7 @@ export function LocalMarketSnapshot({ bars, medianPrice, zip }: Props) {
               <span className="font-bold text-[#1B1B1B]">
                 ${medianPrice.toLocaleString()}
               </span>{" "}
-              median sold price in the last 90 days
+              median sold price in the past year
             </p>
           )}
         </>

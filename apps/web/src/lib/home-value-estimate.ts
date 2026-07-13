@@ -178,7 +178,7 @@ export interface FindCompsParams {
 }
 
 const MIN_COMPS = 3;
-const WINDOW_MONTHS = [6, 12, 24];
+const WINDOW_MONTHS = [6, 12];
 const COMPS_SELECT = {
   mlsNumber: true,
   address: true,
@@ -304,7 +304,7 @@ export async function getMarketSnapshot(
   zip: string
 ): Promise<{ bars: PriceBar[]; medianPrice: number | null }> {
   const since = new Date();
-  since.setDate(since.getDate() - 90);
+  since.setFullYear(since.getFullYear() - 1);
 
   const rows = await prisma.property.findMany({
     where: { status: "Closed", listingType: "FOR_SALE", zip, closePrice: { not: null }, closeDate: { gte: since } },
