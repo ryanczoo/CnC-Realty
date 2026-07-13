@@ -243,48 +243,79 @@ export async function findComps(
   );
 }
 
-export interface QuarterStat {
+export interface PriceBar {
   label: string;
-  count: number;
-  medianPrice: number | null;
+  value: number;
+  count?: number;
 }
 
-function lastFourQuarters(): { label: string; start: Date; end: Date }[] {
-  const now = new Date();
-  const currentQuarterStartMonth = Math.floor(now.getMonth() / 3) * 3;
-  const result: { label: string; start: Date; end: Date }[] = [];
-  for (let i = 3; i >= 0; i--) {
-    const start = new Date(now.getFullYear(), currentQuarterStartMonth - i * 3, 1);
-    const end = new Date(now.getFullYear(), currentQuarterStartMonth - i * 3 + 3, 1);
-    const q = Math.floor(start.getMonth() / 3) + 1;
-    result.push({ label: `${start.getFullYear()} Q${q}`, start, end });
+const NICE_STEPS = [10_000, 25_000, 50_000, 100_000, 250_000, 500_000, 1_000_000, 2_500_000, 5_000_000];
+const TARGET_BINS = 6;
+const SPARSE_THRESHOLD = 5;
+
+export function formatPriceShort(n: number): string {
+  if (n >= 1_000_000) {
+    const m = n / 1_000_000;
+    return `$${m % 1 === 0 ? m.toFixed(0) : m.toFixed(2)}M`;
   }
-  return result;
+  return `$${Math.round(n / 1000)}K`;
+}
+
+export function pickBinWidth(min: number, max: number): number {
+  const range = Math.max(max - min, 1);
+  for (const step of NICE_STEPS) {
+    if (Math.ceil(range / step) <= TARGET_BINS) return step;
+  }
+  return NICE_STEPS[NICE_STEPS.length - 1];
+}
+
+export function buildPriceBars(sales: { closePrice: number }[]): PriceBar[] {
+  if (sales.length === 0) return [];
+
+  if (sales.length < SPARSE_THRESHOLD) {
+    return [...sales]
+      .sort((a, b) => a.closePrice - b.closePrice)
+      .map((s) => ({ label: formatPriceShort(s.closePrice), value: s.closePrice }));
+  }
+
+  const prices = sales.map((s) => s.closePrice);
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  const width = pickBinWidth(min, max);
+  const startBin = Math.floor(min / width) * width;
+
+  const bins = new Map<number, number>();
+  for (const price of prices) {
+    const binStart = startBin + Math.floor((price - startBin) / width) * width;
+    bins.set(binStart, (bins.get(binStart) ?? 0) + 1);
+  }
+
+  return [...bins.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([binStart, count]) => ({
+      label: `${formatPriceShort(binStart)}–${formatPriceShort(binStart + width)}`,
+      value: count,
+      count,
+    }));
 }
 
 export async function getMarketSnapshot(
   prisma: PrismaClient,
   zip: string
-): Promise<QuarterStat[]> {
-  const quarters = lastFourQuarters();
-  const since = quarters[0].start;
+): Promise<{ bars: PriceBar[]; medianPrice: number | null }> {
+  const since = new Date();
+  since.setDate(since.getDate() - 90);
 
   const rows = await prisma.property.findMany({
     where: { status: "Closed", listingType: "FOR_SALE", zip, closePrice: { not: null }, closeDate: { gte: since } },
-    select: { closePrice: true, closeDate: true },
+    select: { closePrice: true },
   });
 
-  return quarters.map(({ label, start, end }) => {
-    const inQuarter = rows.filter(
-      (r) => r.closeDate && r.closeDate >= start && r.closeDate < end
-    );
-    const prices = inQuarter
-      .map((r) => r.closePrice as number)
-      .sort((a, b) => a - b);
-    return {
-      label,
-      count: inQuarter.length,
-      medianPrice: prices.length ? percentile(prices, 0.5) : null,
-    };
-  });
+  const sales = rows.map((r) => ({ closePrice: r.closePrice as number }));
+  const prices = sales.map((s) => s.closePrice).sort((a, b) => a - b);
+
+  return {
+    bars: buildPriceBars(sales),
+    medianPrice: prices.length ? percentile(prices, 0.5) : null,
+  };
 }

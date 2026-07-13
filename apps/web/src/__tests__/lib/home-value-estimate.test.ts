@@ -385,55 +385,104 @@ describe("findComps", () => {
   });
 });
 
+describe("formatPriceShort", () => {
+  it("formats sub-million prices as rounded thousands", async () => {
+    const { formatPriceShort } = await import("@/lib/home-value-estimate");
+    expect(formatPriceShort(725000)).toBe("$725K");
+  });
+
+  it("formats million-plus prices with two decimal places", async () => {
+    const { formatPriceShort } = await import("@/lib/home-value-estimate");
+    expect(formatPriceShort(1250000)).toBe("$1.25M");
+  });
+
+  it("formats an exact million without trailing decimals", async () => {
+    const { formatPriceShort } = await import("@/lib/home-value-estimate");
+    expect(formatPriceShort(2000000)).toBe("$2M");
+  });
+});
+
+describe("pickBinWidth", () => {
+  it("picks the smallest nice step that keeps bins at or under the target of 6", async () => {
+    const { pickBinWidth } = await import("@/lib/home-value-estimate");
+    // range 500000, step 100000 -> 5 bins, fits
+    expect(pickBinWidth(400000, 900000)).toBe(100000);
+  });
+
+  it("falls back to the largest step for a very wide range", async () => {
+    const { pickBinWidth } = await import("@/lib/home-value-estimate");
+    expect(pickBinWidth(100000, 50000000)).toBe(5000000);
+  });
+
+  it("handles min === max without dividing by zero", async () => {
+    const { pickBinWidth } = await import("@/lib/home-value-estimate");
+    expect(pickBinWidth(500000, 500000)).toBe(10000);
+  });
+});
+
+describe("buildPriceBars", () => {
+  it("returns an empty array for zero sales", async () => {
+    const { buildPriceBars } = await import("@/lib/home-value-estimate");
+    expect(buildPriceBars([])).toEqual([]);
+  });
+
+  it("returns one bar per sale, sorted by price ascending, when below the sparse threshold", async () => {
+    const { buildPriceBars } = await import("@/lib/home-value-estimate");
+    const bars = buildPriceBars([
+      { closePrice: 900000 },
+      { closePrice: 500000 },
+      { closePrice: 700000 },
+    ]);
+    expect(bars).toEqual([
+      { label: "$500K", value: 500000 },
+      { label: "$700K", value: 700000 },
+      { label: "$900K", value: 900000 },
+    ]);
+  });
+
+  it("bins into a price histogram at 5 or more sales, with count on each bar", async () => {
+    const { buildPriceBars } = await import("@/lib/home-value-estimate");
+    const sales = [
+      { closePrice: 410000 },
+      { closePrice: 420000 },
+      { closePrice: 830000 },
+      { closePrice: 840000 },
+      { closePrice: 850000 },
+    ];
+    const bars = buildPriceBars(sales);
+    const total = bars.reduce((sum, b) => sum + (b.count ?? 0), 0);
+    expect(total).toBe(5);
+    expect(bars.every((b) => b.count != null)).toBe(true);
+    expect(bars.every((b) => b.label.includes("–"))).toBe(true);
+  });
+});
+
 describe("getMarketSnapshot", () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-07-08T12:00:00Z")); // mid Q3 2026
+    vi.setSystemTime(new Date("2026-07-12T12:00:00Z"));
   });
 
   afterEach(() => {
     vi.useRealTimers();
   });
 
-  it("returns exactly 4 quarters, oldest to newest, ending in the current quarter", async () => {
+  it("queries a flat trailing-90-day window", async () => {
     const { prisma } = await import("@/lib/prisma");
     const { getMarketSnapshot } = await import("@/lib/home-value-estimate");
     vi.mocked(prisma.property.findMany).mockResolvedValue([]);
 
-    const result = await getMarketSnapshot(prisma as any, "91101");
+    await getMarketSnapshot(prisma as any, "91101");
 
-    expect(result).toHaveLength(4);
-    expect(result[3].label).toBe("2026 Q3");
-    expect(result[0].label).toBe("2025 Q4");
+    const call = vi.mocked(prisma.property.findMany).mock.calls[0][0] as any;
+    const expectedSince = new Date("2026-07-12T12:00:00Z");
+    expectedSince.setDate(expectedSince.getDate() - 90);
+    expect(call.where.closeDate.gte.toISOString().slice(0, 10)).toBe(
+      expectedSince.toISOString().slice(0, 10)
+    );
   });
 
-  it("counts sales and computes median price per quarter", async () => {
-    const { prisma } = await import("@/lib/prisma");
-    const { getMarketSnapshot } = await import("@/lib/home-value-estimate");
-    vi.mocked(prisma.property.findMany).mockResolvedValue([
-      { closePrice: 700000, closeDate: new Date("2026-04-10") }, // Q2
-      { closePrice: 900000, closeDate: new Date("2026-04-20") }, // Q2
-      { closePrice: 800000, closeDate: new Date("2026-05-01") }, // Q2
-    ] as any);
-
-    const result = await getMarketSnapshot(prisma as any, "91101");
-    const q2 = result.find((q) => q.label === "2026 Q2")!;
-
-    expect(q2.count).toBe(3);
-    expect(q2.medianPrice).toBe(800000);
-  });
-
-  it("returns medianPrice null and count 0 for a quarter with no sales", async () => {
-    const { prisma } = await import("@/lib/prisma");
-    const { getMarketSnapshot } = await import("@/lib/home-value-estimate");
-    vi.mocked(prisma.property.findMany).mockResolvedValue([]);
-
-    const result = await getMarketSnapshot(prisma as any, "91101");
-
-    expect(result.every((q) => q.count === 0 && q.medianPrice === null)).toBe(true);
-  });
-
-  it("only counts FOR_SALE listings, excluding closed rentals from the market snapshot", async () => {
+  it("only counts FOR_SALE listings, excluding closed rentals", async () => {
     const { prisma } = await import("@/lib/prisma");
     const { getMarketSnapshot } = await import("@/lib/home-value-estimate");
     vi.mocked(prisma.property.findMany).mockResolvedValue([]);
@@ -442,5 +491,30 @@ describe("getMarketSnapshot", () => {
 
     const call = vi.mocked(prisma.property.findMany).mock.calls[0][0] as any;
     expect(call.where.listingType).toBe("FOR_SALE");
+  });
+
+  it("returns an empty bars array and null median when there are no sales", async () => {
+    const { prisma } = await import("@/lib/prisma");
+    const { getMarketSnapshot } = await import("@/lib/home-value-estimate");
+    vi.mocked(prisma.property.findMany).mockResolvedValue([]);
+
+    const result = await getMarketSnapshot(prisma as any, "91101");
+
+    expect(result.bars).toEqual([]);
+    expect(result.medianPrice).toBeNull();
+  });
+
+  it("computes the median price across all sales in the window", async () => {
+    const { prisma } = await import("@/lib/prisma");
+    const { getMarketSnapshot } = await import("@/lib/home-value-estimate");
+    vi.mocked(prisma.property.findMany).mockResolvedValue([
+      { closePrice: 700000 },
+      { closePrice: 900000 },
+      { closePrice: 800000 },
+    ] as any);
+
+    const result = await getMarketSnapshot(prisma as any, "91101");
+
+    expect(result.medianPrice).toBe(800000);
   });
 });
