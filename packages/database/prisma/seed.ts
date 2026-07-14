@@ -2,36 +2,59 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+const RESIDENTIAL_SALE_LISTING_ITEMS = [
+  { name: "RLA — Residential Listing Agreement (Exclusive)", description: "Signed exclusive right-to-sell listing contract", isRequired: true, order: 1 },
+  { name: "AVID — Agent Visual Inspection Disclosure", description: "Agent's own visual inspection disclosure, Civil Code §2079", isRequired: true, order: 2 },
+  { name: "TDS — Real Estate Transfer Disclosure Statement", description: "Seller's statutory disclosure, Civil Code §1102", isRequired: true, order: 3 },
+  { name: "SPQ — Seller Property Questionnaire", description: "C.A.R. supplemental seller questionnaire", isRequired: true, order: 4 },
+  { name: "NHD — Natural Hazard Disclosure Report", description: "Ordered from a third-party NHD vendor, not a C.A.R. form. Govt. Code §8589.3", isRequired: true, order: 5 },
+  { name: "AD — Disclosure Regarding Real Estate Agency Relationships", description: "Civil Code §2079.13-2079.24", isRequired: true, order: 6 },
+  { name: "DBD — Megan's Law Database Disclosure", description: "Civil Code §2079.10a", isRequired: true, order: 7 },
+  { name: "WHSD — Water Heater & Smoke Detector Statement of Compliance", description: "Health & Safety Code water heater bracing + smoke/CO detector compliance", isRequired: true, order: 8 },
+  { name: "HOA Governing Documents", description: "Required only if the property is part of a common interest development (HOA)", isRequired: false, order: 9 },
+];
+
 const RESIDENTIAL_SALE_BUYER_ITEMS = [
-  { name: "Purchase Agreement", description: "Fully executed purchase contract", isRequired: true, order: 1 },
-  { name: "Pre-Approval Letter", description: "Lender pre-approval dated within 30 days", isRequired: true, order: 2 },
-  { name: "Buyer's Agency Agreement", description: "Signed buyer representation agreement", isRequired: true, order: 3 },
-  { name: "Disclosure Package Acknowledgement", description: "Signed seller disclosure receipt", isRequired: true, order: 4 },
-  { name: "Inspection Reports", description: "Home, pest, and any other inspections", isRequired: false, order: 5 },
-  { name: "Loan Commitment Letter", description: "Final loan approval from lender", isRequired: true, order: 6 },
-  { name: "Final Walkthrough", description: "Signed walkthrough verification form", isRequired: false, order: 7 },
-  { name: "Settlement Statement / HUD-1", description: "Closing disclosure signed by all parties", isRequired: true, order: 8 },
+  { name: "RPA-CA — California Residential Purchase Agreement", description: "The purchase contract", isRequired: true, order: 1 },
+  { name: "BRBC — Buyer Representation and Broker Compensation Agreement", description: "Required before touring homes per the Aug. 2024 NAR settlement", isRequired: true, order: 2 },
+  { name: "AD — Disclosure Regarding Real Estate Agency Relationships", description: "Civil Code §2079.13-2079.24", isRequired: true, order: 3 },
+  { name: "AVID — Agent Visual Inspection Disclosure", description: "Agent's own visual inspection disclosure", isRequired: true, order: 4 },
+  { name: "SBSA — Statewide Buyer and Seller Advisory", description: "C.A.R. consolidated general-disclosure advisory", isRequired: true, order: 5 },
+  { name: "TDS — Real Estate Transfer Disclosure Statement", description: "Received from seller", isRequired: true, order: 6 },
+  { name: "NHD — Natural Hazard Disclosure Report", description: "Received from seller/vendor", isRequired: true, order: 7 },
+  { name: "FIRPTA / CA Withholding Affidavit", description: "Foreign Investment in Real Property Tax Act + CA state withholding certification", isRequired: true, order: 8 },
+  { name: "Proof of Funds / Loan Pre-Approval Letter", description: "Lender pre-approval or proof of funds dated within 30 days", isRequired: true, order: 9 },
 ];
 
 const RESIDENTIAL_SALE_SELLER_ITEMS = [
-  { name: "Listing Agreement", description: "Signed exclusive right-to-sell agreement", isRequired: true, order: 1 },
-  { name: "Transfer Disclosure Statement (TDS)", description: "Completed seller TDS form", isRequired: true, order: 2 },
-  { name: "Natural Hazard Disclosure (NHD)", description: "Natural hazard zone disclosure report", isRequired: true, order: 3 },
-  { name: "Seller Property Questionnaire", description: "Completed SPQ form", isRequired: true, order: 4 },
-  { name: "Purchase Agreement", description: "Fully executed purchase contract", isRequired: true, order: 5 },
-  { name: "Counter Offer(s)", description: "All signed counter offer addenda", isRequired: false, order: 6 },
-  { name: "Preliminary Title Report", description: "Prelim from title/escrow company", isRequired: true, order: 7 },
-  { name: "Settlement Statement / HUD-1", description: "Closing disclosure signed by all parties", isRequired: true, order: 8 },
+  { name: "RPA-CA — Countersigned Purchase Agreement", description: "Fully executed purchase contract", isRequired: true, order: 1 },
+  { name: "TDS — Real Estate Transfer Disclosure Statement", description: "Civil Code §1102", isRequired: true, order: 2 },
+  { name: "SPQ — Seller Property Questionnaire", description: "C.A.R. supplemental seller questionnaire", isRequired: true, order: 3 },
+  { name: "SBSA — Statewide Buyer and Seller Advisory", description: "C.A.R. consolidated general-disclosure advisory", isRequired: true, order: 4 },
+  { name: "NHD — Natural Hazard Disclosure Report", description: "Govt. Code §8589.3", isRequired: true, order: 5 },
+  { name: "AD — Disclosure Regarding Real Estate Agency Relationships", description: "Civil Code §2079.13-2079.24", isRequired: true, order: 6 },
+  { name: "DBD — Megan's Law Database Disclosure", description: "Civil Code §2079.10a", isRequired: true, order: 7 },
+  { name: "WHSD — Water Heater & Smoke Detector Statement of Compliance", description: "Health & Safety Code compliance statement", isRequired: true, order: 8 },
+  { name: "HOA Governing Documents", description: "Required only if the property is part of a common interest development (HOA)", isRequired: false, order: 9 },
 ];
 
-const RESIDENTIAL_LEASE_ITEMS = [
-  { name: "Residential Lease Agreement", description: "Fully executed lease agreement", isRequired: true, order: 1 },
-  { name: "Tenant Application", description: "Completed rental application", isRequired: true, order: 2 },
-  { name: "Credit & Background Check", description: "Screening report for all adult tenants", isRequired: true, order: 3 },
-  { name: "Proof of Income", description: "Pay stubs or bank statements (3 months)", isRequired: true, order: 4 },
-  { name: "Move-In Inspection Report", description: "Signed condition checklist at move-in", isRequired: true, order: 5 },
-  { name: "Security Deposit Receipt", description: "Signed receipt for deposit funds", isRequired: true, order: 6 },
-  { name: "Lead-Based Paint Disclosure", description: "Required for pre-1978 properties", isRequired: false, order: 7 },
+const RESIDENTIAL_LEASE_LISTING_ITEMS = [
+  { name: "LL — Lease Listing Agreement (Exclusive Authorization to Lease or Rent)", description: "Landlord's exclusive leasing listing contract", isRequired: true, order: 1 },
+  { name: "AD — Disclosure Regarding Real Estate Agency Relationships", description: "Required for leases over 1 year; standard practice regardless", isRequired: true, order: 2 },
+  { name: "LPD — Lead-Based Paint and Lead-Based Paint Hazards Disclosure", description: "Federal law, required only for housing built before 1978", isRequired: false, order: 3 },
+];
+
+const RESIDENTIAL_LEASE_TENANT_ITEMS = [
+  { name: "RLMM — Residential Lease or Month-to-Month Rental Agreement", description: "The lease contract", isRequired: true, order: 1 },
+  { name: "AD — Disclosure Regarding Real Estate Agency Relationships", description: "Required for leases over 1 year; standard practice regardless", isRequired: true, order: 2 },
+  { name: "LPD — Lead-Based Paint and Lead-Based Paint Hazards Disclosure", description: "Federal law, required only for housing built before 1978", isRequired: false, order: 3 },
+  { name: "MII — Move-In Inspection", description: "Signed condition checklist at move-in", isRequired: true, order: 4 },
+];
+
+const RESIDENTIAL_LEASE_LANDLORD_ITEMS = [
+  { name: "RLMM — Residential Lease or Month-to-Month Rental Agreement", description: "The lease contract", isRequired: true, order: 1 },
+  { name: "AD — Disclosure Regarding Real Estate Agency Relationships", description: "Required for leases over 1 year; standard practice regardless", isRequired: true, order: 2 },
+  { name: "LPD — Lead-Based Paint and Lead-Based Paint Hazards Disclosure", description: "Federal law, required only for housing built before 1978", isRequired: false, order: 3 },
 ];
 
 const TAGS: { name: string; color: string }[] = [
@@ -72,55 +95,32 @@ const TAGS: { name: string; color: string }[] = [
 async function main() {
   console.log("Seeding checklist templates...");
 
-  const resSaleBuyer = await prisma.checklistTemplate.upsert({
-    where: { id: "seed-res-sale-buyer" },
-    update: {},
-    create: {
-      id: "seed-res-sale-buyer",
-      name: "Residential Sale — Buyer Side",
-      fileType: "TRANSACTION",
-      listingType: "RESIDENTIAL_SALE",
-      transactionSide: "PURCHASE",
-      isActive: true,
-      items: {
-        create: RESIDENTIAL_SALE_BUYER_ITEMS,
-      },
-    },
-  });
+  async function upsertTemplate(
+    id: string,
+    name: string,
+    fileType: "LISTING" | "TRANSACTION",
+    listingType: string,
+    transactionSide: string,
+    items: { name: string; description: string; isRequired: boolean; order: number }[]
+  ) {
+    await prisma.checklistTemplateItem.deleteMany({ where: { templateId: id } });
+    return prisma.checklistTemplate.upsert({
+      where: { id },
+      update: { name, fileType, listingType, transactionSide, items: { create: items } },
+      create: { id, name, fileType, listingType, transactionSide, isActive: true, items: { create: items } },
+    });
+  }
 
-  const resSaleSeller = await prisma.checklistTemplate.upsert({
-    where: { id: "seed-res-sale-seller" },
-    update: {},
-    create: {
-      id: "seed-res-sale-seller",
-      name: "Residential Sale — Seller Side",
-      fileType: "TRANSACTION",
-      listingType: "RESIDENTIAL_SALE",
-      transactionSide: "LISTING",
-      isActive: true,
-      items: {
-        create: RESIDENTIAL_SALE_SELLER_ITEMS,
-      },
-    },
-  });
+  const templates = await Promise.all([
+    upsertTemplate("seed-res-sale-listing", "Residential Sale — Listing (Pre-Contract)", "LISTING", "RESIDENTIAL_SALE", "ALL", RESIDENTIAL_SALE_LISTING_ITEMS),
+    upsertTemplate("seed-res-sale-buyer", "Residential Sale — Buyer Side", "TRANSACTION", "ALL", "PURCHASE", RESIDENTIAL_SALE_BUYER_ITEMS),
+    upsertTemplate("seed-res-sale-seller", "Residential Sale — Seller Side (Under Contract)", "TRANSACTION", "ALL", "LISTING", RESIDENTIAL_SALE_SELLER_ITEMS),
+    upsertTemplate("seed-res-lease", "Residential Lease — Landlord Listing (Pre-Contract)", "LISTING", "RESIDENTIAL_LEASE", "ALL", RESIDENTIAL_LEASE_LISTING_ITEMS),
+    upsertTemplate("seed-res-lease-tenant", "Residential Lease — Tenant Side", "TRANSACTION", "ALL", "LEASE_TENANT", RESIDENTIAL_LEASE_TENANT_ITEMS),
+    upsertTemplate("seed-res-lease-landlord", "Residential Lease — Landlord Side (Transaction)", "TRANSACTION", "ALL", "LEASE_LANDLORD", RESIDENTIAL_LEASE_LANDLORD_ITEMS),
+  ]);
 
-  const resLease = await prisma.checklistTemplate.upsert({
-    where: { id: "seed-res-lease" },
-    update: {},
-    create: {
-      id: "seed-res-lease",
-      name: "Residential Lease",
-      fileType: "LISTING",
-      listingType: "RESIDENTIAL_LEASE",
-      transactionSide: "LEASE_TENANT",
-      isActive: true,
-      items: {
-        create: RESIDENTIAL_LEASE_ITEMS,
-      },
-    },
-  });
-
-  console.log(`Created templates: ${resSaleBuyer.name}, ${resSaleSeller.name}, ${resLease.name}`);
+  console.log(`Created/updated ${templates.length} checklist templates: ${templates.map((t) => t.name).join(", ")}`);
 
   console.log(`Seeding ${TAGS.length} tags...`);
   await Promise.all(
