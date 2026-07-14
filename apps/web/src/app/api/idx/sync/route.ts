@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@cnc/database";
 import { fetchProperties } from "@/lib/idx/client";
 
 // maxDuration applies to GET (Vercel Cron, awaits full sync).
@@ -26,7 +27,7 @@ async function runSync(type: string) {
     for (const property of batch) {
       if (property.status === "Closed" && property.listingType === "FOR_RENT") continue;
       const payload = isOldClosedSale(property)
-        ? { ...property, photos: [], details: null }
+        ? { ...property, photos: [], details: Prisma.DbNull }
         : property;
       try {
         await prisma.property.upsert({

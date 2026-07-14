@@ -8,6 +8,7 @@ vi.mock("@/lib/idx/client", () => ({
 }));
 
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@cnc/database";
 import { fetchProperties } from "@/lib/idx/client";
 import { GET } from "../../app/api/idx/sync/route";
 
@@ -71,7 +72,38 @@ describe("GET /api/idx/sync", () => {
       expect(byId.ML2.photos).toEqual(["b.jpg"]);
       expect(byId.ML2.details).toEqual({ Roof: "Shingle" });
       expect(byId.ML3.photos).toEqual([]);
-      expect(byId.ML3.details).toBeNull();
+      expect(byId.ML3.details).toBe(Prisma.DbNull);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("skips a Closed FOR_RENT record even when it is also older than 1 year", async () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date("2026-07-13T12:00:00.000Z"));
+
+      const overYearAgo = new Date("2025-01-01T00:00:00.000Z");
+
+      vi.mocked(fetchProperties).mockImplementation(async function* () {
+        yield [
+          {
+            mlsNumber: "ML1",
+            status: "Closed",
+            listingType: "FOR_RENT",
+            closeDate: overYearAgo,
+            photos: ["a.jpg"],
+            details: { Roof: "Tile" },
+          } as any,
+        ];
+      });
+
+      const res = await GET(makeRequest("test-secret"));
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.upserted).toBe(0);
+
+      expect(prisma.property.upsert).not.toHaveBeenCalled();
     } finally {
       vi.useRealTimers();
     }
