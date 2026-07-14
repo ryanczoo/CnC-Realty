@@ -17,6 +17,7 @@ async function runSync(type: string) {
 
   for await (const batch of fetchProperties(modifiedSince)) {
     for (const property of batch) {
+      if (property.status === "Closed" && property.listingType === "FOR_RENT") continue;
       try {
         await prisma.property.upsert({
           where: { mlsNumber: property.mlsNumber },
