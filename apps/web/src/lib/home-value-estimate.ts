@@ -114,10 +114,47 @@ const DIRECTIONALS: Record<string, string> = {
 // addressing). A trailing directional suffix (e.g. "123 Main St NE") is
 // stored by the IDX sync but not resolved here — out of scope for now.
 
+const BOX_DELTA_DEGREES = 0.005;
+const MAX_DISTANCE_METERS = 100;
+
+async function findByProximity(
+  prisma: PrismaClient,
+  zip: string,
+  lat?: number,
+  lng?: number
+): Promise<SubjectRecord[]> {
+  if (lat == null || lng == null) return [];
+
+  const nearby = await prisma.property.findMany({
+    where: {
+      zip,
+      latitude: { gte: lat - BOX_DELTA_DEGREES, lte: lat + BOX_DELTA_DEGREES },
+      longitude: { gte: lng - BOX_DELTA_DEGREES, lte: lng + BOX_DELTA_DEGREES },
+    },
+    orderBy: { listedAt: "desc" },
+    select: { ...SUBJECT_SELECT, latitude: true, longitude: true },
+  });
+
+  return nearby
+    .filter((p) => p.latitude != null && p.longitude != null)
+    .map((p) => ({
+      record: p,
+      distance: haversineDistanceMeters(lat, lng, p.latitude as number, p.longitude as number),
+    }))
+    .filter(({ distance }) => distance <= MAX_DISTANCE_METERS)
+    .sort((a, b) => a.distance - b.distance)
+    .map(({ record }) => {
+      const { latitude, longitude, ...rest } = record;
+      return rest;
+    });
+}
+
 export async function findSubjectProperty(
   prisma: PrismaClient,
   address: string,
-  zip: string
+  zip: string,
+  lat?: number,
+  lng?: number
 ): Promise<SubjectRecord[]> {
   const strict = await prisma.property.findMany({
     where: {
@@ -129,44 +166,53 @@ export async function findSubjectProperty(
   });
   if (strict.length > 0) return strict;
 
-  // Geocoders spell street types out in full (e.g. "Circle") while MLS data
-  // uses USPS abbreviations (e.g. "Cir") — retry without the trailing word so
-  // "15595 Curtis Circle" still matches a stored "15595 Curtis Cir".
   const words = address.trim().split(/\s+/);
-  if (words.length < 2) return [];
-  const withoutSuffix = words.slice(0, -1).join(" ");
 
-  const suffixDropped = await prisma.property.findMany({
-    where: {
-      zip,
-      address: { contains: withoutSuffix, mode: "insensitive" },
-    },
-    orderBy: { listedAt: "desc" },
-    select: SUBJECT_SELECT,
-  });
-  if (suffixDropped.length > 0) return suffixDropped;
+  if (words.length >= 2) {
+    // Geocoders spell street types out in full (e.g. "Circle") while MLS data
+    // uses USPS abbreviations (e.g. "Cir") — retry without the trailing word so
+    // "15595 Curtis Circle" still matches a stored "15595 Curtis Cir".
+    const withoutSuffix = words.slice(0, -1).join(" ");
 
-  // Geocoders also spell directionals out in full (e.g. "North") while MLS
-  // data abbreviates them (e.g. "N"). Unlike the suffix, a directional sits
-  // mid-string (right after the house number), so it must be translated to
-  // its abbreviation rather than dropped — dropping it wouldn't realign with
-  // the abbreviated form still present in the stored address.
-  const directional = DIRECTIONALS[words[1]?.toLowerCase()];
-  if (!directional) return [];
-  // A 3-word address (number + directional + street name) has no suffix
-  // word to drop; 4+ words means there's a real suffix beyond the street
-  // name, same as Pass 2's logic.
-  const rest = words.length > 3 ? words.slice(2, -1) : words.slice(2);
-  const withDirectionalAbbreviated = [words[0], directional, ...rest].join(" ");
+    const suffixDropped = await prisma.property.findMany({
+      where: {
+        zip,
+        address: { contains: withoutSuffix, mode: "insensitive" },
+      },
+      orderBy: { listedAt: "desc" },
+      select: SUBJECT_SELECT,
+    });
+    if (suffixDropped.length > 0) return suffixDropped;
 
-  return prisma.property.findMany({
-    where: {
-      zip,
-      address: { contains: withDirectionalAbbreviated, mode: "insensitive" },
-    },
-    orderBy: { listedAt: "desc" },
-    select: SUBJECT_SELECT,
-  });
+    // Geocoders also spell directionals out in full (e.g. "North") while MLS
+    // data abbreviates them (e.g. "N"). Unlike the suffix, a directional sits
+    // mid-string (right after the house number), so it must be translated to
+    // its abbreviation rather than dropped — dropping it wouldn't realign with
+    // the abbreviated form still present in the stored address.
+    const directional = DIRECTIONALS[words[1]?.toLowerCase()];
+    if (directional) {
+      // A 3-word address (number + directional + street name) has no suffix
+      // word to drop; 4+ words means there's a real suffix beyond the street
+      // name, same as the suffix-drop logic above.
+      const rest = words.length > 3 ? words.slice(2, -1) : words.slice(2);
+      const withDirectionalAbbreviated = [words[0], directional, ...rest].join(" ");
+
+      const directionalMatch = await prisma.property.findMany({
+        where: {
+          zip,
+          address: { contains: withDirectionalAbbreviated, mode: "insensitive" },
+        },
+        orderBy: { listedAt: "desc" },
+        select: SUBJECT_SELECT,
+      });
+      if (directionalMatch.length > 0) return directionalMatch;
+    }
+  }
+
+  // Tier 4: lat/lng proximity — catches cases where Mapbox and the MLS
+  // disagree on street-name spelling in a way no text-based tier can
+  // reconcile (e.g. "Woodham" vs "Woodhams" Carne Rd/Road).
+  return findByProximity(prisma, zip, lat, lng);
 }
 
 export interface CompRecord {

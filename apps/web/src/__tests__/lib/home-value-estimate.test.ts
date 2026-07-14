@@ -289,6 +289,53 @@ describe("findSubjectProperty", () => {
     expect(prisma.property.findMany).toHaveBeenCalledTimes(2);
     expect(result).toEqual([]);
   });
+
+  it("falls back to lat/lng proximity when all text tiers fail and returns the closest match within 100m", async () => {
+    const { prisma } = await import("@/lib/prisma");
+    const { findSubjectProperty } = await import("@/lib/home-value-estimate");
+    const near = { mlsNumber: "ML-NEAR", status: "Active", beds: 4, baths: 2, sqft: 1800, lotSize: null, listPrice: 900000, closePrice: null, closeDate: null, listedAt: new Date(), propertyType: null, yearBuilt: null, county: null, photos: [], latitude: 37.95856776, longitude: -120.28303432 };
+    const far = { mlsNumber: "ML-FAR", status: "Active", beds: 3, baths: 2, sqft: 1500, lotSize: null, listPrice: 700000, closePrice: null, closeDate: null, listedAt: new Date(), propertyType: null, yearBuilt: null, county: null, photos: [], latitude: 37.97, longitude: -120.30 };
+
+    vi.mocked(prisma.property.findMany)
+      .mockResolvedValueOnce([]) // strict
+      .mockResolvedValueOnce([]) // suffix-dropped
+      .mockResolvedValueOnce([near, far] as any); // proximity box query
+
+    const result = await findSubjectProperty(prisma as any, "18521 Woodhams Carne Road", "95370", 37.95856776, -120.28303432);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].mlsNumber).toBe("ML-NEAR");
+  });
+
+  it("strips latitude/longitude from the returned records", async () => {
+    const { prisma } = await import("@/lib/prisma");
+    const { findSubjectProperty } = await import("@/lib/home-value-estimate");
+    const near = { mlsNumber: "ML-NEAR", status: "Active", beds: 4, baths: 2, sqft: 1800, lotSize: null, listPrice: 900000, closePrice: null, closeDate: null, listedAt: new Date(), propertyType: null, yearBuilt: null, county: null, photos: [], latitude: 37.95856776, longitude: -120.28303432 };
+
+    vi.mocked(prisma.property.findMany)
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([near] as any);
+
+    const result = await findSubjectProperty(prisma as any, "18521 Woodhams Carne Road", "95370", 37.95856776, -120.28303432);
+
+    expect(result[0]).not.toHaveProperty("latitude");
+    expect(result[0]).not.toHaveProperty("longitude");
+  });
+
+  it("returns empty and makes no proximity query when lat/lng are omitted", async () => {
+    const { prisma } = await import("@/lib/prisma");
+    const { findSubjectProperty } = await import("@/lib/home-value-estimate");
+
+    vi.mocked(prisma.property.findMany)
+      .mockResolvedValueOnce([]) // strict
+      .mockResolvedValueOnce([]); // suffix-dropped
+
+    const result = await findSubjectProperty(prisma as any, "123 Main Street", "91101");
+
+    expect(prisma.property.findMany).toHaveBeenCalledTimes(2);
+    expect(result).toEqual([]);
+  });
 });
 
 describe("findComps", () => {
