@@ -123,7 +123,7 @@ async function findByProximity(
   lat?: number,
   lng?: number
 ): Promise<SubjectRecord[]> {
-  if (lat == null || lng == null) return [];
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return [];
 
   const nearby = await prisma.property.findMany({
     where: {

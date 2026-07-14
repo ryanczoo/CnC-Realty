@@ -336,6 +336,20 @@ describe("findSubjectProperty", () => {
     expect(prisma.property.findMany).toHaveBeenCalledTimes(2);
     expect(result).toEqual([]);
   });
+
+  it("returns empty and makes no proximity query when lat or lng fails to parse to NaN", async () => {
+    const { prisma } = await import("@/lib/prisma");
+    const { findSubjectProperty } = await import("@/lib/home-value-estimate");
+
+    vi.mocked(prisma.property.findMany)
+      .mockResolvedValueOnce([]) // strict
+      .mockResolvedValueOnce([]); // suffix-dropped
+
+    const result = await findSubjectProperty(prisma as any, "123 Main Street", "91101", NaN, -120.283);
+
+    expect(prisma.property.findMany).toHaveBeenCalledTimes(2);
+    expect(result).toEqual([]);
+  });
 });
 
 describe("findComps", () => {

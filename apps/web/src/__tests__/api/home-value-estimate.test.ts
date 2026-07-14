@@ -203,4 +203,17 @@ describe("GET /api/home-value/estimate", () => {
     expect(proximityCall.where.latitude.gte).toBeCloseTo(37.95356776, 5);
     expect(proximityCall.where.latitude.lte).toBeCloseTo(37.96356776, 5);
   });
+
+  it("skips the proximity tier (no crash, no wasted query) when lat is malformed garbage that parses to NaN", async () => {
+    vi.mocked(prisma.property.findMany)
+      .mockResolvedValueOnce([]) // strict
+      .mockResolvedValueOnce([]); // suffix-dropped — no third (proximity) call should follow
+
+    const res = await GET(makeRequest("address=123 Main Street&zip=91101&lat=garbage&lng=-120.28303432"));
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.needsManualEntry).toBe(true);
+    expect(prisma.property.findMany).toHaveBeenCalledTimes(2);
+  });
 });
