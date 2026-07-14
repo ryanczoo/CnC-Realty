@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { computeEstimate, percentile, firstPhoto } from "@/lib/home-value-estimate";
+import { computeEstimate, percentile, firstPhoto, haversineDistanceMeters } from "@/lib/home-value-estimate";
 
 describe("firstPhoto", () => {
   it("returns the first photo URL when photos is a non-empty string array", () => {
@@ -18,6 +18,27 @@ describe("firstPhoto", () => {
 
   it("returns null when the first element isn't a string", () => {
     expect(firstPhoto([123])).toBeNull();
+  });
+});
+
+describe("haversineDistanceMeters", () => {
+  it("computes ~111.2m for two points 0.001 degrees apart at the equator", () => {
+    // R=6371000 (mean Earth radius) gives 111.195m per 0.001deg here, not
+    // the commonly-quoted 111.32m/0.001deg figure (which uses a slightly
+    // different reference radius) — assert what this formula actually
+    // produces, not the rule-of-thumb number.
+    const distance = haversineDistanceMeters(0, 0, 0, 0.001);
+    expect(distance).toBeCloseTo(111.2, 1);
+  });
+
+  it("computes roughly 11km for two points 0.1 degrees apart at the equator", () => {
+    const distance = haversineDistanceMeters(0, 0, 0, 0.1);
+    expect(distance).toBeGreaterThan(11000);
+    expect(distance).toBeLessThan(11200);
+  });
+
+  it("returns 0 for identical coordinates", () => {
+    expect(haversineDistanceMeters(37.9586, -120.2830, 37.9586, -120.2830)).toBe(0);
   });
 });
 
