@@ -5555,12 +5555,92 @@ Ryan noticed `findComps` fetches up to 25 comps but the page only ever displayed
 3. **Cancel the Railway plan only after the Neon migration is confirmed working** — no rush, no prepaid balance to lose either way.
 4. Ryan reiterated the same process preference again this session: "talk first" before implementation, explicit "let's get to work" before code starts.
 
+### Migration completed same session — Neon is live, Railway is cancelled
+
+Ryan finished the Neon signup and walked through project setup live (guided
+step-by-step, screenshot by screenshot, since account/billing actions
+needed to be his own clicks, not mine):
+
+- **Org:** "CnC Realty" (email+password signup, not tied to a personal
+  Google/GitHub account — deliberate, keeps business infra independent of
+  personal account status).
+- **Project:** "CnC Realty Production", region **AWS US West 2 (Oregon)**.
+- **Plan: Scale**, not Launch — this was a real correction mid-setup. Launch's
+  pricing page listing showed "Scale to zero after 5 minutes" as a fixed
+  included feature, not configurable — only **Scale** shows "Configurable
+  scale to zero" AND the "Uptime SLA 99.95%" we picked Neon for in the first
+  place. Launch would have gotten us neither. Cost is roughly double Launch's
+  per-CU-hour rate as a result (~$30-45/mo realistic estimate vs. the
+  original ~$15-22/mo Launch guess) — worth it for what was actually the
+  point of this migration.
+- Scale-to-zero disabled on the `production` branch's primary compute via
+  Branches → production → Edit primary compute → toggle off.
+- Pooled connection string grabbed from Connect → Connection pooling toggle
+  on (hostname has `-pooler` in it).
+
+**Schema migration:** `prisma migrate deploy` applied all 30 existing
+migrations cleanly to the fresh Neon database.
+
+**Caught a real bug in my own verification, not just the migration:** the
+first connectivity check silently reconnected to the *old* Railway DB
+(returned Railway's exact row count) because `packages/database/.env` — a
+separate file Prisma's tooling reads with higher precedence than
+`apps/web/.env.local` — still had the Railway URL. Fixed both files,
+re-verified for real: 0 rows, 44 tables, a genuine write+delete round-trip
+succeeded.
+
+**Full data migration (schema-only wasn't enough — Ryan caught this before
+Railway got cancelled):** wrote a Prisma-to-Prisma copy script covering all
+43 models in FK-dependency order (computed via a topological sort of the
+live Prisma DMMF relation graph, not hand-transcribed). Hit two real bugs
+during this, both root-caused before retrying:
+1. Prisma's query engine cannot marshal ~185,017 rows in one unchunked
+   `findMany()` call (`Failed to convert rust String into napi string`) —
+   confirmed via binary-search isolation that no single row was at fault;
+   reproduced cleanly with an unchunked call, fixed by paginating reads in
+   5,000-row pages (not just chunking writes, which the first version
+   already did).
+2. `LeadTag` (and any join table with a composite `@@id`, not a plain `id`
+   field) broke a hardcoded `orderBy: { id: "asc" }` — fixed by deriving
+   each model's actual primary-key field(s) from the DMMF instead of
+   assuming every table has `id`.
+3. A background-task "exit code 0" was misleading once — it reflected
+   `tee`'s exit code, not the underlying script's, since the pipe's exit
+   status defaults to the last command. Redirecting to a file directly and
+   checking `$?` explicitly afterward gave the real signal. Worth
+   remembering for any future piped background command.
+
+**Verification, independent of the migration script's own self-reported
+counts:** a separate script compared live `count()` on both databases for
+all 43 tables — all matched exactly (185,196 total rows each side).
+Content spot-checked too (a real Property row's lat/lng, real user emails,
+`AgentApplication` count) — not just row counts.
+
+**Railway cancelled** after — and only after — the above was independently
+verified. `$2.61` final charge on Jul 17 (usage through end of current
+billing cycle, as expected from the month-to-month model). Dead Railway
+credentials removed from both `.env` files once cancellation was confirmed.
+
+**Dev server restarted** to pick up the new `DATABASE_URL` (env vars are
+read at Next.js process start, not live) and confirmed via live server
+logs that a real request executed a Prisma query against Neon.
+
 ### Next Session — Start Here
 
-1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
-2. **Blocked on Ryan:** Neon account/project signup (I don't have API access to do this myself, and shouldn't enter his payment info). Steps already given to him: create project in a US West region, disable scale-to-zero on the production compute endpoint, grab the **pooled** connection string.
-3. Once the connection string is provided: update `apps/web/.env.local`'s `DATABASE_URL`, run migrations, verify connectivity (use `superpowers:verification-before-completion` — actually check, don't just claim it works).
-4. **Do NOT run a full IDX resync yet** — explicitly deferred until deploy-time per Ryan (crash history). The delta sync (`type=delta`, no filter needed beyond what's already built) is safe to test with, if needed.
-5. After Neon is verified working: cancel the Railway plan (Account Settings → Billing → Cancel Plan — month-to-month, no loss).
-6. Consider `superpowers:finishing-a-development-branch` for `feature/agent-application-redesign` at some point — it's been the working branch for a very long time now without merging; worth asking Ryan whether/when to address that, not a unilateral call.
-7. Older backlog, unchanged: checklist templates at `/admin/settings/checklists`; zipForm/Transact gap-analysis findings (SELLER_SIDE mislabel bug, missing Lease Listing distinction, Client Portal candidate feature); clean up test DB records.
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty` — it
+   now points at Neon by default (`apps/web/.env.local` and
+   `packages/database/.env` both updated, Railway fully removed from both).
+2. **Full IDX resync still explicitly deferred until ready to deploy** —
+   Neon now has all the same data Railway had (post full-data-migration),
+   but it's the same data volume/scope as before (mostly recent listings,
+   sparse older history) since the resync itself hasn't run. Don't trigger
+   it casually — Ryan wants this timed deliberately at deploy, given the
+   prior resync's crash history.
+3. Consider `superpowers:finishing-a-development-branch` for
+   `feature/agent-application-redesign` at some point — it's been the
+   working branch for a very long time now without merging; worth asking
+   Ryan whether/when to address that, not a unilateral call.
+4. Older backlog, unchanged: checklist templates at
+   `/admin/settings/checklists`; zipForm/Transact gap-analysis findings
+   (SELLER_SIDE mislabel bug, missing Lease Listing distinction, Client
+   Portal candidate feature); clean up test DB records.
