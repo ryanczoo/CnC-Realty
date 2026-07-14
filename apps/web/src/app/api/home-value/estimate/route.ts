@@ -21,9 +21,11 @@ export async function GET(req: Request) {
   const manualBaths = searchParams.get("baths") ? Number(searchParams.get("baths")) : null;
   const manualSqft = searchParams.get("sqft") ? Number(searchParams.get("sqft")) : null;
   const manualLotSize = searchParams.get("lotSize") ? Number(searchParams.get("lotSize")) : null;
+  const lat = searchParams.get("lat") ? Number(searchParams.get("lat")) : undefined;
+  const lng = searchParams.get("lng") ? Number(searchParams.get("lng")) : undefined;
 
   try {
-    const matches = await findSubjectProperty(prisma, address, zip);
+    const matches = await findSubjectProperty(prisma, address, zip, lat, lng);
     const latest = matches[0] ?? null;
 
     const beds = latest?.beds ?? manualBeds;

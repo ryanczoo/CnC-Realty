@@ -176,4 +176,31 @@ describe("GET /api/home-value/estimate", () => {
     expect(body.comps[0].photo).toBe("https://first.jpg");
     expect(body.comps[0]).not.toHaveProperty("photos");
   });
+
+  it("passes lat/lng from query params through to the proximity fallback", async () => {
+    vi.mocked(prisma.property.findMany)
+      .mockResolvedValueOnce([]) // strict
+      .mockResolvedValueOnce([]) // suffix-dropped
+      .mockResolvedValueOnce([
+        {
+          mlsNumber: "ML1", status: "Closed", beds: 4, baths: 2, sqft: 1800, lotSize: 0.15,
+          listPrice: 950000, closePrice: 940000, closeDate: new Date(), listedAt: new Date(),
+          latitude: 37.95856776, longitude: -120.28303432,
+        },
+      ] as any) // proximity match
+      .mockResolvedValueOnce([
+        { mlsNumber: "ML2", address: "125 Main St", city: "Pasadena", state: "CA", zip: "91101", beds: 4, baths: 2, sqft: 1750, closePrice: 900000, closeDate: new Date("2026-01-01"), photos: [] },
+        { mlsNumber: "ML3", address: "130 Main St", city: "Pasadena", state: "CA", zip: "91101", beds: 4, baths: 2, sqft: 1800, closePrice: 950000, closeDate: new Date("2026-02-01"), photos: [] },
+        { mlsNumber: "ML4", address: "140 Main St", city: "Pasadena", state: "CA", zip: "91101", beds: 4, baths: 2, sqft: 1900, closePrice: 1000000, closeDate: new Date("2026-03-01"), photos: [] },
+      ] as any) // findComps
+      .mockResolvedValueOnce([]); // getMarketSnapshot
+
+    const res = await GET(makeRequest("address=123 Main Street&zip=91101&lat=37.95856776&lng=-120.28303432"));
+    const body = await res.json();
+
+    expect(body.subject.matched).toBe(true);
+    const proximityCall = vi.mocked(prisma.property.findMany).mock.calls[2][0] as any;
+    expect(proximityCall.where.latitude.gte).toBeCloseTo(37.95356776, 5);
+    expect(proximityCall.where.latitude.lte).toBeCloseTo(37.96356776, 5);
+  });
 });
