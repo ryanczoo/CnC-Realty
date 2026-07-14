@@ -89,6 +89,10 @@ export default function HomeValuePage() {
       params.set("baths", String(manualOverride.baths));
       params.set("sqft", String(manualOverride.sqft));
     }
+    if (lat != null && lng != null) {
+      params.set("lat", String(lat));
+      params.set("lng", String(lng));
+    }
     fetch(`/api/home-value/estimate?${params.toString()}`, { signal: controller.signal })
       .then(async (res) => {
         if (!res.ok) {
