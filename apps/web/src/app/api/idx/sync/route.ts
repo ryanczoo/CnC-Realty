@@ -6,6 +6,13 @@ import { fetchProperties } from "@/lib/idx/client";
 // POST returns 202 immediately — the background runSync() is not bound by this limit.
 export const maxDuration = 300;
 
+const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
+
+function isOldClosedSale(property: { status: string; closeDate: Date | null }): boolean {
+  if (property.status !== "Closed" || !property.closeDate) return false;
+  return Date.now() - property.closeDate.getTime() > ONE_YEAR_MS;
+}
+
 async function runSync(type: string) {
   const startedAt = Date.now();
   console.log(`[idx-sync] starting ${type} sync`);
@@ -18,11 +25,14 @@ async function runSync(type: string) {
   for await (const batch of fetchProperties(modifiedSince)) {
     for (const property of batch) {
       if (property.status === "Closed" && property.listingType === "FOR_RENT") continue;
+      const payload = isOldClosedSale(property)
+        ? { ...property, photos: [], details: null }
+        : property;
       try {
         await prisma.property.upsert({
-          where: { mlsNumber: property.mlsNumber },
-          create: property,
-          update: property,
+          where: { mlsNumber: payload.mlsNumber },
+          create: payload,
+          update: payload,
         });
         upserted++;
       } catch (err) {
