@@ -35,9 +35,19 @@ interface ODataResponse {
   "@odata.nextLink"?: string;
 }
 
+const STATUS_FILTER = "StandardStatus in ('Active','ComingSoon','ActiveUnderContract','Closed')";
+
+export function buildPropertyFilter(modifiedSince?: Date): string {
+  const clauses = [STATUS_FILTER];
+  if (modifiedSince) {
+    clauses.push(`ModificationTimestamp gt ${modifiedSince.toISOString()}`);
+  }
+  return `$filter=${clauses.join(" and ")}&`;
+}
+
 export async function* fetchProperties(modifiedSince?: Date) {
   let token = await getResoToken();
-  const filter = modifiedSince ? `$filter=ModificationTimestamp gt ${modifiedSince.toISOString()}&` : "";
+  const filter = buildPropertyFilter(modifiedSince);
   let url: string | null = `${BASE_URL}/Property?${filter}$top=200&$select=${SELECT_FIELDS}&$expand=Media($select=MediaURL,Order)`;
   let retried = false;
   while (url) {
