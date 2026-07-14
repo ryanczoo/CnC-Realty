@@ -5630,17 +5630,19 @@ logs that a real request executed a Prisma query against Neon.
 1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty` — it
    now points at Neon by default (`apps/web/.env.local` and
    `packages/database/.env` both updated, Railway fully removed from both).
-2. **Full IDX resync still explicitly deferred until ready to deploy** —
-   Neon now has all the same data Railway had (post full-data-migration),
-   but it's the same data volume/scope as before (mostly recent listings,
-   sparse older history) since the resync itself hasn't run. Don't trigger
-   it casually — Ryan wants this timed deliberately at deploy, given the
-   prior resync's crash history.
-3. Consider `superpowers:finishing-a-development-branch` for
+2. Consider `superpowers:finishing-a-development-branch` for
    `feature/agent-application-redesign` at some point — it's been the
    working branch for a very long time now without merging; worth asking
    Ryan whether/when to address that, not a unilateral call.
-4. Older backlog, unchanged: checklist templates at
+3. Older backlog, unchanged: checklist templates at
    `/admin/settings/checklists`; zipForm/Transact gap-analysis findings
    (SELLER_SIDE mislabel bug, missing Lease Listing distinction, Client
    Portal candidate feature); clean up test DB records.
+
+Not an active item — background context only: the full IDX resync remains
+deferred with no target date (Ryan confirmed 2026-07-14 he won't be ready
+for it "anytime soon"). Neon has all the same data Railway had (via the
+full data migration), same volume/scope as before since the resync itself
+still hasn't run (mostly recent listings, sparse older history). Don't
+bring this up as a pending task — it'll come up again on Ryan's own
+timeline, not proactively.
