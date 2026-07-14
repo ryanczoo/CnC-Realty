@@ -14,8 +14,10 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  const transactionSide = listing.listingType === "RESIDENTIAL_LEASE" ? "LEASE_LANDLORD" : "LISTING";
+
   const template = await prisma.checklistTemplate.findFirst({
-    where: { fileType: "TRANSACTION", isActive: true, OR: [{ transactionSide: "LISTING" }, { transactionSide: "ALL" }] },
+    where: { fileType: "TRANSACTION", isActive: true, OR: [{ transactionSide }, { transactionSide: "ALL" }] },
     include: { items: { orderBy: { order: "asc" } } },
   });
 
@@ -31,7 +33,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
         state: listing.state,
         zip: listing.zip,
         mlsNumber: listing.mlsNumber,
-        transactionSide: "LISTING",
+        transactionSide,
         listPrice: listing.listPrice,
         checklistItems: template ? {
           create: template.items.map((item) => ({

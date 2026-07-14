@@ -9,6 +9,7 @@ export default function ChecklistTemplatesPage() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
+  const [newFileType, setNewFileType] = useState("LISTING");
   const [newListingType, setNewListingType] = useState("RESIDENTIAL_SALE");
   const [newSide, setNewSide] = useState<string>("");
 
@@ -28,11 +29,13 @@ export default function ChecklistTemplatesPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: newName.trim(),
+        fileType: newFileType,
         listingType: newListingType || undefined,
         transactionSide: newSide || undefined,
       }),
     });
     setNewName("");
+    setNewFileType("LISTING");
     setNewListingType("RESIDENTIAL_SALE");
     setNewSide("");
     setCreating(false);
@@ -71,6 +74,13 @@ export default function ChecklistTemplatesPage() {
               placeholder="e.g. Residential Sale — Buyer Side"
               className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2 text-sm"
             />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-[#1B1B1B]/60">File Type *</label>
+            <select value={newFileType} onChange={(e) => setNewFileType(e.target.value)} className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2 text-sm">
+              <option value="LISTING">Listing File (pre-contract, matched by Listing Type)</option>
+              <option value="TRANSACTION">Transaction File (matched by Transaction Side)</option>
+            </select>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
