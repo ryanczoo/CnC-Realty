@@ -8,3 +8,16 @@ export function formatPhoneInput(rawValue: string): string {
 export function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
+
+export function limitDigits(value: string, maxDigits: number): string {
+  let result = "";
+  let digitCount = 0;
+  for (const ch of value) {
+    if (/\d/.test(ch)) {
+      if (digitCount >= maxDigits) continue;
+      digitCount++;
+    }
+    result += ch;
+  }
+  return result;
+}

@@ -10,6 +10,7 @@ import type { PriceBar } from "@/lib/home-value-estimate";
 import { RevealEstimateForm } from "@/components/home-value/RevealEstimateForm";
 import { RevealLine } from "@/components/ui/reveal-text";
 import { buildStatsFields } from "@/lib/property-ui-helpers";
+import { limitDigits } from "@/lib/form-validation";
 import { buildMapboxStaticImageUrl } from "@/lib/mapbox-static";
 
 interface EstimateResponse {
@@ -39,7 +40,7 @@ function ManualEntryForm({ onSubmit }: { onSubmit: (beds: number, baths: number,
   return (
     <div className="mx-auto max-w-md rounded-xl border border-[#1B1B1B]/10 bg-white p-8 text-center">
       <p className="text-sm text-[#1B1B1B]/60">
-        We don't have this address on file yet — tell us a bit about the home to get an estimate.
+        This address isn't in the MLS yet, please fill out the info below for your estimate
       </p>
       <form
         onSubmit={(e) => {
@@ -48,9 +49,9 @@ function ManualEntryForm({ onSubmit }: { onSubmit: (beds: number, baths: number,
         }}
         className="mt-6 grid grid-cols-3 gap-3"
       >
-        <input value={beds} onChange={(e) => setBeds(e.target.value)} placeholder="Beds" type="number" required className="rounded-lg border border-[#1B1B1B]/15 bg-cnc-bg px-3 py-3 text-center text-[#1B1B1B]" />
-        <input value={baths} onChange={(e) => setBaths(e.target.value)} placeholder="Baths" type="number" step="0.5" required className="rounded-lg border border-[#1B1B1B]/15 bg-cnc-bg px-3 py-3 text-center text-[#1B1B1B]" />
-        <input value={sqft} onChange={(e) => setSqft(e.target.value)} placeholder="Sqft" type="number" required className="rounded-lg border border-[#1B1B1B]/15 bg-cnc-bg px-3 py-3 text-center text-[#1B1B1B]" />
+        <input value={beds} onChange={(e) => setBeds(limitDigits(e.target.value, 2))} placeholder="Beds" type="number" required className="rounded-lg border border-[#1B1B1B]/15 bg-cnc-bg px-3 py-3 text-center text-[#1B1B1B]" />
+        <input value={baths} onChange={(e) => setBaths(limitDigits(e.target.value, 2))} placeholder="Baths" type="number" step="0.5" required className="rounded-lg border border-[#1B1B1B]/15 bg-cnc-bg px-3 py-3 text-center text-[#1B1B1B]" />
+        <input value={sqft} onChange={(e) => setSqft(limitDigits(e.target.value, 5))} placeholder="Sqft" type="number" required className="rounded-lg border border-[#1B1B1B]/15 bg-cnc-bg px-3 py-3 text-center text-[#1B1B1B]" />
         <button type="submit" className="col-span-3 mt-2 rounded-full bg-[#1B1B1B] py-3 text-sm font-medium text-white">
           Get My Estimate
         </button>

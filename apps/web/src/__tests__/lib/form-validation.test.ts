@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatPhoneInput, isValidEmail } from "@/lib/form-validation";
+import { formatPhoneInput, isValidEmail, limitDigits } from "@/lib/form-validation";
 
 describe("formatPhoneInput", () => {
   it("returns digits as-is when 3 or fewer", () => {
@@ -46,5 +46,31 @@ describe("isValidEmail", () => {
 
   it("rejects an empty string", () => {
     expect(isValidEmail("")).toBe(false);
+  });
+});
+
+describe("limitDigits", () => {
+  it("returns the value unchanged when digit count is under the max", () => {
+    expect(limitDigits("12", 5)).toBe("12");
+  });
+
+  it("truncates further digits once the max digit count is reached", () => {
+    expect(limitDigits("123456", 5)).toBe("12345");
+  });
+
+  it("caps beds/baths-style input at 2 digits", () => {
+    expect(limitDigits("123", 2)).toBe("12");
+  });
+
+  it("preserves a decimal point while still counting only digits toward the max", () => {
+    expect(limitDigits("12.5", 2)).toBe("12.");
+  });
+
+  it("drops digits after the max even past a decimal point", () => {
+    expect(limitDigits("1.2345", 2)).toBe("1.2");
+  });
+
+  it("returns an empty string unchanged", () => {
+    expect(limitDigits("", 5)).toBe("");
   });
 });

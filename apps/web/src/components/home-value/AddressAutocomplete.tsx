@@ -97,11 +97,22 @@ export function AddressAutocomplete({ onSelect, placeholder }: Props) {
         type="text"
         value={query}
         onChange={(e) => handleChange(e.target.value)}
-        placeholder={placeholder ?? "Enter Your Address"}
+        placeholder={placeholder ?? ""}
         className="w-full rounded-lg border border-[#1B1B1B]/15 bg-white px-6 py-5 pr-12 text-lg text-[#1B1B1B] placeholder:text-[#1B1B1B]/40 focus:outline-none focus:ring-1 focus:ring-cnc-gold"
       />
-      {loading && (
+      {loading ? (
         <Loader2 className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 animate-spin text-[#9E8C61]" />
+      ) : (
+        <svg
+          aria-hidden="true"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#1B1B1B]/40"
+        >
+          <path d="M20 20L22 22" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          <path d="M6.75 3.27093C8.14732 2.46262 9.76964 2 11.5 2C16.7467 2 21 6.25329 21 11.5C21 16.7467 16.7467 21 11.5 21C6.25329 21 2 16.7467 2 11.5C2 9.76964 2.46262 8.14732 3.27093 6.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
       )}
       {open && (
         <ul className="absolute left-0 right-0 top-full z-20 mt-1 max-h-64 overflow-y-auto rounded-lg border border-[#1B1B1B]/10 bg-white shadow-lg">
