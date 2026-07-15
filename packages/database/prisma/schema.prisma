@@ -93,6 +93,9 @@ enum TransactionFileStatus {
   ARCHIVED
   CANCELED_PENDING
   CANCELED_APPROVED
+  REFERRAL_SUCCESSFUL
+  REFERRAL_UNSUCCESSFUL
+  REFERRAL_BROKER_REVIEW
 }
 
 enum FileType {
@@ -459,10 +462,10 @@ model TransactionFile {
   agentId              String
   originatingListingId String?
   originatingLeadId    String?
-  propertyAddress      String
-  city                 String
+  propertyAddress      String?
+  city                 String?
   state                String                @default("CA")
-  zip                  String
+  zip                  String?
   mlsNumber            String?
   propertyType         String?
   yearBuilt            Int?
@@ -498,6 +501,13 @@ model TransactionFile {
   commissionNotes      String?
   awaitingReview       Boolean               @default(false)
   tcFeeEnabled         Boolean               @default(false)
+  referredToAgentName     String?
+  referredToBrokerageName String?
+  referredToContactEmail  String?
+  referredToContactPhone  String?
+  dateReferred            DateTime?
+  referralAmountReceived  Float?
+  referralCncFee          Float?
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
 
