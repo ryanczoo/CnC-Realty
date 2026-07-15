@@ -1,7 +1,7 @@
 # Checklist / Transaction Type Alignment — Design Spec
 
 **Date:** 2026-07-14
-**Status:** Ready for self-review and user approval
+**Status:** Approved by Ryan (2026-07-14) — all open questions resolved, ready for implementation plan
 **Amends:** `docs/superpowers/specs/2026-07-11-core-transaction-type-overhaul-design.md` (see Correction Note below) — does not replace that doc's schema work, which shipped and is live; amends its `REFERRAL` decision specifically.
 **Supersedes:** Effectively serves as the deferred "Sub-project B: Checklist Template System" referenced in the 2026-07-11 doc's Overview, though scoped narrower (content already shipped earlier today for the 6 non-referral checklist templates; this doc covers what's left).
 
@@ -151,9 +151,9 @@ Who does what, at each transition:
 - **`REFERRAL_SUCCESSFUL → REFERRAL_BROKER_REVIEW`** — Ryan enters the actual referral amount received; the system auto-calculates CnC's cut (`Math.max(amount * 0.10, 200)`) and the agent's net (`amount - cncFee`).
 - **`REFERRAL_UNSUCCESSFUL → CLOSED`** and **`REFERRAL_BROKER_REVIEW → CLOSED`** — Ryan sets `CLOSED` manually once payout is actually done (the system does not automate the payout itself, only the fee calculation).
 
-### 3e. Data model — recommended approach (needs Ryan's confirmation, see Open Questions)
+### 3e. Data model — confirmed approach (Ryan approved 2026-07-14)
 
-**Recommendation: reuse the existing `TransactionFile` model rather than building a new one.** Reasoning:
+**Confirmed: reuse the existing `TransactionFile` model rather than building a new one.** Reasoning:
 - The checklist auto-apply mechanism already matches on `fileType: "TRANSACTION"` + `transactionSide` — reusing `TransactionFile` means "Referral Forms" (§2c) attaches through the exact same code path as every other checklist, no new matching logic needed.
 - The existing precedent for side-dependent field relevance already exists on this model (e.g. `leasePrice` vs. `salePrice` coexist as side-conditional fields today) — adding a handful of referral-only nullable fields follows an established pattern rather than introducing a new one.
 - Reuses the existing "All Files" list, admin file-detail page shell, and document upload/review UI already built for every other transaction type, instead of building a parallel page and API surface from scratch.
@@ -177,9 +177,7 @@ REFERRAL_BROKER_REVIEW
 ```
 (`PENDING` and `CLOSED` already exist and are reused as-is.)
 
-**Property field requirement:** `propertyAddress`, `city`, and `zip` are currently `NOT NULL` on `TransactionFile` at the schema level (not just API-level validation). Two options, need Ryan's call:
-- **(a) Recommended — make them nullable** via a real migration, and have `POST /api/transactions` skip requiring them when `transactionSide === "REFERRAL"`. Correct long-term, small one-time migration cost.
-- **(b) Lower-effort — write empty-string placeholders** (`city: "", zip: ""`) for Referral files, matching an existing precedent already in `deals/[id]/convert/route.ts`. No migration needed, but perpetuates a pattern that's arguably already a wart in that file.
+**Property field requirement — confirmed (Ryan approved 2026-07-14):** `propertyAddress`, `city`, and `zip` are currently `NOT NULL` on `TransactionFile` at the schema level (not just API-level validation). These 3 columns become **nullable** via a real migration, and `POST /api/transactions` skips requiring them when `transactionSide === "REFERRAL"`. Rejected alternative: writing empty-string placeholders (matching an existing pattern in `deals/[id]/convert/route.ts`) — a real `NULL` correctly represents "this file has no property," which an empty string does not; Referral files should never have had a location captured in the first place, so faking one is inconsistent with that decision.
 
 ---
 
@@ -210,8 +208,10 @@ REFERRAL_BROKER_REVIEW
 
 ---
 
-## Open Questions (for Ryan's review before this moves to a plan)
+## Decisions confirmed (Ryan, 2026-07-14)
 
-1. **§3e — reuse `TransactionFile` vs. a new dedicated model?** Recommendation given above (reuse), but this is a real fork worth an explicit yes/no rather than a silent pick, since it affects how much new code the eventual plan contains.
-2. **§3e — nullable columns (3e-a) vs. empty-string placeholders (3e-b)** for `propertyAddress`/`city`/`zip` on Referral files.
-3. Should the Referral creation flow be its own page/route (as assumed in §4), or a heavily-branched mode within the existing New Transaction wizard? Recommendation is a separate page, given how little the two flows share.
+1. **§3e — reuse `TransactionFile`, not a new dedicated model.** Keeps the existing checklist fileType/transactionSide matching mechanism working unchanged for Referral, at the cost of a handful of unused nullable columns on the shared table.
+2. **§3e — `propertyAddress`/`city`/`zip` become nullable columns** via a real migration, not empty-string placeholders. Consistent with the earlier decision that Referral files capture no location at all.
+3. **§3c — Referral creation is its own page/route** (`new-referral`, not a branch inside `new-transaction`), following directly from decision 1 — the two flows don't share enough steps to justify branching one wizard.
+
+No open questions remain. Ready for `superpowers:writing-plans`.
