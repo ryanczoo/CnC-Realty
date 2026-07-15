@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { StatusBadge } from "@/components/transactions/StatusBadge";
 import { ChecklistPanel } from "@/components/transactions/ChecklistPanel";
@@ -32,6 +33,7 @@ const BASE_TABS: { key: Tab; label: string }[] = [
 export default function FileDetailPage() {
   const params = useParams<{ fileType: string; id: string }>();
   const router = useRouter();
+  const { data: session } = useSession();
   const { fileType, id } = params;
 
   const [tab, setTab] = useState<Tab>("overview");
@@ -99,7 +101,16 @@ export default function FileDetailPage() {
   const listing = isListing ? (file as ListingFileDetail) : null;
   const transaction = !isListing ? (file as TransactionFileDetail) : null;
 
-  const title = `${file.propertyAddress}, ${file.city}, ${file.state} ${file.zip}`;
+  const isReferral = !isListing && transaction?.transactionSide === "REFERRAL";
+  const viewerIsAdmin = session?.user?.role === "ADMIN";
+  const viewerIsFileAgent =
+    !!transaction && session?.user?.agentId != null && session.user.agentId === transaction.agentId;
+
+  const title = file.propertyAddress
+    ? `${file.propertyAddress}, ${file.city ?? ""}, ${file.state} ${file.zip ?? ""}`
+    : isReferral
+      ? "Referral File"
+      : `${file.city ?? ""} ${file.state} ${file.zip ?? ""}`.trim();
   const price = isListing
     ? (listing?.listPrice ? `$${Number(listing.listPrice).toLocaleString()}` : null)
     : (transaction?.salePrice
@@ -111,8 +122,8 @@ export default function FileDetailPage() {
   const { satisfied, required } = getChecklistProgress(file.checklistItems as FileChecklistItemWithDocs[]);
   const progressPct = required > 0 ? Math.round((satisfied / required) * 100) : 0;
 
-  // Only show Commission tab for transactions
-  const visibleTabs = isListing
+  // Only show Commission tab for real-property transactions (not listings or referrals)
+  const visibleTabs = isListing || isReferral
     ? BASE_TABS.filter((t) => t.key !== "commission")
     : BASE_TABS;
 
@@ -137,6 +148,14 @@ export default function FileDetailPage() {
               <button onClick={convertToTransaction} className="rounded-full border border-[#1B1B1B]/20 px-4 py-2 text-sm text-[#1B1B1B]/70 hover:border-[#1B1B1B]/40">
                 Convert to Transaction
               </button>
+            )}
+            {isReferral && transaction && (
+              <ReferralActions
+                transaction={transaction}
+                viewerIsAdmin={viewerIsAdmin}
+                viewerIsFileAgent={viewerIsFileAgent}
+                onDone={load}
+              />
             )}
             {!file.awaitingReview && (
               <button onClick={submitForReview} className="rounded-full bg-[#9E8C61] px-4 py-2 text-sm text-white">
@@ -237,15 +256,16 @@ function OverviewTab({
   satisfied: number;
   required: number;
 }) {
+  const isReferral = !isListing && transaction?.transactionSide === "REFERRAL";
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       <div className="space-y-4">
         <div className="rounded-xl border border-[#1B1B1B]/10 bg-white p-5 space-y-3">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Property Details</h2>
-          <InfoRow label="Address" value={file.propertyAddress} />
-          <InfoRow label="City" value={file.city} />
+          <InfoRow label="Address" value={file.propertyAddress ?? "—"} />
+          <InfoRow label="City" value={file.city ?? "—"} />
           <InfoRow label="State" value={file.state} />
-          <InfoRow label="ZIP" value={file.zip} />
+          <InfoRow label="ZIP" value={file.zip ?? "—"} />
           {file.mlsNumber && <InfoRow label="MLS #" value={file.mlsNumber} />}
           {isListing && listing && (
             <>
@@ -256,7 +276,7 @@ function OverviewTab({
               {listing.commissionPercent && <InfoRow label="Commission" value={`${listing.commissionPercent}%`} />}
             </>
           )}
-          {!isListing && transaction && (
+          {!isListing && transaction && !isReferral && (
             <>
               {transaction.propertyType && <InfoRow label="Property Type" value={transaction.propertyType} />}
               {transaction.yearBuilt && <InfoRow label="Year Built" value={String(transaction.yearBuilt)} />}
@@ -276,7 +296,25 @@ function OverviewTab({
           )}
         </div>
 
-        {!isListing && transaction && transaction.photoKey && (
+        {isReferral && transaction && (
+          <div className="rounded-xl border border-[#1B1B1B]/10 bg-white p-5 space-y-3">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Referral Details</h2>
+            <InfoRow label="Referred-To Agent" value={transaction.referredToAgentName ?? "—"} />
+            <InfoRow label="Referred-To Brokerage" value={transaction.referredToBrokerageName ?? "—"} />
+            <InfoRow label="Contact Email" value={transaction.referredToContactEmail ?? "—"} />
+            <InfoRow label="Contact Phone" value={transaction.referredToContactPhone ?? "—"} />
+            <InfoRow label="Date Referred" value={transaction.dateReferred ? new Date(transaction.dateReferred).toLocaleDateString() : "—"} />
+            {transaction.referralAmountReceived != null && (
+              <>
+                <InfoRow label="Referral Amount Received" value={`$${Number(transaction.referralAmountReceived).toLocaleString()}`} />
+                <InfoRow label="CnC Fee" value={transaction.referralCncFee != null ? `$${Number(transaction.referralCncFee).toLocaleString()}` : "—"} />
+                <InfoRow label="Agent Net" value={`$${(Number(transaction.referralAmountReceived) - Number(transaction.referralCncFee ?? 0)).toLocaleString()}`} />
+              </>
+            )}
+          </div>
+        )}
+
+        {!isListing && transaction && !isReferral && transaction.photoKey && (
           <div className="rounded-xl border border-[#1B1B1B]/10 bg-white p-5 space-y-3">
             <h2 className="text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Property Photo</h2>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -284,7 +322,7 @@ function OverviewTab({
           </div>
         )}
 
-        {!isListing && transaction && (
+        {!isListing && transaction && !isReferral && (
           <div className="rounded-xl border border-[#1B1B1B]/10 bg-white p-5 space-y-3">
             <h2 className="text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Key Dates</h2>
             <InfoRow label="Offer Date" value={transaction.offerDate ? new Date(transaction.offerDate).toLocaleDateString() : "—"} />
@@ -299,7 +337,7 @@ function OverviewTab({
           </div>
         )}
 
-        {!isListing && transaction && transaction.conditions.length > 0 && (
+        {!isListing && transaction && !isReferral && transaction.conditions.length > 0 && (
           <div className="rounded-xl border border-[#1B1B1B]/10 bg-white p-5 space-y-3">
             <h2 className="text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Conditions / Contingencies</h2>
             {transaction.conditions.map((c) => (
@@ -666,6 +704,105 @@ function TaskRow({
       </button>
     </div>
   );
+}
+
+// ─── Referral Status Actions ──────────────────────────────────────────────────
+
+function ReferralActions({
+  transaction,
+  viewerIsAdmin,
+  viewerIsFileAgent,
+  onDone,
+}: {
+  transaction: TransactionFileDetail;
+  viewerIsAdmin: boolean;
+  viewerIsFileAgent: boolean;
+  onDone: () => void;
+}) {
+  const [amount, setAmount] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  async function patch(payload: Record<string, unknown>) {
+    setSubmitting(true);
+    try {
+      await fetch(`/api/transactions/${transaction.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      onDone();
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  const status = transaction.status;
+
+  if (status === "PENDING" && viewerIsFileAgent) {
+    return (
+      <>
+        <button
+          onClick={() => patch({ status: "REFERRAL_SUCCESSFUL" })}
+          disabled={submitting}
+          className="rounded-full bg-[#9E8C61] px-4 py-2 text-sm text-white disabled:opacity-50"
+        >
+          Referral Successful
+        </button>
+        <button
+          onClick={() => patch({ status: "REFERRAL_UNSUCCESSFUL" })}
+          disabled={submitting}
+          className="rounded-full border border-[#1B1B1B]/20 px-4 py-2 text-sm text-[#1B1B1B]/70 hover:border-[#1B1B1B]/40 disabled:opacity-50"
+        >
+          Referral Unsuccessful
+        </button>
+      </>
+    );
+  }
+
+  if (status === "REFERRAL_SUCCESSFUL" && viewerIsAdmin) {
+    return (
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!amount.trim()) return;
+          patch({ status: "REFERRAL_BROKER_REVIEW", referralAmountReceived: amount });
+        }}
+        className="flex items-center gap-2"
+      >
+        <input
+          type="number"
+          min="0"
+          step="0.01"
+          required
+          placeholder="Amount received"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          className="w-40 rounded-lg border border-[#1B1B1B]/15 bg-[#F2F0EF] px-3 py-2 text-sm text-[#1B1B1B] outline-none focus:border-[#1B1B1B]/40"
+        />
+        <button
+          type="submit"
+          disabled={submitting}
+          className="rounded-full bg-[#9E8C61] px-4 py-2 text-sm text-white disabled:opacity-50"
+        >
+          Submit for Broker Review
+        </button>
+      </form>
+    );
+  }
+
+  if ((status === "REFERRAL_BROKER_REVIEW" || status === "REFERRAL_UNSUCCESSFUL") && viewerIsAdmin) {
+    return (
+      <button
+        onClick={() => patch({ status: "CLOSED" })}
+        disabled={submitting}
+        className="rounded-full bg-[#9E8C61] px-4 py-2 text-sm text-white disabled:opacity-50"
+      >
+        Mark Closed
+      </button>
+    );
+  }
+
+  return null;
 }
 
 // ─── Shared ───────────────────────────────────────────────────────────────────
