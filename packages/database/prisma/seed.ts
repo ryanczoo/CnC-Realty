@@ -57,6 +57,33 @@ const RESIDENTIAL_LEASE_LANDLORD_ITEMS = [
   { name: "LPD — Lead-Based Paint and Lead-Based Paint Hazards Disclosure", description: "Federal law, required only for housing built before 1978", isRequired: false, order: 3 },
 ];
 
+const DUAL_AGENCY_ITEMS = [
+  { name: "RPA-CA — Purchase Agreement", description: "The purchase contract", isRequired: true, order: 1 },
+  { name: "AD — Disclosure Regarding Real Estate Agency Relationships", description: "Civil Code §2079.13-2079.24", isRequired: true, order: 2 },
+  { name: "AVID — Agent Visual Inspection Disclosure", description: "Agent's own visual inspection disclosure", isRequired: true, order: 3 },
+  { name: "SBSA — Statewide Buyer and Seller Advisory", description: "C.A.R. consolidated general-disclosure advisory", isRequired: true, order: 4 },
+  { name: "TDS — Real Estate Transfer Disclosure Statement", description: "Civil Code §1102", isRequired: true, order: 5 },
+  { name: "NHD — Natural Hazard Disclosure Report", description: "Govt. Code §8589.3", isRequired: true, order: 6 },
+  { name: "BRBC — Buyer Representation and Broker Compensation Agreement", description: "Required before touring homes per the Aug. 2024 NAR settlement", isRequired: true, order: 7 },
+  { name: "FIRPTA / CA Withholding Affidavit", description: "Foreign Investment in Real Property Tax Act + CA state withholding certification", isRequired: true, order: 8 },
+  { name: "Proof of Funds / Loan Pre-Approval Letter", description: "Lender pre-approval or proof of funds dated within 30 days", isRequired: true, order: 9 },
+  { name: "SPQ — Seller Property Questionnaire", description: "C.A.R. supplemental seller questionnaire", isRequired: true, order: 10 },
+  { name: "DBD — Megan's Law Database Disclosure", description: "Civil Code §2079.10a", isRequired: true, order: 11 },
+  { name: "WHSD — Water Heater & Smoke Detector Statement of Compliance", description: "Health & Safety Code compliance statement", isRequired: true, order: 12 },
+  { name: "HOA Governing Documents", description: "Required only if the property is part of a common interest development (HOA)", isRequired: false, order: 13 },
+];
+
+const LEASE_DUAL_AGENCY_ITEMS = [
+  { name: "RLMM — Residential Lease or Month-to-Month Rental Agreement", description: "The lease contract", isRequired: true, order: 1 },
+  { name: "AD — Disclosure Regarding Real Estate Agency Relationships", description: "Required for leases over 1 year; standard practice regardless", isRequired: true, order: 2 },
+  { name: "LPD — Lead-Based Paint and Lead-Based Paint Hazards Disclosure", description: "Federal law, required only for housing built before 1978", isRequired: false, order: 3 },
+  { name: "MII — Move-In Inspection", description: "Signed condition checklist at move-in", isRequired: true, order: 4 },
+];
+
+const REFERRAL_ITEMS = [
+  { name: "RFA — Referral Fee Agreement", description: "Signed agreement between the CnC agent and the referred-to agent/brokerage", isRequired: false, order: 1 },
+];
+
 const TAGS: { name: string; color: string }[] = [
   // CA Counties — slate blue
   ...[
@@ -112,12 +139,15 @@ async function main() {
   }
 
   const templates = await Promise.all([
-    upsertTemplate("seed-res-sale-listing", "Residential Sale — Listing (Pre-Contract)", "LISTING", "RESIDENTIAL_SALE", "ALL", RESIDENTIAL_SALE_LISTING_ITEMS),
-    upsertTemplate("seed-res-sale-buyer", "Residential Sale — Buyer Side", "TRANSACTION", "ALL", "PURCHASE", RESIDENTIAL_SALE_BUYER_ITEMS),
-    upsertTemplate("seed-res-sale-seller", "Residential Sale — Seller Side (Under Contract)", "TRANSACTION", "ALL", "LISTING", RESIDENTIAL_SALE_SELLER_ITEMS),
-    upsertTemplate("seed-res-lease", "Residential Lease — Landlord Listing (Pre-Contract)", "LISTING", "RESIDENTIAL_LEASE", "ALL", RESIDENTIAL_LEASE_LISTING_ITEMS),
-    upsertTemplate("seed-res-lease-tenant", "Residential Lease — Tenant Side", "TRANSACTION", "ALL", "LEASE_TENANT", RESIDENTIAL_LEASE_TENANT_ITEMS),
-    upsertTemplate("seed-res-lease-landlord", "Residential Lease — Landlord Side (Transaction)", "TRANSACTION", "ALL", "LEASE_LANDLORD", RESIDENTIAL_LEASE_LANDLORD_ITEMS),
+    upsertTemplate("seed-res-sale-listing", "Residential Sale — Listing Forms (Pre-Contract)", "LISTING", "RESIDENTIAL_SALE", "ALL", RESIDENTIAL_SALE_LISTING_ITEMS),
+    upsertTemplate("seed-res-sale-buyer", "Purchase Forms", "TRANSACTION", "ALL", "PURCHASE", RESIDENTIAL_SALE_BUYER_ITEMS),
+    upsertTemplate("seed-res-sale-seller", "Listing Forms", "TRANSACTION", "ALL", "LISTING", RESIDENTIAL_SALE_SELLER_ITEMS),
+    upsertTemplate("seed-res-lease", "Residential Lease — Landlord Listing Forms (Pre-Contract)", "LISTING", "RESIDENTIAL_LEASE", "ALL", RESIDENTIAL_LEASE_LISTING_ITEMS),
+    upsertTemplate("seed-res-lease-tenant", "Lease Tenant Forms", "TRANSACTION", "ALL", "LEASE_TENANT", RESIDENTIAL_LEASE_TENANT_ITEMS),
+    upsertTemplate("seed-res-lease-landlord", "Lease Landlord Forms", "TRANSACTION", "ALL", "LEASE_LANDLORD", RESIDENTIAL_LEASE_LANDLORD_ITEMS),
+    upsertTemplate("seed-dual-agency", "Dual Agency Forms", "TRANSACTION", "ALL", "DUAL", DUAL_AGENCY_ITEMS),
+    upsertTemplate("seed-lease-dual-agency", "Lease Dual Agency Forms", "TRANSACTION", "ALL", "LEASE_DUAL", LEASE_DUAL_AGENCY_ITEMS),
+    upsertTemplate("seed-referral", "Referral Forms", "TRANSACTION", "ALL", "REFERRAL", REFERRAL_ITEMS),
   ]);
 
   console.log(`Created/updated ${templates.length} checklist templates: ${templates.map((t) => t.name).join(", ")}`);
