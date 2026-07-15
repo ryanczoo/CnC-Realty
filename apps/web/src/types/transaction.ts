@@ -48,10 +48,10 @@ export interface ChecklistProgress {
 export interface ListingFileDetail {
   id: string;
   agentId: string;
-  propertyAddress: string | null;
-  city: string | null;
+  propertyAddress: string;
+  city: string;
   state: string;
-  zip: string | null;
+  zip: string;
   mlsNumber: string | null;
   listPrice: number;
   listingType: ListingType;
