@@ -45,25 +45,31 @@ const ADMIN_LISTING_TRANSITIONS: Record<ListingStatus, ListingStatus[]> = {
 };
 
 const AGENT_TX_TRANSITIONS: Record<TransactionFileStatus, TransactionFileStatus[]> = {
-  INCOMPLETE:        ["PRE_CONTRACT", "PENDING"],
-  PRE_CONTRACT:      ["PENDING", "CANCELED_PENDING"],
-  PENDING:           ["CANCELED_PENDING"],
-  EXPIRED:           [],
-  CLOSED:            [],
-  ARCHIVED:          [],
-  CANCELED_PENDING:  [],
-  CANCELED_APPROVED: [],
+  INCOMPLETE:              ["PRE_CONTRACT", "PENDING"],
+  PRE_CONTRACT:            ["PENDING", "CANCELED_PENDING"],
+  PENDING:                 ["CANCELED_PENDING", "REFERRAL_SUCCESSFUL", "REFERRAL_UNSUCCESSFUL"],
+  EXPIRED:                 [],
+  CLOSED:                  [],
+  ARCHIVED:                [],
+  CANCELED_PENDING:        [],
+  CANCELED_APPROVED:       [],
+  REFERRAL_SUCCESSFUL:     [],
+  REFERRAL_UNSUCCESSFUL:   [],
+  REFERRAL_BROKER_REVIEW:  [],
 };
 
 const ADMIN_TX_TRANSITIONS: Record<TransactionFileStatus, TransactionFileStatus[]> = {
-  INCOMPLETE:        ["PRE_CONTRACT", "PENDING", "CANCELED_APPROVED"],
-  PRE_CONTRACT:      ["PENDING", "CANCELED_PENDING", "CANCELED_APPROVED"],
-  PENDING:           ["CLOSED", "EXPIRED", "CANCELED_PENDING", "CANCELED_APPROVED"],
-  EXPIRED:           ["PENDING", "CLOSED", "CANCELED_APPROVED"],
-  CLOSED:            ["ARCHIVED"],
-  ARCHIVED:          [],
-  CANCELED_PENDING:  ["PENDING", "CANCELED_APPROVED"],
-  CANCELED_APPROVED: [],
+  INCOMPLETE:              ["PRE_CONTRACT", "PENDING", "CANCELED_APPROVED"],
+  PRE_CONTRACT:            ["PENDING", "CANCELED_PENDING", "CANCELED_APPROVED"],
+  PENDING:                 ["CLOSED", "EXPIRED", "CANCELED_PENDING", "CANCELED_APPROVED"],
+  EXPIRED:                 ["PENDING", "CLOSED", "CANCELED_APPROVED"],
+  CLOSED:                  ["ARCHIVED"],
+  ARCHIVED:                [],
+  CANCELED_PENDING:        ["PENDING", "CANCELED_APPROVED"],
+  CANCELED_APPROVED:       [],
+  REFERRAL_SUCCESSFUL:     ["REFERRAL_BROKER_REVIEW"],
+  REFERRAL_UNSUCCESSFUL:   ["CLOSED"],
+  REFERRAL_BROKER_REVIEW:  ["CLOSED"],
 };
 
 export function canTransitionListing(
@@ -100,4 +106,9 @@ export function isReadyToClose(items: FileChecklistItemWithDocs[]): boolean {
   return items
     .filter((i) => i.isRequired)
     .every((i) => i.documents.some((d) => d.reviewStatus === "APPROVED"));
+}
+
+export function calcReferralFee(amountReceived: number): { cncFee: number; agentNet: number } {
+  const cncFee = Math.max(amountReceived * 0.10, 200);
+  return { cncFee, agentNet: amountReceived - cncFee };
 }
