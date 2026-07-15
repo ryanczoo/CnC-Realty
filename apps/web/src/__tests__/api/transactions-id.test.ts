@@ -13,7 +13,7 @@ vi.mock("@/lib/email/transaction-emails", () => ({ sendFileClosed: vi.fn() }));
 
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
-import { GET } from "../../app/api/transactions/[id]/route";
+import { GET, PATCH } from "../../app/api/transactions/[id]/route";
 
 function makeRequest() {
   return new Request("http://localhost/api/transactions/tf1");
@@ -68,5 +68,58 @@ describe("GET /api/transactions/[id]", () => {
 
     const res = await GET(makeRequest(), { params: { id: "tf1" } });
     expect(res.status).toBe(403);
+  });
+});
+
+const ADMIN_SESSION = { user: { id: "admin1", role: "ADMIN", agentId: null } };
+const REFERRAL_TX = { id: "tf1", agentId: "a1", transactionSide: "REFERRAL", status: "REFERRAL_SUCCESSFUL", propertyAddress: null };
+
+describe("PATCH /api/transactions/[id] — referral amount entry", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(prisma.fileActivity.create).mockResolvedValue({} as any);
+  });
+
+  it("computes and stores referralCncFee server-side when entering REFERRAL_BROKER_REVIEW", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(ADMIN_SESSION as any);
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(REFERRAL_TX as any);
+    vi.mocked(prisma.transactionFile.update).mockResolvedValue({ ...REFERRAL_TX, status: "REFERRAL_BROKER_REVIEW" } as any);
+
+    const res = await PATCH(
+      new Request("http://localhost", {
+        method: "PATCH",
+        body: JSON.stringify({ status: "REFERRAL_BROKER_REVIEW", referralAmountReceived: 5000 }),
+      }),
+      { params: { id: "tf1" } }
+    );
+
+    expect(res.status).toBe(200);
+    expect(prisma.transactionFile.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: "REFERRAL_BROKER_REVIEW",
+          referralAmountReceived: 5000,
+          referralCncFee: 500,
+        }),
+      })
+    );
+  });
+
+  it("ignores a client-supplied referralCncFee and always recomputes it", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(ADMIN_SESSION as any);
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(REFERRAL_TX as any);
+    vi.mocked(prisma.transactionFile.update).mockResolvedValue({} as any);
+
+    await PATCH(
+      new Request("http://localhost", {
+        method: "PATCH",
+        body: JSON.stringify({ status: "REFERRAL_BROKER_REVIEW", referralAmountReceived: 1000, referralCncFee: 1 }),
+      }),
+      { params: { id: "tf1" } }
+    );
+
+    expect(prisma.transactionFile.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ referralCncFee: 200 }) })
+    );
   });
 });

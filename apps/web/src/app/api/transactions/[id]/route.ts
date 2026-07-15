@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { canTransitionTransaction, FILE_DETAIL_INCLUDE } from "@/lib/transaction-helpers";
+import { canTransitionTransaction, calcReferralFee, FILE_DETAIL_INCLUDE } from "@/lib/transaction-helpers";
 import { sendFileClosed } from "@/lib/email/transaction-emails";
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
@@ -41,6 +41,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     }
   }
 
+  const referralFeeUpdate =
+    body.status === "REFERRAL_BROKER_REVIEW" && body.referralAmountReceived !== undefined
+      ? calcReferralFee(parseFloat(body.referralAmountReceived))
+      : null;
+
   const updated = await prisma.transactionFile.update({
     where: { id: params.id },
     data: {
@@ -53,6 +58,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       ...(body.commissionGCI !== undefined && { commissionGCI: body.commissionGCI ? parseFloat(body.commissionGCI) : null }),
       ...(body.commissionSplit !== undefined && { commissionSplit: body.commissionSplit ? parseFloat(body.commissionSplit) : null }),
       ...(body.commissionNotes !== undefined && { commissionNotes: body.commissionNotes }),
+      ...(body.referralAmountReceived !== undefined && { referralAmountReceived: parseFloat(body.referralAmountReceived) }),
+      ...(referralFeeUpdate && { referralCncFee: referralFeeUpdate.cncFee }),
       ...(body.status !== undefined && { status: body.status }),
     },
   });
