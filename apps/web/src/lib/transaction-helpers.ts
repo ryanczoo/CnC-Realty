@@ -77,8 +77,13 @@ export function canTransitionListing(
   to: ListingStatus,
   role: ActorRole
 ): boolean {
-  const table = role === "ADMIN" ? ADMIN_LISTING_TRANSITIONS : AGENT_LISTING_TRANSITIONS;
-  return table[from]?.includes(to) ?? false;
+  if (role === "ADMIN") {
+    return (
+      (ADMIN_LISTING_TRANSITIONS[from]?.includes(to) ?? false) ||
+      (AGENT_LISTING_TRANSITIONS[from]?.includes(to) ?? false)
+    );
+  }
+  return AGENT_LISTING_TRANSITIONS[from]?.includes(to) ?? false;
 }
 
 export function canTransitionTransaction(
@@ -86,8 +91,13 @@ export function canTransitionTransaction(
   to: TransactionFileStatus,
   role: ActorRole
 ): boolean {
-  const table = role === "ADMIN" ? ADMIN_TX_TRANSITIONS : AGENT_TX_TRANSITIONS;
-  return table[from]?.includes(to) ?? false;
+  if (role === "ADMIN") {
+    return (
+      (ADMIN_TX_TRANSITIONS[from]?.includes(to) ?? false) ||
+      (AGENT_TX_TRANSITIONS[from]?.includes(to) ?? false)
+    );
+  }
+  return AGENT_TX_TRANSITIONS[from]?.includes(to) ?? false;
 }
 
 export function isItemSatisfied(item: FileChecklistItemWithDocs): boolean {

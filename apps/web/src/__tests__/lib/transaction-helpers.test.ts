@@ -39,4 +39,23 @@ describe("referral status transitions", () => {
   it("admin can close directly from REFERRAL_UNSUCCESSFUL", () => {
     expect(canTransitionTransaction("REFERRAL_UNSUCCESSFUL", "CLOSED", "ADMIN")).toBe(true);
   });
+
+  it("admin can also move PENDING to REFERRAL_SUCCESSFUL (admin has full agent-level control)", () => {
+    expect(canTransitionTransaction("PENDING", "REFERRAL_SUCCESSFUL", "ADMIN")).toBe(true);
+  });
+
+  it("admin can also move PENDING to REFERRAL_UNSUCCESSFUL (admin has full agent-level control)", () => {
+    expect(canTransitionTransaction("PENDING", "REFERRAL_UNSUCCESSFUL", "ADMIN")).toBe(true);
+  });
+
+  it("admin retains every admin-only transition after gaining agent-level access (no narrowing)", () => {
+    expect(canTransitionTransaction("PENDING", "CLOSED", "ADMIN")).toBe(true);
+    expect(canTransitionTransaction("PENDING", "EXPIRED", "ADMIN")).toBe(true);
+    expect(canTransitionTransaction("REFERRAL_SUCCESSFUL", "REFERRAL_BROKER_REVIEW", "ADMIN")).toBe(true);
+  });
+
+  it("agent still cannot do admin-only transitions after this change (union is one-directional)", () => {
+    expect(canTransitionTransaction("PENDING", "CLOSED", "AGENT")).toBe(false);
+    expect(canTransitionTransaction("REFERRAL_SUCCESSFUL", "REFERRAL_BROKER_REVIEW", "AGENT")).toBe(false);
+  });
 });
