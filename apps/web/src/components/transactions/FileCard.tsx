@@ -6,16 +6,17 @@ import type { FileChecklistItemWithDocs, ListingStatus, TransactionFileStatus } 
 interface Props {
   id: string;
   fileType: "listing" | "transaction";
-  address: string;
-  city: string;
+  address: string | null;
+  city: string | null;
   status: ListingStatus | TransactionFileStatus;
   closeDate?: string | null;
   listPrice?: number | null;
   checklistItems: FileChecklistItemWithDocs[];
   awaitingReview: boolean;
+  referredToAgentName?: string | null;
 }
 
-export function FileCard({ id, fileType, address, city, status, closeDate, listPrice, checklistItems, awaitingReview }: Props) {
+export function FileCard({ id, fileType, address, city, status, closeDate, listPrice, checklistItems, awaitingReview, referredToAgentName }: Props) {
   const { satisfied, required } = getChecklistProgress(checklistItems);
   const pct = required > 0 ? Math.round((satisfied / required) * 100) : 0;
 
@@ -26,8 +27,17 @@ export function FileCard({ id, fileType, address, city, status, closeDate, listP
     >
       <div className="flex items-start justify-between gap-2">
         <div>
-          <p className="font-medium text-[#1B1B1B] line-clamp-1">{address}</p>
-          <p className="text-sm text-[#1B1B1B]/50">{city}, CA</p>
+          {address ? (
+            <>
+              <p className="font-medium text-[#1B1B1B] line-clamp-1">{address}</p>
+              <p className="text-sm text-[#1B1B1B]/50">{city}, CA</p>
+            </>
+          ) : (
+            <>
+              <p className="font-medium text-[#1B1B1B] line-clamp-1">Referral — {referredToAgentName ?? "Unnamed"}</p>
+              <p className="text-sm text-[#1B1B1B]/50">Outbound referral</p>
+            </>
+          )}
         </div>
         <StatusBadge status={status} />
       </div>

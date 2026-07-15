@@ -79,6 +79,7 @@ export default function TransactionsPage() {
               listPrice={item.listPrice}
               checklistItems={item.checklistItems ?? []}
               awaitingReview={item.awaitingReview}
+              referredToAgentName={item.referredToAgentName}
             />
           ))}
         </div>

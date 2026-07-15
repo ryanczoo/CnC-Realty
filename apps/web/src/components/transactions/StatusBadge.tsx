@@ -16,6 +16,9 @@ const COLORS: Record<string, string> = {
   CANCELED_APPROVED:     "bg-red-200 text-red-700",
   CLOSED:                "bg-[#1B1B1B] text-white",
   ARCHIVED:              "bg-zinc-200 text-zinc-600",
+  REFERRAL_SUCCESSFUL:    "bg-blue-100 text-blue-700",
+  REFERRAL_UNSUCCESSFUL:  "bg-red-100 text-red-600",
+  REFERRAL_BROKER_REVIEW: "bg-orange-100 text-orange-700",
 };
 
 const LABELS: Record<string, string> = {
@@ -32,6 +35,9 @@ const LABELS: Record<string, string> = {
   CANCELED_APPROVED:     "Canceled",
   CLOSED:                "Closed",
   ARCHIVED:              "Archived",
+  REFERRAL_SUCCESSFUL:    "Referral Successful",
+  REFERRAL_UNSUCCESSFUL:  "Referral Unsuccessful",
+  REFERRAL_BROKER_REVIEW: "Broker Review",
 };
 
 export function StatusBadge({ status }: { status: Status }) {
