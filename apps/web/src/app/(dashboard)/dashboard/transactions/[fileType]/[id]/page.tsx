@@ -721,15 +721,22 @@ function ReferralActions({
 }) {
   const [amount, setAmount] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function patch(payload: Record<string, unknown>) {
     setSubmitting(true);
+    setError(null);
     try {
-      await fetch(`/api/transactions/${transaction.id}`, {
+      const res = await fetch(`/api/transactions/${transaction.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        setError(body?.error ?? "Failed to update status. Please try again.");
+        return;
+      }
       onDone();
     } finally {
       setSubmitting(false);
@@ -738,8 +745,10 @@ function ReferralActions({
 
   const status = transaction.status;
 
+  let content: React.ReactNode = null;
+
   if (status === "PENDING" && viewerIsFileAgent) {
-    return (
+    content = (
       <>
         <button
           onClick={() => patch({ status: "REFERRAL_SUCCESSFUL" })}
@@ -757,10 +766,8 @@ function ReferralActions({
         </button>
       </>
     );
-  }
-
-  if (status === "REFERRAL_SUCCESSFUL" && viewerIsAdmin) {
-    return (
+  } else if (status === "REFERRAL_SUCCESSFUL" && viewerIsAdmin) {
+    content = (
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -788,10 +795,8 @@ function ReferralActions({
         </button>
       </form>
     );
-  }
-
-  if ((status === "REFERRAL_BROKER_REVIEW" || status === "REFERRAL_UNSUCCESSFUL") && viewerIsAdmin) {
-    return (
+  } else if ((status === "REFERRAL_BROKER_REVIEW" || status === "REFERRAL_UNSUCCESSFUL") && viewerIsAdmin) {
+    content = (
       <button
         onClick={() => patch({ status: "CLOSED" })}
         disabled={submitting}
@@ -802,7 +807,14 @@ function ReferralActions({
     );
   }
 
-  return null;
+  if (!content) return null;
+
+  return (
+    <div className="flex flex-col items-end gap-1.5">
+      <div className="flex items-center gap-2">{content}</div>
+      {error && <p className="text-xs text-red-600">{error}</p>}
+    </div>
+  );
 }
 
 // ─── Shared ───────────────────────────────────────────────────────────────────

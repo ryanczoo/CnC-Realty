@@ -123,3 +123,117 @@ describe("PATCH /api/transactions/[id] — referral amount entry", () => {
     );
   });
 });
+
+describe("PATCH /api/transactions/[id] — full referral lifecycle", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(prisma.fileActivity.create).mockResolvedValue({} as any);
+  });
+
+  const AGENT_SESSION = { user: { id: "u1", role: "AGENT", agentId: "a1" } };
+
+  function patchRequest(status: string, extra: Record<string, unknown> = {}) {
+    return new Request("http://localhost", {
+      method: "PATCH",
+      body: JSON.stringify({ status, ...extra }),
+    });
+  }
+
+  it("walks a referral file through the entire lifecycle: agent marks successful -> admin enters amount -> admin closes", async () => {
+    // Step 1: agent moves PENDING -> REFERRAL_SUCCESSFUL
+    vi.mocked(getServerSession).mockResolvedValue(AGENT_SESSION as any);
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValueOnce({
+      id: "tf1",
+      agentId: "a1",
+      status: "PENDING",
+    } as any);
+    vi.mocked(prisma.transactionFile.update).mockResolvedValueOnce({
+      id: "tf1",
+      agentId: "a1",
+      status: "REFERRAL_SUCCESSFUL",
+    } as any);
+
+    const res1 = await PATCH(patchRequest("REFERRAL_SUCCESSFUL"), { params: { id: "tf1" } });
+    expect(res1.status).toBe(200);
+    expect(prisma.transactionFile.update).toHaveBeenLastCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ status: "REFERRAL_SUCCESSFUL" }) })
+    );
+
+    // Step 2: admin enters the referral amount -> REFERRAL_BROKER_REVIEW, fee computed server-side
+    vi.mocked(getServerSession).mockResolvedValue(ADMIN_SESSION as any);
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValueOnce({
+      id: "tf1",
+      agentId: "a1",
+      status: "REFERRAL_SUCCESSFUL",
+    } as any);
+    vi.mocked(prisma.transactionFile.update).mockResolvedValueOnce({
+      id: "tf1",
+      agentId: "a1",
+      status: "REFERRAL_BROKER_REVIEW",
+    } as any);
+
+    const res2 = await PATCH(
+      patchRequest("REFERRAL_BROKER_REVIEW", { referralAmountReceived: 5000 }),
+      { params: { id: "tf1" } }
+    );
+    expect(res2.status).toBe(200);
+    expect(prisma.transactionFile.update).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: "REFERRAL_BROKER_REVIEW",
+          referralAmountReceived: 5000,
+          referralCncFee: 500,
+        }),
+      })
+    );
+
+    // Step 3: admin closes the file -> CLOSED, close-notification email sent
+    vi.mocked(getServerSession).mockResolvedValue(ADMIN_SESSION as any);
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValueOnce({
+      id: "tf1",
+      agentId: "a1",
+      status: "REFERRAL_BROKER_REVIEW",
+      propertyAddress: null,
+    } as any);
+    vi.mocked(prisma.transactionFile.update).mockResolvedValueOnce({
+      id: "tf1",
+      agentId: "a1",
+      status: "CLOSED",
+    } as any);
+    vi.mocked(prisma.agent.findUnique).mockResolvedValueOnce({
+      id: "a1",
+      user: { email: "agent@example.com", name: "Jane Outbound" },
+    } as any);
+
+    const res3 = await PATCH(patchRequest("CLOSED"), { params: { id: "tf1" } });
+    expect(res3.status).toBe(200);
+    expect(prisma.transactionFile.update).toHaveBeenLastCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ status: "CLOSED" }) })
+    );
+
+    const { sendFileClosed } = await import("@/lib/email/transaction-emails");
+    expect(sendFileClosed).toHaveBeenCalledWith(
+      expect.objectContaining({ agentEmail: "agent@example.com", fileId: "tf1" })
+    );
+
+    // 3 status-change activity log entries were recorded across the whole lifecycle
+    expect(prisma.fileActivity.create).toHaveBeenCalledTimes(3);
+  });
+
+  it("rejects an agent attempting an admin-only transition (REFERRAL_SUCCESSFUL -> REFERRAL_BROKER_REVIEW)", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(AGENT_SESSION as any);
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValueOnce({
+      id: "tf1",
+      agentId: "a1",
+      status: "REFERRAL_SUCCESSFUL",
+    } as any);
+
+    const res = await PATCH(
+      patchRequest("REFERRAL_BROKER_REVIEW", { referralAmountReceived: 5000 }),
+      { params: { id: "tf1" } }
+    );
+
+    expect(res.status).toBe(400);
+    expect(prisma.transactionFile.update).not.toHaveBeenCalled();
+  });
+});

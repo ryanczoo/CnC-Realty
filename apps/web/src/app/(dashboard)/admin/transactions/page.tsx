@@ -77,6 +77,7 @@ export default function AdminTransactionsPage() {
                 listPrice={item.listPrice ?? item.salePrice}
                 checklistItems={item.checklistItems ?? []}
                 awaitingReview={item.awaitingReview}
+                referredToAgentName={item.referredToAgentName}
               />
             </Link>
           ))}
