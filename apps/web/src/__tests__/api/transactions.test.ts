@@ -153,6 +153,17 @@ describe("POST /api/transactions", () => {
     expect(capturedArgs.data.status).toBe("PENDING");
   });
 
+  it("returns 400 when REFERRAL is submitted without referredToAgentName", async () => {
+    const res = await POST(new Request("http://localhost", {
+      method: "POST",
+      body: JSON.stringify({
+        transactionSide: "REFERRAL",
+        referredToBrokerageName: "Other Realty",
+      }),
+    }));
+    expect(res.status).toBe(400);
+  });
+
   it("still requires propertyAddress/city/zip for non-REFERRAL sides", async () => {
     const res = await POST(new Request("http://localhost", {
       method: "POST",
