@@ -126,4 +126,38 @@ describe("POST /api/transactions", () => {
     expect(body.transaction.leasePrice).toBe(2800);
     expect(body.transaction.salePrice).toBeNull();
   });
+
+  it("creates a REFERRAL transaction with no property fields required", async () => {
+    let capturedArgs: any;
+    vi.mocked(prisma.transactionFile.create).mockImplementation((async (args: any) => {
+      capturedArgs = args;
+      return { id: "tf-referral" };
+    }) as any);
+
+    const res = await POST(new Request("http://localhost", {
+      method: "POST",
+      body: JSON.stringify({
+        transactionSide: "REFERRAL",
+        referredToAgentName: "Jane Outbound",
+        referredToBrokerageName: "Other Realty",
+        referredToContactEmail: "jane@otherrealty.com",
+        referredToContactPhone: "555-1234",
+        dateReferred: "2026-07-14",
+      }),
+    }));
+
+    expect(res.status).toBe(201);
+    expect(capturedArgs.data.propertyAddress).toBeNull();
+    expect(capturedArgs.data.referredToAgentName).toBe("Jane Outbound");
+    expect(capturedArgs.data.referredToBrokerageName).toBe("Other Realty");
+    expect(capturedArgs.data.status).toBe("PENDING");
+  });
+
+  it("still requires propertyAddress/city/zip for non-REFERRAL sides", async () => {
+    const res = await POST(new Request("http://localhost", {
+      method: "POST",
+      body: JSON.stringify({ transactionSide: "PURCHASE" }),
+    }));
+    expect(res.status).toBe(400);
+  });
 });

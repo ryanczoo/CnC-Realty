@@ -43,13 +43,21 @@ export async function POST(req: Request) {
     tcFeeEnabled = false,
     originatingLeadId,
     parties = [],
+    referredToAgentName, referredToBrokerageName,
+    referredToContactEmail, referredToContactPhone, dateReferred,
   } = body;
 
-  if (!propertyAddress || !city || !zip || !transactionSide) {
+  if (!transactionSide) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
+  if (transactionSide !== "REFERRAL" && (!propertyAddress || !city || !zip)) {
+    return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+  }
+  if (transactionSide === "REFERRAL" && !referredToAgentName) {
+    return NextResponse.json({ error: "referredToAgentName is required" }, { status: 400 });
+  }
 
-  const initialStatus = stage === "PRE_CONTRACT" ? "PRE_CONTRACT" : "INCOMPLETE";
+  const initialStatus = transactionSide === "REFERRAL" ? "PENDING" : (stage === "PRE_CONTRACT" ? "PRE_CONTRACT" : "INCOMPLETE");
 
   const template = await prisma.checklistTemplate.findFirst({
     where: { fileType: "TRANSACTION", isActive: true, OR: [{ transactionSide }, { transactionSide: "ALL" }] },
@@ -60,7 +68,10 @@ export async function POST(req: Request) {
     const tx = await prisma.transactionFile.create({
       data: {
         agentId,
-        propertyAddress, city, state: state ?? "CA", zip,
+        propertyAddress: propertyAddress || null,
+        city: city || null,
+        state: state ?? "CA",
+        zip: zip || null,
         mlsNumber: mlsNumber || null,
         propertyType: propertyType || null,
         yearBuilt: yearBuilt ? parseInt(yearBuilt) : null,
@@ -96,6 +107,11 @@ export async function POST(req: Request) {
         commissionSplit: commissionSplit ? parseFloat(commissionSplit) : null,
         commissionNotes: commissionNotes || null,
         tcFeeEnabled: !!tcFeeEnabled,
+        referredToAgentName: referredToAgentName || null,
+        referredToBrokerageName: referredToBrokerageName || null,
+        referredToContactEmail: referredToContactEmail || null,
+        referredToContactPhone: referredToContactPhone || null,
+        dateReferred: dateReferred ? new Date(dateReferred) : null,
         parties: parties.length > 0 ? {
           create: parties
             .filter((p: { name?: string }) => p.name)
