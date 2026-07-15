@@ -668,6 +668,8 @@ export default function NewTransactionPage() {
       </div>
 
       {/* Navigation */}
+      {/* Both guards below rely on referral's reused Review index (5) being >= STEPS.length - 1
+          for the 3-step referral bar — correct today, but would break if the reused index ever changed. */}
       <div className="mt-16 flex items-center justify-center gap-3">
         {step > 0 && (
           <button
