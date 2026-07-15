@@ -157,7 +157,7 @@ export default function FileDetailPage() {
                 onDone={load}
               />
             )}
-            {!file.awaitingReview && (
+            {!isReferral && !file.awaitingReview && (
               <button onClick={submitForReview} className="rounded-full bg-[#9E8C61] px-4 py-2 text-sm text-white">
                 Submit for Review
               </button>
