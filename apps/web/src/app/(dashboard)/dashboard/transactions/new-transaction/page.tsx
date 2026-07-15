@@ -8,8 +8,6 @@ import { SPRING_HOVER } from "@/lib/motion";
 import { TC_FEE, calcNetToAgent } from "@/lib/commission";
 import { DateField } from "@/components/ui/DateField";
 
-const STEPS = ["File Type", "Property", "Details", "Parties", "Commission", "Review"] as const;
-
 export const SIDES = [
   { value: "PURCHASE", label: "Purchase", desc: "Representing the buyer in a purchase transaction" },
   { value: "LISTING", label: "Listing", desc: "Representing the seller in a sale transaction" },
@@ -60,6 +58,11 @@ export default function NewTransactionPage() {
     inspectionDeadline: "", appraisalDeadline: "", loanApprovalDeadline: "",
     saleCommission: "", listingCommission: "",
     otherDeductions: "", commissionNotes: "",
+    referredToAgentName: "",
+    referredToBrokerageName: "",
+    referredToContactEmail: "",
+    referredToContactPhone: "",
+    dateReferred: "",
   });
 
   const [conditions, setConditions] = useState<{ name: string; dueDate: string; notes: string }[]>([]);
@@ -80,6 +83,16 @@ export default function NewTransactionPage() {
   }
 
   const isLeaseSide = ["LEASE_TENANT", "LEASE_LANDLORD", "LEASE_DUAL"].includes(form.transactionSide);
+  const isReferral = form.transactionSide === "REFERRAL";
+
+  const STEPS = isReferral
+    ? ["File Type", "Referral Details", "Review"]
+    : ["File Type", "Property", "Details", "Parties", "Commission", "Review"];
+  // Map the raw step index onto the step-bar position. For referral, the Review
+  // body reuses index 5 (per the wizard's index-reuse design) but is the 3rd bar
+  // entry, so 5 -> 2. Identity for the other 6 types (isReferral === false), so
+  // their step-bar highlighting is unchanged.
+  const displayStep = isReferral ? (step === 5 ? 2 : step) : step;
 
   const salePrice = parseFloat(form.salePrice) || 0;
   const saleCommissionAmt =
@@ -96,10 +109,25 @@ export default function NewTransactionPage() {
 
   const canAdvance = useMemo(() => {
     if (step === 0) return !!form.transactionSide;
-    if (step === 1) return !!form.propertyAddress && !!form.city && !!form.zip;
+    if (step === 1) return isReferral ? !!form.referredToAgentName : (!!form.propertyAddress && !!form.city && !!form.zip);
     if (step === 2) return isLeaseSide ? !!form.leasePrice : !!form.salePrice;
     return true;
-  }, [step, form.transactionSide, form.propertyAddress, form.city, form.zip, form.salePrice, form.leasePrice]);
+  }, [step, isReferral, form.transactionSide, form.referredToAgentName, form.propertyAddress, form.city, form.zip, form.salePrice, form.leasePrice]);
+
+  function goNext() {
+    setStep((s) => {
+      if (isReferral && s === 0) return 1; // File Type -> Referral Details
+      if (isReferral && s === 1) return 5; // Referral Details -> Review (reuses index 5's existing Review render)
+      return s + 1;
+    });
+  }
+  function goBack() {
+    setStep((s) => {
+      if (isReferral && s === 5) return 1;
+      if (isReferral && s === 1) return 0;
+      return s - 1;
+    });
+  }
 
   async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -185,8 +213,8 @@ export default function NewTransactionPage() {
       {/* Step bar */}
       <div className="mb-20 mx-auto flex max-w-5xl items-center">
         {STEPS.flatMap((s, i) => {
-          const done = i < step;
-          const active = i === step;
+          const done = i < displayStep;
+          const active = i === displayStep;
           const el = (
             <div key={s} className="flex shrink-0 items-center gap-2.5 whitespace-nowrap">
               {active && <div className="h-3 w-3 rounded-full bg-[#1B1B1B]" />}
@@ -242,8 +270,22 @@ export default function NewTransactionPage() {
           </div>
         )}
 
-        {/* ── Step 1: Property ── */}
+        {/* ── Step 1: Property (or Referral Details when Referral) ── */}
         {step === 1 && (
+          isReferral ? (
+            <div className="space-y-5">
+              <Field label="Referred-To Agent Name *" value={form.referredToAgentName} onChange={(v) => set("referredToAgentName", v)} />
+              <Field label="Referred-To Brokerage Name" value={form.referredToBrokerageName} onChange={(v) => set("referredToBrokerageName", v)} />
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="Contact Email" type="email" value={form.referredToContactEmail} onChange={(v) => set("referredToContactEmail", v)} />
+                <Field label="Contact Phone" type="tel" value={form.referredToContactPhone} onChange={(v) => set("referredToContactPhone", v)} />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">Date Referred</label>
+                <DateField value={form.dateReferred} onChange={(v) => set("dateReferred", v)} />
+              </div>
+            </div>
+          ) : (
           <div className="space-y-4">
             <Field label="Property Address *" value={form.propertyAddress} onChange={(v) => set("propertyAddress", v)} placeholder="123 Main St" />
             <div className="grid grid-cols-3 gap-4">
@@ -322,6 +364,7 @@ export default function NewTransactionPage() {
               </div>
             </div>
           </div>
+          )
         )}
 
         {/* ── Step 2: Transaction Details ── */}
@@ -558,6 +601,14 @@ export default function NewTransactionPage() {
 
         {/* ── Step 5: Review ── */}
         {step === 5 && (
+          isReferral ? (
+            <div className="space-y-3">
+              <ReviewRow label="Referred-To Agent" value={form.referredToAgentName} />
+              <ReviewRow label="Referred-To Brokerage" value={form.referredToBrokerageName || "—"} />
+              <ReviewRow label="Contact" value={form.referredToContactEmail || form.referredToContactPhone || "—"} />
+              <ReviewRow label="Date Referred" value={form.dateReferred || "—"} />
+            </div>
+          ) : (
           <div className="space-y-6 text-sm">
             <ReviewSection title="File Type">
               <ReviewRow label="Representation" value={sideLabel} />
@@ -612,6 +663,7 @@ export default function NewTransactionPage() {
               {netToAgent > 0 && <ReviewRow label="Net to Agent" value={`$${Math.round(netToAgent).toLocaleString()}`} />}
             </ReviewSection>
           </div>
+          )
         )}
       </div>
 
@@ -619,7 +671,7 @@ export default function NewTransactionPage() {
       <div className="mt-16 flex items-center justify-center gap-3">
         {step > 0 && (
           <button
-            onClick={() => setStep((s) => s - 1)}
+            onClick={goBack}
             className="rounded-full border border-[#1B1B1B]/20 px-6 py-2.5 text-sm text-[#1B1B1B]/60 hover:border-[#1B1B1B]/40 hover:text-[#1B1B1B]"
           >
             ← Back
@@ -627,7 +679,7 @@ export default function NewTransactionPage() {
         )}
         {step < STEPS.length - 1 ? (
           <motion.button
-            onClick={() => setStep((s) => s + 1)}
+            onClick={goNext}
             disabled={!canAdvance}
             whileHover={{ scale: 1.1 }}
             transition={SPRING_HOVER}
