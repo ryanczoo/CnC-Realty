@@ -4,7 +4,8 @@ export type ListingStatus =
 
 export type TransactionFileStatus =
   | "INCOMPLETE" | "PRE_CONTRACT" | "PENDING" | "EXPIRED"
-  | "CLOSED" | "ARCHIVED" | "CANCELED_PENDING" | "CANCELED_APPROVED";
+  | "CLOSED" | "ARCHIVED" | "CANCELED_PENDING" | "CANCELED_APPROVED"
+  | "REFERRAL_SUCCESSFUL" | "REFERRAL_UNSUCCESSFUL" | "REFERRAL_BROKER_REVIEW";
 
 export type FileType = "LISTING" | "TRANSACTION";
 export type ListingType = "RESIDENTIAL_SALE" | "RESIDENTIAL_LEASE" | "COMMERCIAL";
@@ -47,10 +48,10 @@ export interface ChecklistProgress {
 export interface ListingFileDetail {
   id: string;
   agentId: string;
-  propertyAddress: string;
-  city: string;
+  propertyAddress: string | null;
+  city: string | null;
   state: string;
-  zip: string;
+  zip: string | null;
   mlsNumber: string | null;
   listPrice: number;
   listingType: ListingType;
@@ -74,10 +75,10 @@ export interface TransactionFileDetail {
   agentId: string;
   originatingListingId: string | null;
   originatingLeadId: string | null;
-  propertyAddress: string;
-  city: string;
+  propertyAddress: string | null;
+  city: string | null;
   state: string;
-  zip: string;
+  zip: string | null;
   mlsNumber: string | null;
   propertyType: string | null;
   yearBuilt: number | null;
@@ -113,6 +114,13 @@ export interface TransactionFileDetail {
   commissionSplit: number | null;
   commissionNotes: string | null;
   tcFeeEnabled: boolean;
+  referredToAgentName: string | null;
+  referredToBrokerageName: string | null;
+  referredToContactEmail: string | null;
+  referredToContactPhone: string | null;
+  dateReferred: string | null;
+  referralAmountReceived: number | null;
+  referralCncFee: number | null;
   awaitingReview: boolean;
   createdAt: string;
   updatedAt: string;
