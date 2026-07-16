@@ -58,3 +58,43 @@ describe("mapResoToProperty — directional prefix/suffix in address", () => {
     expect(result.address).toBe("123 Main St");
   });
 });
+
+describe("mapResoToProperty — photos filtering by MediaClassification", () => {
+  it("excludes a media entry classified as DOCUMENT even when it sorts first by Order", () => {
+    const result = mapResoToProperty({
+      ...baseRaw(),
+      Media: [
+        { MediaURL: "https://x/doc.pdf", Order: 1, MediaClassification: "DOCUMENT" },
+        { MediaURL: "https://x/photo.jpg", Order: 2, MediaClassification: "PHOTO" },
+      ],
+    } as any);
+    expect(result.photos).toEqual(["https://x/photo.jpg"]);
+  });
+
+  it("includes media with no MediaClassification at all (defensive default for MLS boards that don't populate it)", () => {
+    const result = mapResoToProperty({
+      ...baseRaw(),
+      Media: [{ MediaURL: "https://x/photo.jpg", Order: 1 }],
+    } as any);
+    expect(result.photos).toEqual(["https://x/photo.jpg"]);
+  });
+
+  it("returns an empty array when every media entry is a non-photo document", () => {
+    const result = mapResoToProperty({
+      ...baseRaw(),
+      Media: [{ MediaURL: "https://x/doc.pdf", Order: 1, MediaClassification: "DOCUMENT" }],
+    } as any);
+    expect(result.photos).toEqual([]);
+  });
+
+  it("keeps multiple real photos sorted by Order, unaffected by filtering", () => {
+    const result = mapResoToProperty({
+      ...baseRaw(),
+      Media: [
+        { MediaURL: "https://x/b.jpg", Order: 2, MediaClassification: "PHOTO" },
+        { MediaURL: "https://x/a.jpg", Order: 1, MediaClassification: "PHOTO" },
+      ],
+    } as any);
+    expect(result.photos).toEqual(["https://x/a.jpg", "https://x/b.jpg"]);
+  });
+});

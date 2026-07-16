@@ -48,7 +48,7 @@ export function buildPropertyFilter(modifiedSince?: Date): string {
 export async function* fetchProperties(modifiedSince?: Date) {
   let token = await getResoToken();
   const filter = buildPropertyFilter(modifiedSince);
-  let url: string | null = `${BASE_URL}/Property?${filter}$top=200&$select=${SELECT_FIELDS}&$expand=Media($select=MediaURL,Order)`;
+  let url: string | null = `${BASE_URL}/Property?${filter}$top=200&$select=${SELECT_FIELDS}&$expand=Media($select=MediaURL,Order,MediaClassification)`;
   let retried = false;
   while (url) {
     const ac = new AbortController();

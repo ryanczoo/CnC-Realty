@@ -28,7 +28,7 @@ export interface ResoProperty {
   Longitude?: number;
   ModificationTimestamp?: string;
   ListingContractDate?: string;
-  Media?: { MediaURL: string; Order?: number }[];
+  Media?: { MediaURL: string; Order?: number; MediaClassification?: string }[];
   ListAgentFullName?: string;
   ListOfficeName?: string;
   ListAgentStateLicense?: string;
@@ -89,6 +89,7 @@ export function mapResoToProperty(raw: ResoProperty) {
   const baths = bathsCalc || undefined;
 
   const photos = (raw.Media ?? [])
+    .filter((m) => m.MediaClassification == null || m.MediaClassification === "PHOTO")
     .sort((a, b) => (a.Order ?? 0) - (b.Order ?? 0))
     .map((m) => m.MediaURL);
 
