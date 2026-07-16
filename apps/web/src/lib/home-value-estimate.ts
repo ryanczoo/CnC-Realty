@@ -117,13 +117,17 @@ const DIRECTIONALS: Record<string, string> = {
 const BOX_DELTA_DEGREES = 0.005;
 const MAX_DISTANCE_METERS = 100;
 
+function isFiniteNumber(n: number | undefined): n is number {
+  return Number.isFinite(n);
+}
+
 async function findByProximity(
   prisma: PrismaClient,
   zip: string,
   lat?: number,
   lng?: number
 ): Promise<SubjectRecord[]> {
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return [];
+  if (!isFiniteNumber(lat) || !isFiniteNumber(lng)) return [];
 
   const nearby = await prisma.property.findMany({
     where: {
