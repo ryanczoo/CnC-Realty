@@ -59,7 +59,7 @@ export function ComparableSales({ comps }: { comps: CompDisplay[] }) {
     <section className="py-10">
       <h3 className="text-xl font-medium text-[#1B1B1B]">Comparable Sales</h3>
       <p className="mt-1 text-sm text-[#1B1B1B]/50">
-        Homes similar to yours that have recently sold nearby.
+        Similar homes nearby that have recently sold
       </p>
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {visible.map((c) => {

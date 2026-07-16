@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { ScrambleValue } from "@/components/ui/ScrambleValue";
 
 const STATS = [
   { value: "100%", label: "Commission" },
@@ -8,19 +9,6 @@ const STATS = [
   { value: "24/7", label: "Broker Support" },
   { value: "30+", label: "Resources" },
 ];
-
-const DIGITS = "0123456789";
-
-function scramble(target: string, progress: number): string {
-  return target
-    .split("")
-    .map((char) => {
-      if (!/[0-9]/.test(char)) return char;
-      if (Math.random() < progress) return char;
-      return DIGITS[Math.floor(Math.random() * DIGITS.length)];
-    })
-    .join("");
-}
 
 function AnimatedStat({
   value,
@@ -33,38 +21,14 @@ function AnimatedStat({
   triggered: boolean;
   duration: number;
 }) {
-  const [displayed, setDisplayed] = useState(value.replace(/[0-9]/g, "–"));
-  const hasRun = useRef(false);
-
-  useEffect(() => {
-    if (!triggered || hasRun.current) return;
-    hasRun.current = true;
-
-    const INTERVAL = 40;
-    const SETTLE = 300; // last 300ms eases into correct value
-    const totalSteps = Math.round(duration / INTERVAL);
-    const settleStep = Math.round((duration - SETTLE) / INTERVAL);
-    let step = 0;
-
-    const id = setInterval(() => {
-      step++;
-      if (step >= totalSteps) {
-        clearInterval(id);
-        setDisplayed(value);
-        return;
-      }
-      const progress = step < settleStep
-        ? 0
-        : (step - settleStep) / (totalSteps - settleStep);
-      setDisplayed(scramble(value, progress * progress));
-    }, INTERVAL);
-
-    return () => clearInterval(id);
-  }, [triggered, value, duration]);
-
   return (
     <div className="text-center">
-      <p className="font-chopin text-3xl font-bold tabular-nums text-white">{displayed}</p>
+      <ScrambleValue
+        value={value}
+        triggered={triggered}
+        duration={duration}
+        className="font-chopin text-3xl font-bold tabular-nums text-white"
+      />
       <p className="mt-1 font-sans text-xs font-light uppercase tracking-widest text-white/70">{label}</p>
     </div>
   );

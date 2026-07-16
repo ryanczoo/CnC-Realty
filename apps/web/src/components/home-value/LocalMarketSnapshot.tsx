@@ -1,4 +1,9 @@
+"use client";
+
+import { useRef } from "react";
+import { useInView } from "framer-motion";
 import type { PriceBar } from "@/lib/home-value-estimate";
+import { ScrambleValue } from "@/components/ui/ScrambleValue";
 
 export function computeBarHeights(bars: { value: number }[]): number[] {
   const max = Math.max(0, ...bars.map((b) => b.value));
@@ -14,12 +19,14 @@ interface Props {
 
 export function LocalMarketSnapshot({ bars, medianPrice, zip }: Props) {
   const heights = computeBarHeights(bars);
+  const medianRef = useRef<HTMLDivElement>(null);
+  const medianInView = useInView(medianRef, { once: true, amount: 0.6 });
 
   return (
     <section className="py-10">
-      <h3 className="text-xl font-medium text-[#1B1B1B]">Local Market Snapshot</h3>
+      <h3 className="text-xl font-medium text-[#1B1B1B]">Local Market Stats</h3>
       <p className="mt-1 text-sm text-[#1B1B1B]/50">
-        Homes sold by price in the past year.
+        Homes sold by price in the past year
       </p>
 
       {bars.length === 0 ? (
@@ -46,12 +53,14 @@ export function LocalMarketSnapshot({ bars, medianPrice, zip }: Props) {
           </div>
 
           {medianPrice != null && (
-            <p className="mt-6 text-sm text-[#1B1B1B]/60">
-              <span className="font-bold text-[#1B1B1B]">
-                ${medianPrice.toLocaleString()}
-              </span>{" "}
-              median sold price in the past year
-            </p>
+            <div ref={medianRef} className="mt-6 flex flex-col items-center gap-1 text-center">
+              <p className="text-sm text-[#1B1B1B]/60">Median sold price in the past year</p>
+              <ScrambleValue
+                value={`$${medianPrice.toLocaleString()}`}
+                triggered={medianInView}
+                className="text-[1.75rem] font-bold tabular-nums text-[#1B1B1B]"
+              />
+            </div>
           )}
         </>
       )}

@@ -6,9 +6,11 @@ import { Loader2 } from "lucide-react";
 import { ComparableSales, CompDisplay } from "@/components/home-value/ComparableSales";
 import { PriceHistory, PriceHistoryEntry } from "@/components/home-value/PriceHistory";
 import { LocalMarketSnapshot } from "@/components/home-value/LocalMarketSnapshot";
+import { EstimatedValueRange } from "@/components/home-value/EstimatedValueRange";
 import type { PriceBar } from "@/lib/home-value-estimate";
 import { RevealEstimateForm } from "@/components/home-value/RevealEstimateForm";
 import { RevealLine } from "@/components/ui/reveal-text";
+import { PageCTA } from "@/components/ui/PageCTA";
 import { buildStatsFields } from "@/lib/property-ui-helpers";
 import { limitDigits } from "@/lib/form-validation";
 import { buildMapboxStaticImageUrl } from "@/lib/mapbox-static";
@@ -184,10 +186,7 @@ export default function HomeValuePage() {
             </div>
 
             <section className="flex flex-1 flex-col justify-center rounded-xl border border-[#1B1B1B]/10 bg-white p-8 text-center">
-              <p className="text-sm text-[#1B1B1B]/50">Estimated Value Range</p>
-              <p className="mt-2 text-3xl font-bold text-[#1B1B1B]">
-                ${data.range.low.toLocaleString()} – ${data.range.high.toLocaleString()}
-              </p>
+              <EstimatedValueRange low={data.range.low} high={data.range.high} />
               {data.subject && (
                 <div className="mt-16 overflow-hidden rounded-xl">
                   <div className="grid grid-cols-3">
@@ -217,8 +216,8 @@ export default function HomeValuePage() {
           </div>
         )}
 
-        {data && <ComparableSales comps={data.comps} />}
         {data && <PriceHistory history={data.priceHistory} />}
+        {data && <ComparableSales comps={data.comps} />}
         {data && (
           <LocalMarketSnapshot
             bars={data.marketSnapshot.bars}
@@ -226,6 +225,16 @@ export default function HomeValuePage() {
             zip={zip}
           />
         )}
+      </div>
+
+      <div className="-mx-8 lg:-mx-20">
+        <PageCTA
+          heading={<>You're In <span className="text-cnc-gold font-medium">Control</span></>}
+          body="CnC's got your back"
+          primaryLabel="Message"
+          primaryShowContactModal
+          contactSource="HOME_VALUE_CTA"
+        />
       </div>
     </main>
   );
