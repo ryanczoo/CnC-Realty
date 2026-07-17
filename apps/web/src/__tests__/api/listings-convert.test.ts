@@ -96,3 +96,72 @@ describe("POST /api/listings/[id]/convert", () => {
     );
   });
 });
+
+const COMMERCIAL_SALE_LISTING = {
+  ...SALE_LISTING, id: "l3", listingType: "COMMERCIAL_SALE",
+};
+
+const COMMERCIAL_LEASE_LISTING = {
+  ...SALE_LISTING, id: "l4", listingType: "COMMERCIAL_LEASE",
+};
+
+describe("POST /api/listings/[id]/convert — commercial propertyCategory", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(prisma.$transaction).mockImplementation(((arr: any[]) => Promise.all(arr)) as any);
+    vi.mocked(prisma.fileActivity.create).mockResolvedValue({} as any);
+    vi.mocked(prisma.checklistTemplate.findFirst).mockResolvedValue(null);
+    vi.mocked(prisma.listingFile.update).mockResolvedValue({} as any);
+  });
+
+  it("converts a COMMERCIAL_SALE listing to transactionSide LISTING, propertyCategory COMMERCIAL", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(COMMERCIAL_SALE_LISTING as any);
+    vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "tf4" } as any);
+
+    const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "l3" } });
+    expect(res.status).toBe(201);
+    expect(prisma.transactionFile.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ transactionSide: "LISTING", propertyCategory: "COMMERCIAL" }) })
+    );
+  });
+
+  it("converts a COMMERCIAL_LEASE listing to transactionSide LEASE_LANDLORD, propertyCategory COMMERCIAL", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(COMMERCIAL_LEASE_LISTING as any);
+    vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "tf5" } as any);
+
+    const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "l4" } });
+    expect(res.status).toBe(201);
+    expect(prisma.transactionFile.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ transactionSide: "LEASE_LANDLORD", propertyCategory: "COMMERCIAL" }) })
+    );
+  });
+
+  it("still converts RESIDENTIAL_SALE to propertyCategory RESIDENTIAL (regression guard)", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(SALE_LISTING as any);
+    vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "tf6" } as any);
+
+    await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "l1" } });
+    expect(prisma.transactionFile.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ transactionSide: "LISTING", propertyCategory: "RESIDENTIAL" }) })
+    );
+  });
+
+  it("looks up the checklist template using both transactionSide and propertyCategory", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(COMMERCIAL_LEASE_LISTING as any);
+    vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "tf7" } as any);
+
+    await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "l4" } });
+    expect(prisma.checklistTemplate.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          OR: [{ transactionSide: "LEASE_LANDLORD" }, { transactionSide: "ALL" }],
+          AND: [{ OR: [{ propertyCategory: "COMMERCIAL" }, { propertyCategory: "ALL" }] }],
+        }),
+      })
+    );
+  });
+});
