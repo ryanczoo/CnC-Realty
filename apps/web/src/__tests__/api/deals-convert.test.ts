@@ -7,6 +7,7 @@ vi.mock("@/lib/prisma", () => ({
     agent: { findUnique: vi.fn() },
     deal: { findUnique: vi.fn(), update: vi.fn() },
     transactionFile: { create: vi.fn() },
+    checklistTemplate: { findFirst: vi.fn() },
   },
 }));
 
@@ -24,7 +25,10 @@ const BUYERS_DEAL = {
 };
 
 describe("POST /api/deals/[id]/convert", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(prisma.checklistTemplate.findFirst).mockResolvedValue(null);
+  });
 
   it("returns 401 when not authenticated", async () => {
     vi.mocked(getServerSession).mockResolvedValue(null);
@@ -147,5 +151,33 @@ describe("POST /api/deals/[id]/convert", () => {
 
     const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "d3" } });
     expect(res.status).toBe(400);
+  });
+
+  it("attaches the matching checklist template when converting", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
+    vi.mocked(prisma.deal.findUnique).mockResolvedValue(BUYERS_DEAL as any);
+    const mockItems = [{ name: "RPA-CA — California Residential Purchase Agreement", description: "The purchase contract", order: 1, isRequired: true }];
+    vi.mocked(prisma.checklistTemplate.findFirst).mockResolvedValue({ id: "t1", items: mockItems } as any);
+    vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "tf-new" } as any);
+    vi.mocked(prisma.deal.update).mockResolvedValue({} as any);
+
+    await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "d1" } });
+
+    expect(prisma.checklistTemplate.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          fileType: "TRANSACTION",
+          OR: [{ transactionSide: "PURCHASE" }, { transactionSide: "ALL" }],
+          AND: [{ OR: [{ propertyCategory: "RESIDENTIAL" }, { propertyCategory: "ALL" }] }],
+        }),
+      })
+    );
+    expect(prisma.transactionFile.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          checklistItems: { create: [expect.objectContaining({ name: mockItems[0].name, fileType: "TRANSACTION" })] },
+        }),
+      })
+    );
   });
 });

@@ -44,6 +44,16 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
   const transactionSide = SIDE_BY_PIPELINE[deal.pipeline];
   const priceField = PRICE_FIELD_BY_PIPELINE[deal.pipeline];
 
+  const template = await prisma.checklistTemplate.findFirst({
+    where: {
+      fileType: "TRANSACTION",
+      isActive: true,
+      OR: [{ transactionSide }, { transactionSide: "ALL" }],
+      AND: [{ OR: [{ propertyCategory: "RESIDENTIAL" }, { propertyCategory: "ALL" }] }],
+    },
+    include: { items: { orderBy: { order: "asc" } } },
+  });
+
   const tf = await prisma.transactionFile.create({
     data: {
       agentId: deal.agentId,
@@ -54,6 +64,15 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
       zip: "",
       transactionSide,
       status: "INCOMPLETE",
+      checklistItems: template ? {
+        create: template.items.map((item) => ({
+          fileType: "TRANSACTION" as const,
+          name: item.name,
+          description: item.description,
+          order: item.order,
+          isRequired: item.isRequired,
+        })),
+      } : undefined,
       [priceField]: deal.price,
     },
   });
