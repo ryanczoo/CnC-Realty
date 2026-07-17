@@ -92,7 +92,8 @@ export default function NewListingPage() {
               >
                 <option value="RESIDENTIAL_SALE">Residential Sale</option>
                 <option value="RESIDENTIAL_LEASE">Residential Lease</option>
-                <option value="COMMERCIAL">Commercial</option>
+                <option value="COMMERCIAL_SALE">Commercial Sale</option>
+                <option value="COMMERCIAL_LEASE">Commercial Lease</option>
               </select>
             </div>
             <div className="grid grid-cols-2 gap-4">
