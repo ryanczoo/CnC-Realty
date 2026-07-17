@@ -7,7 +7,6 @@ ALTER TABLE "ListingFile" ALTER COLUMN "listingType" TYPE text;
 DROP TYPE "ListingType";
 CREATE TYPE "ListingType" AS ENUM ('RESIDENTIAL_SALE', 'RESIDENTIAL_LEASE', 'COMMERCIAL_SALE', 'COMMERCIAL_LEASE');
 ALTER TABLE "ListingFile" ALTER COLUMN "listingType" TYPE "ListingType" USING "listingType"::"ListingType";
-ALTER TABLE "ListingFile" ALTER COLUMN "listingType" SET DEFAULT 'RESIDENTIAL_SALE'::"ListingType";
 
 -- AddColumn to TransactionFile
 ALTER TABLE "TransactionFile" ADD COLUMN "propertyCategory" "PropertyCategory" NOT NULL DEFAULT 'RESIDENTIAL';

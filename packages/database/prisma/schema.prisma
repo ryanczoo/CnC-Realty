@@ -576,15 +576,15 @@ model FileParty {
 }
 
 model ChecklistTemplate {
-  id              String   @id @default(cuid())
-  name            String
-  fileType        FileType
-  transactionSide String   @default("ALL")
-  listingType     String   @default("ALL")
+  id               String   @id @default(cuid())
+  name             String
+  fileType         FileType
+  transactionSide  String   @default("ALL")
+  listingType      String   @default("ALL")
   propertyCategory String   @default("ALL")
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   items ChecklistTemplateItem[]
 }
