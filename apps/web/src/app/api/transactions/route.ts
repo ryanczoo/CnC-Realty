@@ -32,7 +32,7 @@ export async function POST(req: Request) {
     mlsNumber, propertyType, yearBuilt, escrowNumber,
     legalDescription, propertyIncludes, propertyExcludes,
     taxId, annualTaxes, schoolDistrict, zoningClass, photoKey,
-    transactionSide, stage,
+    transactionSide, propertyCategory, stage,
     listPrice, salePrice, leasePrice,
     deposit,
     offerDate, offerExpirationDate, acceptanceDate,
@@ -59,8 +59,14 @@ export async function POST(req: Request) {
 
   const initialStatus = transactionSide === "REFERRAL" ? "PENDING" : (stage === "PRE_CONTRACT" ? "PRE_CONTRACT" : "INCOMPLETE");
 
+  const category = propertyCategory === "COMMERCIAL" ? "COMMERCIAL" : "RESIDENTIAL";
   const template = await prisma.checklistTemplate.findFirst({
-    where: { fileType: "TRANSACTION", isActive: true, OR: [{ transactionSide }, { transactionSide: "ALL" }] },
+    where: {
+      fileType: "TRANSACTION",
+      isActive: true,
+      OR: [{ transactionSide }, { transactionSide: "ALL" }],
+      AND: [{ OR: [{ propertyCategory: category }, { propertyCategory: "ALL" }] }],
+    },
     include: { items: { orderBy: { order: "asc" } } },
   });
 
@@ -85,6 +91,7 @@ export async function POST(req: Request) {
         zoningClass: zoningClass || null,
         photoKey: photoKey || null,
         transactionSide,
+        propertyCategory: category,
         status: initialStatus,
         originatingLeadId: originatingLeadId || null,
         listPrice: listPrice ? parseFloat(listPrice) : null,

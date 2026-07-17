@@ -172,3 +172,61 @@ describe("POST /api/transactions", () => {
     expect(res.status).toBe(400);
   });
 });
+
+describe("POST /api/transactions — propertyCategory checklist matching", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("matches the checklist template using both transactionSide and propertyCategory", async () => {
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u1", agentId: "a1" } } as any);
+    vi.mocked(prisma.checklistTemplate.findFirst).mockResolvedValue(null);
+    vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "tx1" } as any);
+
+    await POST(makeRequest({
+      transactionSide: "PURCHASE", propertyCategory: "COMMERCIAL",
+      propertyAddress: "1 Biz Park Dr", city: "Irvine", zip: "92618",
+    }));
+
+    expect(prisma.checklistTemplate.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          OR: [{ transactionSide: "PURCHASE" }, { transactionSide: "ALL" }],
+          AND: [{ OR: [{ propertyCategory: "COMMERCIAL" }, { propertyCategory: "ALL" }] }],
+        }),
+      })
+    );
+  });
+
+  it("defaults propertyCategory to RESIDENTIAL when not provided (regression guard)", async () => {
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u1", agentId: "a1" } } as any);
+    vi.mocked(prisma.checklistTemplate.findFirst).mockResolvedValue(null);
+    vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "tx2" } as any);
+
+    await POST(makeRequest({
+      transactionSide: "PURCHASE",
+      propertyAddress: "123 Main St", city: "LA", zip: "90001",
+    }));
+
+    expect(prisma.checklistTemplate.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          AND: [{ OR: [{ propertyCategory: "RESIDENTIAL" }, { propertyCategory: "ALL" }] }],
+        }),
+      })
+    );
+  });
+
+  it("persists propertyCategory on the created TransactionFile", async () => {
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u1", agentId: "a1" } } as any);
+    vi.mocked(prisma.checklistTemplate.findFirst).mockResolvedValue(null);
+    vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "tx3" } as any);
+
+    await POST(makeRequest({
+      transactionSide: "PURCHASE", propertyCategory: "COMMERCIAL",
+      propertyAddress: "1 Biz Park Dr", city: "Irvine", zip: "92618",
+    }));
+
+    expect(prisma.transactionFile.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ propertyCategory: "COMMERCIAL" }) })
+    );
+  });
+});
