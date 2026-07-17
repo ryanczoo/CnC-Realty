@@ -82,7 +82,7 @@ export async function PUT(
     return NextResponse.json(updated);
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: err.errors[0].message }, { status: 400 });
+      return NextResponse.json({ error: err.issues[0].message }, { status: 400 });
     }
     console.error("[PUT /api/blog/[id]]", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

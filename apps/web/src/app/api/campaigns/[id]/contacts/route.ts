@@ -42,7 +42,7 @@ export async function POST(
     return NextResponse.json({ added: leadIds.length });
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: err.errors[0].message }, { status: 400 });
+      return NextResponse.json({ error: err.issues[0].message }, { status: 400 });
     }
     console.error(err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
