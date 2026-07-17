@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Map, { Layer, LayerProps, Popup, Source, MapRef } from "react-map-gl/mapbox";
 import Image from "next/image";
 import { PropertyListing } from "@/types/property";
+import { getPropertiesBounds } from "@/lib/map-bounds";
 
 interface Props {
   properties: PropertyListing[];
@@ -98,6 +99,17 @@ export function PropertyMapInner({ properties, hoveredId, onSelect }: Props) {
   const validProperties = properties.filter(
     (p) => p.latitude != null && p.longitude != null
   );
+
+  // Re-fit the map to the current search results whenever the result set
+  // itself changes (not on every render — properties is a new array
+  // reference each render, so key off the actual MLS numbers shown).
+  const propertiesKey = properties.map((p) => p.mlsNumber).join(",");
+  useEffect(() => {
+    const bounds = getPropertiesBounds(properties);
+    if (!bounds) return;
+    mapRef.current?.fitBounds(bounds, { padding: 60, maxZoom: 14, duration: 800 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [propertiesKey]);
 
   const geojson: GeoJSON.FeatureCollection = {
     type: "FeatureCollection",

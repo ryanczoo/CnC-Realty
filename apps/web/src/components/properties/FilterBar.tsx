@@ -1,12 +1,13 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { SearchFilters } from "@/types/property";
 
 interface Props {
   filters: SearchFilters;
   setFilter: (key: keyof SearchFilters, value: string) => void;
+  applyFilter: (key: keyof SearchFilters, value: string) => void;
   clearFilters: () => void;
   hasActiveFilters: boolean;
   total: number;
@@ -49,12 +50,25 @@ type DropdownKey = "listingType" | "price" | "beds" | "baths" | "type" | null;
 export function FilterBar({
   filters,
   setFilter,
+  applyFilter,
   clearFilters,
   hasActiveFilters,
   total,
 }: Props) {
   const [openDropdown, setOpenDropdown] = useState<DropdownKey>(null);
   const barRef = useRef<HTMLDivElement>(null);
+
+  // The query text field only searches on explicit submit (Enter or the
+  // search icon), not on every keystroke — so it needs its own draft state,
+  // separate from filters.query, while the user is still typing.
+  const [queryDraft, setQueryDraft] = useState(filters.query);
+  useEffect(() => {
+    setQueryDraft(filters.query);
+  }, [filters.query]);
+
+  function submitQuery() {
+    applyFilter("query", queryDraft);
+  }
 
   function toggle(key: DropdownKey) {
     setOpenDropdown((prev) => (prev === key ? null : key));
@@ -120,19 +134,32 @@ export function FilterBar({
         <input
           type="text"
           placeholder="City, zip…"
-          value={filters.query}
-          onChange={(e) => setFilter("query", e.target.value)}
+          value={queryDraft}
+          onChange={(e) => setQueryDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              submitQuery();
+            }
+          }}
           className="w-full rounded-full bg-[#1a1a1a] py-1.5 pl-4 pr-9 text-sm text-white placeholder-white/30 outline-none focus:ring-1 focus:ring-[#9E8C61]/50"
         />
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30"
+        <button
+          type="button"
+          onClick={submitQuery}
+          aria-label="Search"
+          className="absolute right-2.5 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-white/30 transition-colors hover:text-[#9E8C61]"
         >
-          <path d="M20 20L22 22" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-          <path d="M6.75 3.27093C8.14732 2.46262 9.76964 2 11.5 2C16.7467 2 21 6.25329 21 11.5C21 16.7467 16.7467 21 11.5 21C6.25329 21 2 16.7467 2 11.5C2 9.76964 2.46262 8.14732 3.27093 6.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-        </svg>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            className="h-4 w-4"
+          >
+            <path d="M20 20L22 22" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M6.75 3.27093C8.14732 2.46262 9.76964 2 11.5 2C16.7467 2 21 6.25329 21 11.5C21 16.7467 16.7467 21 11.5 21C6.25329 21 2 16.7467 2 11.5C2 9.76964 2.46262 8.14732 3.27093 6.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+        </button>
       </div>
 
       {/* Price pill */}

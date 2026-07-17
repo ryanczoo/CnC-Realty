@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { SearchResults } from "@/components/properties/SearchResults";
 import { PropertyListing, MULTIFAMILY_TYPES } from "@/types/property";
+import { buildLocationWhere } from "@/lib/property-search-query";
 
 export const metadata: Metadata = {
   title: "Property Search",
@@ -32,15 +33,7 @@ export default async function PropertiesPage({ searchParams }: PageProps) {
   };
 
   if (searchParams.query?.trim()) {
-    const q = searchParams.query.trim();
-    if (/^\d{5}$/.test(q)) {
-      where.zip = q;
-    } else {
-      where.OR = [
-        { city: { contains: q, mode: "insensitive" } },
-        { address: { contains: q, mode: "insensitive" } },
-      ];
-    }
+    Object.assign(where, buildLocationWhere(searchParams.query.trim()));
   }
 
   const priceFilter: Record<string, number> = {};

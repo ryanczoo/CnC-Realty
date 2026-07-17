@@ -85,32 +85,41 @@ describe("GET /api/properties — query search", () => {
     expect((call.where as any).OR).toBeUndefined();
   });
 
-  it("searches city AND address with OR when query is a text string", async () => {
+  it("matches city only (no address/OR) when a letter-led query is a street name that collides with a city name elsewhere in the state", async () => {
+    // Regression test for the "Anaheim"/"Cerritos" bug: a letter-led query
+    // used to OR-match against `address` too, so a query for the city of
+    // Anaheim also matched unrelated listings on streets named "Anaheim"
+    // in other cities. Letter-led queries are now city-only.
     await GET(makeRequest("query=Main+St"));
 
     const call = vi.mocked(prisma.property.findMany).mock.calls[0][0];
-    const orClause = (call.where as any).OR;
-    expect(orClause).toBeDefined();
-    expect(orClause).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ city: expect.objectContaining({ contains: "Main St" }) }),
-        expect.objectContaining({ address: expect.objectContaining({ contains: "Main St" }) }),
-      ])
+    expect((call.where as any).city).toEqual(
+      expect.objectContaining({ contains: "Main St" })
     );
+    expect((call.where as any).address).toBeUndefined();
+    expect((call.where as any).OR).toBeUndefined();
   });
 
-  it("searches city AND address with OR when query is a city name", async () => {
+  it("matches city only when query is a city name", async () => {
     await GET(makeRequest("query=Los+Angeles"));
 
     const call = vi.mocked(prisma.property.findMany).mock.calls[0][0];
-    const orClause = (call.where as any).OR;
-    expect(orClause).toBeDefined();
-    expect(orClause).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ city: expect.objectContaining({ contains: "Los Angeles" }) }),
-        expect.objectContaining({ address: expect.objectContaining({ contains: "Los Angeles" }) }),
-      ])
+    expect((call.where as any).city).toEqual(
+      expect.objectContaining({ contains: "Los Angeles" })
     );
+    expect((call.where as any).address).toBeUndefined();
+    expect((call.where as any).OR).toBeUndefined();
+  });
+
+  it("matches address only (not city) when query starts with a house number", async () => {
+    await GET(makeRequest("query=12802+Cantrece+Street"));
+
+    const call = vi.mocked(prisma.property.findMany).mock.calls[0][0];
+    expect((call.where as any).address).toEqual(
+      expect.objectContaining({ contains: "12802 Cantrece Street" })
+    );
+    expect((call.where as any).city).toBeUndefined();
+    expect((call.where as any).OR).toBeUndefined();
   });
 
   it("applies no location filter when query is empty", async () => {

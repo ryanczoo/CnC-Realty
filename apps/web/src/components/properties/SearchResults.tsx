@@ -18,7 +18,7 @@ interface Props {
 }
 
 function SearchResultsInner({ initialProperties, initialTotal }: Props) {
-  const { filters, setFilter, clearFilters, hasActiveFilters } = useSearchFilters();
+  const { filters, setFilter, applyFilter, clearFilters, hasActiveFilters } = useSearchFilters();
   const { properties, total, isLoading, isError, hasMore, loadNextPage } = useProperties(
     filters,
     { properties: initialProperties, total: initialTotal }
@@ -74,6 +74,7 @@ function SearchResultsInner({ initialProperties, initialTotal }: Props) {
       <FilterBar
         filters={filters}
         setFilter={setFilter}
+        applyFilter={applyFilter}
         clearFilters={clearFilters}
         hasActiveFilters={hasActiveFilters}
         total={total}

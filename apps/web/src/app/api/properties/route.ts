@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@cnc/database";
 import { MULTIFAMILY_TYPES } from "@/types/property";
 import { redis } from "@/lib/redis";
+import { buildLocationWhere } from "@/lib/property-search-query";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -33,15 +34,7 @@ export async function GET(req: Request) {
   };
 
   if (query?.trim()) {
-    const q = query.trim();
-    if (/^\d{5}$/.test(q)) {
-      where.zip = q;
-    } else {
-      where.OR = [
-        { city: { contains: q, mode: "insensitive" } },
-        { address: { contains: q, mode: "insensitive" } },
-      ];
-    }
+    Object.assign(where, buildLocationWhere(query.trim()));
   }
 
   // Fix 2: Typed listPrice filter (no as object cast)

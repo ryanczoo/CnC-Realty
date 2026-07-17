@@ -29,6 +29,12 @@ export function useProperties(
   const filtersKey = JSON.stringify(filters);
   const prevFiltersKey = useRef(filtersKey);
   const isFirstRender = useRef(true);
+  // initialData is only ever relevant on the very first render (guarded by
+  // isFirstRender below) — capture it once via ref instead of depending on
+  // it directly, since callers rebuild that object on every render and a
+  // reactive dependency on it would restart (and abort) the fetch effect
+  // on every unrelated re-render, not just on real filter changes.
+  const initialDataRef = useRef(initialData);
 
   const fetchPage = useCallback(async (f: SearchFilters, page: number, signal?: AbortSignal) => {
     const params = new URLSearchParams();
@@ -47,7 +53,7 @@ export function useProperties(
   }, []);
 
   useEffect(() => {
-    if (isFirstRender.current && initialData) {
+    if (isFirstRender.current && initialDataRef.current) {
       isFirstRender.current = false;
       prevFiltersKey.current = filtersKey;
       return;
@@ -59,6 +65,12 @@ export function useProperties(
 
     setCurrentPage(1);
     setPages([]);
+    // Reset pagination state too, not just the results — otherwise hasMore
+    // briefly reflects the PREVIOUS search's page count (e.g. thousands of
+    // pages from an unfiltered listing) during this search's loading
+    // window, letting the infinite-scroll observer fire a loadNextPage()
+    // for a page that doesn't exist in the new, narrower result set.
+    setTotalPages(1);
     setIsLoading(true);
     setIsError(false);
 
@@ -76,7 +88,7 @@ export function useProperties(
       .finally(() => setIsLoading(false));
 
     return () => controller.abort();
-  }, [filtersKey, filters, fetchPage, initialData]);
+  }, [filtersKey, filters, fetchPage]);
 
   const loadNextPage = useCallback(() => {
     if (isLoading || currentPage >= totalPages) return;

@@ -3,6 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { DEFAULT_FILTERS, SearchFilters } from "@/types/property";
+import { buildFilterQueryString } from "@/lib/search-filters";
 
 export function useSearchFilters() {
   const searchParams = useSearchParams();
@@ -27,11 +28,7 @@ export function useSearchFilters() {
 
         if (debounceRef.current) clearTimeout(debounceRef.current);
         debounceRef.current = setTimeout(() => {
-          const params = new URLSearchParams();
-          Object.entries(next).forEach(([k, v]) => {
-            if (v) params.set(k, v);
-          });
-          const qs = params.toString();
+          const qs = buildFilterQueryString(next);
           router.replace(`/properties${qs ? `?${qs}` : ""}`, { scroll: false });
         }, 400);
 
@@ -39,6 +36,21 @@ export function useSearchFilters() {
       });
     },
     [router]
+  );
+
+  // Applies a filter immediately, bypassing the debounce — used for
+  // explicit-submit interactions (Enter key, search button click) where the
+  // 400ms delay of setFilter would feel unresponsive, and where we don't
+  // want every keystroke to trigger a search (see setFilter for that).
+  const applyFilter = useCallback(
+    (key: keyof SearchFilters, value: string) => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      const next = { ...filters, [key]: value };
+      setFiltersState(next);
+      const qs = buildFilterQueryString(next);
+      router.replace(`/properties${qs ? `?${qs}` : ""}`, { scroll: false });
+    },
+    [router, filters]
   );
 
   const clearFilters = useCallback(() => {
@@ -51,5 +63,5 @@ export function useSearchFilters() {
     .filter(([k]) => k !== "listingType")
     .some(([, v]) => Boolean(v));
 
-  return { filters, setFilter, clearFilters, hasActiveFilters };
+  return { filters, setFilter, applyFilter, clearFilters, hasActiveFilters };
 }
