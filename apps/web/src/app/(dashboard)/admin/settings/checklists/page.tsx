@@ -12,6 +12,7 @@ export default function ChecklistTemplatesPage() {
   const [newFileType, setNewFileType] = useState("LISTING");
   const [newListingType, setNewListingType] = useState("RESIDENTIAL_SALE");
   const [newSide, setNewSide] = useState<string>("");
+  const [newPropertyCategory, setNewPropertyCategory] = useState<string>("");
 
   async function load() {
     const res = await fetch("/api/admin/checklist-templates");
@@ -32,12 +33,14 @@ export default function ChecklistTemplatesPage() {
         fileType: newFileType,
         listingType: newListingType || undefined,
         transactionSide: newSide || undefined,
+        propertyCategory: newPropertyCategory || undefined,
       }),
     });
     setNewName("");
     setNewFileType("LISTING");
     setNewListingType("RESIDENTIAL_SALE");
     setNewSide("");
+    setNewPropertyCategory("");
     setCreating(false);
     load();
   }
@@ -82,7 +85,7 @@ export default function ChecklistTemplatesPage() {
               <option value="TRANSACTION">Transaction File (matched by Transaction Side)</option>
             </select>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="mb-1 block text-xs font-medium text-[#1B1B1B]/60">Listing Type</label>
               <select value={newListingType} onChange={(e) => setNewListingType(e.target.value)} className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2 text-sm">
@@ -103,6 +106,14 @@ export default function ChecklistTemplatesPage() {
                 <option value="LEASE_LANDLORD">Lease Landlord</option>
                 <option value="LEASE_DUAL">Lease Dual Agency</option>
                 <option value="REFERRAL">Referral</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-[#1B1B1B]/60">Property Category</label>
+              <select value={newPropertyCategory} onChange={(e) => setNewPropertyCategory(e.target.value)} className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2 text-sm">
+                <option value="">Any</option>
+                <option value="RESIDENTIAL">Residential</option>
+                <option value="COMMERCIAL">Commercial</option>
               </select>
             </div>
           </div>
@@ -134,6 +145,7 @@ export default function ChecklistTemplatesPage() {
                   <p className="text-xs text-[#1B1B1B]/40">
                     {t.listingType?.replace(/_/g, " ") ?? "Any type"}
                     {t.transactionSide ? ` · ${t.transactionSide.replace(/_/g, " ")}` : ""}
+                    {t.propertyCategory && t.propertyCategory !== "ALL" ? ` · ${t.propertyCategory}` : ""}
                     {" · "}
                     {t.items?.length ?? 0} items
                   </p>
