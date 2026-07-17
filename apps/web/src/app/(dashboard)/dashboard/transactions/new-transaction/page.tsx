@@ -23,6 +23,11 @@ const STAGES = [
   { value: "PRE_CONTRACT", label: "Pre-Contract", desc: "No signed contract yet — set up file early" },
 ] as const;
 
+const PROPERTY_CATEGORIES = [
+  { value: "RESIDENTIAL", label: "Residential", desc: "Single family, condo, multi-family, or other residential property" },
+  { value: "COMMERCIAL", label: "Commercial", desc: "Office, retail, industrial, or other commercial property" },
+] as const;
+
 const PROPERTY_TYPES = ["Single Family", "Condo", "Townhouse", "Multi-Family", "Commercial", "Land", "Industrial", "Farm and Ranch", "Manufactured Home", "Co-Op", "Other"];
 
 type Party = { name: string; email: string; phone: string; company: string; licenseNumber: string };
@@ -45,6 +50,7 @@ export default function NewTransactionPage() {
 
   const [form, setForm] = useState({
     transactionSide: "",
+    propertyCategory: "",
     stage: "UNDER_CONTRACT",
     propertyAddress: "", city: "", state: "CA", zip: "",
     propertyType: "", mlsNumber: "", yearBuilt: "",
@@ -108,11 +114,11 @@ export default function NewTransactionPage() {
   const netToAgent = calcNetToAgent(totalGci, otherDeductionsAmt, tcFeeEnabled);
 
   const canAdvance = useMemo(() => {
-    if (step === 0) return !!form.transactionSide;
+    if (step === 0) return isReferral ? !!form.transactionSide : (!!form.transactionSide && !!form.propertyCategory);
     if (step === 1) return isReferral ? !!form.referredToAgentName : (!!form.propertyAddress && !!form.city && !!form.zip);
     if (step === 2) return isLeaseSide ? !!form.leasePrice : !!form.salePrice;
     return true;
-  }, [step, isReferral, form.transactionSide, form.referredToAgentName, form.propertyAddress, form.city, form.zip, form.salePrice, form.leasePrice]);
+  }, [step, isReferral, form.transactionSide, form.propertyCategory, form.referredToAgentName, form.propertyAddress, form.city, form.zip, form.salePrice, form.leasePrice]);
 
   function goNext() {
     setStep((s) => {
@@ -262,6 +268,22 @@ export default function NewTransactionPage() {
                       onClick={() => set("stage", s.value)}
                       label={s.label}
                       desc={s.desc}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+            {form.transactionSide && !isReferral && (
+              <div>
+                <SectionLabel>Property Category</SectionLabel>
+                <div className="grid grid-cols-2 gap-4">
+                  {PROPERTY_CATEGORIES.map((c) => (
+                    <OptionCard
+                      key={c.value}
+                      selected={form.propertyCategory === c.value}
+                      onClick={() => set("propertyCategory", c.value)}
+                      label={c.label}
+                      desc={c.desc}
                     />
                   ))}
                 </div>
