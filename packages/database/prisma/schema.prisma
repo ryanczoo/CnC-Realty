@@ -106,6 +106,12 @@ enum FileType {
 enum ListingType {
   RESIDENTIAL_SALE
   RESIDENTIAL_LEASE
+  COMMERCIAL_SALE
+  COMMERCIAL_LEASE
+}
+
+enum PropertyCategory {
+  RESIDENTIAL
   COMMERCIAL
 }
 
@@ -471,6 +477,7 @@ model TransactionFile {
   yearBuilt            Int?
   escrowNumber         String?
   transactionSide      TransactionSide
+  propertyCategory     PropertyCategory      @default(RESIDENTIAL)
   status               TransactionFileStatus @default(INCOMPLETE)
   listPrice            Float?
   salePrice            Float?
@@ -574,6 +581,7 @@ model ChecklistTemplate {
   fileType        FileType
   transactionSide String   @default("ALL")
   listingType     String   @default("ALL")
+  propertyCategory String   @default("ALL")
   isActive        Boolean  @default(true)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
