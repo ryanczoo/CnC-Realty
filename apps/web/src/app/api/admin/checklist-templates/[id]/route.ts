@@ -15,6 +15,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       ...(body.isActive !== undefined && { isActive: body.isActive }),
       ...(body.transactionSide !== undefined && { transactionSide: body.transactionSide }),
       ...(body.listingType !== undefined && { listingType: body.listingType }),
+      ...(body.propertyCategory !== undefined && { propertyCategory: body.propertyCategory }),
     },
     include: { items: { orderBy: { order: "asc" } } },
   });

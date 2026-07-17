@@ -26,11 +26,11 @@ export async function POST(req: Request) {
   const err = adminGuard(session);
   if (err) return err;
 
-  const { name, fileType, transactionSide, listingType } = await req.json();
+  const { name, fileType, transactionSide, listingType, propertyCategory } = await req.json();
   if (!name || !fileType) return NextResponse.json({ error: "name and fileType are required" }, { status: 400 });
 
   const template = await prisma.checklistTemplate.create({
-    data: { name, fileType, transactionSide: transactionSide ?? "ALL", listingType: listingType ?? "ALL" },
+    data: { name, fileType, transactionSide: transactionSide ?? "ALL", listingType: listingType ?? "ALL", propertyCategory: propertyCategory ?? "ALL" },
   });
 
   return NextResponse.json({ template }, { status: 201 });
