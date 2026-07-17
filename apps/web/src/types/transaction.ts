@@ -8,7 +8,8 @@ export type TransactionFileStatus =
   | "REFERRAL_SUCCESSFUL" | "REFERRAL_UNSUCCESSFUL" | "REFERRAL_BROKER_REVIEW";
 
 export type FileType = "LISTING" | "TRANSACTION";
-export type ListingType = "RESIDENTIAL_SALE" | "RESIDENTIAL_LEASE" | "COMMERCIAL";
+export type ListingType = "RESIDENTIAL_SALE" | "RESIDENTIAL_LEASE" | "COMMERCIAL_SALE" | "COMMERCIAL_LEASE";
+export type PropertyCategory = "RESIDENTIAL" | "COMMERCIAL";
 export type TransactionSide = "PURCHASE" | "LISTING" | "DUAL" | "LEASE_TENANT" | "LEASE_LANDLORD" | "LEASE_DUAL" | "REFERRAL";
 
 export const ROLE_LABELS: Record<TransactionSide, string> = {
@@ -84,6 +85,7 @@ export interface TransactionFileDetail {
   yearBuilt: number | null;
   escrowNumber: string | null;
   transactionSide: TransactionSide;
+  propertyCategory: PropertyCategory;
   status: TransactionFileStatus;
   listPrice: number | null;
   salePrice: number | null;
