@@ -84,6 +84,57 @@ const REFERRAL_ITEMS = [
   { name: "RFA — Referral Fee Agreement", description: "Signed agreement between the CnC agent and the referred-to agent/brokerage", isRequired: false, order: 1 },
 ];
 
+const COMMERCIAL_SALE_LISTING_ITEMS = [
+  { name: "CLA — Commercial/Residential Income and Vacant Land Listing Agreement", description: "Exclusive commercial listing contract", isRequired: true, order: 1 },
+  { name: "CSPQ — Commercial Seller Property Questionnaire", description: "C.A.R. commercial seller disclosure questionnaire", isRequired: true, order: 2 },
+  { name: "NHD — Natural Hazard Disclosure Report", description: "Applies to commercial too, not residential-only. Govt. Code §8589.3", isRequired: true, order: 3 },
+];
+
+const COMMERCIAL_LEASE_LISTING_ITEMS = [
+  { name: "CLA — Commercial/Residential Income and Vacant Land Listing Agreement", description: "C.A.R. uses this form for commercial lease listings too", isRequired: true, order: 1 },
+  { name: "CL — Commercial Lease Agreement", description: "The executed lease, once signed", isRequired: true, order: 2 },
+  { name: "CASp Disclosure", description: "Accessibility inspection status disclosure, legally required on every commercial lease. Civil Code §1938 (AB 2093)", isRequired: true, order: 3 },
+  { name: "Prop 65 Warning", description: "Required only if the property contains chemicals known to the State of California to cause cancer or reproductive harm. Health & Safety Code §25249.6", isRequired: false, order: 4 },
+];
+
+const COMMERCIAL_PURCHASE_ITEMS = [
+  { name: "CPA — Commercial Property Purchase Agreement & Joint Escrow Instructions", description: "The purchase contract", isRequired: true, order: 1 },
+  { name: "CSPQ — Commercial Seller Property Questionnaire", description: "Received from seller", isRequired: true, order: 2 },
+  { name: "NHD — Natural Hazard Disclosure Report", description: "Received from seller/vendor. Govt. Code §8589.3", isRequired: true, order: 3 },
+];
+
+const COMMERCIAL_LISTING_TX_ITEMS = [
+  { name: "CPA — Commercial Property Purchase Agreement & Joint Escrow Instructions", description: "Fully executed purchase contract", isRequired: true, order: 1 },
+  { name: "CSPQ — Commercial Seller Property Questionnaire", description: "C.A.R. commercial seller disclosure questionnaire", isRequired: true, order: 2 },
+  { name: "NHD — Natural Hazard Disclosure Report", description: "Govt. Code §8589.3", isRequired: true, order: 3 },
+];
+
+const COMMERCIAL_DUAL_ITEMS = [
+  { name: "CPA — Commercial Property Purchase Agreement & Joint Escrow Instructions", description: "The purchase contract", isRequired: true, order: 1 },
+  { name: "CSPQ — Commercial Seller Property Questionnaire", description: "C.A.R. commercial seller disclosure questionnaire", isRequired: true, order: 2 },
+  { name: "NHD — Natural Hazard Disclosure Report", description: "Govt. Code §8589.3", isRequired: true, order: 3 },
+  { name: "AD — Disclosure Regarding Real Estate Agency Relationships", description: "Civil Code §2079.13-2079.24", isRequired: true, order: 4 },
+];
+
+const COMMERCIAL_LEASE_TENANT_ITEMS = [
+  { name: "CL — Commercial Lease Agreement", description: "The lease contract", isRequired: true, order: 1 },
+  { name: "CASp Disclosure", description: "Accessibility inspection status disclosure, legally required on every commercial lease. Civil Code §1938 (AB 2093)", isRequired: true, order: 2 },
+  { name: "Prop 65 Warning", description: "Required only if the property contains listed chemicals. Health & Safety Code §25249.6", isRequired: false, order: 3 },
+];
+
+const COMMERCIAL_LEASE_LANDLORD_ITEMS = [
+  { name: "CL — Commercial Lease Agreement", description: "The lease contract", isRequired: true, order: 1 },
+  { name: "CASp Disclosure", description: "Accessibility inspection status disclosure, legally required on every commercial lease. Civil Code §1938 (AB 2093)", isRequired: true, order: 2 },
+  { name: "Prop 65 Warning", description: "Required only if the property contains listed chemicals. Health & Safety Code §25249.6", isRequired: false, order: 3 },
+];
+
+const COMMERCIAL_LEASE_DUAL_ITEMS = [
+  { name: "CL — Commercial Lease Agreement", description: "The lease contract", isRequired: true, order: 1 },
+  { name: "CASp Disclosure", description: "Accessibility inspection status disclosure, legally required on every commercial lease. Civil Code §1938 (AB 2093)", isRequired: true, order: 2 },
+  { name: "Prop 65 Warning", description: "Required only if the property contains listed chemicals. Health & Safety Code §25249.6", isRequired: false, order: 3 },
+  { name: "AD — Disclosure Regarding Real Estate Agency Relationships", description: "Civil Code §2079.13-2079.24", isRequired: true, order: 4 },
+];
+
 const TAGS: { name: string; color: string }[] = [
   // CA Counties — slate blue
   ...[
@@ -128,26 +179,35 @@ async function main() {
     fileType: "LISTING" | "TRANSACTION",
     listingType: string,
     transactionSide: string,
+    propertyCategory: string,
     items: { name: string; description: string; isRequired: boolean; order: number }[]
   ) {
     await prisma.checklistTemplateItem.deleteMany({ where: { templateId: id } });
     return prisma.checklistTemplate.upsert({
       where: { id },
-      update: { name, fileType, listingType, transactionSide, items: { create: items } },
-      create: { id, name, fileType, listingType, transactionSide, isActive: true, items: { create: items } },
+      update: { name, fileType, listingType, transactionSide, propertyCategory, items: { create: items } },
+      create: { id, name, fileType, listingType, transactionSide, propertyCategory, isActive: true, items: { create: items } },
     });
   }
 
   const templates = await Promise.all([
-    upsertTemplate("seed-res-sale-listing", "Residential Sale — Listing Forms (Pre-Contract)", "LISTING", "RESIDENTIAL_SALE", "ALL", RESIDENTIAL_SALE_LISTING_ITEMS),
-    upsertTemplate("seed-res-sale-buyer", "Purchase Forms", "TRANSACTION", "ALL", "PURCHASE", RESIDENTIAL_SALE_BUYER_ITEMS),
-    upsertTemplate("seed-res-sale-seller", "Listing Forms", "TRANSACTION", "ALL", "LISTING", RESIDENTIAL_SALE_SELLER_ITEMS),
-    upsertTemplate("seed-res-lease", "Residential Lease — Landlord Listing Forms (Pre-Contract)", "LISTING", "RESIDENTIAL_LEASE", "ALL", RESIDENTIAL_LEASE_LISTING_ITEMS),
-    upsertTemplate("seed-res-lease-tenant", "Lease Tenant Forms", "TRANSACTION", "ALL", "LEASE_TENANT", RESIDENTIAL_LEASE_TENANT_ITEMS),
-    upsertTemplate("seed-res-lease-landlord", "Lease Landlord Forms", "TRANSACTION", "ALL", "LEASE_LANDLORD", RESIDENTIAL_LEASE_LANDLORD_ITEMS),
-    upsertTemplate("seed-dual-agency", "Dual Agency Forms", "TRANSACTION", "ALL", "DUAL", DUAL_AGENCY_ITEMS),
-    upsertTemplate("seed-lease-dual-agency", "Lease Dual Agency Forms", "TRANSACTION", "ALL", "LEASE_DUAL", LEASE_DUAL_AGENCY_ITEMS),
-    upsertTemplate("seed-referral", "Referral Forms", "TRANSACTION", "ALL", "REFERRAL", REFERRAL_ITEMS),
+    upsertTemplate("seed-res-sale-listing", "Residential Sale — Listing Forms (Pre-Contract)", "LISTING", "RESIDENTIAL_SALE", "ALL", "ALL", RESIDENTIAL_SALE_LISTING_ITEMS),
+    upsertTemplate("seed-res-sale-buyer", "Purchase Forms", "TRANSACTION", "ALL", "PURCHASE", "RESIDENTIAL", RESIDENTIAL_SALE_BUYER_ITEMS),
+    upsertTemplate("seed-res-sale-seller", "Listing Forms", "TRANSACTION", "ALL", "LISTING", "RESIDENTIAL", RESIDENTIAL_SALE_SELLER_ITEMS),
+    upsertTemplate("seed-res-lease", "Residential Lease — Landlord Listing Forms (Pre-Contract)", "LISTING", "RESIDENTIAL_LEASE", "ALL", "ALL", RESIDENTIAL_LEASE_LISTING_ITEMS),
+    upsertTemplate("seed-res-lease-tenant", "Lease Tenant Forms", "TRANSACTION", "ALL", "LEASE_TENANT", "RESIDENTIAL", RESIDENTIAL_LEASE_TENANT_ITEMS),
+    upsertTemplate("seed-res-lease-landlord", "Lease Landlord Forms", "TRANSACTION", "ALL", "LEASE_LANDLORD", "RESIDENTIAL", RESIDENTIAL_LEASE_LANDLORD_ITEMS),
+    upsertTemplate("seed-dual-agency", "Dual Agency Forms", "TRANSACTION", "ALL", "DUAL", "RESIDENTIAL", DUAL_AGENCY_ITEMS),
+    upsertTemplate("seed-lease-dual-agency", "Lease Dual Agency Forms", "TRANSACTION", "ALL", "LEASE_DUAL", "RESIDENTIAL", LEASE_DUAL_AGENCY_ITEMS),
+    upsertTemplate("seed-referral", "Referral Forms", "TRANSACTION", "ALL", "REFERRAL", "ALL", REFERRAL_ITEMS),
+    upsertTemplate("seed-commercial-sale-listing", "Commercial Sale — Listing Forms (Pre-Contract)", "LISTING", "COMMERCIAL_SALE", "ALL", "ALL", COMMERCIAL_SALE_LISTING_ITEMS),
+    upsertTemplate("seed-commercial-lease-listing", "Commercial Lease — Landlord Listing Forms (Pre-Contract)", "LISTING", "COMMERCIAL_LEASE", "ALL", "ALL", COMMERCIAL_LEASE_LISTING_ITEMS),
+    upsertTemplate("seed-commercial-purchase", "Commercial Purchase Forms", "TRANSACTION", "ALL", "PURCHASE", "COMMERCIAL", COMMERCIAL_PURCHASE_ITEMS),
+    upsertTemplate("seed-commercial-listing-tx", "Commercial Listing Forms", "TRANSACTION", "ALL", "LISTING", "COMMERCIAL", COMMERCIAL_LISTING_TX_ITEMS),
+    upsertTemplate("seed-commercial-dual", "Commercial Dual Agency Forms", "TRANSACTION", "ALL", "DUAL", "COMMERCIAL", COMMERCIAL_DUAL_ITEMS),
+    upsertTemplate("seed-commercial-lease-tenant", "Commercial Lease Tenant Forms", "TRANSACTION", "ALL", "LEASE_TENANT", "COMMERCIAL", COMMERCIAL_LEASE_TENANT_ITEMS),
+    upsertTemplate("seed-commercial-lease-landlord", "Commercial Lease Landlord Forms", "TRANSACTION", "ALL", "LEASE_LANDLORD", "COMMERCIAL", COMMERCIAL_LEASE_LANDLORD_ITEMS),
+    upsertTemplate("seed-commercial-lease-dual", "Commercial Lease Dual Agency Forms", "TRANSACTION", "ALL", "LEASE_DUAL", "COMMERCIAL", COMMERCIAL_LEASE_DUAL_ITEMS),
   ]);
 
   console.log(`Created/updated ${templates.length} checklist templates: ${templates.map((t) => t.name).join(", ")}`);
