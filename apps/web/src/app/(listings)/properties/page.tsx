@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { SearchResults } from "@/components/properties/SearchResults";
-import { PropertyListing, MULTIFAMILY_TYPES } from "@/types/property";
+import { PropertyListing, MULTIFAMILY_TYPES, COMMERCIAL_TYPES } from "@/types/property";
 import { buildLocationWhere } from "@/lib/property-search-query";
 
 export const metadata: Metadata = {
@@ -49,6 +49,8 @@ export default async function PropertiesPage({ searchParams }: PageProps) {
   if (!Number.isNaN(minBaths)) where.baths = { gte: minBaths };
   if (searchParams.propertyType === "MultiFamily") {
     where.propertyType = { in: [...MULTIFAMILY_TYPES] };
+  } else if (searchParams.propertyType === "Commercial") {
+    where.propertyType = { in: [...COMMERCIAL_TYPES] };
   } else if (searchParams.propertyType) {
     where.propertyType = { contains: searchParams.propertyType, mode: "insensitive" };
   }

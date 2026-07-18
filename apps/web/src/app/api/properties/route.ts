@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@cnc/database";
-import { MULTIFAMILY_TYPES } from "@/types/property";
+import { MULTIFAMILY_TYPES, COMMERCIAL_TYPES } from "@/types/property";
 import { redis } from "@/lib/redis";
 import { buildLocationWhere } from "@/lib/property-search-query";
 
@@ -49,6 +49,8 @@ export async function GET(req: Request) {
 
   if (propertyType === "MultiFamily") {
     where.propertyType = { in: [...MULTIFAMILY_TYPES] };
+  } else if (propertyType === "Commercial") {
+    where.propertyType = { in: [...COMMERCIAL_TYPES] };
   } else if (propertyType) {
     where.propertyType = { contains: propertyType, mode: "insensitive" };
   }

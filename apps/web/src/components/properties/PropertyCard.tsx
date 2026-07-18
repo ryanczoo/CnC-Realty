@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { Heart } from "lucide-react";
-import { PropertyListing, formatPropertyStatus } from "@/types/property";
+import { PropertyListing, formatPropertyStatus, isCommercialPropertyType, getDisplayPropertyType } from "@/types/property";
 
 interface Props {
   property: PropertyListing;
@@ -20,6 +20,7 @@ export function PropertyCard({ property, isSaved, onToggleSave, onHover, onSelec
   const [showLoginModal, setShowLoginModal] = useState(false);
 
   const thumb = property.photos[0] ?? null;
+  const isCommercial = isCommercialPropertyType(property.propertyType);
 
   function handleHeartClick(e: React.MouseEvent) {
     e.preventDefault();
@@ -82,25 +83,35 @@ export function PropertyCard({ property, isSaved, onToggleSave, onHover, onSelec
           ${property.listPrice.toLocaleString()}
         </p>
         <div className="flex items-center gap-1 text-xs text-white/60">
-          {property.beds != null && (
-            <span>
-              <strong className="text-white/80">{property.beds}</strong> bd
-            </span>
-          )}
-          {property.baths != null && (
-            <>
-              <span className="text-white/20">|</span>
-              <span>
-                <strong className="text-white/80">{property.baths}</strong> ba
-              </span>
-            </>
-          )}
-          {property.sqft != null && (
-            <>
-              <span className="text-white/20">|</span>
+          {isCommercial ? (
+            property.sqft != null && (
               <span>
                 <strong className="text-white/80">{property.sqft.toLocaleString()}</strong> sqft
               </span>
+            )
+          ) : (
+            <>
+              {property.beds != null && (
+                <span>
+                  <strong className="text-white/80">{property.beds}</strong> bd
+                </span>
+              )}
+              {property.baths != null && (
+                <>
+                  <span className="text-white/20">|</span>
+                  <span>
+                    <strong className="text-white/80">{property.baths}</strong> ba
+                  </span>
+                </>
+              )}
+              {property.sqft != null && (
+                <>
+                  <span className="text-white/20">|</span>
+                  <span>
+                    <strong className="text-white/80">{property.sqft.toLocaleString()}</strong> sqft
+                  </span>
+                </>
+              )}
             </>
           )}
         </div>
@@ -109,7 +120,7 @@ export function PropertyCard({ property, isSaved, onToggleSave, onHover, onSelec
         </p>
         {property.propertyType && (
           <span className="mt-1 w-fit rounded-full bg-[#9E8C61]/15 px-2 py-0.5 text-[10px] text-[#9E8C61]">
-            {property.propertyType}
+            {getDisplayPropertyType(property.propertyType)}
           </span>
         )}
       </div>

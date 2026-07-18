@@ -43,6 +43,7 @@ const TYPE_OPTIONS = [
   { label: "Townhouse", value: "Townhouse" },
   { label: "Multi-Family", value: "MultiFamily" },
   { label: "Land", value: "Land" },
+  { label: "Commercial", value: "Commercial" },
 ];
 
 type DropdownKey = "listingType" | "price" | "beds" | "baths" | "type" | null;

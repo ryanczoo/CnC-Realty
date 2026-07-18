@@ -131,3 +131,36 @@ describe("GET /api/properties — query search", () => {
     expect((call.where as any).OR).toBeUndefined();
   });
 });
+
+describe("GET /api/properties — commercial type filter", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(prisma.property.findMany).mockResolvedValue([mockProperty as any]);
+    vi.mocked(prisma.property.count).mockResolvedValue(1);
+  });
+
+  it("matches every commercial PropertySubType in one bucket when propertyType=Commercial", async () => {
+    await GET(makeRequest("propertyType=Commercial"));
+
+    const call = vi.mocked(prisma.property.findMany).mock.calls[0][0];
+    const inList = (call.where as any).propertyType.in;
+    expect(inList).toEqual(
+      expect.arrayContaining([
+        "CommercialSale", "CommercialLease", "Office", "Retail", "Industrial",
+        "Warehouse", "BusinessOpportunity", "Business", "MixedUse", "SpecialPurpose", "HotelMotel",
+      ])
+    );
+  });
+
+  it("does not use a substring contains match for propertyType=Commercial", async () => {
+    // "Commercial" isn't itself a real CRMLS PropertySubType — it's our own
+    // aggregate filter value — so it must not fall through to the generic
+    // `contains` branch (which would match nothing, since no row's
+    // propertyType literally contains the substring "Commercial" across
+    // all 11 real commercial subtypes).
+    await GET(makeRequest("propertyType=Commercial"));
+
+    const call = vi.mocked(prisma.property.findMany).mock.calls[0][0];
+    expect((call.where as any).propertyType.contains).toBeUndefined();
+  });
+});
