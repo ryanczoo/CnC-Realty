@@ -49,24 +49,28 @@ describe("GET /api/admin/reports", () => {
     vi.mocked(prisma.lead.groupBy).mockResolvedValue([
       { agentId: "a1", _count: { id: 3 } } as any,
     ]);
-    vi.mocked(prisma.activity.findMany).mockResolvedValue([
-      { lead: { agentId: "a1" }, type: "CALL" } as any,
-      { lead: { agentId: "a1" }, type: "NOTE" } as any,
-    ]);
-    vi.mocked(prisma.activity.groupBy).mockResolvedValue([
-      { type: "CALL", _count: { id: 2 } } as any,
-      { type: "NOTE", _count: { id: 1 } } as any,
-    ]);
+    vi.mocked(prisma.activity.groupBy)
+      .mockResolvedValueOnce([
+        { leadId: "lead1", _count: { id: 2 } } as any,
+      ]) // activityCountsByLead (per-lead counts, groupBy leadId)
+      .mockResolvedValueOnce([
+        { type: "CALL", _count: { id: 2 } } as any,
+        { type: "NOTE", _count: { id: 1 } } as any,
+      ]); // activityGroups (activity volume by type)
     vi.mocked(prisma.deal.groupBy)
       .mockResolvedValueOnce([{ agentId: "a1", _count: { id: 1 } } as any]) // pipeline
       .mockResolvedValueOnce([{ agentId: "a1", _count: { id: 2 } } as any]); // closed
-    vi.mocked(prisma.lead.findMany).mockResolvedValue([
-      {
-        agentId: "a1",
-        createdAt: new Date("2026-06-01T09:00:00Z"),
-        lastContactedAt: new Date("2026-06-01T11:00:00Z"),
-      } as any,
-    ]);
+    vi.mocked(prisma.lead.findMany)
+      .mockResolvedValueOnce([
+        {
+          agentId: "a1",
+          createdAt: new Date("2026-06-01T09:00:00Z"),
+          lastContactedAt: new Date("2026-06-01T11:00:00Z"),
+        } as any,
+      ]) // speedLeads
+      .mockResolvedValueOnce([
+        { id: "lead1", agentId: "a1" } as any,
+      ]); // leadsForActivityMap (lookup for the leads that have activity)
 
     const res = await GET_ADMIN(makeRequest("http://localhost/api/admin/reports?range=month"));
     expect(res.status).toBe(200);
@@ -89,7 +93,6 @@ describe("GET /api/admin/reports", () => {
     vi.mocked(getServerSession).mockResolvedValue(ADMIN_SESSION as any);
     vi.mocked(prisma.agent.findMany).mockResolvedValue([]);
     vi.mocked(prisma.lead.groupBy).mockResolvedValue([]);
-    vi.mocked(prisma.activity.findMany).mockResolvedValue([]);
     vi.mocked(prisma.activity.groupBy).mockResolvedValue([]);
     vi.mocked(prisma.deal.groupBy).mockResolvedValue([]);
     vi.mocked(prisma.lead.findMany).mockResolvedValue([]);

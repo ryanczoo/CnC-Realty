@@ -19,7 +19,7 @@ export async function GET(req: Request) {
   });
 
   // 2. Parallel aggregation queries
-  const [leadGroups, activities, pipelineGroups, closedGroups, speedLeads, sourceGroups, activityGroups] =
+  const [leadGroups, activityCountsByLead, pipelineGroups, closedGroups, speedLeads, sourceGroups, activityGroups] =
     await Promise.all([
       // leads owned per agent in range
       prisma.lead.groupBy({
@@ -27,10 +27,11 @@ export async function GET(req: Request) {
         where: { createdAt: dateFilter as any, agentId: { not: null } },
         _count: { id: true },
       }),
-      // all activities in range with their lead's agentId
-      prisma.activity.findMany({
+      // per-lead activity counts in range (aggregated in Postgres, not in JS)
+      prisma.activity.groupBy({
+        by: ["leadId"],
         where: { createdAt: dateFilter as any, leadId: { not: null } },
-        select: { type: true, lead: { select: { agentId: true } } },
+        _count: { id: true },
       }),
       // deals in pipeline per agent
       prisma.deal.groupBy({
@@ -55,6 +56,7 @@ export async function GET(req: Request) {
           agentId: { not: null },
         },
         select: { agentId: true, createdAt: true, lastContactedAt: true },
+        take: 2000,
       }),
       // source breakdown (all leads in range)
       prisma.lead.groupBy({
@@ -73,10 +75,22 @@ export async function GET(req: Request) {
   // 3. Build lookup maps
   const leadsMap = new Map(leadGroups.map((g) => [g.agentId, g._count.id]));
 
+  const leadIdsWithActivity = activityCountsByLead
+    .map((g) => g.leadId)
+    .filter((id): id is string => id !== null);
+  const leadsForActivityMap = leadIdsWithActivity.length > 0
+    ? await prisma.lead.findMany({
+        where: { id: { in: leadIdsWithActivity } },
+        select: { id: true, agentId: true },
+      })
+    : [];
+  const leadIdToAgentId = new Map(leadsForActivityMap.map((l) => [l.id, l.agentId]));
+
   const activitiesMap = new Map<string, number>();
-  for (const a of activities) {
-    const aid = a.lead?.agentId;
-    if (aid) activitiesMap.set(aid, (activitiesMap.get(aid) ?? 0) + 1);
+  for (const g of activityCountsByLead) {
+    if (!g.leadId) continue;
+    const aid = leadIdToAgentId.get(g.leadId);
+    if (aid) activitiesMap.set(aid, (activitiesMap.get(aid) ?? 0) + g._count.id);
   }
 
   const pipelineMap = new Map(pipelineGroups.map((g) => [g.agentId, g._count.id]));
