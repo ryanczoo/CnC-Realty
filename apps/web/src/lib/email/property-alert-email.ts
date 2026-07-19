@@ -1,6 +1,5 @@
 import sgMail from "@sendgrid/mail";
-
-const FROM = "noreply@cncrealtygroup.com";
+import { FROM } from "@/lib/email";
 
 export interface AlertProperty {
   address: string;
