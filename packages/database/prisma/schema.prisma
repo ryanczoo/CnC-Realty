@@ -374,6 +374,8 @@ model Property {
   @@index([listedAt])
   @@index([status, listingType, listedAt])
   @@index([status, zip, closeDate])
+  @@index([city(ops: raw("gin_trgm_ops"))], type: Gin, map: "Property_city_trgm_idx")
+  @@index([address(ops: raw("gin_trgm_ops"))], type: Gin, map: "Property_address_trgm_idx")
 }
 
 model Lead {
