@@ -1,5 +1,6 @@
 import type { PrismaClient } from "@cnc/database";
 import { Prisma } from "@cnc/database";
+import { formatCompactCurrency } from "@/lib/utils";
 
 export interface CompInput {
   closePrice: number;
@@ -317,11 +318,7 @@ const TARGET_BINS = 6;
 const SPARSE_THRESHOLD = 5;
 
 export function formatPriceShort(n: number): string {
-  if (n >= 1_000_000) {
-    const m = n / 1_000_000;
-    return `$${m % 1 === 0 ? m.toFixed(0) : m.toFixed(2)}M`;
-  }
-  return `$${Math.round(n / 1000)}K`;
+  return formatCompactCurrency(n);
 }
 
 export function pickBinWidth(min: number, max: number): number {

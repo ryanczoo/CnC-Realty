@@ -489,9 +489,9 @@ describe("formatPriceShort", () => {
     expect(formatPriceShort(725000)).toBe("$725K");
   });
 
-  it("formats million-plus prices with two decimal places", async () => {
+  it("formats 1250000 with 1 decimal when not a whole million", async () => {
     const { formatPriceShort } = await import("@/lib/home-value-estimate");
-    expect(formatPriceShort(1250000)).toBe("$1.25M");
+    expect(formatPriceShort(1250000)).toBe("$1.3M");
   });
 
   it("formats an exact million without trailing decimals", async () => {

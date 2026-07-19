@@ -1,4 +1,5 @@
 import type { DealPipeline, DealStage } from "@cnc/database";
+import { formatCompactCurrency } from "@/lib/utils";
 
 export const PIPELINE_STAGES: Record<DealPipeline, DealStage[]> = {
   BUYERS: ["PRE_APPROVAL", "TOURING", "OFFER_SUBMITTED", "OFFER_ACCEPTED", "FALLEN_OUT"],
@@ -36,9 +37,7 @@ export function calcDaysInStage(stageUpdatedAt: Date | string): number {
 }
 
 export function formatDealPrice(price: number | null): string {
-  if (price === null) return "—";
-  if (price >= 1_000_000) return `$${(price / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
-  return `$${Math.round(price / 1000)}k`;
+  return formatCompactCurrency(price);
 }
 
 export function formatCloseDate(date: Date | string | null): string {

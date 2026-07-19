@@ -9,6 +9,7 @@ import { AgentAboutSection } from "./AgentAboutSection";
 import { AgentReviewsSection } from "./AgentReviewsSection";
 import { AgentTransactionsSection } from "./AgentTransactionsSection";
 import type { AgentTransaction } from "./AgentTransactionsSection";
+import { formatCompactCurrency } from "@/lib/utils";
 
 type AgentProfileHeroProps = {
   displayName: string | null;
@@ -30,12 +31,6 @@ type AgentProfileHeroProps = {
   propertiesRented: number;
   transactions: AgentTransaction[];
 };
-
-function formatVolume(v: number): string {
-  if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
-  if (v >= 1_000) return `$${Math.round(v / 1_000)}K`;
-  return `$${v.toLocaleString()}`;
-}
 
 export function AgentProfileHero({
   displayName,
@@ -72,7 +67,7 @@ export function AgentProfileHero({
     },
     {
       type: "volume" as const,
-      value: volumeClosed > 0 ? formatVolume(volumeClosed) : "—",
+      value: volumeClosed > 0 ? formatCompactCurrency(volumeClosed) : "—",
       label: "Volume Closed",
     },
     {

@@ -77,8 +77,8 @@ describe("formatDealPrice", () => {
     expect(formatDealPrice(null)).toBe("—");
   });
 
-  it("formats thousands as k", () => {
-    expect(formatDealPrice(850000)).toBe("$850k");
+  it("formats thousands as K", () => {
+    expect(formatDealPrice(850000)).toBe("$850K");
   });
 
   it("formats millions with one decimal", () => {
@@ -86,7 +86,7 @@ describe("formatDealPrice", () => {
   });
 
   it("rounds to nearest 10k for sub-million", () => {
-    expect(formatDealPrice(495_000)).toBe("$495k");
+    expect(formatDealPrice(495_000)).toBe("$495K");
   });
 });
 
