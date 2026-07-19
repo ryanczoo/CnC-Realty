@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cache } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -12,12 +13,26 @@ interface Props {
   params: Promise<{ slug: string }>;
 }
 
+const getPost = cache((slug: string) =>
+  prisma.blogPost.findUnique({
+    where: { slug, published: true },
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      excerpt: true,
+      content: true,
+      coverImage: true,
+      publishedAt: true,
+      authorName: true,
+      author: { select: { name: true } },
+    },
+  })
+);
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const post = await prisma.blogPost.findUnique({
-    where: { slug, published: true },
-    select: { title: true, excerpt: true, coverImage: true },
-  });
+  const post = await getPost(slug);
   if (!post) return { title: "Not Found" };
   return {
     title: `${post.title} | CnC Realty Group`,
@@ -31,20 +46,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function PressPostPage({ params }: Props) {
   const { slug } = await params;
 
-  const post = await prisma.blogPost.findUnique({
-    where: { slug, published: true },
-    select: {
-      id: true,
-      title: true,
-      slug: true,
-      excerpt: true,
-      content: true,
-      coverImage: true,
-      publishedAt: true,
-      authorName: true,
-      author: { select: { name: true } },
-    },
-  });
+  const post = await getPost(slug);
 
   if (!post) notFound();
 

@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { getServerSession } from "next-auth";
@@ -20,13 +21,14 @@ interface PageProps {
   params: { mlsNumber: string };
 }
 
+const getProperty = cache((mlsNumber: string) =>
+  prisma.property.findUnique({ where: { mlsNumber } })
+);
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   let property = null;
   try {
-    property = await prisma.property.findUnique({
-      where: { mlsNumber: params.mlsNumber },
-      select: { address: true, city: true, state: true, listPrice: true, photos: true, description: true },
-    });
+    property = await getProperty(params.mlsNumber);
   } catch {
     return { title: "Property" };
   }
@@ -50,7 +52,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function PropertyDetailPage({ params }: PageProps) {
   let property = null;
   try {
-    property = await prisma.property.findUnique({ where: { mlsNumber: params.mlsNumber } });
+    property = await getProperty(params.mlsNumber);
   } catch {
     return (
       <div data-navbar-theme="light" className="flex min-h-screen items-center justify-center bg-[#F2F0EF]">
