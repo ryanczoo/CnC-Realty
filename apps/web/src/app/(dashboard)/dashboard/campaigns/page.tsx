@@ -26,6 +26,7 @@ export default async function CampaignsPage() {
       where: agentId ? { agentId } : {},
       include: { _count: { select: { contacts: true } } },
       orderBy: { createdAt: "desc" },
+      take: 500,
     });
   } catch {
     // Show empty state on DB error

@@ -56,6 +56,7 @@ export default async function LeadsPage({
       const leads = await prisma.lead.findMany({
         where: agentId ? { agentId } : {},
         orderBy: { createdAt: "desc" },
+        take: 500,
         select: {
           id: true,
           firstName: true,

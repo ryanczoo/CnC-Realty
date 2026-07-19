@@ -47,6 +47,7 @@ export async function GET(req: Request) {
     },
     include: { lead: { select: { firstName: true, lastName: true } } },
     orderBy: [{ done: "asc" }, { dueDate: "asc" }, { createdAt: "asc" }],
+    take: 500,
   });
 
   return NextResponse.json(tasks.map(serializeTask));
