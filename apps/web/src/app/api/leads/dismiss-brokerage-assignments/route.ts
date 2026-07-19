@@ -8,17 +8,13 @@ export async function POST() {
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
-  const agent = await prisma.agent.findUnique({
-    where: { userId: session.user.id },
-  });
-
-  if (!agent) {
+  if (!session.user.agentId) {
     return NextResponse.json({ error: "Agent not found" }, { status: 403 });
   }
 
   const result = await prisma.lead.updateMany({
     where: {
-      agentId: agent.id,
+      agentId: session.user.agentId,
       brokerageFed: true,
       assignmentSeenAt: null,
     },

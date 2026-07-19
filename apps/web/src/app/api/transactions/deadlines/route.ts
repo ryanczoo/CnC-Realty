@@ -1,32 +1,22 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
 import { TransactionFileStatus } from "@cnc/database";
-import { authOptions } from "@/lib/auth";
+import { requireAuth } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 
 const DEADLINE_WINDOW_DAYS = 7;
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const role = (session.user as { role?: string }).role;
-  if (role !== "AGENT" && role !== "ADMIN") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  const { session, error } = await requireAuth("AGENT");
+  if (error) return error;
 
   const now = new Date();
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() + DEADLINE_WINDOW_DAYS);
 
   let scopedAgentId: string | undefined;
-  if (role === "AGENT") {
-    const agent = await prisma.agent.findUnique({
-      where: { userId: (session.user as { id: string }).id },
-      select: { id: true },
-    });
-    if (!agent) return NextResponse.json({ deadlines: [] });
-    scopedAgentId = agent.id;
+  if (session.user.role === "AGENT") {
+    if (!session.user.agentId) return NextResponse.json({ deadlines: [] });
+    scopedAgentId = session.user.agentId;
   }
 
   const where = {

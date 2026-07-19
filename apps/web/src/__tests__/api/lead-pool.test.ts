@@ -19,7 +19,8 @@ import { PATCH } from "../../app/api/admin/leads/[id]/assign/route";
 import { POST as POST_DISMISS } from "../../app/api/leads/dismiss-brokerage-assignments/route";
 
 const ADMIN_SESSION = { user: { id: "u1", role: "ADMIN" } };
-const AGENT_SESSION = { user: { id: "u2", role: "AGENT" } };
+const AGENT_SESSION = { user: { id: "u2", role: "AGENT", agentId: "a1" } };
+const AGENT_SESSION_NO_AGENT = { user: { id: "u2", role: "AGENT", agentId: null } };
 const AGENT = {
   id: "a1",
   displayName: "Sarah Jones",
@@ -131,15 +132,13 @@ describe("POST /api/leads/dismiss-brokerage-assignments", () => {
   });
 
   it("returns 403 when no Agent record exists for the user", async () => {
-    vi.mocked(getServerSession).mockResolvedValue(AGENT_SESSION as any);
-    vi.mocked(prisma.agent.findUnique).mockResolvedValue(null);
+    vi.mocked(getServerSession).mockResolvedValue(AGENT_SESSION_NO_AGENT as any);
     const res = await POST_DISMISS(new Request("http://localhost/api/leads/dismiss-brokerage-assignments", { method: "POST" }));
     expect(res.status).toBe(403);
   });
 
   it("sets assignmentSeenAt on unseen brokerage leads and returns dismissed count", async () => {
     vi.mocked(getServerSession).mockResolvedValue(AGENT_SESSION as any);
-    vi.mocked(prisma.agent.findUnique).mockResolvedValue({ id: "a1" } as any);
     vi.mocked(prisma.lead.updateMany).mockResolvedValue({ count: 3 } as any);
     const res = await POST_DISMISS(new Request("http://localhost/api/leads/dismiss-brokerage-assignments", { method: "POST" }));
     expect(res.status).toBe(200);
