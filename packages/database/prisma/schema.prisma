@@ -431,6 +431,7 @@ model Activity {
 
   @@index([leadId])
   @@index([transactionId])
+  @@index([createdAt])
 }
 
 // ─── Phase 5A: File models ────────────────────────────────────────────────────
@@ -461,6 +462,10 @@ model ListingFile {
   documents          FileDocument[]
   activities         FileActivity[]
   tasks              FileTask[]
+
+  @@index([agentId])
+  @@index([status])
+  @@index([awaitingReview])
 }
 
 model TransactionFile {
@@ -529,6 +534,10 @@ model TransactionFile {
   tasks              FileTask[]
   conditions         FileCondition[]
   deal               Deal?
+
+  @@index([agentId])
+  @@index([status])
+  @@index([awaitingReview])
 }
 
 model FileTask {
@@ -688,6 +697,7 @@ model CampaignContact {
   lead     Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
   @@unique([campaignId, leadId])
+  @@index([leadId])
 }
 
 model DripStep {
