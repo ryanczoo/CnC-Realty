@@ -52,9 +52,11 @@ export default async function AgentProfilePage({ params }: Props) {
   const agent = await getAgent(params.slug);
   if (!agent) notFound();
 
-  // Fetch up to 12 closed transactions for the Past Transactions section
+  // Fetch up to 12 closed transactions for the Past Transactions section.
+  // Referrals are excluded: referring a client out isn't a transaction the
+  // agent personally closed (no property/price, handled by someone else).
   const rawTransactions = await prisma.transactionFile.findMany({
-    where: { agentId: agent.id, status: "CLOSED" },
+    where: { agentId: agent.id, status: "CLOSED", transactionSide: { not: "REFERRAL" } },
     select: {
       id: true,
       propertyAddress: true,
