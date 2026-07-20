@@ -29,3 +29,13 @@ export async function requireAuth(minRole?: "AGENT" | "ADMIN"): Promise<
 
   return { session, error: null };
 }
+
+export function checkOwnership<T extends { agentId: string | null }>(
+  record: T | null,
+  callerAgentId: string | null,
+  role: string
+): { exists: boolean; forbidden: boolean; record: T | null } {
+  if (!record) return { exists: false, forbidden: false, record: null };
+  if (role === "ADMIN") return { exists: true, forbidden: false, record };
+  return { exists: true, forbidden: !callerAgentId || record.agentId !== callerAgentId, record };
+}

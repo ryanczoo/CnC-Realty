@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/api-auth";
+import { requireAuth, checkOwnership } from "@/lib/api-auth";
 
 const patchSchema = z.object({
   name: z.string().min(1).optional(),
@@ -11,13 +11,6 @@ const patchSchema = z.object({
   status: z.enum(["DRAFT", "SCHEDULED", "ACTIVE", "PAUSED", "COMPLETED"]).optional(),
 });
 
-async function checkAccess(id: string, agentId: string | null, role: string) {
-  const campaign = await prisma.campaign.findUnique({ where: { id }, select: { id: true, agentId: true } });
-  if (!campaign) return { exists: false, forbidden: false };
-  if (role === "ADMIN") return { exists: true, forbidden: false };
-  return { exists: true, forbidden: agentId !== campaign.agentId };
-}
-
 export async function GET(
   _req: Request,
   { params }: { params: { id: string } }
@@ -25,7 +18,8 @@ export async function GET(
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
-  const { exists, forbidden } = await checkAccess(params.id, session.user.agentId, session.user.role);
+  const existingCampaign = await prisma.campaign.findUnique({ where: { id: params.id }, select: { id: true, agentId: true } });
+  const { exists, forbidden } = checkOwnership(existingCampaign, session.user.agentId, session.user.role);
   if (forbidden) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (!exists) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -51,7 +45,8 @@ export async function PATCH(
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
-  const { exists, forbidden } = await checkAccess(params.id, session.user.agentId, session.user.role);
+  const campaign = await prisma.campaign.findUnique({ where: { id: params.id }, select: { id: true, agentId: true } });
+  const { exists, forbidden } = checkOwnership(campaign, session.user.agentId, session.user.role);
   if (forbidden) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (!exists) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -89,7 +84,8 @@ export async function DELETE(
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
-  const { exists, forbidden } = await checkAccess(params.id, session.user.agentId, session.user.role);
+  const campaign = await prisma.campaign.findUnique({ where: { id: params.id }, select: { id: true, agentId: true } });
+  const { exists, forbidden } = checkOwnership(campaign, session.user.agentId, session.user.role);
   if (forbidden) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (!exists) return NextResponse.json({ error: "Not found" }, { status: 404 });
 

@@ -2,19 +2,15 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { checkOwnership } from "@/lib/api-auth";
 
 async function getFileAndVerifyAccess(fileType: string, fileId: string, agentId: string | null, userRole: string) {
-  if (fileType === "listing") {
-    const file = await prisma.listingFile.findUnique({ where: { id: fileId } });
-    if (!file) return null;
-    if (userRole !== "ADMIN" && file.agentId !== agentId) return null;
-    return file;
-  } else {
-    const file = await prisma.transactionFile.findUnique({ where: { id: fileId } });
-    if (!file) return null;
-    if (userRole !== "ADMIN" && file.agentId !== agentId) return null;
-    return file;
-  }
+  const file = fileType === "listing"
+    ? await prisma.listingFile.findUnique({ where: { id: fileId } })
+    : await prisma.transactionFile.findUnique({ where: { id: fileId } });
+  const { exists, forbidden, record } = checkOwnership(file, agentId, userRole);
+  if (!exists || forbidden) return null;
+  return record;
 }
 
 export async function POST(req: Request, { params }: { params: { fileType: string; id: string } }) {

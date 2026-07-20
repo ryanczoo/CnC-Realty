@@ -12,7 +12,7 @@ vi.mock("@/lib/prisma", () => ({
       delete: vi.fn(),
     },
     actionPlan: { findUnique: vi.fn() },
-    lead: { update: vi.fn() },
+    lead: { update: vi.fn(), findUnique: vi.fn() },
     triggerExecution: { create: vi.fn() },
     leadPlanEnrollment: { findFirst: vi.fn() },
     $transaction: vi.fn(),
@@ -230,7 +230,11 @@ describe("DELETE /api/admin/triggers/[id]", () => {
 // ─── Trigger execution in PATCH /api/leads/[id] ───────────────────────────────
 
 describe("Trigger execution — PATCH /api/leads/[id]", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Ownership check fetches the lead first; ADMIN is authorized as long as it exists.
+    vi.mocked(prisma.lead.findUnique).mockResolvedValue({ agentId: "a1" } as any);
+  });
 
   const LEAD_PARAMS = { params: { id: "l1" } };
   const LEAD_SESSION = { user: { id: "u1", role: "ADMIN" } };

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { checkOwnership } from "@/lib/api-auth";
 import { canTransitionListing, FILE_DETAIL_INCLUDE } from "@/lib/transaction-helpers";
 import { sendFileClosed } from "@/lib/email/transaction-emails";
 
@@ -12,8 +13,8 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   const listing = await prisma.listingFile.findUnique({ where: { id: params.id }, include: FILE_DETAIL_INCLUDE });
   if (!listing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const isAdmin = session.user.role === "ADMIN";
-  if (!isAdmin && listing.agentId !== session.user.agentId) {
+  const { forbidden } = checkOwnership(listing, session.user.agentId, session.user.role);
+  if (forbidden) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -28,7 +29,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (!listing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const isAdmin = session.user.role === "ADMIN";
-  if (!isAdmin && listing.agentId !== session.user.agentId) {
+  const { forbidden } = checkOwnership(listing, session.user.agentId, session.user.role);
+  if (forbidden) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -91,7 +93,8 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
     return NextResponse.json({ error: "Only INCOMPLETE files can be deleted" }, { status: 400 });
   }
 
-  if (listing.agentId !== session.user.agentId && session.user.role !== "ADMIN") {
+  const { forbidden } = checkOwnership(listing, session.user.agentId, session.user.role);
+  if (forbidden) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

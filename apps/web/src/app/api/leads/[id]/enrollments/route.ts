@@ -1,23 +1,17 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/api-auth";
+import { requireAuth, checkOwnership } from "@/lib/api-auth";
 
 export const dynamic = "force-dynamic";
-
-async function assertOwnership(leadId: string, agentId: string | null, role: string) {
-  if (role === "ADMIN") return true;
-  if (!agentId) return false;
-  const lead = await prisma.lead.findUnique({ where: { id: leadId }, select: { agentId: true } });
-  return !!lead && lead.agentId === agentId;
-}
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
-  const owns = await assertOwnership(params.id, session.user.agentId, session.user.role);
-  if (!owns) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const lead = await prisma.lead.findUnique({ where: { id: params.id }, select: { agentId: true } });
+  const { exists, forbidden } = checkOwnership(lead, session.user.agentId, session.user.role);
+  if (!exists || forbidden) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const enrollments = await prisma.leadPlanEnrollment.findMany({
     where: { leadId: params.id },
@@ -51,8 +45,9 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
-  const owns = await assertOwnership(params.id, session.user.agentId, session.user.role);
-  if (!owns) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const lead = await prisma.lead.findUnique({ where: { id: params.id }, select: { agentId: true } });
+  const { exists, forbidden } = checkOwnership(lead, session.user.agentId, session.user.role);
+  if (!exists || forbidden) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const schema = z.object({ planId: z.string().min(1) });
   let planId: string;

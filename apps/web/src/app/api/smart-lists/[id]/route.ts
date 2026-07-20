@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/api-auth";
+import { requireAuth, checkOwnership } from "@/lib/api-auth";
 
 const schema = z.object({
   name: z.string().min(1).optional(),
@@ -12,19 +12,13 @@ const schema = z.object({
   })).optional(),
 });
 
-async function assertOwnership(listId: string, agentId: string | null, role: string) {
-  if (role === "ADMIN") return true;
-  if (!agentId) return false;
-  const list = await prisma.smartList.findUnique({ where: { id: listId }, select: { agentId: true } });
-  return !!list && list.agentId === agentId;
-}
-
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
-  const owns = await assertOwnership(params.id, session.user.agentId, session.user.role);
-  if (!owns) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const existingList = await prisma.smartList.findUnique({ where: { id: params.id }, select: { agentId: true } });
+  const { exists, forbidden } = checkOwnership(existingList, session.user.agentId, session.user.role);
+  if (!exists || forbidden) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   try {
     const body = schema.parse(await req.json());
@@ -44,8 +38,9 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
-  const owns = await assertOwnership(params.id, session.user.agentId, session.user.role);
-  if (!owns) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const existingList = await prisma.smartList.findUnique({ where: { id: params.id }, select: { agentId: true } });
+  const { exists, forbidden } = checkOwnership(existingList, session.user.agentId, session.user.role);
+  if (!exists || forbidden) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   await prisma.smartList.delete({ where: { id: params.id } }).catch(() => {});
   return new NextResponse(null, { status: 204 });

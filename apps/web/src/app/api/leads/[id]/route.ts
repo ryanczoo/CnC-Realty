@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/api-auth";
+import { requireAuth, checkOwnership } from "@/lib/api-auth";
 import sgMail from "@sendgrid/mail";
 import { FROM } from "@/lib/email";
 
@@ -25,19 +25,13 @@ const patchSchema = z.object({
   timeframeToMove: z.string().nullable().optional(),
 });
 
-async function assertOwnership(leadId: string, agentId: string | null, role: string) {
-  if (role === "ADMIN") return true;
-  if (!agentId) return false;
-  const lead = await prisma.lead.findUnique({ where: { id: leadId }, select: { agentId: true } });
-  return !!lead && lead.agentId === agentId;
-}
-
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
-  const owns = await assertOwnership(params.id, session.user.agentId, session.user.role);
-  if (!owns) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const existingLead = await prisma.lead.findUnique({ where: { id: params.id }, select: { agentId: true } });
+  const { exists, forbidden } = checkOwnership(existingLead, session.user.agentId, session.user.role);
+  if (!exists || forbidden) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const lead = await prisma.lead.findUnique({
     where: { id: params.id },
@@ -58,8 +52,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
-  const owns = await assertOwnership(params.id, session.user.agentId, session.user.role);
-  if (!owns) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const existingLead = await prisma.lead.findUnique({ where: { id: params.id }, select: { agentId: true } });
+  const { exists, forbidden } = checkOwnership(existingLead, session.user.agentId, session.user.role);
+  if (!exists || forbidden) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   let data: z.infer<typeof patchSchema>;
   let lead: { id: string; firstName: string; lastName: string; email: string; phone: string | null; status: string; agentId: string | null; createdAt: Date; updatedAt: Date };

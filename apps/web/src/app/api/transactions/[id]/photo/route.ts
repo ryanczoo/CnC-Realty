@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { checkOwnership } from "@/lib/api-auth";
 import { getPresignedGetUrl } from "@/lib/r2";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +16,8 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     select: { agentId: true, photoKey: true },
   });
   if (!tx) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (session.user.role !== "ADMIN" && tx.agentId !== session.user.agentId) {
+  const { forbidden } = checkOwnership(tx, session.user.agentId, session.user.role);
+  if (forbidden) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   if (!tx.photoKey) return NextResponse.json({ error: "Not found" }, { status: 404 });

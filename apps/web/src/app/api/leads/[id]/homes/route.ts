@@ -1,20 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/api-auth";
-
-async function assertOwnership(leadId: string, agentId: string | null, role: string) {
-  if (role === "ADMIN") return true;
-  if (!agentId) return false;
-  const lead = await prisma.lead.findUnique({ where: { id: leadId }, select: { agentId: true } });
-  return !!lead && lead.agentId === agentId;
-}
+import { requireAuth, checkOwnership } from "@/lib/api-auth";
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
-  const owns = await assertOwnership(params.id, session.user.agentId, session.user.role);
-  if (!owns) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const existingLead = await prisma.lead.findUnique({ where: { id: params.id }, select: { agentId: true } });
+  const { exists, forbidden } = checkOwnership(existingLead, session.user.agentId, session.user.role);
+  if (!exists || forbidden) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const lead = await prisma.lead.findUnique({ where: { id: params.id }, select: { email: true } });
   if (!lead) return NextResponse.json({ error: "Not found" }, { status: 404 });
