@@ -69,6 +69,7 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
     title: t.title,
     taskType: t.taskType,
     dueDate: t.dueDate?.toISOString() ?? null,
+    notes: t.notes,
     done: t.done,
     completedAt: t.completedAt?.toISOString() ?? null,
   }));

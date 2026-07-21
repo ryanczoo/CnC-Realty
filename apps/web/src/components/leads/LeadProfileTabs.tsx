@@ -21,6 +21,7 @@ interface TaskItem {
   title: string;
   taskType: string;
   dueDate: string | null;
+  notes: string | null;
   done: boolean;
   completedAt: string | null;
 }
