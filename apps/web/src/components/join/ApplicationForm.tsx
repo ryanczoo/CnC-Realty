@@ -9,7 +9,7 @@ import { RevealLine } from "@/components/ui/reveal-text";
 import { DateField } from "@/components/ui/DateField";
 import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
 import { namesMatch } from "@/lib/ica-signature";
-import { formatPhoneInput, isValidEmail } from "@/lib/form-validation";
+import { formatPhoneInput, isValidEmail, stripDigits, digitsOnly } from "@/lib/form-validation";
 
 const inputClass =
   "w-full rounded-lg border border-[#1B1B1B]/10 bg-white px-4 py-3 text-sm text-[#1B1B1B] placeholder-[#1B1B1B]/40 focus:outline-none focus:ring-2 focus:ring-[#9E8C61]/40";
@@ -249,7 +249,7 @@ function FormInner() {
         <div className="mt-4 grid grid-cols-3 gap-4">
           <div>
             <label className={labelClass}>City *</label>
-            <input className={inputClass} value={form.city} onChange={(e) => set("city", e.target.value)} />
+            <input className={inputClass} value={form.city} onChange={(e) => set("city", stripDigits(e.target.value))} />
           </div>
           <div>
             <label className={labelClass}>State *</label>
@@ -262,7 +262,7 @@ function FormInner() {
           </div>
           <div>
             <label className={labelClass}>ZIP Code *</label>
-            <input className={inputClass} value={form.zip} maxLength={5} onChange={(e) => set("zip", e.target.value.replace(/\D/g, "").slice(0, 5))} />
+            <input className={inputClass} value={form.zip} maxLength={5} onChange={(e) => set("zip", digitsOnly(e.target.value, 5))} />
           </div>
         </div>
         <div className="mt-4 grid grid-cols-3 gap-4">
@@ -303,7 +303,7 @@ function FormInner() {
         <div className="mt-8 grid grid-cols-2 gap-4">
           <div>
             <label className={labelClass}>CA DRE License # *</label>
-            <input className={`${inputClass} ${ring("licenseNumber")}`} value={form.licenseNumber} maxLength={8} onChange={(e) => set("licenseNumber", e.target.value.replace(/\D/g, "").slice(0, 8))} />
+            <input className={`${inputClass} ${ring("licenseNumber")}`} value={form.licenseNumber} maxLength={8} onChange={(e) => set("licenseNumber", digitsOnly(e.target.value, 8))} />
           </div>
           <div>
             <label className={labelClass}>License Expiration Date *</label>

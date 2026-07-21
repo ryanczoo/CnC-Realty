@@ -7,25 +7,27 @@ import { Plus, Trash2 } from "lucide-react";
 import { SPRING_HOVER } from "@/lib/motion";
 import { TC_FEE, calcNetToAgent } from "@/lib/commission";
 import { DateField } from "@/components/ui/DateField";
+import { FormField as Field } from "@/components/ui/FormField";
+import { stripDigits, digitsOnly } from "@/lib/form-validation";
 
 export const SIDES = [
-  { value: "PURCHASE", label: "Purchase", desc: "Representing the buyer in a purchase transaction" },
-  { value: "LISTING", label: "Listing", desc: "Representing the seller in a sale transaction" },
-  { value: "DUAL", label: "Both Purchase & Listing", desc: "Dual agency — representing buyer and seller" },
-  { value: "LEASE_TENANT", label: "Lease Tenant", desc: "Representing the tenant in a lease transaction" },
-  { value: "LEASE_LANDLORD", label: "Lease Landlord", desc: "Representing the landlord in a lease transaction" },
-  { value: "LEASE_DUAL", label: "Both Lease Tenant & Landlord", desc: "Dual agency — representing tenant and landlord" },
-  { value: "REFERRAL", label: "Referral", desc: "Outbound referral to another agent or brokerage — no other role in this deal" },
+  { value: "PURCHASE", label: "Purchase", desc: "Buyer representation" },
+  { value: "LISTING", label: "Listing", desc: "Seller representation" },
+  { value: "DUAL", label: "Both Purchase & Listing", desc: "Dual agency transaction" },
+  { value: "LEASE_TENANT", label: "Lease Tenant", desc: "Renter representation" },
+  { value: "LEASE_LANDLORD", label: "Lease Landlord", desc: "Homeowner representation" },
+  { value: "LEASE_DUAL", label: "Both Lease Tenant & Landlord", desc: "Dual agency - lease transaction" },
+  { value: "REFERRAL", label: "Referral", desc: "Client referral to another agent or brokerage" },
 ] as const;
 
 const STAGES = [
-  { value: "UNDER_CONTRACT", label: "Under Contract", desc: "You have a signed purchase agreement" },
-  { value: "PRE_CONTRACT", label: "Pre-Contract", desc: "No signed contract yet — set up file early" },
+  { value: "UNDER_CONTRACT", label: "Under Contract", desc: "You have a signed agreement" },
+  { value: "PRE_CONTRACT", label: "Pre-Contract", desc: "Setup file early" },
 ] as const;
 
 const PROPERTY_CATEGORIES = [
-  { value: "RESIDENTIAL", label: "Residential", desc: "Single family, condo, multi-family, or other residential property" },
-  { value: "COMMERCIAL", label: "Commercial", desc: "Office, retail, industrial, or other commercial property" },
+  { value: "RESIDENTIAL", label: "Residential" },
+  { value: "COMMERCIAL", label: "Commercial" },
 ] as const;
 
 const PROPERTY_TYPES = ["Single Family", "Condo", "Townhouse", "Multi-Family", "Commercial", "Land", "Industrial", "Farm and Ranch", "Manufactured Home", "Co-Op", "Other"];
@@ -115,10 +117,10 @@ export default function NewTransactionPage() {
 
   const canAdvance = useMemo(() => {
     if (step === 0) return isReferral ? !!form.transactionSide : (!!form.transactionSide && !!form.propertyCategory);
-    if (step === 1) return isReferral ? !!form.referredToAgentName : (!!form.propertyAddress && !!form.city && !!form.zip);
+    if (step === 1) return isReferral ? !!form.referredToAgentName : (!!form.propertyAddress && !!form.city && !!form.zip && !!form.propertyType && !!form.mlsNumber);
     if (step === 2) return isLeaseSide ? !!form.leasePrice : !!form.salePrice;
     return true;
-  }, [step, isReferral, form.transactionSide, form.propertyCategory, form.referredToAgentName, form.propertyAddress, form.city, form.zip, form.salePrice, form.leasePrice]);
+  }, [step, isReferral, form.transactionSide, form.propertyCategory, form.referredToAgentName, form.propertyAddress, form.city, form.zip, form.propertyType, form.mlsNumber, form.salePrice, form.leasePrice]);
 
   function goNext() {
     setStep((s) => {
@@ -244,7 +246,7 @@ export default function NewTransactionPage() {
         {step === 0 && (
           <div className="space-y-8">
             <div>
-              <SectionLabel>Representation Type</SectionLabel>
+              <SectionLabel>Transaction Type</SectionLabel>
               <div className="grid grid-cols-2 gap-4">
                 {SIDES.map((s) => (
                   <OptionCard
@@ -275,7 +277,7 @@ export default function NewTransactionPage() {
             )}
             {form.transactionSide && !isReferral && (
               <div>
-                <SectionLabel>Property Category</SectionLabel>
+                <SectionLabel>Select One</SectionLabel>
                 <div className="grid grid-cols-2 gap-4">
                   {PROPERTY_CATEGORIES.map((c) => (
                     <OptionCard
@@ -283,7 +285,6 @@ export default function NewTransactionPage() {
                       selected={form.propertyCategory === c.value}
                       onClick={() => set("propertyCategory", c.value)}
                       label={c.label}
-                      desc={c.desc}
                     />
                   ))}
                 </div>
@@ -311,12 +312,12 @@ export default function NewTransactionPage() {
           <div className="space-y-4">
             <Field label="Property Address *" value={form.propertyAddress} onChange={(v) => set("propertyAddress", v)} placeholder="123 Main St" />
             <div className="grid grid-cols-3 gap-4">
-              <Field label="City *" value={form.city} onChange={(v) => set("city", v)} />
+              <Field label="City *" value={form.city} onChange={(v) => set("city", v)} restrict={stripDigits} />
               <Field label="State" value={form.state} onChange={(v) => set("state", v)} />
-              <Field label="ZIP *" value={form.zip} onChange={(v) => set("zip", v)} />
+              <Field label="ZIP *" value={form.zip} onChange={(v) => set("zip", v)} restrict={(v) => digitsOnly(v, 5)} />
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">Property Type</label>
+              <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">Property Type *</label>
               <select
                 value={form.propertyType}
                 onChange={(e) => set("propertyType", e.target.value)}
@@ -329,11 +330,11 @@ export default function NewTransactionPage() {
               </select>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <Field label="MLS Number" value={form.mlsNumber} onChange={(v) => set("mlsNumber", v)} placeholder="Optional" />
-              <Field label="Year Built" type="number" value={form.yearBuilt} onChange={(v) => set("yearBuilt", v)} placeholder="e.g. 2005" />
+              <Field label="MLS Number *" value={form.mlsNumber} onChange={(v) => set("mlsNumber", v)} restrict={(v) => digitsOnly(v, 10)} />
+              <Field label="Year Built" type="number" value={form.yearBuilt} onChange={(v) => set("yearBuilt", v)} placeholder="e.g. 2005" restrict={(v) => digitsOnly(v, 4)} />
             </div>
             <div className="border-t border-[#1B1B1B]/5 pt-5 space-y-4">
-              <SectionLabel>Additional Property Details</SectionLabel>
+              <SectionLabel>Optional Property Info</SectionLabel>
               <TextareaField
                 label="Legal Description"
                 value={form.legalDescription}
@@ -738,7 +739,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 function OptionCard({
   selected, onClick, label, desc,
 }: {
-  selected: boolean; onClick: () => void; label: string; desc: string;
+  selected: boolean; onClick: () => void; label: string; desc?: string;
 }) {
   return (
     <button
@@ -746,7 +747,7 @@ function OptionCard({
       className={`rounded-xl border p-6 text-left transition-colors ${selected ? "border-[#9E8C61] bg-[#9E8C61]/5" : "border-[#1B1B1B]/10 hover:border-[#1B1B1B]/25"}`}
     >
       <p className="font-semibold text-[#1B1B1B]">{label}</p>
-      <p className="mt-1 text-xs text-[#1B1B1B]/40">{desc}</p>
+      {desc && <p className="mt-1 text-xs text-[#1B1B1B]/40">{desc}</p>}
     </button>
   );
 }
@@ -756,25 +757,6 @@ function DateFieldRow({ label, value, onChange }: { label: string; value: string
     <div>
       <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">{label}</label>
       <DateField value={value} onChange={onChange} />
-    </div>
-  );
-}
-
-function Field({
-  label, value, onChange, type = "text", placeholder = "",
-}: {
-  label: string; value: string; onChange: (v: string) => void; type?: string; placeholder?: string;
-}) {
-  return (
-    <div>
-      <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">{label}</label>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2.5 text-sm text-[#1B1B1B] placeholder:text-[#1B1B1B]/25 focus:outline-none focus:ring-2 focus:ring-[#9E8C61]/30"
-      />
     </div>
   );
 }

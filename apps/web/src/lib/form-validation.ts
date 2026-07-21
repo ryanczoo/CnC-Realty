@@ -9,6 +9,14 @@ export function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+export function stripDigits(value: string): string {
+  return value.replace(/\d/g, "");
+}
+
+export function digitsOnly(value: string, maxLength: number): string {
+  return value.replace(/\D/g, "").slice(0, maxLength);
+}
+
 export function limitDigits(value: string, maxDigits: number): string {
   let result = "";
   let digitCount = 0;

@@ -67,6 +67,7 @@ describe("POST /api/transactions", () => {
     const res = await POST(makeRequest({
       transactionSide: "PURCHASE",
       propertyAddress: "1 Test St", city: "Test", zip: "00000",
+      propertyType: "Single Family", mlsNumber: "1234567890",
       legalDescription: "Lot 4, Block 2, Tract 12345",
       propertyIncludes: "Refrigerator, washer/dryer",
       propertyExcludes: "Wall-mounted TV brackets",
@@ -95,6 +96,8 @@ describe("POST /api/transactions", () => {
       propertyAddress: "1 Test St",
       city: "Test",
       zip: "00000",
+      propertyType: "Single Family",
+      mlsNumber: "1234567890",
       parties: [
         { role: "REFERRAL_AGENT", name: "Jane Outbound", email: "jane@otherbrokerage.com", company: "Other Realty" },
       ],
@@ -119,6 +122,7 @@ describe("POST /api/transactions", () => {
 
     const res = await POST(makeRequest({
       transactionSide: "LEASE_TENANT", propertyAddress: "1 Test St", city: "Test", zip: "00000",
+      propertyType: "Single Family", mlsNumber: "1234567890",
       leasePrice: "2800",
     }));
     expect(res.status).toBe(201);
@@ -171,6 +175,34 @@ describe("POST /api/transactions", () => {
     }));
     expect(res.status).toBe(400);
   });
+
+  it("requires propertyType for non-REFERRAL sides", async () => {
+    const res = await POST(makeRequest({
+      transactionSide: "PURCHASE",
+      propertyAddress: "1 Test St", city: "Test", zip: "00000",
+      mlsNumber: "1234567890",
+    }));
+    expect(res.status).toBe(400);
+  });
+
+  it("requires mlsNumber for non-REFERRAL sides", async () => {
+    const res = await POST(makeRequest({
+      transactionSide: "PURCHASE",
+      propertyAddress: "1 Test St", city: "Test", zip: "00000",
+      propertyType: "Single Family",
+    }));
+    expect(res.status).toBe(400);
+  });
+
+  it("does not require propertyType or mlsNumber for REFERRAL", async () => {
+    vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "t-ref" } as any);
+
+    const res = await POST(makeRequest({
+      transactionSide: "REFERRAL",
+      referredToAgentName: "Jane Outbound",
+    }));
+    expect(res.status).toBe(201);
+  });
 });
 
 describe("POST /api/transactions — propertyCategory checklist matching", () => {
@@ -184,6 +216,7 @@ describe("POST /api/transactions — propertyCategory checklist matching", () =>
     await POST(makeRequest({
       transactionSide: "PURCHASE", propertyCategory: "COMMERCIAL",
       propertyAddress: "1 Biz Park Dr", city: "Irvine", zip: "92618",
+      propertyType: "Commercial", mlsNumber: "1234567890",
     }));
 
     expect(prisma.checklistTemplate.findFirst).toHaveBeenCalledWith(
@@ -204,6 +237,7 @@ describe("POST /api/transactions — propertyCategory checklist matching", () =>
     await POST(makeRequest({
       transactionSide: "PURCHASE",
       propertyAddress: "123 Main St", city: "LA", zip: "90001",
+      propertyType: "Single Family", mlsNumber: "1234567890",
     }));
 
     expect(prisma.checklistTemplate.findFirst).toHaveBeenCalledWith(
@@ -223,6 +257,7 @@ describe("POST /api/transactions — propertyCategory checklist matching", () =>
     await POST(makeRequest({
       transactionSide: "PURCHASE", propertyCategory: "COMMERCIAL",
       propertyAddress: "1 Biz Park Dr", city: "Irvine", zip: "92618",
+      propertyType: "Commercial", mlsNumber: "1234567890",
     }));
 
     expect(prisma.transactionFile.create).toHaveBeenCalledWith(
