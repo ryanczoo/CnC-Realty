@@ -71,11 +71,13 @@ export default async function AgentProfilePage({ params }: Props) {
     take: 12,
   });
 
-  // Serialize Date → ISO string so the server component can pass it as props
+  // Serialize Date → ISO string so the server component can pass it as props.
+  // propertyAddress/city are only ever null for REFERRAL transactions (enforced
+  // in api/transactions/route.ts), which the query above already excludes.
   const transactions = rawTransactions.map((tx) => ({
     id: tx.id,
-    propertyAddress: tx.propertyAddress,
-    city: tx.city,
+    propertyAddress: tx.propertyAddress!,
+    city: tx.city!,
     state: tx.state,
     transactionSide: tx.transactionSide,
     salePrice: tx.salePrice ?? null,

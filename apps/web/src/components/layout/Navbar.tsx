@@ -75,7 +75,7 @@ export function Navbar() {
     if (!sections.length) return;
     // Walk all marked sections, last one covering y=32 wins (DOM order = paint order)
     let matched: "light" | "dark" | null = null;
-    for (const section of sections) {
+    for (const section of Array.from(sections)) {
       const rect = section.getBoundingClientRect();
       if (rect.top <= 32 && rect.bottom >= 32) {
         matched = section.dataset.navbarTheme as "light" | "dark";

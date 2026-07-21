@@ -11,7 +11,20 @@ import Link from "next/link";
 const MotionLink = motion(Link);
 import { SPRING_HOVER, PULSE_ANIMATE, PULSE_TRANSITION } from "@/lib/motion";
 
-const STEPS = [
+type StepCta = { label: string; modal: true } | { label: string; modal: false; href: string };
+
+const STEPS: {
+  num: string;
+  title: string;
+  body: string;
+  photo: string;
+  photoPos?: string;
+  slideTop: string;
+  slideBottom: string;
+  slideAfterText?: boolean;
+  slideShiftLeft?: number;
+  cta?: StepCta;
+}[] = [
   {
     num: "01",
     title: "Valuation",
