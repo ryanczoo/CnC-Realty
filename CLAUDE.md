@@ -5687,3 +5687,60 @@ Ryan said "let's go back to testing the transaction management system" and then 
 2. **Still-open item, carried forward from an earlier session, never resolved:** the referral wizard's step-bar visual highlight (the `displayStep` mapping in `new-transaction/page.tsx`, reusing raw step 5 → bar position 2) has been logic-traced correctly twice but never actually looked at rendering. Good candidate to check first since it's cheap and already flagged.
 3. **Broader transaction-system testing** — the referral lifecycle is now fully verified end-to-end (this session), but regular (non-referral) transaction types — Purchase, Listing, Lease Tenant/Landlord — haven't had the same live click-through treatment recently. Worth walking at least one of each through its full status lifecycle.
 4. Older backlog, unchanged: checklist templates at `/admin/settings/checklists`; zipForm/Transact gap-analysis findings (SELLER_SIDE mislabel bug — already fixed per 2026-07-14 notes, confirm still holds; missing Lease Listing distinction — also already fixed; Client Portal candidate feature — not started); consider `superpowers:finishing-a-development-branch` for `feature/agent-application-redesign` at some point (very long-lived branch now); full IDX resync remains deliberately deferred, no target date.
+
+---
+
+## Session Notes — 2026-07-19 / 2026-07-22
+
+### What Was Completed
+
+All changes committed on `feature/agent-application-redesign`: `00e1e85`, `bfda915`, `d10dd79`, `969504b`, `b805617`. Pushed to GitHub throughout.
+
+**Closed out the 2026-07-18 audit-fix plan entirely:**
+- Task 9 (shared `checkOwnership` helper, 14 route files) — dispatched the task-reviewer (opus): Approved with only Minor findings, zero Critical/Important. Marked complete in the ledger.
+- Final whole-plan review across all 9 tasks (opus, `b17305c..8f93328`): **"Ready to merge? Yes."** Independently re-ran the full suite and `tsc`, confirmed no cross-task conflicts, confirmed migration ordering, confirmed the disclosed 7-file ownership-pattern gap was accurate. One non-blocking note: ~40 pre-existing `tsc` errors unrelated to the plan.
+
+**Two real bugs found and fixed, via `systematic-debugging` + TDD:**
+1. **`00e1e85`** — Referral-file status emails (`sendFileClosed`, `sendSubmitForReview`, `sendDocumentRejected`, `sendAllDocsApproved`) rendered the literal word "null" in the subject/body when `propertyAddress` was null (only ever true for `REFERRAL` transactions, by design). Fixed with a `"this referral file"` fallback.
+2. **`bfda915`** — Public agent profile page displayed closed REFERRAL transactions as `"$0"` / `", , CA"` broken cards. Root-caused as the wrong fix target: a referral isn't a transaction the agent personally closed (no property, no price), so it shouldn't be counted as one publicly at all. Fixed by excluding `transactionSide: "REFERRAL"` from the public Transactions query, not by patching the display logic.
+
+**Closed all 6 remaining production `tsc` errors (`969504b`):** one real bug (`LeadProfileTabs`'s `TaskItem` type was silently missing the `notes` field — the actual serialization in `dashboard/leads/[id]/page.tsx` dropped it too, meaning opening a lead's task-edit drawer showed a blank Notes field even when real notes existed, and saving would have silently overwritten them with `null` — fixed via TDD, committed separately as `d10dd79`), plus 4 pure type-only fixes (`agents/[slug]/page.tsx`, `SellProcess.tsx`, `Navbar.tsx`, `BuyFeatures.tsx` — zero behavior change, confirmed by reasoning + full suite). Remaining ~33 `tsc` errors are all test-file-only mock-shape mismatches, pre-existing, not touched.
+
+**Git/GitHub housekeeping — first push in a long time, full branch cleanup:**
+- Discovered `feature/agent-application-redesign` had never been pushed at all (384 commits, purely additive — no force-push risk). Pushed it, established `-u` tracking.
+- Discovered GitHub's *default* branch (`claude/real-estate-website-9bdWi`) was actually the **stalest** of the three remote branches (last commit 2026-06-11) — `main` (last commit 2026-06-20, 142 commits ahead of it) was more current, and our branch was a strict superset of both with zero divergence anywhere.
+- Fast-forwarded local `main` to the branch tip and pushed (`fcd2dc9..969504b` on `origin/main`) — a clean fast-forward, no merge commit, no conflicts.
+- Walked Ryan through GitHub's Settings → General → Default branch UI (not Settings → Branches, which only has protection rules) to flip the default branch from `claude/real-estate-website-9bdWi` to `main`. Done, confirmed via the "Default branch changed to main" banner.
+- `claude/real-estate-website-9bdWi` deliberately left alone (fully absorbed into `main`, zero data loss either way) — Ryan chose not to delete it, no urgency either way.
+- **Established going-forward workflow, explicitly discussed:** push to `feature/agent-application-redesign` as the normal unit of work; `main` gets updated only as a deliberate, occasional action (like tonight's one-time catch-up), not automatically after every commit — this is standard practice so `main` keeps meaning "known-good/deployable," not just a live mirror of in-progress work. The 2026-07-21 commit (`b805617`) was pushed to the feature branch only, per this — `main` is now one commit behind on purpose.
+
+**Diagnosed a real "30-second delay after selecting a Mapbox address" report, via `systematic-debugging`:** confirmed via direct reproduction (touched `Navbar.tsx`, timed consecutive requests: 3.1s cold vs 0.06s warm) that this is Next.js dev-server on-demand route compilation, triggered because `Navbar` sits in the root layout (a dependency of every page) and had just been edited. Compounded by the dev server's ~1.5GB memory footprint indicating a long, uninterrupted run — matches a previously-diagnosed pattern in this exact project (2026-05-27 session note). **Not a code bug, won't happen in production** (Vercel pre-compiles). No code changed; offered a dev-server restart, Ryan chose to keep testing instead.
+
+**New Transaction wizard — copy pass, input restrictions, and required-field validation (`b805617`):**
+- Reworded all 9 Transaction Type / Transaction Stage card descriptions to be shorter (e.g. "Representing the buyer in a purchase transaction" → "Buyer representation"); renamed "Representation Type" → "Transaction Type", "Additional Property Details" → "Optional Property Info".
+- Removed the descriptions under Residential/Commercial cards (`OptionCard.desc` made optional, conditionally rendered — no empty gap left behind).
+- Renamed the Residential/Commercial section label from "Property Type" to **"Select One"** after Ryan caught that it collided with Step 1's separate, unrelated "Property Type \*" field (Single Family/Condo/etc.) — two different concepts, now disambiguated.
+- **Added input restrictions**, TDD'd: City (letters only — `stripDigits`), ZIP (5 digits), MLS Number (**10 digits**, not the originally-requested 9 — verified empirically that 100% of 185,017 real CRMLS MLS numbers in the DB are 10 digits, would have blocked every real MLS# otherwise), Year Built (4 digits). New shared helpers `stripDigits`/`digitsOnly` in `lib/form-validation.ts`. Also fixed the **agent application form's City field**, which had zero restriction at all (the literal bug Ryan screenshotted, "222222222222" typed into City) — and migrated its pre-existing ZIP/License Number inline regex duplicates onto the same shared helpers.
+- **Extracted the byte-identical duplicated `Field` component** from the New Transaction and New Listing wizards into one shared `components/ui/FormField.tsx` (matching the `PageCTA` precedent Ryan referenced) — confirmed via direct discussion this is a maintainability win, explicitly **not** a performance/load-speed improvement (the duplicated code was only ~15 lines; savings are negligible either way).
+- **Made Property Type and MLS Number required** for all non-REFERRAL transaction sides, both client-side (`canAdvance` Step-1 gate — also fixed a real latent bug where these two fields were missing from the gate's `useMemo` dependency array entirely) and server-side (`POST /api/transactions`). Required updating 6 existing tests whose payloads predated the new requirement.
+- Scoped deliberately to the New Transaction wizard only — New Listing's "Type" field (`listingType`) is a different concept that already defaults to a set value, not a blank-optional dropdown; not touched.
+
+**Investigated and answered: where did the New Transaction wizard's Offer-step field names come from?** Traced via `git log -S` / `git blame` rather than memory — confirmed a genuine two-source origin, not fabricated: most of the screen (List Price, Sale/Purchase Price, Escrow Number, Acceptance Date, Inspection/Appraisal/Loan-Approval Deadlines) traces to the original **SkySlope**-based wizard rebuild (2026-05-23 session, commit `d6923be`). Specifically Deposit, Offer Date, Offer Expiration Date, Final Walkthrough Date, Possession Date, and the Conditions/Contingencies section trace to the **Lone Wolf Transact** (zipForm's actual current product) research from the **2026-07-10** session, flowing through a written design spec (`docs/superpowers/specs/2026-07-11-core-transaction-type-overhaul-design.md`, §2c) into implementation commit `dfce848` on 2026-07-11.
+
+### Key Decisions Made
+
+1. **Branch workflow going forward:** `feature/agent-application-redesign` is where ongoing work gets pushed; `main` is updated deliberately, not automatically — confirmed explicitly with Ryan.
+2. **MLS Number cap is 10 digits, not 9** — empirically verified against the real DB, not assumed from the original request.
+3. **Shared components are for maintainability, not performance** — explicitly discussed and agreed; don't oversell future dedup work as a speed win.
+4. **"Select One" vs "Property Type"** — Step 0's Residential/Commercial section label is intentionally different from Step 1's Property Type dropdown to avoid on-page naming collision.
+5. **New Transaction wizard field provenance is dual-source** (SkySlope + zipForm/Transact, different sessions) — confirmed via git history, not fabricated by Claude, per Ryan's explicit question.
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty` (the same long-running dev server from tonight — a restart would clear the accumulated HMR cache bloat noted above; not urgent, Ryan's call).
+2. **Pick back up "testing the transaction management system"** — this was the explicit next step two sessions ago, then got interrupted first by the audit-fix/tsc/Git cleanup work, then by this session's New Transaction wizard changes. Still genuinely the next thing:
+   - The referral wizard's step-bar visual highlight (`displayStep` mapping, `new-transaction/page.tsx`) — logic-traced twice, never visually confirmed. Cheap to check first.
+   - Regular (non-referral) transaction types — Purchase, Listing, Lease Tenant/Landlord — haven't had a live click-through in a while; the referral lifecycle is the only one fully verified end-to-end so far.
+   - Now that Property Type + MLS Number are required, worth a live click-through of the New Transaction wizard specifically to confirm the new validation gate feels right in practice (not just test-covered).
+3. `main` is one commit behind `feature/agent-application-redesign` (`969504b` vs `b805617`) — intentional per the new workflow, not an error; only sync it when Ryan actually wants `main` updated.
+4. Older backlog, unchanged: checklist templates at `/admin/settings/checklists`; the 7 disclosed-but-unfixed duplicate-ownership-check files from Task 9; Client Portal candidate feature (from the zipForm/Transact gap analysis, not started); full IDX resync (deliberately deferred, no target date).
