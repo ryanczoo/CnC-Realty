@@ -4,6 +4,7 @@ import { BuyHero } from "@/components/buy/BuyHero";
 import { BuyFeatures } from "@/components/buy/BuyFeatures";
 import { BuySteps } from "@/components/buy/BuySteps";
 import { BuyContemporary } from "@/components/buy/BuyContemporary";
+import { BuySearchListingsServer } from "@/components/buy/BuySearchListingsServer";
 import { FAQ } from "@/components/home/FAQ";
 import { GradientBridge } from "@/components/ui/GradientBridge";
 
@@ -45,6 +46,8 @@ export default function BuyPage() {
       <BuySteps />
 
       <BuyContemporary />
+
+      <BuySearchListingsServer />
 
       <GradientBridge from="#F2F0EF" to="#DAD4D2" />
       <FAQ faqs={BUY_FAQS} className="bg-[#DAD4D2]" />
