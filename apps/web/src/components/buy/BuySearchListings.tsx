@@ -7,7 +7,7 @@ import { RevealLine } from "@/components/ui/reveal-text";
 import { PlaceholdersAndVanishInput } from "@/components/ui/placeholders-and-vanish-input";
 import { ListingsMarquee } from "@/components/home/ListingsMarquee";
 import { buildPropertySearchParams } from "@/lib/property-search";
-import { SPRING_HOVER } from "@/lib/motion";
+import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
 import { PLACEHOLDER_LISTINGS, type FeaturedListing } from "@/lib/listings";
 
 const MotionLink = motion(Link);
@@ -67,7 +67,9 @@ export function BuySearchListings({ listings: propListings }: Props) {
       <div className="mt-10 text-center">
         <MotionLink
           href="/properties"
+          animate={PULSE_ANIMATE}
           whileHover={{ scale: 1.1, transition: SPRING_HOVER }}
+          transition={PULSE_TRANSITION}
           className="inline-flex items-center rounded-full bg-[#1B1B1B] px-7 py-3.5 text-sm font-medium text-white"
         >
           View All
