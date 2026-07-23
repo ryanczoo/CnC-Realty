@@ -6,33 +6,9 @@ import Link from "next/link";
 import { useState } from "react";
 import { RevealLine } from "@/components/ui/reveal-text";
 import { SPRING_HOVER } from "@/lib/motion";
+import { PLACEHOLDER_LISTINGS, type FeaturedListing } from "@/lib/listings";
 
 const MotionLink = motion(Link);
-
-interface FeaturedListing {
-  mlsNumber?: string;
-  listPrice?: number;
-  price?: string;
-  beds: number | null;
-  baths: number | null;
-  sqft: number | string | null;
-  address: string;
-  city: string;
-  status: string;
-  photos?: string[];
-  image?: string;
-}
-
-const PLACEHOLDER_LISTINGS: FeaturedListing[] = [
-  { price: "$1,250,000", beds: 4, baths: 3, sqft: "2,450", address: "1847 Oak Glen Dr", city: "Pasadena, CA", status: "For Sale", image: "https://picsum.photos/seed/house1/600/400" },
-  { price: "$875,000", beds: 3, baths: 2, sqft: "1,820", address: "534 Magnolia Ave", city: "Glendale, CA", status: "For Sale", image: "https://picsum.photos/seed/house2/600/400" },
-  { price: "$2,100,000", beds: 5, baths: 4, sqft: "4,100", address: "291 Wistaria Ave", city: "Arcadia, CA", status: "Open House", image: "https://picsum.photos/seed/house3/600/400" },
-  { price: "$649,000", beds: 2, baths: 2, sqft: "1,210", address: "88 Olive St #4B", city: "Burbank, CA", status: "For Sale", image: "https://picsum.photos/seed/house4/600/400" },
-  { price: "$1,050,000", beds: 3, baths: 3, sqft: "2,180", address: "702 Huntington Dr", city: "San Marino, CA", status: "For Sale", image: "https://picsum.photos/seed/house5/600/400" },
-  { price: "$895,000", beds: 4, baths: 2, sqft: "1,960", address: "1103 Foothill Blvd", city: "Monrovia, CA", status: "Open House", image: "https://picsum.photos/seed/house6/600/400" },
-  { price: "$1,495,000", beds: 4, baths: 3, sqft: "3,020", address: "445 Sierra Madre Blvd", city: "Sierra Madre, CA", status: "For Sale", image: "https://picsum.photos/seed/house7/600/400" },
-  { price: "$735,000", beds: 3, baths: 2, sqft: "1,540", address: "2210 Rosemead Blvd", city: "Temple City, CA", status: "For Sale", image: "https://picsum.photos/seed/house8/600/400" },
-];
 
 const STAGGER_OFFSETS = [0, 48, 24];
 function cardOffset(i: number, total: number) {
