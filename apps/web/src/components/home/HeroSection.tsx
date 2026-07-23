@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { WORD_VARIANT, wordContainer } from "@/lib/motion";
+import { buildPropertySearchParams } from "@/lib/property-search";
 
 const PHRASES = [
   "Find Your Dream Home",
@@ -114,20 +115,7 @@ export function HeroSection() {
               const raw = input?.value?.trim();
               if (!raw) return;
 
-              const params = new URLSearchParams();
-
-              // Extract "N bed(s)" or "N-bed" → minBeds filter
-              const bedMatch = raw.match(/(\d+)\s*-?\s*bed/i);
-              if (bedMatch) params.set("minBeds", bedMatch[1]);
-
-              // Extract "in City Name" at end of query → city search
-              const cityMatch = raw.match(/\bin\s+([a-zA-Z][a-zA-Z\s]+)$/i);
-              if (cityMatch) {
-                params.set("query", cityMatch[1].trim());
-              } else {
-                params.set("query", raw);
-              }
-
+              const params = buildPropertySearchParams(raw);
               router.push(`/properties?${params.toString()}`);
             }}
           />
