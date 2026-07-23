@@ -5743,4 +5743,6 @@ All changes committed on `feature/agent-application-redesign`: `00e1e85`, `bfda9
    - Regular (non-referral) transaction types — Purchase, Listing, Lease Tenant/Landlord — haven't had a live click-through in a while; the referral lifecycle is the only one fully verified end-to-end so far.
    - Now that Property Type + MLS Number are required, worth a live click-through of the New Transaction wizard specifically to confirm the new validation gate feels right in practice (not just test-covered).
 3. `main` is one commit behind `feature/agent-application-redesign` (`969504b` vs `b805617`) — intentional per the new workflow, not an error; only sync it when Ryan actually wants `main` updated.
-4. Older backlog, unchanged: checklist templates at `/admin/settings/checklists`; the 7 disclosed-but-unfixed duplicate-ownership-check files from Task 9; Client Portal candidate feature (from the zipForm/Transact gap analysis, not started); full IDX resync (deliberately deferred, no target date).
+4. Older backlog, unchanged: checklist templates at `/admin/settings/checklists`; the 7 disclosed-but-unfixed duplicate-ownership-check files from Task 9; full IDX resync (deliberately deferred, no target date).
+
+**Decided 2026-07-22: not building Client Portal.** Was the top candidate from the 2026-07-10 zipForm/Transact gap analysis — but most agents already get proof-of-funds/ID directly from clients via text/email, so the portal wouldn't solve a real friction point at CnC's scale. Dropped from the backlog (Ryan's call).
