@@ -33,15 +33,11 @@ export function BuySearchListings({ listings: propListings }: Props) {
   return (
     <section data-navbar-theme="light" className="overflow-hidden bg-[#F2F0EF] py-20">
       <div className="mb-12 flex justify-center">
-        <h2 className="text-center font-sans font-light leading-[1.05]">
-          <span className="block text-[2.4rem] xl:text-[2.9rem] text-[#1B1B1B]">
-            <RevealLine delay={0}>Start Your</RevealLine>
-          </span>
-          <span className="block text-[3.2rem] xl:text-[3.8rem] ml-[5rem] xl:ml-[6rem]">
-            <RevealLine delay={0.15}>
-              <span className="text-cnc-gold font-medium">Search</span>
-            </RevealLine>
-          </span>
+        <h2 className="text-center font-sans text-[2.8rem] font-light text-[#1B1B1B] xl:text-[3.4rem]">
+          <RevealLine>
+            <span className="text-[2.1rem] xl:text-[2.5rem]">Search </span>
+            <span className="text-cnc-gold font-medium">Here</span>
+          </RevealLine>
         </h2>
       </div>
 
