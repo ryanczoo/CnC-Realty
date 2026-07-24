@@ -78,7 +78,7 @@ export function HomeValueTeaser() {
         </RevealLine>
       </h2>
       <p className="mt-5 text-lg text-[#1B1B1B]/60 xl:text-xl">
-        Instant home value report complete with MLS data and local insight of your home free
+        Instant home value report complete with MLS data and local insight for free
       </p>
 
       <div className="mx-auto mt-12 max-w-2xl">

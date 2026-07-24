@@ -21,9 +21,9 @@ const ITEMS: { title: TitlePart[]; description: string; imgFront?: string; imgFr
     imgFrontPosition: "center center",
   },
   {
-    title: [{ text: "AI-DRIVEN", sm: true }, { text: "TECH" }],
+    title: [{ text: "AI", sm: true }, { text: "TECH" }],
     description:
-      "Predictive lead scoring, automated transaction alerts, creative email campaigns, real-time marketing analysis all powered by AI and FREE for CnC Agents. Combined with our custom CRM software, you have all the tools to succeed.",
+      "Predictive lead scoring, automated transaction alerts, creative email campaigns, real-time marketing analysis all powered by AI. Combined with our custom CRM software, you have all the tools to succeed.",
     videoBack: "/videos/ai-tech-back.mp4",
     imgFront: "/images/ai-tech-front.jpg",
   },
