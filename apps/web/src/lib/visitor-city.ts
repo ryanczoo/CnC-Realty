@@ -7,8 +7,12 @@ const MATCHING_STATUSES = ["Active", "ComingSoon", "ActiveUnderContract"];
 
 export function parseCityHeader(raw: string | null): string | null {
   if (!raw) return null;
-  const decoded = decodeURIComponent(raw).trim();
-  return decoded.length > 0 ? decoded : null;
+  try {
+    const decoded = decodeURIComponent(raw).trim();
+    return decoded.length > 0 ? decoded : null;
+  } catch {
+    return null;
+  }
 }
 
 async function countListingsInCity(city: string): Promise<number> {

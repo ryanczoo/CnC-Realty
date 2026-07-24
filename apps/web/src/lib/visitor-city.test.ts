@@ -21,6 +21,12 @@ describe("parseCityHeader", () => {
   it("returns null when the decoded value is empty or whitespace-only", () => {
     expect(parseCityHeader("   ")).toBeNull();
   });
+
+  it("returns null when the header contains malformed percent-encoding", () => {
+    expect(parseCityHeader("%")).toBeNull();
+    expect(parseCityHeader("%E0%A4%A")).toBeNull();
+    expect(parseCityHeader("City%ZZ")).toBeNull();
+  });
 });
 
 describe("resolveVisitorCity", () => {
