@@ -24,7 +24,7 @@ export function FeaturedListings({ listings: propListings, city, count }: Props)
       <div className="mb-12 pr-[8%] text-right">
         <h2 className="font-sans font-light leading-[1.05]">
           <span className="block text-[1.9rem] xl:text-[2.2rem] text-[#1B1B1B]">
-            <RevealLine delay={0}>{count}+ Listings in</RevealLine>
+            <RevealLine delay={0}>{count.toLocaleString()}+ Listings in</RevealLine>
           </span>
           <span className="block text-[2.5rem] xl:text-[3rem]">
             <RevealLine delay={0.15}>
