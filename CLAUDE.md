@@ -5746,3 +5746,42 @@ All changes committed on `feature/agent-application-redesign`: `00e1e85`, `bfda9
 4. Older backlog, unchanged: checklist templates at `/admin/settings/checklists`; the 7 disclosed-but-unfixed duplicate-ownership-check files from Task 9; full IDX resync (deliberately deferred, no target date).
 
 **Decided 2026-07-22: not building Client Portal.** Was the top candidate from the 2026-07-10 zipForm/Transact gap analysis — but most agents already get proof-of-funds/ID directly from clients via text/email, so the portal wouldn't solve a real friction point at CnC's scale. Dropped from the backlog (Ryan's call).
+
+---
+
+## Session Notes — 2026-07-23 / 2026-07-24
+
+### What Was Completed
+
+All changes committed on `feature/agent-application-redesign`, now 18 commits ahead of `origin/feature/agent-application-redesign` — **not pushed**, per Ryan's explicit call ("keep it on the branch until I review it").
+
+**1. New Buy page section — "Start Your Search" listings** (spec → plan → subagent-driven-development, `efb8ea1`..`a6c3b92`, 8 commits): combined the homepage hero's search bar with a listings marquee into a new section on the Buy page, between `BuyContemporary` and the FAQ. Extracted three previously-homepage-only pieces into shared, tested modules along the way: `lib/property-search.ts` (search-URL builder), `lib/listings.ts` (`getFeaturedListings`/`PLACEHOLDER_LISTINGS`/`FeaturedListing` type), `components/home/ListingsMarquee.tsx` (the auto-scroll card row) — both the homepage and Buy page now consume the same three modules, zero duplicated logic. New components: `BuySearchListings.tsx` / `BuySearchListingsServer.tsx`. All 5 plan tasks individually reviewed Approved (one fix along the way: View All button was missing the standard `PULSE_ANIMATE`/`PULSE_TRANSITION` treatment — plan oversight, not implementer error, fixed same task). Final whole-branch review: **Ready to merge, yes**, zero Critical/Important.
+
+**2. Real bug found and fixed: stale RESO status filter (`64a624e`)** — `getFeaturedListings`'s status filter was `["Active", "Coming Soon"]` (note the space); CRMLS's real `StandardStatus` values are one-word (`ComingSoon`, no space) per the RESO Data Dictionary, so that branch never matched anything, and `ActiveUnderContract` wasn't in the filter at all. Root-caused via git archaeology: `/api/properties/route.ts` had the identical bug and was fixed months ago (`9e9b34b`); the fix never propagated to the separately-written homepage query until this session's refactor put them in the same file. **Live-quantified impact** (queried the real DB once off the office network): 11,569 `ActiveUnderContract` + 1,294 `ComingSoon` = **12,863 real active-market listings** (~9% of inventory) were being silently excluded from both marquees. Fixed via TDD (RED→GREEN), full suite 532/532, then live-verified real listings started appearing.
+
+**3. City-personalized listings marquee** (spec → plan → subagent-driven-development, `83ce18c`..`6a14a8f`, 7 commits): both marquees now filter to the visitor's detected city via Vercel's edge geo header (`x-vercel-ip-city`, free/automatic on Vercel deployments, absent in local `next dev`). New `lib/visitor-city.ts`: `parseCityHeader` (pure, URL-decode, guards malformed encoding) + `resolveVisitorCity` (async, Prisma-backed). **Single fallback rule** (Ryan's explicit call, for simplicity not performance): if the resolved city has fewer than 4 matching listings — covers both "undetectable" and "detected but sparse" with one code path — fall back to **Los Angeles** (confirmed 12,924 real LA listings today, comfortably clear of the threshold). Homepage title replaced "Exclusive Listings" with a dynamic **"{count}+ Listings in {city}"**; Buy page title replaced "Start Your Search" with a static **"Search Here"** (matches `HomeValueTeaser`'s "Sell Smarter" pattern) — Buy marquee is city-filtered too, just doesn't display the city in its title. Final whole-branch review: **Ready to merge, yes**. One fix applied (`6a14a8f`, comma-format the count: "12924+" → "12,924+"). **One open item, not yet decided:** if the DB is ever fully unreachable, the homepage would show "0+ Listings in Los Angeles" over placeholder (non-LA) cards — correct graceful degradation, just a cosmetic seam, low priority, Ryan hasn't said whether to address it.
+
+**4. Real-world verification finding, resolved:** during Buy-page live testing, discovered the site's search-bar/RevealLine components render **dark** (not the "white pill" originally assumed during the brainstorming/spec phase) — root cause: `apps/web/src/app/layout.tsx:42` hardcodes a literal `dark` class on `<html>`, unconditionally, sitewide, activating every component's `dark:` Tailwind variant on every page. Pre-existing site-wide behavior, not introduced by this session's work. Shown to Ryan with a screenshot; his call: **leave it dark** — reads as consistent with the other dark accents (buttons, status badges) already in that section.
+
+**5. Copy/polish pass, all confirmed live and committed (`af52ea9`):**
+- Why CnC section: "AI-DRIVEN TECH" → "AI TECH"; dropped "and FREE for CnC Agents" from the description.
+- Sell page home-value teaser: "...local insight **of your home** free" → "...local insight **for** free".
+- Homepage `FeaturedListings` title: centered and staggered per Ryan's own reference mockup — top row ("{count}+ Listings in") offset `-1.6in`, bottom row (city, gold) offset `+1.6in`, font sizes matched exactly to `BuyFeatures`' "One stop SHOP" (`2.4rem`/`2.9rem` and `3.2rem`/`3.8rem`). Landed after several wrong iterations (an over-engineered CSS-grid "seam centering" attempt that Ryan correctly rejected as overcomplicated — he just wanted simple independent-line centering, then fixed-inch offsets per his own explicit numbers going forward from there).
+- Homepage `FeaturedListings`' "View All" button: added the standard `PULSE_ANIMATE`/`PULSE_TRANSITION` treatment (was the original pre-existing homepage button, predated the pulse convention, never updated until now — matches `BuyFeatures` and `BuySearchListings`).
+- **Explored and explicitly reverted:** a Framer-Motion hover "wipe" effect (white sweep + synced black-text clip-path reveal) on that same View All button, tested per Ryan's request, then rejected ("it's ugly") and cleanly reverted — zero trace left in the committed code.
+
+### Key Decisions Made
+
+1. **Fallback rule for undetectable/sparse city: Los Angeles, single unified rule** (not two separate code paths) — simplicity, not performance (confirmed with Ryan: the check itself is computationally trivial either way).
+2. **Dark search-bar/title styling stays as-is** — sitewide pre-existing behavior, not a regression, reads fine next to the section's other dark accents.
+3. **Stale status-filter bug fix scoped narrowly** — fixed the string mismatch only; did not also "improve" the query further, matching the plan's own no-scope-creep discipline.
+4. **DB-outage "0+ Listings" display seam left open** — flagged, not fixed, Ryan's call whenever he wants to address it.
+5. Client Portal remains dropped (carried over from 2026-07-22, unchanged this session).
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`.
+2. **Push `feature/agent-application-redesign` to origin** whenever Ryan's reviewed tonight's work and is ready — 18 unpushed commits (Buy page search section, the status-filter bug fix, city-personalization, tonight's polish pass). Nothing else pending on top of it.
+3. **Optional, Ryan's call:** decide whether to suppress the homepage title/count when a total DB outage would otherwise show "0+ Listings in Los Angeles" over placeholder cards.
+4. **Real per-visitor-city behavior is still unverified** — Vercel's geo header is absent in local dev, so only the Los Angeles fallback path has been tested. Needs an actual Vercel deployment (preview or production) to confirm real city detection works end-to-end.
+5. Older backlog, unchanged: **"testing the transaction management system"** broader click-through (Purchase/Listing/Lease Tenant-Landlord — still only the referral lifecycle and now the two new listings sections have had live verification); checklist templates at `/admin/settings/checklists`; the 7 disclosed-but-unfixed duplicate-ownership-check files from Task 9; full IDX resync (deliberately deferred, no target date).
