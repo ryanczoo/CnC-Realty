@@ -25,10 +25,13 @@ export const PLACEHOLDER_LISTINGS: FeaturedListing[] = [
   { price: "$735,000", beds: 3, baths: 2, sqft: "1,540", address: "2210 Rosemead Blvd", city: "Temple City, CA", status: "For Sale", image: "https://picsum.photos/seed/house8/600/400" },
 ];
 
-export async function getFeaturedListings(): Promise<FeaturedListing[]> {
+export async function getFeaturedListings(city: string): Promise<FeaturedListing[]> {
   try {
     const raw = await prisma.property.findMany({
-      where: { status: { in: ["Active", "ComingSoon", "ActiveUnderContract"] } },
+      where: {
+        status: { in: ["Active", "ComingSoon", "ActiveUnderContract"] },
+        city: { equals: city, mode: "insensitive" },
+      },
       orderBy: { listedAt: "desc" },
       take: 8,
       select: {

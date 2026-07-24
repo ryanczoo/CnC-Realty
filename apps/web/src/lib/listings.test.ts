@@ -14,13 +14,16 @@ describe("getFeaturedListings", () => {
     vi.clearAllMocks();
   });
 
-  it("queries the top 8 Active/ComingSoon/ActiveUnderContract listings ordered by newest first", async () => {
+  it("queries the top 8 Active/ComingSoon/ActiveUnderContract listings in the given city, ordered by newest first", async () => {
     (prisma.property.findMany as any).mockResolvedValue([]);
 
-    await getFeaturedListings();
+    await getFeaturedListings("Los Angeles");
 
     expect(prisma.property.findMany).toHaveBeenCalledWith({
-      where: { status: { in: ["Active", "ComingSoon", "ActiveUnderContract"] } },
+      where: {
+        status: { in: ["Active", "ComingSoon", "ActiveUnderContract"] },
+        city: { equals: "Los Angeles", mode: "insensitive" },
+      },
       orderBy: { listedAt: "desc" },
       take: 8,
       select: {
@@ -52,7 +55,7 @@ describe("getFeaturedListings", () => {
       },
     ]);
 
-    const result = await getFeaturedListings();
+    const result = await getFeaturedListings("Los Angeles");
 
     expect(result[0].photos).toEqual([]);
     expect(result[0].address).toBe("1 Main St");
@@ -61,7 +64,7 @@ describe("getFeaturedListings", () => {
   it("returns an empty array on query failure instead of throwing", async () => {
     (prisma.property.findMany as any).mockRejectedValue(new Error("db unreachable"));
 
-    const result = await getFeaturedListings();
+    const result = await getFeaturedListings("Los Angeles");
 
     expect(result).toEqual([]);
   });
