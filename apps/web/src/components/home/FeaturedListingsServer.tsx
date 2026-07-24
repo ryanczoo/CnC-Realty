@@ -5,7 +5,7 @@ import { FeaturedListings } from "./FeaturedListings";
 
 export async function FeaturedListingsServer() {
   const candidateCity = parseCityHeader(headers().get("x-vercel-ip-city"));
-  const { city } = await resolveVisitorCity(candidateCity);
+  const { city, count } = await resolveVisitorCity(candidateCity);
   const listings = await getFeaturedListings(city);
-  return <FeaturedListings listings={listings} />;
+  return <FeaturedListings listings={listings} city={city} count={count} />;
 }

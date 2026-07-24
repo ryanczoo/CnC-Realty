@@ -11,20 +11,26 @@ const MotionLink = motion(Link);
 
 interface Props {
   listings?: FeaturedListing[];
+  city: string;
+  count: number;
 }
 
-export function FeaturedListings({ listings: propListings }: Props) {
+export function FeaturedListings({ listings: propListings, city, count }: Props) {
   const source =
     propListings && propListings.length > 0 ? propListings : PLACEHOLDER_LISTINGS;
 
   return (
     <section data-navbar-theme="light" className="overflow-hidden bg-[#F2F0EF] py-10">
       <div className="mb-12 pr-[8%] text-right">
-        <h2 className="font-sans text-[2.5rem] font-light xl:text-[3rem]">
-          <RevealLine>
-            <span className="text-[1.9rem] xl:text-[2.2rem]">Exclusive </span>
-            <span className="text-cnc-gold font-medium">Listings</span>
-          </RevealLine>
+        <h2 className="font-sans font-light leading-[1.05]">
+          <span className="block text-[1.9rem] xl:text-[2.2rem] text-[#1B1B1B]">
+            <RevealLine delay={0}>{count}+ Listings in</RevealLine>
+          </span>
+          <span className="block text-[2.5rem] xl:text-[3rem]">
+            <RevealLine delay={0.15}>
+              <span className="text-cnc-gold font-medium">{city}</span>
+            </RevealLine>
+          </span>
         </h2>
       </div>
 
