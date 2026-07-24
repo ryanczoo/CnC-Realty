@@ -28,7 +28,7 @@ export const PLACEHOLDER_LISTINGS: FeaturedListing[] = [
 export async function getFeaturedListings(): Promise<FeaturedListing[]> {
   try {
     const raw = await prisma.property.findMany({
-      where: { status: { in: ["Active", "Coming Soon"] } },
+      where: { status: { in: ["Active", "ComingSoon", "ActiveUnderContract"] } },
       orderBy: { listedAt: "desc" },
       take: 8,
       select: {

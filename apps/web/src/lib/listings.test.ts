@@ -14,13 +14,13 @@ describe("getFeaturedListings", () => {
     vi.clearAllMocks();
   });
 
-  it("queries the top 8 Active/Coming Soon listings ordered by newest first", async () => {
+  it("queries the top 8 Active/ComingSoon/ActiveUnderContract listings ordered by newest first", async () => {
     (prisma.property.findMany as any).mockResolvedValue([]);
 
     await getFeaturedListings();
 
     expect(prisma.property.findMany).toHaveBeenCalledWith({
-      where: { status: { in: ["Active", "Coming Soon"] } },
+      where: { status: { in: ["Active", "ComingSoon", "ActiveUnderContract"] } },
       orderBy: { listedAt: "desc" },
       take: 8,
       select: {
