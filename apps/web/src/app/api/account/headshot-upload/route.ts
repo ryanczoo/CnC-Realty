@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import sharp from "sharp";
 import { requireAuth } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 import { uploadToR2 } from "@/lib/r2";
@@ -7,6 +8,7 @@ export const dynamic = "force-dynamic";
 
 const ALLOWED = ["image/jpeg", "image/png", "image/webp"];
 const MAX_SIZE = 5 * 1024 * 1024;
+const MAX_DIMENSION = 512;
 
 export async function POST(req: Request) {
   const { session, error } = await requireAuth();
@@ -20,10 +22,14 @@ export async function POST(req: Request) {
   if (file.size > MAX_SIZE) return NextResponse.json({ error: "File too large (max 5MB)" }, { status: 400 });
 
   const key = `headshots/${session.user.id}`;
-  const buffer = Buffer.from(await file.arrayBuffer());
+  const rawBuffer = Buffer.from(await file.arrayBuffer());
+  const buffer = await sharp(rawBuffer)
+    .resize(MAX_DIMENSION, MAX_DIMENSION, { fit: "inside", withoutEnlargement: true })
+    .jpeg({ quality: 82 })
+    .toBuffer();
 
   try {
-    await uploadToR2(key, buffer, file.type);
+    await uploadToR2(key, buffer, "image/jpeg");
     await prisma.agent.updateMany({
       where: { userId: session.user.id },
       data: { headshot: key },
