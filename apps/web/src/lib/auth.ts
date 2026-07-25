@@ -6,6 +6,8 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { prisma } from "./prisma";
 
+const AGENT_ID_REFRESH_INTERVAL_MS = 10 * 60 * 1000;
+
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as any,
   session: { strategy: "jwt" },
@@ -50,6 +52,18 @@ export const authOptions: NextAuthOptions = {
           select: { id: true },
         });
         token.agentId = agent?.id ?? null;
+        token.agentIdCheckedAt = Date.now();
+      } else {
+        const checkedAt = (token as any).agentIdCheckedAt as number | undefined;
+        const isStale = !checkedAt || Date.now() - checkedAt > AGENT_ID_REFRESH_INTERVAL_MS;
+        if (isStale) {
+          const agent = await prisma.agent.findUnique({
+            where: { userId: token.id as string },
+            select: { id: true },
+          });
+          token.agentId = agent?.id ?? null;
+          token.agentIdCheckedAt = Date.now();
+        }
       }
       if (trigger === "update" && session?.name) {
         token.name = session.name;
