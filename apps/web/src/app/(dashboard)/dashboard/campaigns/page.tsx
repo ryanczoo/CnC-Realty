@@ -49,8 +49,7 @@ export default async function CampaignsPage() {
 
       {campaigns.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-[#1B1B1B]/20 py-20 text-center">
-          <p className="font-sans text-[#1B1B1B]/40">No campaigns yet.</p>
-          <p className="mt-1 font-sans text-sm text-[#1B1B1B]/30">Create your first email campaign.</p>
+          <p className="font-sans text-sm text-[#1B1B1B]/30">Create your first email campaign</p>
           <Link
             href="/dashboard/campaigns/new"
             className="mt-5 rounded-full bg-[#1B1B1B] px-5 py-2.5 font-sans text-sm text-white hover:bg-[#1B1B1B]/80 transition-colors"
