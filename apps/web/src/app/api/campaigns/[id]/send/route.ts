@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import sgMail from "@sendgrid/mail";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/api-auth";
+import { requireAuth, checkOwnership } from "@/lib/api-auth";
 import { FROM } from "@/lib/email";
 
 if (process.env.SENDGRID_API_KEY) {
@@ -15,7 +15,7 @@ export async function POST(
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
-  const campaign = await prisma.campaign.findUnique({
+  const campaignRecord = await prisma.campaign.findUnique({
     where: { id: params.id },
     include: {
       contacts: {
@@ -25,14 +25,9 @@ export async function POST(
     },
   });
 
-  if (!campaign) return NextResponse.json({ error: "Not found" }, { status: 404 });
-
-  // Ownership check
-  if (session.user.role !== "ADMIN") {
-    if (!session.user.agentId || campaign.agentId !== session.user.agentId) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-  }
+  const { exists, forbidden, record: campaign } = checkOwnership(campaignRecord, session.user.agentId, session.user.role);
+  if (!exists || !campaign) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (forbidden) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   if (!campaign.subject || !campaign.body) {
     return NextResponse.json(

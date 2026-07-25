@@ -126,6 +126,34 @@ describe("POST /api/leads/[id]/enrollments", () => {
 describe("PATCH /api/leads/[id]/enrollments/[enrollmentId]", () => {
   beforeEach(() => vi.clearAllMocks());
 
+  it("returns 404 when the lead belongs to a different agent", async () => {
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u2", role: "AGENT", agentId: "a2" } } as any);
+    vi.mocked(prisma.lead.findUnique).mockResolvedValue({ agentId: "a1" } as any);
+    const req = new Request("http://localhost", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "PAUSED" }),
+    });
+    const res = await PATCH(req, ENR_PARAMS);
+    expect(res.status).toBe(404);
+  });
+
+  it("allows ADMIN to pause an enrollment on any agent's lead", async () => {
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u3", role: "ADMIN", agentId: null } } as any);
+    vi.mocked(prisma.lead.findUnique).mockResolvedValue({ agentId: "a1" } as any);
+    vi.mocked(prisma.leadPlanEnrollment.findUnique).mockResolvedValue({ ...ENROLLMENT, leadId: "l1" } as any);
+    vi.mocked(prisma.$transaction).mockImplementation(async (fn: any) => fn(prisma));
+    vi.mocked(prisma.leadPlanEnrollment.update).mockResolvedValue({ ...ENROLLMENT, status: "PAUSED" } as any);
+    vi.mocked(prisma.leadPlanStep.updateMany).mockResolvedValue({ count: 1 } as any);
+    const req = new Request("http://localhost", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "PAUSED" }),
+    });
+    const res = await PATCH(req, ENR_PARAMS);
+    expect(res.status).toBe(200);
+  });
+
   it("pauses an enrollment with MANUAL reason", async () => {
     vi.mocked(getServerSession).mockResolvedValue(SESSION as any);
     vi.mocked(prisma.agent.findUnique).mockResolvedValue(AGENT as any);

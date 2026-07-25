@@ -44,6 +44,16 @@ describe("POST /api/deals/[id]/convert", () => {
     expect(res.status).toBe(404);
   });
 
+  it("allows ADMIN to convert a deal owned by a different agent", async () => {
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u3", role: "ADMIN", agentId: null } } as any);
+    vi.mocked(prisma.deal.findUnique).mockResolvedValue(BUYERS_DEAL as any);
+    vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "tf-admin" } as any);
+    vi.mocked(prisma.deal.update).mockResolvedValue({} as any);
+
+    const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "d1" } });
+    expect(res.status).toBe(201);
+  });
+
   it("returns 400 when stage is not OFFER_ACCEPTED", async () => {
     vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
     vi.mocked(prisma.deal.findUnique).mockResolvedValue({ ...BUYERS_DEAL, stage: "TOURING" } as any);

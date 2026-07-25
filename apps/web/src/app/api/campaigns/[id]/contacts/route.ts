@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/api-auth";
+import { requireAuth, checkOwnership } from "@/lib/api-auth";
 
 const bodySchema = z.object({
   leadIds: z.array(z.string()).min(1, "At least one lead required"),
@@ -15,15 +15,10 @@ export async function POST(
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
-  // Verify campaign ownership
   const campaign = await prisma.campaign.findUnique({ where: { id: params.id } });
-  if (!campaign) return NextResponse.json({ error: "Not found" }, { status: 404 });
-
-  if (session.user.role !== "ADMIN") {
-    if (!session.user.agentId || campaign.agentId !== session.user.agentId) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-  }
+  const { exists, forbidden } = checkOwnership(campaign, session.user.agentId, session.user.role);
+  if (!exists) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (forbidden) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   try {
     const body = await req.json();

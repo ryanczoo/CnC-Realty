@@ -86,3 +86,47 @@ describe("POST /api/campaigns/[id]/contacts — Zod validation error message", (
     expect(prisma.campaignContact.upsert).not.toHaveBeenCalled();
   });
 });
+
+describe("POST /api/campaigns/[id]/contacts — ownership", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(prisma.campaign.findUnique).mockResolvedValue({ id: "c1", agentId: "a1" } as any);
+  });
+
+  it("returns 403 when the campaign belongs to a different agent", async () => {
+    vi.mocked(requireAuth).mockResolvedValue({
+      session: { user: { id: "u2", email: "b@cnc.com", role: "AGENT", agentId: "a2" } },
+      error: null,
+    } as any);
+
+    const res = await addContacts(
+      makeRequest("http://localhost/api/campaigns/c1/contacts", { leadIds: ["l1"] }),
+      { params: { id: "c1" } }
+    );
+    expect(res.status).toBe(403);
+  });
+
+  it("allows ADMIN to add contacts to any agent's campaign", async () => {
+    vi.mocked(requireAuth).mockResolvedValue({
+      session: { user: { id: "u3", email: "admin@cnc.com", role: "ADMIN", agentId: null } },
+      error: null,
+    } as any);
+
+    const res = await addContacts(
+      makeRequest("http://localhost/api/campaigns/c1/contacts", { leadIds: ["l1"] }),
+      { params: { id: "c1" } }
+    );
+    expect(res.status).toBe(200);
+  });
+
+  it("returns 404 when the campaign does not exist", async () => {
+    vi.mocked(requireAuth).mockResolvedValue(AGENT_SESSION);
+    vi.mocked(prisma.campaign.findUnique).mockResolvedValue(null);
+
+    const res = await addContacts(
+      makeRequest("http://localhost/api/campaigns/missing/contacts", { leadIds: ["l1"] }),
+      { params: { id: "missing" } }
+    );
+    expect(res.status).toBe(404);
+  });
+});

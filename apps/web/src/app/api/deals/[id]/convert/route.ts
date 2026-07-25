@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/api-auth";
+import { requireAuth, checkOwnership } from "@/lib/api-auth";
 import { PIPELINE_STAGES } from "@/lib/deal-pipeline";
 import type { TransactionSide } from "@cnc/database";
 
@@ -21,15 +21,9 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
-  const role = (session.user as any).role;
-  const deal = await prisma.deal.findUnique({ where: { id: params.id } });
-  if (!deal) return NextResponse.json({ error: "Not found" }, { status: 404 });
-
-  if (role !== "ADMIN") {
-    if (!session.user.agentId || deal.agentId !== session.user.agentId) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
-    }
-  }
+  const dealRecord = await prisma.deal.findUnique({ where: { id: params.id } });
+  const { exists, forbidden, record: deal } = checkOwnership(dealRecord, session.user.agentId, session.user.role);
+  if (!exists || forbidden || !deal) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const stages = PIPELINE_STAGES[deal.pipeline as keyof typeof PIPELINE_STAGES] ?? [];
   const terminalStage = stages[stages.length - 2]; // last entry before FALLEN_OUT

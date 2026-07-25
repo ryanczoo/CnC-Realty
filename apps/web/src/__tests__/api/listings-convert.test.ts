@@ -57,6 +57,15 @@ describe("POST /api/listings/[id]/convert", () => {
     expect(res.status).toBe(403);
   });
 
+  it("allows ADMIN to convert a listing owned by a different agent", async () => {
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u3", role: "ADMIN", agentId: null } } as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(SALE_LISTING as any);
+    vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "tf-admin" } as any);
+
+    const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "l1" } });
+    expect(res.status).toBe(201);
+  });
+
   it("converts a RESIDENTIAL_SALE listing to transactionSide LISTING", async () => {
     vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
     vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(SALE_LISTING as any);

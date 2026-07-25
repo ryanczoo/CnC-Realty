@@ -6,14 +6,14 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     agent: { findUnique: vi.fn() },
     lead: { findUnique: vi.fn() },
-    leadTask: { findMany: vi.fn(), updateMany: vi.fn(), findFirst: vi.fn() },
+    leadTask: { findMany: vi.fn(), updateMany: vi.fn(), findFirst: vi.fn(), deleteMany: vi.fn() },
   },
 }));
 
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { GET } from "../../app/api/leads/[id]/tasks/route";
-import { PATCH } from "../../app/api/leads/[id]/tasks/[taskId]/route";
+import { PATCH, DELETE } from "../../app/api/leads/[id]/tasks/[taskId]/route";
 
 const SESSION = { user: { id: "u1", role: "AGENT", agentId: "a1" } };
 const AGENT = { id: "a1" };
@@ -100,5 +100,64 @@ describe("PATCH /api/leads/[id]/tasks/[taskId] — notes", () => {
     expect(prisma.leadTask.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ notes: null }) })
     );
+  });
+
+  it("returns 404 when the lead belongs to a different agent", async () => {
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u2", role: "AGENT", agentId: "a2" } } as any);
+    vi.mocked(prisma.lead.findUnique).mockResolvedValue(LEAD as any);
+
+    const req = new Request("http://localhost/api/leads/l1/tasks/t1", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ notes: "x" }),
+    });
+    const res = await PATCH(req, TASK_PARAMS);
+    expect(res.status).toBe(404);
+  });
+
+  it("allows ADMIN to update a task on any agent's lead", async () => {
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u3", role: "ADMIN", agentId: null } } as any);
+    vi.mocked(prisma.lead.findUnique).mockResolvedValue(LEAD as any);
+    vi.mocked(prisma.leadTask.updateMany).mockResolvedValue({ count: 1 } as any);
+    vi.mocked(prisma.leadTask.findFirst).mockResolvedValue({ ...TASK, notes: "admin edit" } as any);
+
+    const req = new Request("http://localhost/api/leads/l1/tasks/t1", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ notes: "admin edit" }),
+    });
+    const res = await PATCH(req, TASK_PARAMS);
+    expect(res.status).toBe(200);
+  });
+});
+
+describe("DELETE /api/leads/[id]/tasks/[taskId]", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(prisma.leadTask.deleteMany).mockResolvedValue({ count: 1 } as any);
+  });
+
+  it("returns 404 when the lead belongs to a different agent", async () => {
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u2", role: "AGENT", agentId: "a2" } } as any);
+    vi.mocked(prisma.lead.findUnique).mockResolvedValue(LEAD as any);
+
+    const res = await DELETE(new Request("http://localhost"), TASK_PARAMS);
+    expect(res.status).toBe(404);
+  });
+
+  it("allows ADMIN to delete a task on any agent's lead", async () => {
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u3", role: "ADMIN", agentId: null } } as any);
+    vi.mocked(prisma.lead.findUnique).mockResolvedValue(LEAD as any);
+
+    const res = await DELETE(new Request("http://localhost"), TASK_PARAMS);
+    expect(res.status).toBe(204);
+  });
+
+  it("allows the owning agent to delete a task", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(SESSION as any);
+    vi.mocked(prisma.lead.findUnique).mockResolvedValue(LEAD as any);
+
+    const res = await DELETE(new Request("http://localhost"), TASK_PARAMS);
+    expect(res.status).toBe(204);
   });
 });

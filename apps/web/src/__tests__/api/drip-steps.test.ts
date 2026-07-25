@@ -75,6 +75,30 @@ describe('POST /api/campaigns/[id]/drip-steps', () => {
     expect(data.error).toBe('Forbidden');
   });
 
+  it('allows ADMIN to replace steps on any agent\'s campaign', async () => {
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: 'u3', role: 'ADMIN', agentId: null } } as any);
+    vi.mocked(prisma.campaign.findUnique).mockResolvedValue({ id: 'c1', agentId: 'a1' } as any);
+    vi.mocked(prisma.$transaction).mockResolvedValue(undefined as any);
+
+    const steps = [{ stepOrder: 1, delayDays: 0, subject: 'Welcome', body: 'Hi there!' }];
+    const res = await POST(
+      new Request('http://localhost', { method: 'POST', body: JSON.stringify(steps), headers: { 'Content-Type': 'application/json' } }),
+      { params: { id: 'c1' } }
+    );
+    expect(res.status).toBe(200);
+  });
+
+  it('returns 404 when the campaign does not exist', async () => {
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: 'u1', role: 'AGENT', agentId: 'a1' } } as any);
+    vi.mocked(prisma.campaign.findUnique).mockResolvedValue(null);
+
+    const res = await POST(
+      new Request('http://localhost', { method: 'POST', body: JSON.stringify([]), headers: { 'Content-Type': 'application/json' } }),
+      { params: { id: 'missing' } }
+    );
+    expect(res.status).toBe(404);
+  });
+
   it('returns 400 when request body is malformed JSON', async () => {
     vi.mocked(getServerSession).mockResolvedValue({ user: { id: 'u1', role: 'AGENT', agentId: 'a1' } } as any);
     vi.mocked(prisma.campaign.findUnique).mockResolvedValue({ id: 'c1', agentId: 'a1' } as any);

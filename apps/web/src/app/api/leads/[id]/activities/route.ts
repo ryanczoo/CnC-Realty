@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/api-auth";
+import { requireAuth, checkOwnership } from "@/lib/api-auth";
 
 const schema = z.object({
   type: z
@@ -17,14 +17,9 @@ export async function POST(
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
-  const { role, agentId } = session.user;
-
-  if (role !== "ADMIN") {
-    const lead = await prisma.lead.findUnique({ where: { id: params.id }, select: { agentId: true } });
-    if (!agentId || !lead || lead.agentId !== agentId) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
-    }
-  }
+  const lead = await prisma.lead.findUnique({ where: { id: params.id }, select: { agentId: true } });
+  const { exists, forbidden } = checkOwnership(lead, session.user.agentId, session.user.role);
+  if (!exists || forbidden) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   try {
     const body = await req.json();
