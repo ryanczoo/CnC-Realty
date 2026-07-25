@@ -2,12 +2,14 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { DealBoard } from "@/components/deals/DealBoard";
 import { DealDrawer } from "@/components/deals/DealDrawer";
 import { NewDealModal } from "@/components/deals/NewDealModal";
+import { fetchDeals, updateDealInList, removeDealFromList } from "@/lib/dashboard-queries";
 import type { DealRow } from "@/lib/deal-pipeline";
 
 const PIPELINES = ["BUYERS", "SELLERS", "LEASE_TENANT", "LEASE_LANDLORD"] as const;
@@ -24,24 +26,24 @@ export default function PipelinePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tab = (searchParams.get("pipeline") as PipelineTab) ?? "BUYERS";
+  const queryClient = useQueryClient();
 
-  const [dealsByPipeline, setDealsByPipeline] = useState<Record<PipelineTab, DealRow[]>>({
-    BUYERS: [], SELLERS: [], LEASE_TENANT: [], LEASE_LANDLORD: [],
-  });
-  const [loading, setLoading] = useState(true);
+  const buyers = useQuery<DealRow[]>({ queryKey: ["deals", "BUYERS"], queryFn: () => fetchDeals("BUYERS") });
+  const sellers = useQuery<DealRow[]>({ queryKey: ["deals", "SELLERS"], queryFn: () => fetchDeals("SELLERS") });
+  const leaseTenant = useQuery<DealRow[]>({ queryKey: ["deals", "LEASE_TENANT"], queryFn: () => fetchDeals("LEASE_TENANT") });
+  const leaseLandlord = useQuery<DealRow[]>({ queryKey: ["deals", "LEASE_LANDLORD"], queryFn: () => fetchDeals("LEASE_LANDLORD") });
+
+  const dealsByPipeline: Record<PipelineTab, DealRow[]> = {
+    BUYERS: buyers.data ?? [],
+    SELLERS: sellers.data ?? [],
+    LEASE_TENANT: leaseTenant.data ?? [],
+    LEASE_LANDLORD: leaseLandlord.data ?? [],
+  };
+  const loading = buyers.isLoading || sellers.isLoading || leaseTenant.isLoading || leaseLandlord.isLoading;
+
   const [selectedDeal, setSelectedDeal] = useState<DealRow | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-
-  const fetchDeals = useCallback(async () => {
-    setLoading(true);
-    const responses = await Promise.all(PIPELINES.map((p) => fetch(`/api/deals?pipeline=${p}`)));
-    const results = await Promise.all(responses.map((r) => (r.ok ? r.json() : [])));
-    setDealsByPipeline(Object.fromEntries(PIPELINES.map((p, i) => [p, results[i]])) as Record<PipelineTab, DealRow[]>);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => { fetchDeals(); }, [fetchDeals]);
 
   function setTab(p: PipelineTab) {
     router.push(`/dashboard/pipeline?pipeline=${p}`);
@@ -53,20 +55,16 @@ export default function PipelinePage() {
   }
 
   function handleDrawerSaved(updated: DealRow) {
-    setDealsByPipeline((prev) => {
-      const next = { ...prev };
-      for (const p of PIPELINES) next[p] = prev[p].map((d) => (d.id === updated.id ? updated : d));
-      return next;
-    });
+    for (const p of PIPELINES) {
+      queryClient.setQueryData<DealRow[]>(["deals", p], (prev) => updateDealInList(prev, updated));
+    }
     setSelectedDeal(updated);
   }
 
   function handleDrawerDeleted(dealId: string) {
-    setDealsByPipeline((prev) => {
-      const next = { ...prev };
-      for (const p of PIPELINES) next[p] = prev[p].filter((d) => d.id !== dealId);
-      return next;
-    });
+    for (const p of PIPELINES) {
+      queryClient.setQueryData<DealRow[]>(["deals", p], (prev) => removeDealFromList(prev, dealId));
+    }
     setDrawerOpen(false);
     setSelectedDeal(null);
   }
@@ -77,7 +75,11 @@ export default function PipelinePage() {
   }
 
   function handleModalSaved(deal: DealRow) {
-    setDealsByPipeline((prev) => ({ ...prev, [deal.pipeline]: [...prev[deal.pipeline], deal] }));
+    queryClient.setQueryData<DealRow[]>(["deals", deal.pipeline], (prev) => [...(prev ?? []), deal]);
+  }
+
+  function handleDealUpdated(updated: DealRow) {
+    queryClient.setQueryData<DealRow[]>(["deals", tab], (prev) => updateDealInList(prev, updated));
   }
 
   const currentDeals = dealsByPipeline[tab];
@@ -122,6 +124,7 @@ export default function PipelinePage() {
           initialDeals={currentDeals}
           onCardClick={handleCardClick}
           onOfferAccepted={(deal) => { setSelectedDeal(deal); setDrawerOpen(true); }}
+          onDealUpdated={handleDealUpdated}
         />
       )}
 

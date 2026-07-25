@@ -1,28 +1,26 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { FileCard } from "@/components/transactions/FileCard";
+import { fetchListings, fetchTransactions } from "@/lib/dashboard-queries";
 
 type Tab = "listings" | "transactions";
 
 export default function TransactionsPage() {
   const [tab, setTab] = useState<Tab>("listings");
-  const [listings, setListings] = useState<any[]>([]);
-  const [transactions, setTransactions] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    Promise.all([
-      fetch("/api/listings").then((r) => r.json()),
-      fetch("/api/transactions").then((r) => r.json()),
-    ]).then(([l, t]) => {
-      setListings(l.listings ?? []);
-      setTransactions(t.transactions ?? []);
-      setLoading(false);
-    });
-  }, []);
+  const { data: listings = [], isLoading: listingsLoading } = useQuery({
+    queryKey: ["listings"],
+    queryFn: fetchListings,
+  });
+  const { data: transactions = [], isLoading: transactionsLoading } = useQuery({
+    queryKey: ["transactions"],
+    queryFn: fetchTransactions,
+  });
 
+  const loading = listingsLoading || transactionsLoading;
   const items = tab === "listings" ? listings : transactions;
 
   return (

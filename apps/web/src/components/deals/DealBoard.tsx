@@ -22,6 +22,7 @@ type Props = {
   initialDeals: DealRow[];
   onCardClick: (deal: DealRow) => void;
   onOfferAccepted?: (deal: DealRow) => void;
+  onDealUpdated?: (deal: DealRow) => void;
 };
 
 function DroppableStage({ stage, children }: { stage: string; children: ReactNode }) {
@@ -33,7 +34,7 @@ function DroppableStage({ stage, children }: { stage: string; children: ReactNod
   );
 }
 
-export function DealBoard({ pipeline, initialDeals, onCardClick, onOfferAccepted }: Props) {
+export function DealBoard({ pipeline, initialDeals, onCardClick, onOfferAccepted, onDealUpdated }: Props) {
   const [deals, setDeals] = useState<DealRow[]>(initialDeals);
   const [error, setError] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -79,8 +80,11 @@ export function DealBoard({ pipeline, initialDeals, onCardClick, onOfferAccepted
       return;
     }
 
+    const updatedDeal = { ...deal, stage: newStage, stageUpdatedAt: new Date().toISOString(), daysInStage: 0 };
+    onDealUpdated?.(updatedDeal);
+
     if (isTerminalStage(pipeline, newStage as DealStage) && onOfferAccepted) {
-      onOfferAccepted({ ...deal, stage: newStage, stageUpdatedAt: new Date().toISOString(), daysInStage: 0 });
+      onOfferAccepted(updatedDeal);
     }
   }
 

@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
+import { fetchOpenTasks, fetchCompletedTasks, removeTaskById } from "@/lib/dashboard-queries";
 
 export const dynamic = "force-dynamic";
 
@@ -56,40 +58,35 @@ function TaskRow({ task, onCheck }: { task: CrossLeadTask; onCheck: (task: Cross
 }
 
 export default function TasksDashboardPage() {
-  const [tasks, setTasks] = useState<CrossLeadTask[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [completedTasks, setCompletedTasks] = useState<CrossLeadTask[]>([]);
-  const [completedLoading, setCompletedLoading] = useState(false);
-  const [completedLoaded, setCompletedLoaded] = useState(false);
-  const [completedError, setCompletedError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const [completedExpanded, setCompletedExpanded] = useState(false);
 
-  useEffect(() => {
-    fetch("/api/tasks?done=false")
-      .then((r) => r.json())
-      .then(setTasks)
-      .catch(() => { setError("Failed to load tasks. Please refresh."); })
-      .finally(() => setLoading(false));
-  }, []);
+  const {
+    data: tasks = [],
+    isLoading: loading,
+    isError: hasError,
+  } = useQuery<CrossLeadTask[]>({ queryKey: ["tasks", "open"], queryFn: fetchOpenTasks });
+  const error = hasError ? "Failed to load tasks. Please refresh." : null;
 
-  async function loadCompleted() {
-    if (completedLoaded) return;
-    setCompletedLoading(true);
-    try {
-      const res = await fetch("/api/tasks?done=true");
-      const data: CrossLeadTask[] = await res.json();
-      setCompletedTasks(data);
-      setCompletedLoaded(true);
-    } catch {
-      setCompletedError("Failed to load completed tasks.");
-    } finally {
-      setCompletedLoading(false);
-    }
+  const {
+    data: completedTasks = [],
+    isLoading: completedLoading,
+    isError: completedHasError,
+  } = useQuery<CrossLeadTask[]>({
+    queryKey: ["tasks", "completed"],
+    queryFn: fetchCompletedTasks,
+    enabled: completedExpanded,
+  });
+  const completedError = completedHasError ? "Failed to load completed tasks." : null;
+  const completedLoaded = completedExpanded && !completedLoading;
+
+  function loadCompleted() {
+    setCompletedExpanded(true);
   }
 
   async function checkOff(task: CrossLeadTask) {
     // Optimistic removal from open list
-    setTasks((prev) => prev.filter((t) => t.id !== task.id));
+    queryClient.setQueryData<CrossLeadTask[]>(["tasks", "open"], (prev) => removeTaskById(prev, task.id));
     try {
       await fetch(`/api/leads/${task.leadId}/tasks/${task.id}`, {
         method: "PATCH",
