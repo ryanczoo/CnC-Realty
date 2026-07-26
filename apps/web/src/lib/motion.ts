@@ -1,5 +1,9 @@
 export const SPRING_HOVER = { type: "spring", stiffness: 300, damping: 20 } as const;
 
+// Spring for the 3-slot stacked-card carousel (AdvantageCarousel) — tuned to
+// approximate Compass's ~550ms settle-with-slight-overshoot on slide change.
+export const STACK_SPRING = { type: "spring", stiffness: 220, damping: 24 } as const;
+
 // Clamped linear interpolation — maps p in [lo, hi] to [a, b].
 export function ramp(p: number, lo: number, hi: number, a: number, b: number) {
   const t = Math.max(0, Math.min(1, (p - lo) / (hi - lo)));
