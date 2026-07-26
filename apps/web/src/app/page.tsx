@@ -5,7 +5,8 @@ import { FeaturedListingsServer } from "@/components/home/FeaturedListingsServer
 import { HeroSection } from "@/components/home/HeroSection";
 import { JoinCnCCTA } from "@/components/home/JoinCnCCTA";
 import { ServicesSection } from "@/components/home/ServicesSection";
-import { Testimonials } from "@/components/home/Testimonials";
+import { TestimonialsIntro } from "@/components/home/TestimonialsIntro";
+import { TestimonialCards } from "@/components/home/TestimonialCards";
 import { WhyCnC } from "@/components/home/WhyCnC";
 
 export default function HomePage() {
@@ -26,7 +27,8 @@ export default function HomePage() {
       </div>
       <ServicesSection />
       <div className="bg-[#F2F0EF] py-10" />
-      <Testimonials />
+      <TestimonialsIntro />
+      <TestimonialCards />
       <GradientBridge from="#F2F0EF" to="#DAD4D2" />
       <FAQ className="bg-[#DAD4D2]" />
       <GradientBridge from="#DAD4D2" to="#F2F0EF" />
