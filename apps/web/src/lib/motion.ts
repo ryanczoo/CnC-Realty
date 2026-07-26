@@ -10,7 +10,7 @@ export function ramp(p: number, lo: number, hi: number, a: number, b: number) {
   return a + (b - a) * t;
 }
 
-// Shared word-by-word animation variant — used by SellHero, JoinHero, and Testimonials.
+// Shared word-by-word animation variant — used by SellHero, JoinHero.
 export const WORD_VARIANT = {
   hidden: { opacity: 0, x: -14 },
   visible: { opacity: 1, x: 0, transition: { duration: 0.9, ease: "easeOut" } },

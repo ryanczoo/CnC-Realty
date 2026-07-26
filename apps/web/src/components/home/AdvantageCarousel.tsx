@@ -66,7 +66,7 @@ export function AdvantageCarousel() {
   return (
     <div>
       <div className="relative mx-auto" style={{ width: "60vw", maxWidth: 820 }}>
-        <div className="relative w-full" style={{ paddingTop: "calc(60vw / 1.45)", maxHeight: 566 }}>
+        <div className="relative w-full" style={{ aspectRatio: "1.45", maxWidth: 820 }}>
           <div className="absolute inset-0">
             {SLIDES.map((slide, i) => {
               const depth = getStackDepth(i, activeIdx, SLIDES.length);
@@ -85,7 +85,7 @@ export function AdvantageCarousel() {
                     sizes="(max-width: 820px) 60vw, 820px"
                     priority={i === 0}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/20 to-transparent" />
                   <div className="absolute left-8 top-8 max-w-[70%]">
                     <p className="font-sans text-2xl font-medium text-white xl:text-3xl">
                       {slide.title}
