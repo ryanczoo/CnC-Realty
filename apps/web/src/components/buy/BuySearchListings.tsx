@@ -32,7 +32,7 @@ export function BuySearchListings({ listings: propListings }: Props) {
 
   return (
     <section data-navbar-theme="light" className="overflow-hidden bg-[#F2F0EF] py-20">
-      <div className="mb-12 flex justify-center">
+      <div className="mb-3 flex justify-center">
         <h2 className="text-center font-sans text-[2.8rem] font-light text-[#1B1B1B] xl:text-[3.4rem]">
           <RevealLine>
             <span className="text-[2.1rem] xl:text-[2.5rem]">Search </span>
