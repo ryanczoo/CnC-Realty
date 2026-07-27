@@ -5826,3 +5826,74 @@ Ryan reported tabs (especially Transactions → Tasks) taking 5-10 seconds to sw
 3. **Spot-check the agentId session refresh live** — no live browser test was done tonight (all verification was automated: tests + tsc + server logs). Worth confirming in a real session that an intentionally-staled token actually self-corrects after 10 minutes, though the unit tests directly exercise the same code path the real callback runs.
 4. Real per-visitor-city detection is still unverified in production (needs an actual Vercel deploy — carried over, unrelated to tonight's work).
 5. Older backlog, unchanged: broader transaction-management click-through testing (Purchase/Listing/Lease Tenant-Landlord); full IDX resync (deliberately deferred, no target date).
+
+---
+
+## Session Notes — 2026-07-26
+
+### What Was Completed
+
+All changes committed and pushed to `origin/feature/agent-application-redesign` (commits `825a86b` through `c9227ae`, including several from the tail end of the previous session).
+
+### Homepage Advantage Carousel — built and polished
+
+Full spec → plan → subagent-driven-development cycle for a new 3-slide stacked-depth carousel on the homepage, modeled on Compass's `/sell` page (researched live via Puppeteer for the actual mechanic — 3 fixed depth slots with spring-animated position swaps, not a simple crossfade).
+
+- **Spec:** `docs/superpowers/specs/2026-07-25-homepage-advantage-carousel-design.md`. Key correction made during brainstorming: Ryan's first placement idea (carousel wedged between the sticky "We create..." headline and the review cards, as 3 separate sections) would have silently broken the existing cover-reveal CSS effect — sticky positioning can't span across separate `<section>` siblings with nothing overlapping them. Fixed by having the new carousel take over the "thing that covers the sticky headline" role the review cards used to play, with both pieces sharing one `<section>`.
+- **Plan:** `docs/superpowers/plans/2026-07-25-homepage-advantage-carousel.md` — written same night as the spec but never actually committed until tonight (caught via `git status` while doing the end-of-session commit sweep).
+- **New component:** `AdvantageCarousel.tsx` — `getStackDepth(idx, activeIdx, total)` pure function (front/middle/back), tested like `RentCitiesSlider.tsx`'s `getSlideState`. Arrows reuse `RentCitiesSlider`'s exact `ArrowIcon` SVG, recolored dark-on-light.
+- **`Testimonials.tsx` split** into `TestimonialsIntro.tsx` (sticky headline + carousel, one section) and `TestimonialCards.tsx` (plain section, review grid unchanged).
+- **Subagent-driven-development execution:** worked in place on `feature/agent-application-redesign`, no worktree (explicitly asked, Ryan chose to skip it — matches this project's long-standing convention of one shared long-lived branch). 3 tasks all passed per-task review clean. Final whole-branch review found 2 Important issues the plan's own example code had baked in (an inverted scrim gradient — `bg-gradient-to-t` when the text sits at the top, needed `to-b`; and a dead `maxHeight` that couldn't actually constrain a padding-derived box, causing the card ratio to drift from the spec's 1.45:1 at wide viewports) — both fixed in one fix wave, re-reviewed clean.
+- **Post-build polish, all live-iterated with Ryan:** cards enlarged to 1.5x (1230px/90vw), then dialed back down to ~1.28x (1050px/78vw) since 1.5x read as too big; arrows were initially overlapping the card stack (the back card's stack offset overhangs the wrapper box, and the original `mt-12` gap didn't account for that) — moved to `mt-36`, then walked back down to `mt-24` per Ryan's "little bit more up" requests, still clearing the overhang.
+- **Real images now in place for all 3 slides** (no more placeholders): `advantage-crm.jpg` (Full CRM, from session 2026-07-25), `advantage-tms.jpg` and `advantage-academy.jpg` (added tonight). "Transaction Management System" retitled **"Custom TMS"** with reworded subtitle per Ryan's request.
+- **Subtitle text narrowed** to `max-w-[280px]` so it wraps ~5 words/line instead of running the full card width.
+
+### Admin dashboard — Blog nav link added
+
+Ryan asked why there was no sidebar button to `/admin/blog` — root-caused (not guessed) by reading `apps/web/src/app/(dashboard)/layout.tsx`: `ADMIN_NAV` is a hardcoded array and the Blog route was simply never added to it back when the blog/press system was built in June. Before adding it, walked through a few rounds of "would this slow the dashboard down / cost more in database terms" — resolved precisely via Context7 (pulled real Next.js source for this version, not from memory): `<Link>`'s default (unset) prefetch mode does a partial/shell-only prefetch for dynamic routes like `/admin/blog` (which runs a live Prisma query) — it does **not** eagerly run that query in the background the way `prefetch={true}` would. Left unset, matching all 13 other sidebar links; zero added cost either way. Link added between "Checklists" and "Tags" per Ryan's screenshot.
+
+### Buy page — search section spacing
+
+Iteratively tightened the gap between "Search Here" and the search bar on `/buy` (`BuySearchListings.tsx`) — `mb-12` → `mb-6` → `mb-3` across several rounds of "a little tighter" feedback.
+
+### Six new blog posts published on `/press`
+
+Ryan supplied source-article links (mostly NAR) plus his own photos, and asked for each to be reworded into an original CnC post — explicitly to avoid any copyright exposure from close paraphrasing. Established methodology, applied consistently across all six:
+
+1. Read the source live via Puppeteer (`document.body.innerText`, not guessed from the URL/title).
+2. Extract only the underlying facts/data (stats, figures, named programs) — these aren't copyrightable expression.
+3. Fully restructure: different section breakdown, different order, no mirroring of the source's own headings or narrative arc.
+4. Attribute specific statistics to their actual primary source (e.g. cite NAR's Remodeling Impact Report directly rather than crediting whichever blog happened to repeat the number).
+5. Drop anything that's the source's own proprietary angle — a competing brokerage's local market research, a wire reporter's quoted economist, a competitor's business self-promotion — none of that gets reused even in reworded form.
+6. Close with a CnC-specific CTA (`/contact`, `/buy`, or `/sell`).
+7. Cover image is either the photo Ryan provided or an existing, already-licensed stock photo already sitting unused in the repo — never a new download from an arbitrary web source.
+
+**Posts published (all live at `/press`):**
+- "5 Budget-Friendly Curb Appeal Upgrades for California Sellers" — from NAR, cover swapped once to a photo Ryan preferred
+- "What May's Pending Home Sales Data Means for California Buyers and Sellers" — from NAR
+- "Should You Use Retirement Savings for a Down Payment? What California First-Time Buyers Should Know" — from NAR; added an explicit "this isn't financial advice" caveat since it touches retirement accounts
+- "5 New-Construction Design Trends Showing Up in California Homes This Year" — from NAR
+- "10 Budget-Friendly DIY Upgrades That Actually Help Your Home Sell" — from GNP Realty (a Chicago brokerage's blog), after the originally-requested NAR link turned out to be a **podcast episode page with no transcript** — flagged that directly rather than fabricating a list from nothing, and Ryan supplied a real written-article link instead
+- "Understanding Mortgage Rates and Loan Limits for California Buyers Right Now" — from Team Tackney (a competing Garden Grove, CA team's blog), after an initial LA Times/AP wire-story link was abandoned because the referenced photo never actually landed in Downloads. Generalized the piece from Team Tackney's hyper-local Garden Grove market stats to California-wide, reusing only genuinely public data (federal conforming loan limits, CalHFA program names), not their proprietary local market research.
+
+**One extra layer of caution used only once:** the abandoned LA Times link was an **Associated Press wire story** (byline: "writes for the Associated Press"), which is held to a stricter standard than NAR or a brokerage blog — AP is known to actively enforce reuse of its content. Plan was to use only the raw Freddie Mac rate figures (third-party public data) and drop AP's narrative and quoted-economist entirely; moot once that source was swapped out, but worth remembering as the right approach if AP/wire content comes up again.
+
+**Publishing mechanism:** posts were created directly in the database via one-off Node scripts, not the admin UI — Claude doesn't have Ryan's logged-in browser session to submit the actual form. Each script is written into `packages/database/` (not `apps/web/`, since pnpm's strict `node_modules` only resolves `@prisma/client` from within `packages/database`), reads `packages/database/.env` for `DATABASE_URL` manually, calls `prisma.blogPost.create(...)`, and is deleted immediately after running. Note: **`tsx` is not installed anywhere in this monorepo** — plain `node script.mjs` works fine since Prisma's generated client is already plain JS, no TypeScript compilation needed for these one-off scripts.
+
+### Key Decisions Made
+
+1. **Sticky-cover mechanic requires shared DOM parent** — `TestimonialsIntro` and `AdvantageCarousel` must render inside one `<section>`, not as separate siblings, or the cover-reveal effect silently breaks. Locked into the plan during brainstorming, not left to be discovered during implementation.
+2. **Card size settled at ~1050px/78vw** after overshooting to 1.5x first — Ryan's calibration, not a one-shot guess.
+3. **Nav link additions cost nothing** as long as `prefetch` is left unset on dynamic-data routes — verified via actual Next.js source, not assumed. Established as a reusable fact for future "will this slow things down" questions.
+4. **No worktree for SDD work** — confirmed again this session as this project's standing convention; asked explicitly, Ryan chose in-place.
+5. **Blog rewrites: facts only, never structure or phrasing** — the throughline across all six posts. Applied even more conservatively to wire-service (AP) content than to NAR or brokerage blogs.
+6. **Don't fabricate content when a source turns out to be unusable** (the NAR podcast-page case) — flag it and ask, exactly like the earlier "the LA Times image never actually downloaded" case. Both times, surfaced the problem instead of guessing or working around it silently.
+7. **Branch stays unpushed until explicit go-ahead, every time** — asked again before pushing tonight's work, consistent with established practice.
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`.
+2. **Review the 6 new blog posts live at `/press`** — Ryan hasn't yet given final sign-off on tone/copy for any of them; all were published immediately per his instruction but haven't had a second look.
+3. **AdvantageCarousel — confirm current sizing/arrow position is the final state** — went through several rounds of live tuning tonight (1.5x → ~1.28x, arrows mt-12 → mt-36 → mt-28 → mt-24); worth one more look to confirm nothing needs further adjustment.
+4. All of tonight's work is committed and pushed — nothing outstanding on top of it.
+5. Older backlog, unchanged: broader transaction-management click-through testing (Purchase/Listing/Lease Tenant-Landlord); full IDX resync (deliberately deferred, no target date).
