@@ -29,7 +29,7 @@ const SLIDES = [
   {
     title: "CnC Academy",
     subtitle: "Learning center and training guides in one place",
-    image: "/images/sell/sell-11.jpg",
+    image: "/images/advantage-academy.jpg",
   },
   {
     title: "Full CRM",
@@ -37,9 +37,9 @@ const SLIDES = [
     image: "/images/advantage-crm.jpg",
   },
   {
-    title: "Transaction Management System",
-    subtitle: "Our in-house TMS helps you save money and remain compliant",
-    image: "/images/sell/sell-12.jpg",
+    title: "Custom TMS",
+    subtitle: "Our transaction management software helps you save money and stay compliant",
+    image: "/images/advantage-tms.jpg",
   },
 ] as const;
 
@@ -65,8 +65,8 @@ export function AdvantageCarousel() {
 
   return (
     <div>
-      <div className="relative mx-auto" style={{ width: "60vw", maxWidth: 820 }}>
-        <div className="relative w-full" style={{ aspectRatio: "1.45", maxWidth: 820 }}>
+      <div className="relative mx-auto" style={{ width: "78vw", maxWidth: 1050 }}>
+        <div className="relative w-full" style={{ aspectRatio: "1.45", maxWidth: 1050 }}>
           <div className="absolute inset-0">
             {SLIDES.map((slide, i) => {
               const depth = getStackDepth(i, activeIdx, SLIDES.length);
@@ -82,7 +82,7 @@ export function AdvantageCarousel() {
                     alt={slide.title}
                     fill
                     className="object-cover"
-                    sizes="(max-width: 820px) 60vw, 820px"
+                    sizes="(max-width: 1050px) 78vw, 1050px"
                     priority={i === 0}
                   />
                   <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/20 to-transparent" />
@@ -90,7 +90,7 @@ export function AdvantageCarousel() {
                     <p className="font-sans text-2xl font-medium text-white xl:text-3xl">
                       {slide.title}
                     </p>
-                    <p className="mt-3 font-sans text-sm text-white/80 xl:text-base">
+                    <p className="mt-3 max-w-[280px] font-sans text-sm text-white/80 xl:text-base">
                       {slide.subtitle}
                     </p>
                   </div>
@@ -101,7 +101,7 @@ export function AdvantageCarousel() {
         </div>
       </div>
 
-      <div className="mt-12 flex justify-center gap-6">
+      <div className="mt-24 flex justify-center gap-6">
         <motion.button
           onClick={goPrev}
           animate={PULSE_ANIMATE}
