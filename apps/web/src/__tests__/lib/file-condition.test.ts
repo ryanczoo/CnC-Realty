@@ -2,11 +2,13 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { prisma } from "@/lib/prisma";
 
 describe("FileCondition model", () => {
+  let userId: string;
   let agentId: string;
   let transactionFileId: string;
 
   beforeAll(async () => {
     const user = await prisma.user.create({ data: { email: `fc-test-${Date.now()}@test.com`, role: "AGENT" } });
+    userId = user.id;
     const agent = await prisma.agent.create({ data: { userId: user.id, slug: `fc-test-${Date.now()}` } });
     agentId = agent.id;
     const tf = await prisma.transactionFile.create({
@@ -18,6 +20,7 @@ describe("FileCondition model", () => {
   afterAll(async () => {
     await prisma.transactionFile.delete({ where: { id: transactionFileId } });
     await prisma.agent.delete({ where: { id: agentId } });
+    await prisma.user.delete({ where: { id: userId } });
   });
 
   it("creates and links a condition to a transaction file", async () => {
