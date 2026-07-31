@@ -5897,3 +5897,60 @@ Ryan supplied source-article links (mostly NAR) plus his own photos, and asked f
 3. **AdvantageCarousel — confirm current sizing/arrow position is the final state** — went through several rounds of live tuning tonight (1.5x → ~1.28x, arrows mt-12 → mt-36 → mt-28 → mt-24); worth one more look to confirm nothing needs further adjustment.
 4. All of tonight's work is committed and pushed — nothing outstanding on top of it.
 5. Older backlog, unchanged: broader transaction-management click-through testing (Purchase/Listing/Lease Tenant-Landlord); full IDX resync (deliberately deferred, no target date).
+
+---
+
+## Session Notes — 2026-07-31
+
+### What Was Completed
+
+All changes committed on `feature/agent-application-redesign` (commits `b6ca277`, `91f4094`, `fac5a77`, `3b73631`). **Not pushed to origin** — branch push wasn't requested this session.
+
+### CnC Academy — Fully Complete ✅
+
+Finished the last 3 tasks from the in-progress build: `POST /api/announcements/[id]/send` (TDD — admin-only, 404 if missing, 400 if already sent, emails every current AGENT via `sendAnnouncement`, sets `sentAt`), the Announcements archive page (read-only list of sent announcements + admin-only inline `AnnouncementComposer` — draft → confirm-preview → send, drafts never queried by the public list so they're structurally invisible to agents), and a full live Puppeteer verification pass of all 3 Academy tabs (Training Videos click-to-play grid, Helpful Guides links, Announcements create/send flow).
+
+### Verification Turned Up Two Real Findings (Both Handled Safely)
+
+1. **SendGrid Free Trial is fully exhausted.** Queried SendGrid's own `/v3/user/credits` API directly rather than trusting old notes: **100 emails total, hard limit, `used: 100/remain: 0`**, and `is_hard_limit: true` with an 11-day-stale `last_reset` — confirms Free Trial does NOT actually replenish daily despite the label. This corrects an inaccurate note from the 2026-07-06 session ("unlimited until Aug 16") — that was wrong. **Real emails cannot send until SendGrid is upgraded to Essentials (~$19.95/mo).** Verified live: the test send attempt got a real 403 from SendGrid, so nothing was actually emailed to anyone during testing.
+2. **188 leftover `fc-test-*@test.com` AGENT accounts** in the database, from a real leak (not random test debt): `file-condition.test.ts`'s `afterAll` deleted the `Agent` it created in `beforeAll` but never the `User`, so every full-suite run left one orphaned account behind. Fixed the leak (one line, verified via a full suite run that the count didn't grow), then investigated real DB foreign-key delete rules before bulk-deleting (only 1 of 188 even had an Agent record, and it had zero rows anywhere that would block deletion) — deleted all 188, created one clean replacement: `claude-test-agent@cncrealtygroup.com` / `ClaudeTestAgent2026!`, real Agent profile, slug `claude-test-agent`. Ryan's admin account and 3 other real-looking accounts (`jane.agent@example.com`, `aznfrkguy@gmail.com`, `ryanvchong13@outlook.com`) were left untouched — not in scope of what was asked.
+
+### All 34 Pre-Existing `tsc` Errors — Investigated, Then Fixed
+
+Ryan asked whether fixing these could break the site or slow it down. Verified with certainty (not inference): `next.config.mjs` has `typescript: { ignoreBuildErrors: true }`, confirmed live via an actual `pnpm build` run that printed `Skipping validation of types`, and confirmed no production file anywhere imports from `__tests__/` — so type errors in test files structurally cannot affect the shipped bundle either way.
+
+Then, at Ryan's request, went file-by-file to confirm none were hiding a real test-correctness bug before fixing anything:
+- `deadlines.test.ts` / `lead-pool.test.ts`: both routes have been zero-argument since the commit that created them (checked git history) — tests were passing an unused `Request` out of habit, copied from other tests in the same file that do need one.
+- `cron-action-plans.test.ts`: same pattern — route only ever reads `.headers.get(...)`, shared between `Request` and `NextRequest`.
+- `headshot-upload.test.ts`: a known `@types/node` `Buffer` vs DOM lib `BlobPart`/`ArrayBuffer` friction point — ran the test directly, confirmed real `sharp`-based resizing assertions genuinely pass.
+- `properties-search.test.ts`: ran all 10 tests verbose, confirmed real detailed assertions (e.g. an exact 11-item commercial-subtype array) prove the "possibly undefined" mock data is always genuinely populated.
+- `deal-pipeline.test.ts`: **initially looked like a real 7-of-11 coverage gap** (the loop only checks 7 `DealStage` values) — checked further before reporting and found a second test in the same file (`"labels every new stage"`) that explicitly covers the other 4, cross-checked against the real Prisma enum (11 values, exact match). Not a gap after all.
+
+Fixed all 34 (one file at a time, verifying that file's tests before moving to the next): removed unused `Request` args (deadlines, lead-pool), built a real `NextRequest` in the `cron-action-plans` test helper, added a narrow type assertion at the Buffer/BlobPart friction point, added a non-null assertion in `properties-search.test.ts` (first attempt placed it after the wrong index — `calls[0]!` — didn't work; root-caused to Prisma's `findMany` having an optional first parameter making the *tuple element* undefined, not the array index; corrected to `calls[0][0]!`), and typed `deal-pipeline.test.ts`'s `stages` array as `DealStage[]`.
+
+**A 7th, unrelated error surfaced** from `.next/types` after a manual production build regenerated it: `new-transaction/page.tsx` exported a named `SIDES` const alongside its default export, which Next's page-shape validation disallows (pages may only export a small reserved set of names). Investigated before fixing — `SIDES` wasn't a leftover, `transaction-sides.test.ts` genuinely imports it as a regression guard for the `SELLER_SIDE` mislabel bug from an earlier session. Moved `SIDES` into `types/transaction.ts`, right next to the sibling `ROLE_LABELS` map it already belonged with (same file already held the matching `TransactionSide` type). Updated the page and the test to import from there. Verified via a real production build (page size unchanged) plus the regression-guard test still passing.
+
+**Final state: `tsc --noEmit` returns zero errors, full suite 623/623 passing.**
+
+### Commits This Session
+
+| Hash | Description |
+|---|---|
+| `b6ca277` | feat: forgot-password flow + CnC Academy dashboard section |
+| `91f4094` | fix: resolve all pre-existing tsc errors, move SIDES out of a page file |
+| `fac5a77` | fix: stop file-condition.test.ts leaking a User row on every run |
+| `3b73631` | polish: remove admin button arrows, refresh contact page, widen press grid |
+
+### Key Decisions Made
+
+1. **SendGrid must be upgraded before any real announcement/email can send** — confirmed via live API query, not assumption. Corrects a wrong note from an earlier session.
+2. **Test fixture hygiene matters more now than before** — the new "Send to All Agents" feature would email every AGENT-role row in the DB, so leftover test accounts are a real operational risk, not just clutter. One persistent, clearly-labeled test agent (`claude-test-agent@cncrealtygroup.com`) replaces the 188 that were deleted.
+3. **"Would fixing this break the site" and "is this hiding a real bug" are different questions** — the first was closed for all 34 at once (structural: build skips type-checking, test files never bundle); the second required checking each file individually, and one of them (`deal-pipeline.test.ts`) needed a second look before the answer was final.
+4. **Non-null assertions need to go at the exact point that's actually undefined** — an assertion placed one step too early silently doesn't fix anything; TypeScript will just report the same error at the next step. Always re-check `tsc` after applying an assertion, don't assume it worked.
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`.
+2. **Push `feature/agent-application-redesign`** whenever Ryan wants — 4 new commits tonight, not yet pushed.
+3. **SendGrid upgrade is now blocking, not just planned** — real emails (including the Academy Announcements feature) can't send until Essentials (~$19.95/mo) is active. Was already on the backlog with an Aug 16 deadline; now it's actively broken, not just approaching a deadline.
+4. Older backlog, unchanged: checklist templates were confirmed done in an earlier session (see 2026-07-24 note above) — no longer a pending item; broader transaction-management click-through testing (Purchase/Listing/Lease Tenant-Landlord); full IDX resync (deliberately deferred, no target date).
