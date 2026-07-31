@@ -36,7 +36,7 @@ describe('GET /api/transactions/deadlines', () => {
       session: null,
       error: new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 }) as any,
     });
-    const res = await GET(new Request('http://localhost/api/transactions/deadlines'));
+    const res = await GET();
     expect(res.status).toBe(401);
   });
 
@@ -45,7 +45,7 @@ describe('GET /api/transactions/deadlines', () => {
       session: null,
       error: new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403 }) as any,
     });
-    const res = await GET(new Request('http://localhost/api/transactions/deadlines'));
+    const res = await GET();
     expect(res.status).toBe(403);
   });
 
@@ -63,7 +63,7 @@ describe('GET /api/transactions/deadlines', () => {
         agent: { user: { name: 'Agent A', email: 'agent@test.com' } },
       },
     ] as any);
-    const res = await GET(new Request('http://localhost/api/transactions/deadlines'));
+    const res = await GET();
     const body = await res.json();
     expect(res.status).toBe(200);
     expect(body.deadlines).toHaveLength(1);
@@ -75,7 +75,7 @@ describe('GET /api/transactions/deadlines', () => {
 
   it('returns empty deadlines when agent record not found', async () => {
     vi.mocked(requireAuth).mockResolvedValue(mockSession('AGENT', 'user-orphan', null) as any);
-    const res = await GET(new Request('http://localhost/api/transactions/deadlines'));
+    const res = await GET();
     const body = await res.json();
     expect(res.status).toBe(200);
     expect(body.deadlines).toHaveLength(0);
@@ -85,7 +85,7 @@ describe('GET /api/transactions/deadlines', () => {
   it('returns deadlines for ALL agents when ADMIN', async () => {
     vi.mocked(requireAuth).mockResolvedValue(mockSession('ADMIN', 'admin-1', null) as any);
     vi.mocked(prisma.transactionFile.findMany).mockResolvedValue([] as any);
-    const res = await GET(new Request('http://localhost/api/transactions/deadlines'));
+    const res = await GET();
     expect(res.status).toBe(200);
     expect(prisma.transactionFile.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: expect.not.objectContaining({ agentId: expect.anything() }) })

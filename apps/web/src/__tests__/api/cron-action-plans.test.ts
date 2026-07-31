@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { NextRequest } from "next/server";
 
 vi.mock("@sendgrid/mail", () => ({ default: { setApiKey: vi.fn(), send: vi.fn() } }));
 vi.mock("@/lib/email", () => ({ FROM: "noreply@cncrealtygroup.com" }));
@@ -20,7 +21,7 @@ const CRON_SECRET = "test-secret";
 process.env.CRON_SECRET = CRON_SECRET;
 
 function makeReq(auth?: string) {
-  return new Request("http://localhost/api/cron/action-plans", {
+  return new NextRequest("http://localhost/api/cron/action-plans", {
     method: "POST",
     headers: auth ? { authorization: `Bearer ${auth}` } : {},
   });

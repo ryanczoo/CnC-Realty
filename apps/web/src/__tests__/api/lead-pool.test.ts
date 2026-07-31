@@ -127,20 +127,20 @@ describe("POST /api/leads/dismiss-brokerage-assignments", () => {
 
   it("returns 401 for unauthenticated requests", async () => {
     vi.mocked(getServerSession).mockResolvedValue(null);
-    const res = await POST_DISMISS(new Request("http://localhost/api/leads/dismiss-brokerage-assignments", { method: "POST" }));
+    const res = await POST_DISMISS();
     expect(res.status).toBe(401);
   });
 
   it("returns 403 when no Agent record exists for the user", async () => {
     vi.mocked(getServerSession).mockResolvedValue(AGENT_SESSION_NO_AGENT as any);
-    const res = await POST_DISMISS(new Request("http://localhost/api/leads/dismiss-brokerage-assignments", { method: "POST" }));
+    const res = await POST_DISMISS();
     expect(res.status).toBe(403);
   });
 
   it("sets assignmentSeenAt on unseen brokerage leads and returns dismissed count", async () => {
     vi.mocked(getServerSession).mockResolvedValue(AGENT_SESSION as any);
     vi.mocked(prisma.lead.updateMany).mockResolvedValue({ count: 3 } as any);
-    const res = await POST_DISMISS(new Request("http://localhost/api/leads/dismiss-brokerage-assignments", { method: "POST" }));
+    const res = await POST_DISMISS();
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.dismissed).toBe(3);

@@ -51,21 +51,21 @@ describe("GET /api/properties — status filter", () => {
   it("includes ActiveUnderContract in the status filter", async () => {
     await GET(makeRequest());
 
-    const call = vi.mocked(prisma.property.findMany).mock.calls[0][0];
+    const call = vi.mocked(prisma.property.findMany).mock.calls[0][0]!;
     expect((call.where as any).status.in).toContain("ActiveUnderContract");
   });
 
   it("includes ComingSoon (no space — matches RESO data) in the status filter", async () => {
     await GET(makeRequest());
 
-    const call = vi.mocked(prisma.property.findMany).mock.calls[0][0];
+    const call = vi.mocked(prisma.property.findMany).mock.calls[0][0]!;
     expect((call.where as any).status.in).toContain("ComingSoon");
   });
 
   it("still includes Active", async () => {
     await GET(makeRequest());
 
-    const call = vi.mocked(prisma.property.findMany).mock.calls[0][0];
+    const call = vi.mocked(prisma.property.findMany).mock.calls[0][0]!;
     expect((call.where as any).status.in).toContain("Active");
   });
 });
@@ -80,7 +80,7 @@ describe("GET /api/properties — query search", () => {
   it("matches zip exactly when query is 5 digits", async () => {
     await GET(makeRequest("query=91101"));
 
-    const call = vi.mocked(prisma.property.findMany).mock.calls[0][0];
+    const call = vi.mocked(prisma.property.findMany).mock.calls[0][0]!;
     expect((call.where as any).zip).toBe("91101");
     expect((call.where as any).OR).toBeUndefined();
   });
@@ -92,7 +92,7 @@ describe("GET /api/properties — query search", () => {
     // in other cities. Letter-led queries are now city-only.
     await GET(makeRequest("query=Main+St"));
 
-    const call = vi.mocked(prisma.property.findMany).mock.calls[0][0];
+    const call = vi.mocked(prisma.property.findMany).mock.calls[0][0]!;
     expect((call.where as any).city).toEqual(
       expect.objectContaining({ contains: "Main St" })
     );
@@ -103,7 +103,7 @@ describe("GET /api/properties — query search", () => {
   it("matches city only when query is a city name", async () => {
     await GET(makeRequest("query=Los+Angeles"));
 
-    const call = vi.mocked(prisma.property.findMany).mock.calls[0][0];
+    const call = vi.mocked(prisma.property.findMany).mock.calls[0][0]!;
     expect((call.where as any).city).toEqual(
       expect.objectContaining({ contains: "Los Angeles" })
     );
@@ -114,7 +114,7 @@ describe("GET /api/properties — query search", () => {
   it("matches address only (not city) when query starts with a house number", async () => {
     await GET(makeRequest("query=12802+Cantrece+Street"));
 
-    const call = vi.mocked(prisma.property.findMany).mock.calls[0][0];
+    const call = vi.mocked(prisma.property.findMany).mock.calls[0][0]!;
     expect((call.where as any).address).toEqual(
       expect.objectContaining({ contains: "12802 Cantrece Street" })
     );
@@ -125,7 +125,7 @@ describe("GET /api/properties — query search", () => {
   it("applies no location filter when query is empty", async () => {
     await GET(makeRequest());
 
-    const call = vi.mocked(prisma.property.findMany).mock.calls[0][0];
+    const call = vi.mocked(prisma.property.findMany).mock.calls[0][0]!;
     expect((call.where as any).zip).toBeUndefined();
     expect((call.where as any).city).toBeUndefined();
     expect((call.where as any).OR).toBeUndefined();
@@ -142,7 +142,7 @@ describe("GET /api/properties — commercial type filter", () => {
   it("matches every commercial PropertySubType in one bucket when propertyType=Commercial", async () => {
     await GET(makeRequest("propertyType=Commercial"));
 
-    const call = vi.mocked(prisma.property.findMany).mock.calls[0][0];
+    const call = vi.mocked(prisma.property.findMany).mock.calls[0][0]!;
     const inList = (call.where as any).propertyType.in;
     expect(inList).toEqual(
       expect.arrayContaining([
@@ -160,7 +160,7 @@ describe("GET /api/properties — commercial type filter", () => {
     // all 11 real commercial subtypes).
     await GET(makeRequest("propertyType=Commercial"));
 
-    const call = vi.mocked(prisma.property.findMany).mock.calls[0][0];
+    const call = vi.mocked(prisma.property.findMany).mock.calls[0][0]!;
     expect((call.where as any).propertyType.contains).toBeUndefined();
   });
 });

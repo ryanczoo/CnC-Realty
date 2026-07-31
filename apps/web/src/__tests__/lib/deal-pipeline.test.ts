@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import type { DealStage } from "@cnc/database";
 import {
   PIPELINE_STAGES,
   STAGE_LABELS,
@@ -109,7 +110,7 @@ describe("formatCloseDate", () => {
 
 describe("STAGE_LABELS", () => {
   it("has a label for every DealStage value", () => {
-    const stages = [
+    const stages: DealStage[] = [
       "PRE_APPROVAL", "TOURING", "OFFER_SUBMITTED",
       "LISTING_APPOINTMENT", "ACTIVE_LISTING",
       "OFFER_ACCEPTED", "FALLEN_OUT",

@@ -9,16 +9,7 @@ import { TC_FEE, calcNetToAgent } from "@/lib/commission";
 import { DateField } from "@/components/ui/DateField";
 import { FormField as Field } from "@/components/ui/FormField";
 import { stripDigits, digitsOnly } from "@/lib/form-validation";
-
-export const SIDES = [
-  { value: "PURCHASE", label: "Purchase", desc: "Buyer representation" },
-  { value: "LISTING", label: "Listing", desc: "Seller representation" },
-  { value: "DUAL", label: "Both Purchase & Listing", desc: "Dual agency transaction" },
-  { value: "LEASE_TENANT", label: "Lease Tenant", desc: "Renter representation" },
-  { value: "LEASE_LANDLORD", label: "Lease Landlord", desc: "Homeowner representation" },
-  { value: "LEASE_DUAL", label: "Both Lease Tenant & Landlord", desc: "Dual agency - lease transaction" },
-  { value: "REFERRAL", label: "Referral", desc: "Client referral to another agent or brokerage" },
-] as const;
+import { SIDES } from "@/types/transaction";
 
 const STAGES = [
   { value: "UNDER_CONTRACT", label: "Under Contract", desc: "You have a signed agreement" },

@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { SIDES } from "@/app/(dashboard)/dashboard/transactions/new-transaction/page";
-import { ROLE_LABELS } from "@/types/transaction";
+import { SIDES, ROLE_LABELS } from "@/types/transaction";
 
 describe("TransactionSide values", () => {
   it("SIDES has all 7 types with correct values", () => {

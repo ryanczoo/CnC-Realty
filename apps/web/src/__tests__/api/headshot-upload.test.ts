@@ -53,7 +53,7 @@ describe("POST /api/account/headshot-upload — resizing", () => {
 
   it("resizes an oversized upload down to a max of 512px per side before storing", async () => {
     const originalBuffer = await makeOversizedJpeg();
-    const file = new File([originalBuffer], "photo.jpg", { type: "image/jpeg" });
+    const file = new File([originalBuffer as unknown as BlobPart], "photo.jpg", { type: "image/jpeg" });
 
     const res = await POST(requestWithFile(file));
     expect(res.status).toBe(200);
