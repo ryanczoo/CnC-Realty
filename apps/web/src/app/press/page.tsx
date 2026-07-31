@@ -21,7 +21,7 @@ export default async function PressPage() {
   return (
     <div className="min-h-screen bg-[#F2F0EF]">
       <PressHero />
-      <div data-navbar-theme="light" className="mx-auto max-w-7xl px-6 pt-24 pb-24 lg:px-8">
+      <div data-navbar-theme="light" className="mx-auto max-w-[100rem] px-6 pt-24 pb-24 lg:px-8">
         <NewsGrid posts={posts} />
       </div>
     </div>

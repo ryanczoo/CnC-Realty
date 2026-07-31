@@ -101,25 +101,25 @@ export default async function AdminOverviewPage() {
           href="/admin/agents"
           className="rounded-full bg-[#1B1B1B] px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-75"
         >
-          View All Agents →
+          View All Agents
         </Link>
         <Link
           href="/admin/leads"
           className="rounded-full bg-[#1B1B1B] px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-75"
         >
-          View All Leads →
+          View All Leads
         </Link>
         <Link
           href="/admin/transactions"
           className="rounded-full bg-[#1B1B1B] px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-75"
         >
-          View All Files →
+          View All Files
         </Link>
         <Link
           href="/admin/blog"
           className="rounded-full bg-[#1B1B1B] px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-75"
         >
-          Manage Blog →
+          Manage Blog
         </Link>
       </div>
 

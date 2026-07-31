@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useRef, useState } from "react";
+import Image from "next/image";
 import { motion } from "motion/react";
 import { RevealText } from "@/components/ui/reveal-text";
 import { useClickOutside } from "@/hooks/useClickOutside";
@@ -56,14 +57,11 @@ export default function ContactPage() {
   );
 
   return (
-    <main className="min-h-screen bg-[#F2F0EF] px-8 pb-24 pt-32 lg:px-20">
+    <main className="relative min-h-screen bg-[#F2F0EF] px-8 pb-24 pt-32 lg:px-20">
       <div className="mx-auto max-w-xl">
-        <h1 className="mb-2 font-sans text-[3rem] font-light leading-tight">
-          <RevealText>Let&apos;s chat</RevealText>
+        <h1 className="mb-12 font-sans text-[3rem] font-light leading-tight">
+          <RevealText>Let&apos;s Chat!</RevealText>
         </h1>
-        <p className="mb-12 font-sans text-base text-[#1B1B1B]/50">
-          We're super responsive!
-        </p>
 
         {status === "success" ? (
           <div className="rounded-2xl bg-cnc-bg p-8 text-center">
@@ -142,6 +140,19 @@ export default function ContactPage() {
             </motion.button>
           </form>
         )}
+      </div>
+
+      <div
+        className="absolute inset-y-0 right-0 hidden lg:block"
+        style={{ left: "calc(50% + 18rem)" }}
+        aria-hidden="true"
+      >
+        <Image
+          src="/images/contact-agent.png"
+          alt=""
+          fill
+          className="object-cover opacity-[0.1] grayscale"
+        />
       </div>
     </main>
   );
