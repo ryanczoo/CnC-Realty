@@ -243,6 +243,8 @@ model User {
   updatedAt     DateTime  @updatedAt
   setupToken       String?   @unique
   setupTokenExpiry DateTime?
+  resetToken       String?   @unique
+  resetTokenExpiry DateTime?
 
   accounts           Account[]
   sessions           Session[]
@@ -835,6 +837,22 @@ model BlogPost {
   author      User?     @relation(fields: [authorId], references: [id], onDelete: SetNull)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+}
+
+model AcademyVideo {
+  id          String   @id @default(cuid())
+  title       String
+  youtubeId   String
+  description String?
+  createdAt   DateTime @default(now())
+}
+
+model Announcement {
+  id        String    @id @default(cuid())
+  title     String
+  body      String
+  sentAt    DateTime?
+  createdAt DateTime  @default(now())
 }
 
 model Message {

@@ -13,6 +13,12 @@ const AGENT_NAV = [
   { href: "/dashboard/settings", label: "Settings" },
 ];
 
+const ACADEMY_NAV = [
+  { href: "/dashboard/academy/videos", label: "Training Videos" },
+  { href: "/dashboard/academy/guides", label: "Helpful Guides" },
+  { href: "/dashboard/academy/announcements", label: "Announcements" },
+];
+
 const ADMIN_NAV = [
   { href: "/admin", label: "Overview" },
   { href: "/admin/agents", label: "All Agents" },
@@ -49,6 +55,22 @@ export default async function DashboardLayout({ children }: { children: React.Re
             </Link>
           ))}
         </nav>
+
+        <div className="mb-4">
+          <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-[#1B1B1B]/30">CnC Academy</p>
+          <div className="mb-2 border-t border-[#1B1B1B]/10" />
+          <nav className="flex flex-col gap-1">
+            {ACADEMY_NAV.map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                className="rounded-lg px-3 py-2 font-sans text-sm font-light text-[#1B1B1B]/60 transition-colors hover:bg-[#F2F0EF] hover:text-[#1B1B1B]"
+              >
+                {label}
+              </Link>
+            ))}
+          </nav>
+        </div>
 
         {isAdmin && (
           <div className="mb-4">

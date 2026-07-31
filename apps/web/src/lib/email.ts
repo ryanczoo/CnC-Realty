@@ -151,6 +151,63 @@ export async function sendApplicationApproved(
   });
 }
 
+const ANNOUNCEMENT_FROM = { email: "info@cncrealtygroup.com", name: "CnC Realty" };
+
+export async function sendAnnouncement(recipients: string[], title: string, body: string) {
+  if (!process.env.SENDGRID_API_KEY) return;
+  const safeTitle = escapeHtml(title);
+  const safeBody = escapeHtml(body);
+
+  const bodyHtml = `
+    <p style="color: #4b4b4b; font-size: 15px; line-height: 1.6; text-align: left; margin: 0; white-space: pre-wrap;">
+      ${safeBody}
+    </p>
+  `;
+
+  const html = emailLayout({
+    heading: safeTitle,
+    bodyHtml,
+    footer: "cncrealtygroup.com",
+  });
+
+  await Promise.all(
+    recipients.map((to) =>
+      sgMail.send({
+        to,
+        from: ANNOUNCEMENT_FROM,
+        subject: safeTitle,
+        html,
+      })
+    )
+  );
+}
+
+export async function sendPasswordReset(to: string, resetUrl: string) {
+  if (!process.env.SENDGRID_API_KEY) return;
+  const safeUrl = escapeHtml(resetUrl);
+
+  const bodyHtml = `
+    <p style="color: #4b4b4b; font-size: 15px; line-height: 1.6; text-align: center; margin: 0 0 8px;">
+      We received a request to reset your password. Click the button below to choose a new one. This link expires in 2 hours.
+    </p>
+    <p style="color: #8a8a8a; font-size: 13px; text-align: center; margin: 16px 0 0;">
+      If you didn't request this, you can safely ignore this email.
+    </p>
+  `;
+
+  await sgMail.send({
+    to,
+    from: FROM,
+    subject: "Reset Your CnC Realty Password",
+    html: emailLayout({
+      heading: "Reset Your Password",
+      bodyHtml,
+      ctaLabel: "Reset Password",
+      ctaHref: safeUrl,
+    }),
+  });
+}
+
 export async function sendApplicationRejected(
   to: string,
   firstName: string,
