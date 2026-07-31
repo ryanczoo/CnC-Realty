@@ -1,8 +1,10 @@
 "use client";
 
-import { motion } from "motion/react";
+import { motion, useInView } from "motion/react";
 import Link from "next/link";
+import { useRef } from "react";
 import { RevealLine } from "@/components/ui/reveal-text";
+import { useScramble } from "@/components/ui/ScrambleValue";
 import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
 import { ListingsMarquee } from "./ListingsMarquee";
 import { PLACEHOLDER_LISTINGS, type FeaturedListing } from "@/lib/listings";
@@ -19,12 +21,18 @@ export function FeaturedListings({ listings: propListings, city, count }: Props)
   const source =
     propListings && propListings.length > 0 ? propListings : PLACEHOLDER_LISTINGS;
 
+  const titleRef = useRef<HTMLDivElement>(null);
+  // Same trigger condition RevealLine uses internally, so the number scramble
+  // and the reveal sweep both start the moment the title enters view.
+  const titleInView = useInView(titleRef, { once: true, margin: "-8%" });
+  const scrambledCount = useScramble(`${count.toLocaleString()}+`, titleInView, 1200);
+
   return (
     <section data-navbar-theme="light" className="overflow-hidden bg-[#F2F0EF] py-10">
-      <div className="mb-12 text-center">
+      <div ref={titleRef} className="mb-12 text-center">
         <h2 className="font-sans font-light leading-[1.05]">
-          <span className="-ml-[1.6in] block text-[2.4rem] xl:text-[2.9rem] text-[#1B1B1B]">
-            <RevealLine delay={0}>{count.toLocaleString()}+ Listings in</RevealLine>
+          <span className="-ml-[1.6in] block text-[2.4rem] xl:text-[2.9rem] text-[#1B1B1B] tabular-nums">
+            <RevealLine delay={0}>{scrambledCount} Listings in</RevealLine>
           </span>
           <span className="ml-[1.6in] block text-[3.2rem] xl:text-[3.8rem]">
             <RevealLine delay={0.15}>

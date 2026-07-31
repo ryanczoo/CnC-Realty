@@ -63,7 +63,7 @@ export function StatsBar() {
             value={stat.value}
             label={stat.label}
             triggered={triggered}
-            duration={700 + i * 600}
+            duration={1700 + i * 600}
           />
         ))}
       </div>
