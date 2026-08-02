@@ -57,7 +57,7 @@ export default function ContactPage() {
   );
 
   return (
-    <main className="relative min-h-screen bg-[#F2F0EF] px-8 pb-24 pt-32 lg:px-20">
+    <main className="relative min-h-[calc(100vh-4rem)] bg-[#F2F0EF] px-8 pb-24 pt-32 lg:px-20">
       <div className="mx-auto max-w-xl">
         <h1 className="mb-12 font-sans text-[3rem] font-light leading-tight">
           <RevealText>Let&apos;s Chat!</RevealText>
