@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import sgMail from "@sendgrid/mail";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, checkOwnership } from "@/lib/api-auth";
-import { FROM } from "@/lib/email";
+import { FROM, emailLayout, htmlToPlainText } from "@/lib/email";
 
 if (process.env.SENDGRID_API_KEY) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
@@ -43,6 +43,8 @@ export async function POST(
   let sent = 0;
   let errors = 0;
   const now = new Date();
+  const html = emailLayout({ heading: campaign.subject!, bodyHtml: campaign.body! });
+  const text = htmlToPlainText(html);
 
   const results = await Promise.allSettled(
     campaign.contacts.map(async (contact) => {
@@ -50,7 +52,8 @@ export async function POST(
         to: contact.lead.email,
         from: FROM,
         subject: campaign.subject!,
-        html: campaign.body!,
+        html,
+        text,
       });
       return contact.id;
     })

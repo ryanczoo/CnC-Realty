@@ -22,10 +22,14 @@ vi.mock("@/lib/prisma", () => ({
 vi.mock("@sendgrid/mail", () => ({
   default: { setApiKey: vi.fn(), send: vi.fn().mockResolvedValue([{}, {}]) },
 }));
-vi.mock("@/lib/email", () => ({ FROM: "noreply@cncrealtygroup.com" }));
+vi.mock("@/lib/email", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/email")>()),
+  FROM: "noreply@cncrealtygroup.com",
+}));
 
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
+import sgMail from "@sendgrid/mail";
 import { GET, POST } from "../../app/api/admin/triggers/route";
 import { PATCH, DELETE } from "../../app/api/admin/triggers/[id]/route";
 import { PATCH as PATCH_LEAD } from "../../app/api/leads/[id]/route";
@@ -234,6 +238,10 @@ describe("Trigger execution — PATCH /api/leads/[id]", () => {
     vi.clearAllMocks();
     // Ownership check fetches the lead first; ADMIN is authorized as long as it exists.
     vi.mocked(prisma.lead.findUnique).mockResolvedValue({ agentId: "a1" } as any);
+    // clearAllMocks only clears call history, not implementations — give every
+    // test a working default so one test's mockRejectedValue can't silently
+    // leak into the next test that doesn't reconfigure this mock itself.
+    vi.mocked(prisma.triggerExecution.create).mockResolvedValue({ id: "default-exec" } as any);
   });
 
   const LEAD_PARAMS = { params: { id: "l1" } };
@@ -314,5 +322,31 @@ describe("Trigger execution — PATCH /api/leads/[id]", () => {
     });
     const res = await PATCH_LEAD(req, LEAD_PARAMS);
     expect(res.status).toBe(200);
+  });
+
+  it("sends a branded SEND_EMAIL trigger with a matching plain-text part", async () => {
+    process.env.SENDGRID_API_KEY = "test-key";
+    vi.mocked(getServerSession).mockResolvedValue(LEAD_SESSION as any);
+    vi.mocked(prisma.lead.update).mockResolvedValue({ ...UPDATED_LEAD, status: "UNDER_CONTRACT" } as any);
+    vi.mocked(prisma.trigger.findMany).mockResolvedValue([TRIGGER_EMAIL] as any);
+    vi.mocked(prisma.triggerExecution.create).mockResolvedValue({ id: "e2" } as any);
+    vi.mocked(sgMail.send).mockResolvedValue(undefined as any);
+
+    const req = new Request("http://localhost/api/leads/l1", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "UNDER_CONTRACT" }),
+    });
+    const res = await PATCH_LEAD(req, LEAD_PARAMS);
+    expect(res.status).toBe(200);
+
+    expect(sgMail.send).toHaveBeenCalledOnce();
+    const call = vi.mocked(sgMail.send).mock.calls[0][0] as any;
+    expect(call.subject).toBe("Your offer was accepted!");
+    expect(call.html).toContain("Your offer was accepted!");
+    expect(call.html).toContain("logo-gold.png");
+    expect(call.html).toContain("Congratulations!");
+    expect(call.text).toContain("Congratulations!");
+    expect(call.text).not.toMatch(/<[^>]+>/);
   });
 });

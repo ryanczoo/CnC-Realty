@@ -1,4 +1,9 @@
 import { prisma } from "@/lib/prisma";
+import { withRetry } from "./retry";
+
+// A 4xx from the token endpoint means bad credentials/config — retrying won't
+// fix that. 5xx and network errors are treated as transient and retried.
+class PermanentAuthError extends Error {}
 
 const TOKEN_URL = "https://api-trestle.corelogic.com/trestle/oidc/connect/token";
 const SETTINGS_KEY = "crmls_token_cache";
@@ -18,7 +23,7 @@ export async function getResoToken(): Promise<string> {
     }
   }
 
-  // 2. Fetch new token
+  // 2. Fetch new token (transient failures are retried; bad credentials/config are not)
   const params = new URLSearchParams({
     grant_type: "client_credentials",
     client_id: process.env.CRMLS_CLIENT_ID!,
@@ -26,18 +31,24 @@ export async function getResoToken(): Promise<string> {
     scope: "api",
   });
 
-  const res = await fetch(TOKEN_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: params.toString(),
-  });
+  const json = await withRetry(
+    async () => {
+      const res = await fetch(TOKEN_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: params.toString(),
+      });
 
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`CRMLS token fetch failed: ${res.status} ${text}`);
-  }
+      if (!res.ok) {
+        const text = await res.text();
+        if (res.status < 500) throw new PermanentAuthError(`CRMLS token fetch failed: ${res.status} ${text}`);
+        throw new Error(`CRMLS token fetch failed: ${res.status} ${text}`);
+      }
 
-  const json = await res.json() as { access_token: string; expires_in: number };
+      return res.json() as Promise<{ access_token: string; expires_in: number }>;
+    },
+    { shouldRetry: (err) => !(err instanceof PermanentAuthError) }
+  );
   const expiresAt = Date.now() + json.expires_in * 1000;
 
   // 3. Persist to SiteSettings

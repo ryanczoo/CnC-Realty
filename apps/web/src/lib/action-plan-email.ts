@@ -1,5 +1,5 @@
 import sgMail from "@sendgrid/mail";
-import { FROM } from "@/lib/email";
+import { FROM, emailLayout, escapeHtml, htmlToPlainText } from "@/lib/email";
 
 if (process.env.SENDGRID_API_KEY) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
@@ -23,11 +23,15 @@ export async function sendActionPlanEmail(opts: {
   enrollmentId: string;
 }): Promise<void> {
   const replyTo = `reply+${opts.enrollmentId}@reply.cncrealtygroup.com`;
+  const bodyHtml = `<p style="color: #4b4b4b; font-size: 15px; line-height: 1.6;">${escapeHtml(opts.body).replace(/\n/g, "<br>")}</p>`;
+  const html = emailLayout({ heading: opts.subject, bodyHtml });
+
   await sgMail.send({
     to: opts.to,
     from: FROM,
     replyTo,
     subject: opts.subject,
-    text: opts.body,
+    html,
+    text: htmlToPlainText(html),
   });
 }

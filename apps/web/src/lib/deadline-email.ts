@@ -1,5 +1,5 @@
 import sgMail from "@sendgrid/mail";
-import { FROM, emailLayout } from "@/lib/email";
+import { FROM, emailLayout, htmlToPlainText } from "@/lib/email";
 
 if (process.env.SENDGRID_API_KEY) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
@@ -32,16 +32,19 @@ export async function sendDeadlineReminder(reminder: DeadlineReminder): Promise<
     </p>
   `;
 
+  const html = emailLayout({
+    heading: "Upcoming Deadline",
+    bodyHtml,
+    ctaLabel: "View Transaction",
+    ctaHref: `${process.env.NEXTAUTH_URL}/dashboard/transactions`,
+    footer: "CnC Realty · Los Angeles, CA · CA DRE #02439028",
+  });
+
   await sgMail.send({
     to: reminder.agentEmail,
     from: FROM,
     subject: `Deadline reminder: ${reminder.label} for ${reminder.address}`,
-    html: emailLayout({
-      heading: "Upcoming Deadline",
-      bodyHtml,
-      ctaLabel: "View Transaction",
-      ctaHref: `${process.env.NEXTAUTH_URL}/dashboard/transactions`,
-      footer: "CnC Realty · Los Angeles, CA · CA DRE #02439028",
-    }),
+    html,
+    text: htmlToPlainText(html),
   });
 }

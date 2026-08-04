@@ -2,7 +2,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
 vi.mock("@sendgrid/mail", () => ({ default: { setApiKey: vi.fn(), send: vi.fn() } }));
-vi.mock("@/lib/email", () => ({ FROM: "noreply@cncrealtygroup.com" }));
+vi.mock("@/lib/email", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/email")>()),
+  FROM: "noreply@cncrealtygroup.com",
+}));
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     leadPlanStep: { findMany: vi.fn(), update: vi.fn() },

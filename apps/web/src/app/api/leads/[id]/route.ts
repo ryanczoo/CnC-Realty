@@ -3,7 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, checkOwnership } from "@/lib/api-auth";
 import sgMail from "@sendgrid/mail";
-import { FROM } from "@/lib/email";
+import { FROM, emailLayout, escapeHtml, htmlToPlainText } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 
@@ -144,11 +144,14 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
           try {
             if (process.env.SENDGRID_API_KEY && lead.email) {
               sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+              const bodyHtml = `<p style="color: #4b4b4b; font-size: 15px; line-height: 1.6;">${escapeHtml(trigger.emailBody).replace(/\n/g, "<br>")}</p>`;
+              const html = emailLayout({ heading: trigger.emailSubject, bodyHtml });
               await sgMail.send({
                 to: lead.email,
                 from: FROM,
                 subject: trigger.emailSubject,
-                text: trigger.emailBody,
+                html,
+                text: htmlToPlainText(html),
               });
             }
           } catch (e) {

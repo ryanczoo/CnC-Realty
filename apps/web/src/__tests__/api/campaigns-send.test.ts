@@ -7,7 +7,10 @@ vi.mock("@/lib/api-auth", async (importOriginal) => ({
 vi.mock("@sendgrid/mail", () => ({
   default: { setApiKey: vi.fn(), send: vi.fn().mockResolvedValue([{}, {}]) },
 }));
-vi.mock("@/lib/email", () => ({ FROM: "noreply@cncrealtygroup.com" }));
+vi.mock("@/lib/email", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/email")>()),
+  FROM: "noreply@cncrealtygroup.com",
+}));
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     campaign: { findUnique: vi.fn(), update: vi.fn() },
@@ -17,6 +20,7 @@ vi.mock("@/lib/prisma", () => ({
 
 import { requireAuth } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
+import sgMail from "@sendgrid/mail";
 import { POST } from "../../app/api/campaigns/[id]/send/route";
 
 const CAMPAIGN = {
@@ -79,5 +83,45 @@ describe("POST /api/campaigns/[id]/send — ownership", () => {
 
     const res = await POST(request(), { params: { id: "c1" } });
     expect(res.status).toBe(200);
+  });
+});
+
+describe("POST /api/campaigns/[id]/send — plain-text fallback", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.SENDGRID_API_KEY = "test-key";
+    vi.mocked(requireAuth).mockResolvedValue({
+      session: { user: { id: "u1", email: "a@cnc.com", role: "AGENT", agentId: "a1" } },
+      error: null,
+    } as any);
+    vi.mocked(prisma.campaign.findUnique).mockResolvedValue({
+      id: "c1",
+      agentId: "a1",
+      subject: "Spring Market Update",
+      body: "<p><strong>Big news</strong> this quarter.</p>",
+      contacts: [{ id: "cc1", lead: { email: "lead@example.com" } }],
+    } as any);
+    vi.mocked(prisma.campaign.update).mockResolvedValue({} as any);
+    vi.mocked(prisma.campaignContact.updateMany).mockResolvedValue({} as any);
+  });
+
+  it("includes a matching plain-text part derived from the Tiptap HTML body", async () => {
+    const res = await POST(request(), { params: { id: "c1" } });
+    expect(res.status).toBe(200);
+
+    expect(sgMail.send).toHaveBeenCalledOnce();
+    const call = vi.mocked(sgMail.send).mock.calls[0][0] as any;
+    expect(call.text).toContain("Big news");
+    expect(call.text).not.toMatch(/<[^>]+>/);
+  });
+
+  it("wraps the Tiptap body in the branded emailLayout", async () => {
+    const res = await POST(request(), { params: { id: "c1" } });
+    expect(res.status).toBe(200);
+
+    const call = vi.mocked(sgMail.send).mock.calls[0][0] as any;
+    expect(call.html).toContain("Spring Market Update");
+    expect(call.html).toContain("logo-gold.png");
+    expect(call.html).toContain("<strong>Big news</strong>");
   });
 });

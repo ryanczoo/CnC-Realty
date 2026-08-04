@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/api-auth";
 import sgMail from "@sendgrid/mail";
-import { FROM, emailLayout, escapeHtml } from "@/lib/email";
+import { FROM, emailLayout, escapeHtml, htmlToPlainText } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 
@@ -74,16 +74,18 @@ export async function PATCH(
           <p style="margin: 0;"><strong style="color: #1B1B1B;">Status:</strong> ${escapeHtml(lead.status)}</p>
         </div>
       `;
+      const html = emailLayout({
+        heading: `Hi ${safeAgentName}, you have a new lead`,
+        bodyHtml,
+        ctaLabel: "View Dashboard",
+        ctaHref: `${process.env.NEXTAUTH_URL}/dashboard/leads`,
+      });
       await sgMail.send({
         to: agent.user.email,
         from: FROM,
         subject: `New lead assigned to you — ${lead.firstName} ${lead.lastName}`,
-        html: emailLayout({
-          heading: `Hi ${safeAgentName}, you have a new lead`,
-          bodyHtml,
-          ctaLabel: "View Dashboard",
-          ctaHref: `${process.env.NEXTAUTH_URL}/dashboard/leads`,
-        }),
+        html,
+        text: htmlToPlainText(html),
       });
     }
   } catch (e) {

@@ -20,10 +20,41 @@ export function escapeHtml(str: string): string {
     .replace(/'/g, "&#39;");
 }
 
-// Shared branded wrapper for system-template emails — logo header, card body,
-// optional gold pill CTA button. Not used for free-form agent/admin-authored
-// content (drip campaign steps, trigger automations, marketing campaigns),
-// where imposing a template would fight the point of that content looking personal.
+// Derives a readable plain-text fallback from an HTML email body. Mail clients
+// build a multipart/alternative message from html + text at no extra send
+// cost, and an HTML-only email (no text part) is a common spam-filter signal.
+export function htmlToPlainText(html: string): string {
+  return html
+    .replace(/<head[^>]*>[\s\S]*?<\/head>/gi, "")
+    .replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, "")
+    .replace(/<a\s+[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, "$2 ($1)")
+    .replace(/<li[^>]*>/gi, "- ")
+    .replace(/<\/li>/gi, "\n")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|h[1-6]|tr)>/gi, "\n\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&rsquo;/g, "'")
+    .replace(/&bull;/g, "•")
+    .replace(/&copy;/g, "©")
+    .replace(/&mdash;/g, "—")
+    .replace(/&ndash;/g, "–")
+    .replace(/&hellip;/g, "…")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/[ \t]+\n/g, "\n")
+    .trim();
+}
+
+// Shared branded wrapper for every CnC email — logo header, card body,
+// optional gold pill CTA button. Used for system-template emails as well as
+// free-form agent/admin-authored content (drip steps, trigger automations,
+// marketing campaigns) — CnC brands all outbound mail, including agent-composed
+// content, since the brokerage is the one paying for it.
 export function emailLayout(opts: {
   heading: string;
   bodyHtml: string;
@@ -81,15 +112,18 @@ export async function sendLeadNotification(lead: {
     </div>
   `;
 
+  const html = emailLayout({
+    heading: "New Lead Received",
+    bodyHtml,
+    footer: "cncrealtygroup.com",
+  });
+
   await sgMail.send({
     to: NOTIFY,
     from: FROM,
     subject: `New Lead: ${lead.firstName} ${lead.lastName}`,
-    html: emailLayout({
-      heading: "New Lead Received",
-      bodyHtml,
-      footer: "cncrealtygroup.com",
-    }),
+    html,
+    text: htmlToPlainText(html),
   });
 }
 
@@ -109,17 +143,20 @@ export async function sendApplicationNotification(app: {
     </div>
   `;
 
+  const html = emailLayout({
+    heading: "New Agent Application Received",
+    bodyHtml,
+    ctaLabel: "Review Application",
+    ctaHref: `${process.env.NEXTAUTH_URL}/admin/applications/${app.id}`,
+    footer: "cncrealtygroup.com",
+  });
+
   await sgMail.send({
     to: NOTIFY,
     from: FROM,
     subject: `New Agent Application: ${safeName}`,
-    html: emailLayout({
-      heading: "New Agent Application Received",
-      bodyHtml,
-      ctaLabel: "Review Application",
-      ctaHref: `${process.env.NEXTAUTH_URL}/admin/applications/${app.id}`,
-      footer: "cncrealtygroup.com",
-    }),
+    html,
+    text: htmlToPlainText(html),
   });
 }
 
@@ -138,16 +175,19 @@ export async function sendApplicationApproved(
     </p>
   `;
 
+  const html = emailLayout({
+    heading: `Welcome to CnC Realty, ${safeName}!`,
+    bodyHtml,
+    ctaLabel: "Set Up My Account",
+    ctaHref: safeUrl,
+  });
+
   await sgMail.send({
     to,
     from: FROM,
     subject: "Welcome to CnC Realty — Set Up Your Account",
-    html: emailLayout({
-      heading: `Welcome to CnC Realty, ${safeName}!`,
-      bodyHtml,
-      ctaLabel: "Set Up My Account",
-      ctaHref: safeUrl,
-    }),
+    html,
+    text: htmlToPlainText(html),
   });
 }
 
@@ -170,6 +210,8 @@ export async function sendAnnouncement(recipients: string[], title: string, body
     footer: "cncrealtygroup.com",
   });
 
+  const text = htmlToPlainText(html);
+
   await Promise.all(
     recipients.map((to) =>
       sgMail.send({
@@ -177,6 +219,7 @@ export async function sendAnnouncement(recipients: string[], title: string, body
         from: ANNOUNCEMENT_FROM,
         subject: safeTitle,
         html,
+        text,
       })
     )
   );
@@ -195,16 +238,19 @@ export async function sendPasswordReset(to: string, resetUrl: string) {
     </p>
   `;
 
+  const html = emailLayout({
+    heading: "Reset Your Password",
+    bodyHtml,
+    ctaLabel: "Reset Password",
+    ctaHref: safeUrl,
+  });
+
   await sgMail.send({
     to,
     from: FROM,
     subject: "Reset Your CnC Realty Password",
-    html: emailLayout({
-      heading: "Reset Your Password",
-      bodyHtml,
-      ctaLabel: "Reset Password",
-      ctaHref: safeUrl,
-    }),
+    html,
+    text: htmlToPlainText(html),
   });
 }
 
@@ -228,14 +274,17 @@ export async function sendApplicationRejected(
     </p>
   `;
 
+  const html = emailLayout({
+    heading: `Hi ${safeName},`,
+    bodyHtml,
+  });
+
   await sgMail.send({
     to,
     from: FROM,
     subject: "CnC Realty — Application Update",
-    html: emailLayout({
-      heading: `Hi ${safeName},`,
-      bodyHtml,
-    }),
+    html,
+    text: htmlToPlainText(html),
   });
 }
 
@@ -269,15 +318,18 @@ export async function sendApprovalDocuments(to: string, firstName: string) {
     </p>
   `;
 
+  const html = emailLayout({
+    heading: `Welcome, ${safeName}!`,
+    bodyHtml,
+  });
+
   await sgMail.send({
     to,
     from: FROM,
     replyTo: NOTIFY,
     subject: "CnC Realty — Onboarding Documents",
-    html: emailLayout({
-      heading: `Welcome, ${safeName}!`,
-      bodyHtml,
-    }),
+    html,
+    text: htmlToPlainText(html),
     attachments: [
       {
         content: w9.toString("base64"),

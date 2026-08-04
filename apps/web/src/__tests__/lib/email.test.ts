@@ -6,7 +6,15 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("@sendgrid/mail", () => ({ default: { setApiKey: vi.fn(), send: vi.fn() } }));
 
 import sgMail from "@sendgrid/mail";
-import { sendApprovalDocuments, sendPasswordReset, sendAnnouncement } from "@/lib/email";
+import {
+  sendApprovalDocuments,
+  sendPasswordReset,
+  sendAnnouncement,
+  sendLeadNotification,
+  sendApplicationNotification,
+  sendApplicationApproved,
+  sendApplicationRejected,
+} from "@/lib/email";
 
 describe("sendApprovalDocuments", () => {
   beforeEach(() => vi.clearAllMocks());
@@ -22,6 +30,8 @@ describe("sendApprovalDocuments", () => {
     expect(call.to).toBe("jane@example.com");
     expect(call.replyTo).toBe("info@cncrealtygroup.com");
     expect(call.html).toContain("Jane");
+    expect(call.text).toContain("Jane");
+    expect(call.text).not.toMatch(/<[^>]+>/);
 
     expect(call.attachments).toHaveLength(2);
     for (const attachment of call.attachments) {
@@ -56,6 +66,9 @@ describe("sendAnnouncement", () => {
       expect(call.from).toEqual({ email: "info@cncrealtygroup.com", name: "CnC Realty" });
       expect(call.html).toContain("Office Closed Monday");
       expect(call.html).toContain("We will be closed for the holiday.");
+      expect(call.text).toContain("Office Closed Monday");
+      expect(call.text).toContain("We will be closed for the holiday.");
+      expect(call.text).not.toMatch(/<[^>]+>/);
     }
   });
 });
@@ -74,5 +87,78 @@ describe("sendPasswordReset", () => {
     expect(call.to).toBe("jane@example.com");
     expect(call.from).toEqual({ email: "noreply@cncrealtygroup.com", name: "CnC Realty" });
     expect(call.html).toContain("http://localhost:3000/reset-password?token=abc123");
+    expect(call.text).toContain("http://localhost:3000/reset-password?token=abc123");
+    expect(call.text).not.toMatch(/<[^>]+>/);
+  });
+});
+
+describe("sendLeadNotification", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("includes a matching plain-text part alongside the HTML", async () => {
+    vi.mocked(sgMail.send).mockResolvedValue(undefined as any);
+
+    await sendLeadNotification({
+      firstName: "Jordan",
+      lastName: "Lee",
+      email: "jordan@example.com",
+      phone: "555-1234",
+      notes: "Interested in Pasadena listings",
+    });
+
+    const call = vi.mocked(sgMail.send).mock.calls[0][0] as any;
+    expect(call.text).toContain("Jordan Lee");
+    expect(call.text).toContain("jordan@example.com");
+    expect(call.text).toContain("Interested in Pasadena listings");
+    expect(call.text).not.toMatch(/<[^>]+>/);
+  });
+});
+
+describe("sendApplicationNotification", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("includes a matching plain-text part alongside the HTML", async () => {
+    vi.mocked(sgMail.send).mockResolvedValue(undefined as any);
+
+    await sendApplicationNotification({
+      id: "app-1",
+      firstName: "Jane",
+      lastName: "Agent",
+      email: "jane@example.com",
+    });
+
+    const call = vi.mocked(sgMail.send).mock.calls[0][0] as any;
+    expect(call.text).toContain("Jane Agent");
+    expect(call.text).toContain("jane@example.com");
+    expect(call.text).not.toMatch(/<[^>]+>/);
+  });
+});
+
+describe("sendApplicationApproved", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("includes a matching plain-text part alongside the HTML", async () => {
+    vi.mocked(sgMail.send).mockResolvedValue(undefined as any);
+
+    await sendApplicationApproved("jane@example.com", "Jane", "http://localhost:3000/setup-account?token=abc");
+
+    const call = vi.mocked(sgMail.send).mock.calls[0][0] as any;
+    expect(call.text).toContain("Jane");
+    expect(call.text).toContain("http://localhost:3000/setup-account?token=abc");
+    expect(call.text).not.toMatch(/<[^>]+>/);
+  });
+});
+
+describe("sendApplicationRejected", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("includes a matching plain-text part alongside the HTML", async () => {
+    vi.mocked(sgMail.send).mockResolvedValue(undefined as any);
+
+    await sendApplicationRejected("jane@example.com", "Jane", "Not enough experience");
+
+    const call = vi.mocked(sgMail.send).mock.calls[0][0] as any;
+    expect(call.text).toContain("Not enough experience");
+    expect(call.text).not.toMatch(/<[^>]+>/);
   });
 });

@@ -1,5 +1,5 @@
 import sgMail from "@sendgrid/mail";
-import { FROM } from "@/lib/email";
+import { FROM, htmlToPlainText } from "@/lib/email";
 
 export interface AlertProperty {
   address: string;
@@ -106,5 +106,6 @@ export async function sendPropertyAlertEmail(
     from: FROM,
     subject: `New listings matching your search`,
     html,
+    text: htmlToPlainText(html),
   });
 }
