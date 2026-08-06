@@ -5,7 +5,13 @@ import { EmptyState } from "@/components/ui/EmptyState";
 export const metadata = { title: "Training Videos | CnC Realty" };
 
 export default async function TrainingVideosPage() {
-  let videos: { id: string; title: string; youtubeId: string; description: string | null }[] = [];
+  let videos: {
+    id: string;
+    title: string;
+    youtubeId: string;
+    description: string | null;
+    creditLabel: string | null;
+  }[] = [];
 
   try {
     videos = await prisma.academyVideo.findMany({
@@ -18,7 +24,7 @@ export default async function TrainingVideosPage() {
 
   return (
     <div>
-      <h1 className="mb-6 font-sans text-2xl font-light text-[#1B1B1B]">Training Videos</h1>
+      <h1 className="mb-6 font-sans text-2xl font-medium text-[#1B1B1B]">Training Videos</h1>
 
       {videos.length === 0 ? (
         <EmptyState message="No training videos yet." />
@@ -30,6 +36,7 @@ export default async function TrainingVideosPage() {
               title={video.title}
               youtubeId={video.youtubeId}
               description={video.description}
+              creditLabel={video.creditLabel}
             />
           ))}
         </div>

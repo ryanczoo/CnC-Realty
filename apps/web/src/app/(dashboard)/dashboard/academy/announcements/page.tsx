@@ -25,7 +25,7 @@ export default async function AnnouncementsPage() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="font-sans text-2xl font-light text-[#1B1B1B]">Announcements</h1>
+        <h1 className="font-sans text-2xl font-medium text-[#1B1B1B]">Announcements</h1>
         {isAdmin && <AnnouncementComposer />}
       </div>
 

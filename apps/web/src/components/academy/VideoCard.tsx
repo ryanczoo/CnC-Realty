@@ -7,10 +7,12 @@ export function VideoCard({
   title,
   youtubeId,
   description,
+  creditLabel,
 }: {
   title: string;
   youtubeId: string;
   description?: string | null;
+  creditLabel?: string | null;
 }) {
   const [playing, setPlaying] = useState(false);
 
@@ -53,6 +55,19 @@ export function VideoCard({
         <p className="font-sans text-sm font-medium text-[#1B1B1B]">{title}</p>
         {description && (
           <p className="mt-1 font-sans text-xs text-[#1B1B1B]/50">{description}</p>
+        )}
+        {creditLabel && (
+          <p className="mt-2 font-sans text-xs text-[#1B1B1B]/40">
+            {creditLabel} ·{" "}
+            <a
+              href={`https://www.youtube.com/watch?v=${youtubeId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-[#9E8C61]"
+            >
+              Watch original ↗
+            </a>
+          </p>
         )}
       </div>
     </div>

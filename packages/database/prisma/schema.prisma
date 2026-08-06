@@ -844,6 +844,7 @@ model AcademyVideo {
   title       String
   youtubeId   String
   description String?
+  creditLabel String?
   createdAt   DateTime @default(now())
 }
 
