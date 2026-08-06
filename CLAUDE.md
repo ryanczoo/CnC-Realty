@@ -1,5 +1,15 @@
 # CnC Realty — Full Website & CRM Implementation Plan
 
+## ⚠️ ACTIVE CONSTRAINT (as of 2026-08-04) — IDX full resync running on spare laptop
+
+A full, unbounded IDX resync is running unattended on a dedicated spare laptop (separate git clone at `C:\Users\ryanch\Downloads\CnC-Realty`), continuously upserting into the shared Neon `Property` table. Expected to take multiple days.
+
+**Before making any change, check whether it touches the `Property` table's schema:**
+- ✅ Safe, no restriction: all frontend/UI code, email templates, any table other than `Property` (Lead, Agent, Campaign, TransactionFile, etc.), normal reads/writes through the app, and **committing/pushing to git from the main laptop** (git push only uploads to GitHub — it has no effect on the spare laptop's filesystem or its running process unless someone explicitly pulls there)
+- 🚫 Avoid until the resync finishes: (1) any Prisma schema migration that changes the `Property` table's structure — the sync's in-flight writes use the schema as it exists right now and could start failing mid-migration; (2) running `git pull` on the spare laptop itself, or restarting its dev server (window 1) for any reason — the sync runs as an in-memory background job in that one process with no saved resume point, so restarting it would force the crawl to start over from the beginning instead of continuing
+
+**Remove this section once the resync is confirmed complete** (check `[idx-sync] done` in the spare laptop's dev server log, or that `/api/properties?limit=1`'s `.total` has stopped climbing).
+
 ## Context
 
 A new real estate brokerage ("CnC Realty") needs a modern, full-featured website built from scratch. Domain: **www.cncrealtygroup.com** (already purchased, previously attempted WordPress/Elementor). The goals are:
@@ -6042,3 +6052,77 @@ One-line fix: contact page's `<main>` used `min-h-screen` (full 100vh) while the
 6. **Post-deploy only**: SendGrid Inbound Parse webhook config (`reply.cncrealtygroup.com` → `/api/action-plans/inbound`) — the MX record is already in DNS, this is just a SendGrid dashboard step once the domain is live.
 7. Check for a reply on the C.A.R. video permission request.
 8. Older backlog, unchanged: SendGrid Essentials upgrade (not urgent, worth doing for headroom); CnC ICA still not attorney-reviewed; broader transaction-management click-through testing (Purchase/Listing/Lease Tenant-Landlord).
+
+---
+
+## Session Notes — 2026-08-04 / 2026-08-06
+
+### CnC Academy — C.A.R. Training Videos Added ✅
+
+Committed as `f0100c1`. Got explicit written permission from C.A.R. to repost their YouTube videos as long as CnC credits the source and links back to the original.
+
+- Added `creditLabel String?` to the `AcademyVideo` model (migration `20260805024700_add_academy_video_credit_label`) — no other schema changes.
+- `VideoCard.tsx` now shows the credit line + a "Watch original ↗" link back to `https://www.youtube.com/watch?v={youtubeId}` when `creditLabel` is set.
+- Seeded **7 official C.A.R. videos** (real titles fetched live via YouTube's oEmbed endpoint, not guessed) via one-off scripts, all credited "Courtesy of the California Association of REALTORS® (C.A.R.)": zipForm office-info update, MLS-Connect, template creation, adding forms, two Authentisign videos, and starting a new transaction.
+- Bolded all 3 CnC Academy page titles (Announcements, Training Videos, Helpful Guides) from `font-light` → `font-medium` to match the Transactions tab, per Ryan's screenshot comparison.
+
+### IDX Full Resync — Spare Laptop: Root Cause Never Found, Pace Proven Unworkable
+
+**Status at end of session: still running on the spare laptop, but confirmed too slow to ever finish there — a machine/approach change is planned for Friday 2026-08-07.**
+
+**What happened:**
+- Finished the spare-laptop setup from the previous session (portable Node/Git, execution-policy bypass, `.env.local` transferred via Messenger, `prisma generate` run) and successfully triggered the full unbounded resync.
+- **Windows Update paused for 5 weeks** (until 9/9/2026) to eliminate the risk of an unattended forced restart — confirmed working (`Updates paused until 9/9/2026`).
+- **The dev server hung 4 separate times** over about a day and a half, each time becoming either fully unresponsive (even a plain homepage request would time out) or partially stuck (server stayed responsive to simple requests, but the sync's own upserts stopped). **No root cause was ever confirmed — no error, no stack trace was ever printed for any of the 4 hangs.**
+- Investigated two hypotheses, neither confirmed nor ruled out cleanly:
+  1. **Dev-mode long-uptime degradation** — `next dev`'s watch/HMR/on-demand-compilation overhead isn't designed for multi-day unattended uptime the way a production build is.
+  2. **Corporate antivirus/endpoint-security interference** — the spare laptop is a company-managed "Windows 11 Enterprise" device (already confirmed locked down: blocked admin installs, blocked Task Scheduler "log on as batch job" rights). Checked Windows Security → Protection History for evidence — came back empty (only generic nags, no actual detected/blocked event tied to `node.exe`). **Attempted to add a Windows Defender folder exclusion as a real-world test — blocked by IT policy**, consistent with everything else on this device but leaving the theory unconfirmed either way.
+- **New operational discoveries, both confirmed live:**
+  - The server can **self-recover** from a freeze without any restart — one hang that timed out on a health check later succeeded on retry a few minutes later, with the count having grown in between. This means a timeout doesn't always mean "dead forever."
+  - When the server itself is still responsive but the sync's own progress is flat, **just re-triggering the sync (re-POSTing to `/api/idx/sync?type=full`) without restarting anything** can resume real progress — confirmed once (300,365 flat → re-trigger → 300,336... climbing again within minutes). This is much cheaper than a full restart and should be tried first.
+  - Established recovery sequence going forward: check `node check-count.mjs` → if flat, check `Invoke-RestMethod -Uri "http://localhost:3000" -TimeoutSec 5` → if the server responds but the count is still flat, try the re-trigger first → only do a full restart (close window, redo the 4 setup commands, re-trigger) if the server itself is genuinely unresponsive.
+  - **Restarting does NOT reset the database total.** The crawl's own pagination restarts from page 1 each time (no resume checkpoint exists), but the actual row count lives permanently in the shared Neon database, completely independent of which machine or process is currently running the sync — confirmed by explaining this clearly after Ryan (rightly) questioned how a "restart from 0" could jump straight to 301,448.
+- **The math that changed the plan:** measured actual throughput during a "working" stretch — only ~148 new rows added over 2.5 hours, even with manual re-triggers keeping it alive. At that rate, reaching the ~4.46M target would take **roughly 8 years**. This reframed the problem from "fix the occasional hang" to "this environment/approach cannot finish in any reasonable time," regardless of how diligently Ryan babysits it.
+- **Ryan asked whether the spare laptop could be un-enrolled from corporate IT management to become "a normal laptop."** Declined to help with this — it's company-owned property, and removing its corporate management/security controls without authorization is a materially different (and riskier) thing than the no-admin-needed workarounds used so far; flagged real employment-consequence risk and did not provide instructions.
+
+**Decisions made:**
+1. **Ryan will retrieve his personal PC from his parents' house on Friday, 2026-08-07**, and run the resync there instead — removes every corporate-IT-related variable at once (can use normal installers, can actually add AV exclusions or use Task Scheduler if needed).
+2. **Run in production mode from the start on the new machine** (`pnpm --filter web build` then `pnpm --filter web start`), not dev mode — removes the dev-mode-overhead variable regardless of whether it was the real cause.
+3. **Alternative discussed, not yet decided:** a cheap cloud VM (~$5–10 for a few days from DigitalOcean/AWS/Linode) instead of any personal laptop — fully controlled, no machine-availability risk, no policy risk at all. Worth considering instead of or alongside the parents'-house PC.
+4. **Also raised, not yet decided:** reconsidering a bounded scope (e.g., last 3–5 years) instead of the full unbounded ~4.46M historical target, given how impractical the full scope has proven regardless of which machine runs it. Worth revisiting with fresh eyes next session.
+5. **Resume-checkpoint table — discussed at length, agreed on, but NOT YET BUILT.** Plan: a small standalone table (e.g. `SyncProgress`) tracking the crawl's own pagination cursor, with **no foreign key or relationship to `Property`** — it's independent bookkeeping about the crawl process, not about the data itself. Confirmed safe under the active `Property`-schema-migration constraint (a new unrelated table doesn't touch `Property`'s schema or lock it). Confirmed it can be built now, entirely on the main laptop, with zero effect on whichever process is currently running the resync — it would only take effect the next time that process needs restarting anyway. Ryan was initially skeptical after discovering that "catching back up" after a restart only takes a few minutes (much cheaper than originally assumed), so the checkpoint's real benefit is more modest than first presented — still worth building since it's free and low-risk, just not a dramatic fix on its own.
+
+The **"ACTIVE CONSTRAINT" section at the top of this file is still accurate and still in effect** — the resync is technically still running (very slowly) on the spare laptop as of session end. Update or remove it once the situation is resolved on whichever machine ends up actually running the full resync.
+
+### Email Infrastructure — SendGrid Root Cause Found, Postmark Chosen as Replacement (Not Yet Built)
+
+1. **Sent one of each of the 7 branded system emails to Ryan's own inbox for a live preview** — built via a temporary dev-only API route (`/api/dev/send-test-emails`, created, used once, deleted immediately after), calling the real production `lib/email.ts` functions directly so what Ryan saw was exactly what real recipients get.
+
+2. **Root-caused a known-but-vague "emails got blocked" complaint using `systematic-debugging` + SendGrid's own suppression API** (not guessing): found 4 real, recent bounces to `ryanchong@cncrealtygroup.com`, e.g. `550 5.7.1 Service unavailable; client [...] blocked using rep.mailspike.net`. Root cause: SendGrid's **shared IP pool** occasionally gets blocklisted by third-party reputation services (Mailspike, SpamCop) because of *other* SendGrid customers' spam — confirmed CnC's own account has zero spam reports. This is a structural risk of SendGrid's default shared-IP model, not something caused by CnC's sending practices.
+
+3. **Confirmed the already-planned SendGrid Essentials upgrade ($19.95/mo) would NOT have fixed this** — verified live that Essentials is still shared-IP; a dedicated IP is a separate $30–90/mo add-on Ryan explicitly didn't want to pay for.
+
+4. **Researched alternatives (WebSearch + Puppeteer, live-verified pricing pages) and decided to switch to Postmark:**
+   - Postmark's shared IP pool has excellent reputation *specifically because* they refuse to mix marketing/bulk email into it and vet who's allowed to send — directly solves the root cause, not a workaround.
+   - Verified live pricing: **Free tier (100/mo, never expires)**, **Basic $15/mo for 10,000/mo** — cheaper than the SendGrid Essentials upgrade that was already planned.
+   - Dedicated IPs on Postmark start at $50/mo but are only offered to customers sending 300,000+ emails/month — so the $30–90/mo cost Ryan was worried about simply doesn't apply at CnC's realistic scale, full stop.
+   - CnC's campaign/drip feature is still fully supported via Postmark's separate "Broadcast Message Streams" (isolated infrastructure from transactional mail, included even on the cheapest paid tier).
+   - Migration would be a contained change to `apps/web/src/lib/email.ts` only — swap the `@sendgrid/mail` calls for Postmark's Node SDK; `emailLayout()`, `htmlToPlainText()`, and attachment logic all stay exactly the same.
+   - **Not yet implemented** — this is the next concrete email task.
+
+5. **Per-agent email sending limit — brainstorming started, interrupted mid-way, not yet resumed.** Ryan wants to prevent one agent from exhausting the brokerage's shared email quota/budget (e.g., via a large campaign). Confirmed via grep there's no existing email-count tracking of any kind in the schema — this is a from-scratch design. Invoked the `brainstorming` skill properly (no code written, per its hard gate). **First clarifying question was asked and never answered — resume here:**
+   > What should count toward an agent's limit — **(A)** only agent-initiated bulk sends (campaigns + drip sequences, Claude's recommended default), **(B)** A plus trigger-automation emails tied to that agent's leads, or **(C)** everything including automatic system notifications?
+   
+   Reasoning for recommending (A): trigger-automation emails fire based on lead behavior an agent doesn't directly control each time (they set up the rule once), so counting those against a manual cap could unfairly throttle an agent who simply has a lot of active leads.
+
+### Next Session — Start Here
+
+1. **Ask whether Ryan made the Friday trip** for his personal PC. If yes: set it up fresh (clone repo, transfer `.env.local`, install Node/Git via normal installers this time since admin rights should work, `pnpm install`, `prisma generate`) and run it in **production mode** (`build` + `start`) from the start, not dev mode.
+2. If the PC plan changed, discuss the **cloud VM alternative** (~$5–10 for a few days) as a more reliable option than any personal laptop.
+3. Before or alongside whichever machine is used, consider actually building the **resume-checkpoint table** — designed and agreed upon this session but never implemented. Safe to build regardless of resync status (new table, no relation to `Property`).
+4. Revisit whether a **bounded historical scope** (e.g., last 3–5 years) makes more sense than the full unbounded ~4.46M target, given how impractical the full scope proved to be at any pace observed so far.
+5. **Email work — resume exactly here:**
+   - Sign up for Postmark (free tier is plenty for pre-launch volume), get an API key, migrate `lib/email.ts` from `@sendgrid/mail` to Postmark's SDK.
+   - Resume the per-agent email limit brainstorming at the exact open question above (A/B/C) — get Ryan's answer, then continue through the normal brainstorming → design → plan → implementation flow (no code before an approved design, per the skill's hard gate).
+6. Update or remove the "ACTIVE CONSTRAINT" section at the top of this file once the resync situation is resolved on whichever machine ends up running it — still accurate and still needed as of this session's end.
+7. Older backlog, unchanged: Vercel deploy still pending (blocked on Ryan attempting the CLI deploy); C.A.R. video permission reply still pending; CnC ICA still not attorney-reviewed; checklist templates confirmed done in an earlier session.
