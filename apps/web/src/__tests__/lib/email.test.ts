@@ -14,6 +14,7 @@ import {
   sendApplicationNotification,
   sendApplicationApproved,
   sendApplicationRejected,
+  emailLayout,
 } from "@/lib/email";
 
 describe("sendApprovalDocuments", () => {
@@ -160,5 +161,65 @@ describe("sendApplicationRejected", () => {
     const call = vi.mocked(sgMail.send).mock.calls[0][0] as any;
     expect(call.text).toContain("Not enough experience");
     expect(call.text).not.toMatch(/<[^>]+>/);
+  });
+});
+
+describe("emailLayout", () => {
+  const html = () => emailLayout({ heading: "Test Heading", bodyHtml: "<p>Body</p>" });
+
+  it("uses the site's off-white background instead of pure white", () => {
+    expect(html()).toContain("#F2F0EF");
+  });
+
+  it("loads Inter from Google Fonts with a system fallback stack", () => {
+    const result = html();
+    expect(result).toContain("fonts.googleapis.com/css2?family=Inter");
+    expect(result).toContain("'Inter', -apple-system, 'Segoe UI', Roboto, Arial, sans-serif");
+  });
+
+  it("includes social icon links below the footer signature", () => {
+    const result = html();
+
+    expect(result).toContain('href="https://www.facebook.com/CnCRealtyGroup"');
+    expect(result).toContain('href="https://www.instagram.com/cncrealty"');
+    expect(result).toContain('href="https://www.youtube.com/@CnCRealtyGroup"');
+    expect(result).toContain("/icon-facebook.png");
+    expect(result).toContain("/icon-instagram.png");
+    expect(result).toContain("/icon-youtube.png");
+
+    const footerIndex = result.indexOf("The CnC Realty Team");
+    const iconsIndex = result.indexOf("/icon-facebook.png");
+    expect(footerIndex).toBeGreaterThan(-1);
+    expect(iconsIndex).toBeGreaterThan(footerIndex);
+  });
+
+  it("applies the off-white background to the full email surface, not just the content box", () => {
+    const result = html();
+    expect(result).toMatch(/<body[^>]*background-color:\s*#F2F0EF/i);
+  });
+
+  it("renders the YouTube icon larger than Facebook and Instagram so they read as the same visual size", () => {
+    const result = html();
+    const widthOf = (file: string) => {
+      const match = result.match(new RegExp(`${file}"[^>]*width="(\\d+)"`));
+      if (!match) throw new Error(`no width found for ${file}`);
+      return Number(match[1]);
+    };
+
+    const fbWidth = widthOf("icon-facebook\\.png");
+    const igWidth = widthOf("icon-instagram\\.png");
+    const ytWidth = widthOf("icon-youtube\\.png");
+
+    expect(fbWidth).toBe(igWidth);
+    expect(ytWidth).toBeGreaterThan(fbWidth);
+  });
+
+  it("vertically centers the social icons so different-sized icons stay level with each other", () => {
+    const result = html();
+    const iconImgTags = result.match(/<img src="[^"]*icon-[a-z]+\.png"[^>]*>/g) ?? [];
+    expect(iconImgTags).toHaveLength(3);
+    for (const tag of iconImgTags) {
+      expect(tag).toMatch(/vertical-align:\s*middle/);
+    }
   });
 });

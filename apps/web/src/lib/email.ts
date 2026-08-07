@@ -55,6 +55,8 @@ export function htmlToPlainText(html: string): string {
 // free-form agent/admin-authored content (drip steps, trigger automations,
 // marketing campaigns) — CnC brands all outbound mail, including agent-composed
 // content, since the brokerage is the one paying for it.
+const EMAIL_FONT_STACK = "'Inter', -apple-system, 'Segoe UI', Roboto, Arial, sans-serif";
+
 export function emailLayout(opts: {
   heading: string;
   bodyHtml: string;
@@ -64,28 +66,50 @@ export function emailLayout(opts: {
 }): string {
   const logoUrl = `${process.env.NEXTAUTH_URL}/logo-gold.png`;
   const footer = opts.footer ?? "— The CnC Realty Team";
+  const socialIcons: Array<{ href: string; icon: string; alt: string; size: number }> = [
+    { href: "https://www.facebook.com/CnCRealtyGroup", icon: "icon-facebook.png", alt: "Facebook", size: 24 },
+    { href: "https://www.instagram.com/cncrealty", icon: "icon-instagram.png", alt: "Instagram", size: 24 },
+    { href: "https://www.youtube.com/@CnCRealtyGroup", icon: "icon-youtube.png", alt: "YouTube", size: 30 },
+  ];
   return `
-    <div style="font-family: Arial, Helvetica, sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 32px; background-color: #ffffff;">
-      <div style="text-align: center; margin-bottom: 32px;">
-        <img src="${logoUrl}" alt="CnC Realty" width="160" style="display: inline-block; border: 0;" />
-      </div>
-      <h2 style="color: #1B1B1B; font-weight: 400; font-size: 22px; margin: 0 0 16px; text-align: center;">
-        ${opts.heading}
-      </h2>
-      ${opts.bodyHtml}
-      ${
-        opts.ctaLabel && opts.ctaHref
-          ? `<div style="text-align: center; margin: 32px 0;">
-               <a href="${opts.ctaHref}" style="display: inline-block; background-color: #9E8C61; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; padding: 14px 36px; border-radius: 9999px;">
-                 ${opts.ctaLabel}
-               </a>
-             </div>`
-          : ""
-      }
-      <p style="color: #8a8a8a; font-size: 13px; text-align: center; margin: ${opts.ctaLabel ? "0" : "24px 0 0"};">
-        ${footer}
-      </p>
-    </div>
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" />
+      </head>
+      <body style="margin: 0; padding: 0; background-color: #F2F0EF;">
+        <div style="font-family: ${EMAIL_FONT_STACK}; max-width: 480px; margin: 0 auto; padding: 40px 32px; background-color: #F2F0EF;">
+          <div style="text-align: center; margin-bottom: 32px;">
+            <img src="${logoUrl}" alt="CnC Realty" width="160" style="display: inline-block; border: 0;" />
+          </div>
+          <h2 style="color: #1B1B1B; font-weight: 400; font-size: 22px; margin: 0 0 16px; text-align: center;">
+            ${opts.heading}
+          </h2>
+          ${opts.bodyHtml}
+          ${
+            opts.ctaLabel && opts.ctaHref
+              ? `<div style="text-align: center; margin: 32px 0;">
+                   <a href="${opts.ctaHref}" style="display: inline-block; background-color: #9E8C61; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; padding: 14px 36px; border-radius: 9999px;">
+                     ${opts.ctaLabel}
+                   </a>
+                 </div>`
+              : ""
+          }
+          <p style="color: #8a8a8a; font-size: 13px; text-align: center; margin: ${opts.ctaLabel ? "0" : "24px 0 0"} 0 12px;">
+            ${footer}
+          </p>
+          <div style="text-align: center;">
+            ${socialIcons
+              .map(
+                (s) =>
+                  `<a href="${s.href}" style="display: inline-block; margin: 0 6px;"><img src="${process.env.NEXTAUTH_URL}/${s.icon}" alt="${s.alt}" width="${s.size}" height="${s.size}" style="display: inline-block; vertical-align: middle; border: 0;" /></a>`
+              )
+              .join("")}
+          </div>
+        </div>
+      </body>
+    </html>
   `;
 }
 
