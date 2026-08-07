@@ -5,8 +5,25 @@ import { PrismaClient } from "@prisma/client";
 // (Active + ComingSoon + ActiveUnderContract + Closed). Estimate only.
 const EST_TOTAL = 4_700_000;
 
-const env = readFileSync(new URL("./.env", import.meta.url), "utf8").replace(/\r/g, "");
-process.env.DATABASE_URL = env.match(/^\s*DATABASE_URL\s*=\s*["']?(.+?)["']?\s*$/m)?.[1];
+// DATABASE_URL lives in packages/database/.env on some machines and only in
+// apps/web/.env.local on others (e.g. a box set up just to run the sync).
+const ENV_FILES = ["./.env", "../../apps/web/.env.local"];
+
+function findDatabaseUrl() {
+  const tried = [];
+  for (const rel of ENV_FILES) {
+    const path = new URL(rel, import.meta.url);
+    tried.push(path.pathname);
+    if (!existsSync(path)) continue;
+    const url = readFileSync(path, "utf8")
+      .replace(/\r/g, "")
+      .match(/^\s*DATABASE_URL\s*=\s*["']?(.+?)["']?\s*$/m)?.[1];
+    if (url) return url;
+  }
+  throw new Error(`No DATABASE_URL found. Looked in:\n  ${tried.join("\n  ")}`);
+}
+
+process.env.DATABASE_URL = findDatabaseUrl();
 
 const prisma = new PrismaClient();
 const STATE = new URL("./.check-count-last.json", import.meta.url);
