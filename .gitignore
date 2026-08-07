@@ -30,3 +30,6 @@ yarn-error.log*
 next-env.d.ts
 dev-server.log
 dev-server-err.log
+
+# IDX sync progress checker — per-machine saved reading
+.check-count-last.json
