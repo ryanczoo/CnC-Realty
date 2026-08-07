@@ -80,10 +80,14 @@ async function fetchPage(url: string, tokenBox: { value: string }): Promise<ODat
   );
 }
 
-export async function* fetchProperties(modifiedSince?: Date) {
+// startUrl resumes an in-progress crawl from a saved @odata.nextLink instead of
+// starting over at page 1 — see SyncProgress. It fully supersedes modifiedSince
+// (the original filter is already baked into the link CRMLS issued).
+export async function* fetchProperties(modifiedSince?: Date, startUrl?: string) {
   const tokenBox = { value: await getResoToken() };
   const filter = buildPropertyFilter(modifiedSince);
-  let url: string | null = `${BASE_URL}/Property?${filter}$top=200&$select=${SELECT_FIELDS}&$expand=Media($select=MediaURL,Order,MediaClassification)`;
+  let url: string | null =
+    startUrl ?? `${BASE_URL}/Property?${filter}$top=200&$select=${SELECT_FIELDS}&$expand=Media($select=MediaURL,Order,MediaClassification)`;
   while (url) {
     const data = await fetchPage(url, tokenBox);
     const mapped: ReturnType<typeof mapResoToProperty>[] = [];
@@ -94,7 +98,8 @@ export async function* fetchProperties(modifiedSince?: Date) {
         console.error("Failed to map property", (raw as { ListingKey?: string })?.ListingKey, err);
       }
     }
-    yield mapped;
-    url = data["@odata.nextLink"] ?? null;
+    const nextLink = data["@odata.nextLink"] ?? null;
+    yield { properties: mapped, nextLink };
+    url = nextLink;
   }
 }

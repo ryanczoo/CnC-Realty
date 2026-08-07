@@ -73,7 +73,7 @@ describe("fetchProperties resilience", () => {
     const results = await drainFast(fetchProperties());
 
     expect(fetch).toHaveBeenCalledTimes(2);
-    expect(results).toEqual([[{ mlsNumber: "A" }]]);
+    expect(results).toEqual([{ properties: [{ mlsNumber: "A" }], nextLink: null }]);
   });
 
   it("retries a page after a network-level throw and succeeds on the next attempt", async () => {
@@ -84,7 +84,7 @@ describe("fetchProperties resilience", () => {
     const results = await drainFast(fetchProperties());
 
     expect(fetch).toHaveBeenCalledTimes(2);
-    expect(results).toEqual([[{ mlsNumber: "A" }]]);
+    expect(results).toEqual([{ properties: [{ mlsNumber: "A" }], nextLink: null }]);
   });
 
   it("does not retry a non-5xx, non-401 error response and throws immediately", async () => {
@@ -110,6 +110,30 @@ describe("fetchProperties resilience", () => {
 
     const results = await drainFast(fetchProperties());
 
-    expect(results).toEqual([[{ mlsNumber: "A" }, { mlsNumber: "C" }]]);
+    expect(results).toEqual([{ properties: [{ mlsNumber: "A" }, { mlsNumber: "C" }], nextLink: null }]);
+  });
+
+  it("fetches startUrl directly instead of building a fresh base URL, when given", async () => {
+    const resumeUrl = "https://api-trestle.corelogic.com/trestle/odata/Property?%24skiptoken=abc123";
+    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse({ value: [{ ListingKey: "A" }] }));
+
+    await drainFast(fetchProperties(undefined, resumeUrl));
+
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe(resumeUrl);
+  });
+
+  it("yields the page's nextLink alongside its properties, for checkpointing", async () => {
+    const page2Url = "https://api-trestle.corelogic.com/trestle/odata/Property?%24skiptoken=page2";
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(jsonResponse({ value: [{ ListingKey: "A" }], "@odata.nextLink": page2Url }))
+      .mockResolvedValueOnce(jsonResponse({ value: [{ ListingKey: "B" }] }));
+
+    const results = await drainFast(fetchProperties());
+
+    expect(results).toEqual([
+      { properties: [{ mlsNumber: "A" }], nextLink: page2Url },
+      { properties: [{ mlsNumber: "B" }], nextLink: null },
+    ]);
   });
 });

@@ -1082,3 +1082,14 @@ model AgentApplication {
   reviewedAt      DateTime?
   rejectionReason String?
 }
+
+// ─── IDX sync checkpoint ─────────────────────────────────────────────────────
+// Standalone bookkeeping for the CRMLS crawl's own pagination cursor. No
+// relation to Property — this is process state, not listing data.
+
+model SyncProgress {
+  id        String   @id @default(cuid())
+  syncType  String   @unique
+  nextLink  String   @db.Text
+  updatedAt DateTime @updatedAt
+}
