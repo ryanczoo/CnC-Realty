@@ -166,6 +166,59 @@ describe("GET /api/idx/sync", () => {
     expect(prisma.syncProgress.deleteMany).toHaveBeenCalledWith({ where: { syncType: "delta" } });
   });
 
+  it("upserts a page's records concurrently rather than one at a time", async () => {
+    let inFlight = 0;
+    let maxInFlight = 0;
+    vi.mocked(prisma.property.upsert).mockImplementation((async () => {
+      inFlight++;
+      maxInFlight = Math.max(maxInFlight, inFlight);
+      await new Promise((r) => setImmediate(r));
+      inFlight--;
+      return {} as any;
+    }) as any);
+
+    const properties = Array.from({ length: 30 }, (_, i) => ({
+      mlsNumber: `ML${i}`,
+      status: "Active",
+      listingType: "FOR_SALE",
+    })) as any[];
+
+    vi.mocked(fetchProperties).mockImplementation(async function* () {
+      yield { properties, cursor: "2021-05-01T00:00:00.000Z" };
+    });
+
+    const res = await GET(makeRequest("test-secret"));
+    expect(res.status).toBe(200);
+    expect((await res.json()).upserted).toBe(30);
+
+    expect(maxInFlight).toBeGreaterThan(1);
+  });
+
+  it("counts an individual upsert failure as an error without dropping the rest of the page", async () => {
+    vi.mocked(prisma.property.upsert).mockImplementation((async (args: any) => {
+      if (args.where.mlsNumber === "ML2") throw new Error("P1017 server has closed the connection");
+      return {} as any;
+    }) as any);
+
+    vi.mocked(fetchProperties).mockImplementation(async function* () {
+      yield {
+        properties: [
+          { mlsNumber: "ML1", status: "Active", listingType: "FOR_SALE" } as any,
+          { mlsNumber: "ML2", status: "Active", listingType: "FOR_SALE" } as any,
+          { mlsNumber: "ML3", status: "Active", listingType: "FOR_SALE" } as any,
+        ],
+        cursor: "2021-05-01T00:00:00.000Z",
+      };
+    });
+
+    const res = await GET(makeRequest("test-secret"));
+    expect(res.status).toBe(200);
+
+    const body = await res.json();
+    expect(body.upserted).toBe(2);
+    expect(body.errors).toBe(1);
+  });
+
   it("keeps the checkpoint when the crawl fails partway, so the next run can resume", async () => {
     vi.mocked(fetchProperties).mockImplementation(async function* () {
       yield {

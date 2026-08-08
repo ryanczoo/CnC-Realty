@@ -9,6 +9,13 @@ export const maxDuration = 300;
 
 const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
 
+// Fetching from Trestle runs ~10x faster than writing to Neon, so the crawl is
+// bound by the upserts, not the API. Writing a page in small concurrent batches
+// removes most of that gap. Kept well inside Prisma's default connection pool —
+// pushing it higher mainly buys dropped rows, since a failed upsert is counted
+// and skipped rather than retried.
+const UPSERT_CONCURRENCY = 10;
+
 function isOldClosedSale(property: { status: string; closeDate: Date | null }): boolean {
   if (property.status !== "Closed" || !property.closeDate) return false;
   return Date.now() - property.closeDate.getTime() > ONE_YEAR_MS;
@@ -32,22 +39,33 @@ async function runSync(type: string) {
   let errors = 0;
 
   for await (const { properties: batch, cursor } of fetchProperties(modifiedSince, checkpoint?.nextLink)) {
-    for (const property of batch) {
-      if (property.status === "Closed" && property.listingType === "FOR_RENT") continue;
-      const payload = isOldClosedSale(property)
-        ? { ...property, photos: [], details: Prisma.DbNull }
-        : property;
-      try {
-        await prisma.property.upsert({
-          where: { mlsNumber: payload.mlsNumber },
-          create: payload,
-          update: payload,
-        });
-        upserted++;
-      } catch (err) {
-        console.error("Upsert failed for", property.mlsNumber, err);
-        errors++;
-      }
+    const eligible = batch.filter(
+      (property) => !(property.status === "Closed" && property.listingType === "FOR_RENT")
+    );
+
+    for (let i = 0; i < eligible.length; i += UPSERT_CONCURRENCY) {
+      const chunk = eligible.slice(i, i + UPSERT_CONCURRENCY);
+      const settled = await Promise.allSettled(
+        chunk.map((property) => {
+          const payload = isOldClosedSale(property)
+            ? { ...property, photos: [], details: Prisma.DbNull }
+            : property;
+          return prisma.property.upsert({
+            where: { mlsNumber: payload.mlsNumber },
+            create: payload,
+            update: payload,
+          });
+        })
+      );
+
+      settled.forEach((result, idx) => {
+        if (result.status === "fulfilled") {
+          upserted++;
+        } else {
+          console.error("Upsert failed for", chunk[idx].mlsNumber, result.reason);
+          errors++;
+        }
+      });
     }
 
     await prisma.syncProgress.upsert({
