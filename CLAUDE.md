@@ -1,14 +1,31 @@
 # CnC Realty — Full Website & CRM Implementation Plan
 
-## ⚠️ ACTIVE CONSTRAINT (as of 2026-08-04) — IDX full resync running on spare laptop
+## ⚠️ ACTIVE CONSTRAINT (as of 2026-08-07) — IDX full resync running on Ryan's parent's desktop
 
-A full, unbounded IDX resync is running unattended on a dedicated spare laptop (separate git clone at `C:\Users\ryanch\Downloads\CnC-Realty`), continuously upserting into the shared Neon `Property` table. Expected to take multiple days.
+A full, **unbounded** IDX resync is running unattended on Ryan's parent's desktop (separate git clone at `C:\Users\lenac\Downloads\CnC-Realty`), continuously upserting into the shared Neon `Property` table. It runs in **production mode** (`pnpm --filter web build` then `pnpm --filter web start`), not dev mode. The feed is **4,862,377 records** (confirmed via `$count=true`, not estimated). At ~4,000–5,000 rows/min it takes roughly 12–15 hours.
+
+**The spare laptop is out of the picture** — its sync is stopped, the machine has been wiped of all CnC files, and it is being returned to Ryan's employer. Only one machine writes to the checkpoint now.
+
+**Three windows are open on the desktop, and they are not interchangeable:**
+- **Window 1 — `next-server`.** The sync itself lives inside this process. Never Ctrl+C it, never type in it.
+- **Window 2 — ordinary PowerShell.** Ryan's working window: `check-count.mjs`, `git pull`, POSTs.
+- **Window 3 — `node watchdog.mjs`.** Restarts the crawl if it dies. Leave running, don't type in it.
 
 **Before making any change, check whether it touches the `Property` table's schema:**
-- ✅ Safe, no restriction: all frontend/UI code, email templates, any table other than `Property` (Lead, Agent, Campaign, TransactionFile, etc.), normal reads/writes through the app, and **committing/pushing to git from the main laptop** (git push only uploads to GitHub — it has no effect on the spare laptop's filesystem or its running process unless someone explicitly pulls there)
-- 🚫 Avoid until the resync finishes: (1) any Prisma schema migration that changes the `Property` table's structure — the sync's in-flight writes use the schema as it exists right now and could start failing mid-migration; (2) running `git pull` on the spare laptop itself, or restarting its dev server (window 1) for any reason — the sync runs as an in-memory background job in that one process with no saved resume point, so restarting it would force the crawl to start over from the beginning instead of continuing
+- ✅ Safe, no restriction: all frontend/UI code, email templates, any table other than `Property` (Lead, Agent, Campaign, TransactionFile, etc.), normal reads/writes through the app, committing/pushing to git, and even **`git pull` on the desktop itself** — production mode serves a prebuilt `.next` bundle, so pulling source files cannot disturb the running crawl (verified live 2026-08-07)
+- 🚫 Avoid until the resync finishes: (1) any Prisma schema migration that changes the `Property` table's structure — the sync's in-flight writes use the schema as it exists right now and could start failing mid-migration; (2) rebuilding or restarting the server on the desktop; (3) rotating **any** credential the desktop is using — Neon password, CRMLS/Trestle secret, SendGrid key, **and `CRON_SECRET`** (see below)
 
-**Remove this section once the resync is confirmed complete** (check `[idx-sync] done` in the spare laptop's dev server log, or that `/api/properties?limit=1`'s `.total` has stopped climbing).
+**`CRON_SECRET` must NOT be rotated while the crawl runs**, even though the running sync never re-checks it. `watchdog.mjs` reads `CRON_SECRET` from `.env.local` and POSTs with it; the server still holds the old value in memory, so changing the file would make every watchdog restart attempt 401 and silently disable recovery.
+
+**A restart is cheap.** The `SyncProgress` checkpoint (commit `123a585`) persists the crawl's cursor to Neon after every page, so a death resumes from where it stopped. Recovery = re-POST `/api/idx/sync?type=full`; the watchdog does this automatically within ~60s.
+
+**To check progress, run `node packages/database/check-count.mjs`** — total rows, % of 4,862,377, rows/min, ETA, and a stale-checkpoint warning.
+
+**Do NOT use `(Invoke-RestMethod "http://localhost:3000/api/properties?limit=1").total` as a progress metric.** It counts only `status IN (Active, ComingSoon, ActiveUnderContract)` AND `listingType = FOR_SALE` — a live count of active for-sale listings (~133k), not total rows. It legitimately moves *down* as listings go pending/closed, and it is Redis-cached for 5 minutes.
+
+**Expect `rows/min` to drift downward** as the crawl reaches listings already stored — those upserts become updates, which a row count cannot see. Real throughput is unchanged. The only genuine alarm is `checkpoint ... <-- STALE`.
+
+**Remove this section once the resync is confirmed complete** — `check-count.mjs` reports `checkpoint: NONE`, and window 1 logs `[idx-sync] done ... upserted: N, errors: M`.
 
 ## Context
 
@@ -6126,3 +6143,166 @@ The **"ACTIVE CONSTRAINT" section at the top of this file is still accurate and 
    - Resume the per-agent email limit brainstorming at the exact open question above (A/B/C) — get Ryan's answer, then continue through the normal brainstorming → design → plan → implementation flow (no code before an approved design, per the skill's hard gate).
 6. Update or remove the "ACTIVE CONSTRAINT" section at the top of this file once the resync situation is resolved on whichever machine ends up running it — still accurate and still needed as of this session's end.
 7. Older backlog, unchanged: Vercel deploy still pending (blocked on Ryan attempting the CLI deploy); C.A.R. video permission reply still pending; CnC ICA still not attorney-reviewed; checklist templates confirmed done in an earlier session.
+
+---
+
+## Session Notes — 2026-08-07
+
+Ryan's laptop died around 1:58 PM while we were setting up his parent's desktop for the IDX resync. Verified on resume: working tree clean, no stash, `main` level with `origin/main` — both commits from earlier that day were already pushed. **Nothing lost.** The setup work was happening on the desktop, guided by screenshots, so nothing was staged locally to recover.
+
+### Two commits landed before the crash (already pushed)
+
+| Commit | Description |
+|---|---|
+| `5a5c12a` | Transactional email layout redesign — off-white `#F2F0EF` background, Inter with a system fallback stack, social icons in the footer. Applied via `emailLayout()` so every email inherits it. |
+| `123a585` | **IDX sync resume checkpoint (`SyncProgress`)** — persists the crawl's `@odata.nextLink` to Neon after each page; `fetchProperties()` accepts a `startUrl` to resume from it; checkpoint cleared when a crawl finishes naturally. |
+
+The checkpoint was item #3 on the previous session's list. It is a standalone table with **no relation to `Property`**, which is why it was safe to add under the active resync constraint.
+
+### Parent's desktop — running, and finally at a viable rate
+
+Set up at `C:\Users\lenac\Downloads\CnC-Realty`, **production mode**, **unbounded** scope. Node and Git installed normally — this machine has no corporate IT restrictions, unlike the spare laptop.
+
+**Measured throughput: ~1,200–1,340 records/min, ETA ~54h.** The spare laptop was documented at ~2 rows/min (the source of the "8 years" figure). That is roughly a **600× improvement**, which settles the open question from the previous session: the bottleneck was dev mode and/or the corporate-managed laptop, exactly as the plan predicted. Unbounded is now genuinely viable.
+
+Position at end of session: `$skip=387,000` of ~4,700,000 (~8.2%), 855,835 rows in DB.
+
+### `/api/properties?limit=1` `.total` is NOT a progress metric
+
+Ryan reported the number going *down* (132,971 → 132,947) and reasonably thought something had broken. Root-caused by reading `apps/web/src/app/api/properties/route.ts` rather than guessing: it filters `status IN (Active, ComingSoon, ActiveUnderContract)` and `listingType = FOR_SALE`. So `.total` is a **live count of active for-sale listings** — 132,971 against 855,835 actual rows. It moves down whenever listings flip to Pending/Closed, and it is Redis-cached for 5 minutes (the "5-minute increments" Ryan had noticed).
+
+Neither that number nor `rows in DB` tracks resync progress. **`$skip` is the only real signal.**
+
+### `check-count.mjs` committed
+
+| Commit | Description |
+|---|---|
+| `e2f821e` | `packages/database/check-count.mjs` — total rows, `$skip` position + % of ~4.7M, records/min between runs with an ETA, stale-checkpoint warning. `.check-count-last.json` (per-machine state) gitignored. |
+| `72bed01` | Read `DATABASE_URL` from `apps/web/.env.local` when `packages/database/.env` is absent — the desktop only has the former. |
+
+This script previously existed only as a throwaway pasted onto the spare laptop, which is why it did not survive to the desktop. Committing it ends that cycle. Also verified live that **`git pull` on the desktop does not disturb the running crawl.**
+
+### Spare laptop — sync stopped, machine fully decommissioned
+
+The sync died when Ryan unplugged the laptop and its battery ran out — the desired outcome anyway. The desktop was completely unaffected (rate unchanged across the event), which also indicated the spare laptop had already stalled and was contributing nothing.
+
+Ryan later re-triggered the sync there by accident (the command was still in shell history in the still-open windows) and Ctrl+C'd immediately. **No damage** — those loops resumed from the shared checkpoint rather than page 1, and the desktop rewrites the checkpoint every ~10 seconds, so the values were overwritten almost instantly. Upserts are idempotent.
+
+**Note on the shared checkpoint:** `SyncProgress.syncType` is `@unique`, so *all* machines share one row. Two writers means the saved cursor is whichever wrote last, and a restart could resume from the wrong position. The checkpoint only protects you when exactly one machine is running.
+
+**Full cleanup performed** (company property, being returned):
+- Repo folder deleted, `Test-Path` → `False`
+- Content search of Downloads/Desktop/Documents for `ep-wild-cell|api-trestle|neondb_owner` → **no hits**
+- PowerShell history deleted — **contained `Bearer` on 19 lines**, i.e. `CRON_SECRET` in plaintext
+- `AppData\Local\pnpm` deleted (5 earlier hits there were npm package files containing the generic string `DATABASE_URL`, not credentials)
+- Portable `node-v24.19.0-win-x64`, `PortableGit`, and its installer deleted from Downloads
+- User PATH verified clean — Windows default only; the portable tools were never permanently added, which is why `Get-Command` found nothing
+- Recycle Bin emptied
+- `cmdkey /list` showed **no GitHub credentials** — only Microsoft account SSO entries, deliberately left alone
+- `desktop.ini` deliberately left alone (Windows system file, predates the work)
+
+Still outstanding on that machine: resume Windows Update (paused to 9/9/2026), delete the `.env.local` message in Messenger, browser sign-outs, and a final history-file delete via File Explorer after all PowerShell windows are closed.
+
+### Upsert connection errors — investigated, decided NOT to fix
+
+Window 1 showed `prisma:error ... ConnectionReset` and `P1017 Server has closed the connection` on `prisma.property.upsert()`. Investigated with `systematic-debugging` rather than reacting to the log.
+
+Key evidence: `Property` has `updatedAt @updatedAt`, so a successful upsert (create *or* update) bumps it — giving a real write-throughput measurement that a row count cannot provide. Result: **~937–1,115 successful writes/min sustained**. The errors were **2 total, both within seconds of `[idx-sync] starting full sync`**, with nothing in the 95 minutes after. **Error rate ≈ 0.0012%.**
+
+Real finding: `withRetry` (4 attempts, backoff) wraps the CRMLS side in `lib/idx/client.ts` and `lib/idx/auth.ts`, but **not** `prisma.property.upsert()` in the sync route — so a DB connection reset silently drops that listing for the pass (`errors++`, crawl moves on). Extrapolated, that costs ~50–60 listings out of 4.7M.
+
+**Decision (Ryan's call, and correct): do not add the retry.** The measured rate does not justify new code for a one-time job, and restarting a working ~60-hour run to deploy insurance against 0.0012% is the worse trade. The `[idx-sync] done — upserted: N, errors: M` line reports the true total when it finishes — revisit then, with data.
+
+Also confirmed from the log: this run **started from `$skip=0`** (no `[idx-sync] resuming ... from checkpoint` line), which is why the crawl position sits far behind the 855k rows already in the DB.
+
+### Decisions made
+
+1. **Unbounded confirmed** — the full ~4.7M including closed sales back to ~2012. Bounded would have meant adding a `CloseDate` cutoff; not doing it.
+2. **No upsert retry** — measured, not assumed.
+3. **`check-count.mjs` committed** rather than re-pasted per machine.
+4. **Credential rotation deferred, not dropped** — see below.
+5. Desktop power settings: `standby`/`hibernate`/`disk` timeouts set to 0 on AC, verified via `powercfg /query SCHEME_CURRENT SUB_SLEEP STANDBYIDLE` → `0x00000000`. It is a desktop, so the `-dc` values are irrelevant.
+
+### ⚠️ Pending — credential rotation
+
+`CRON_SECRET` was confirmed in plaintext **19 times** in the spare laptop's PowerShell history, on a company-managed machine with EDR and backup agents. File deletion limits exposure but cannot guarantee erasure. **Rotation is the actual remediation.**
+
+- **`CRON_SECRET` — safe to rotate immediately.** The running sync never re-checks it; authorization happens only on the incoming request, which already succeeded.
+- **Neon password, CRMLS/Trestle secret, SendGrid API key — rotate only AFTER the resync finishes.** The desktop is actively using them; rotating now kills the run.
+- Lower priority: `NEXTAUTH_SECRET`, Upstash token, R2 keys. The Mapbox token is public by design.
+
+### Then it hit a hard wall — Trestle caps `$skip` at 1,000,000
+
+At `$skip=1,000,000` the crawl died with a 400:
+
+```
+{"message":"$skip and $top need to be less than 1000000"}
+```
+
+Investigated with `systematic-debugging`, and probed the live Trestle API rather than inferring. Findings:
+
+- **The feed is 4,862,377 records** (`$count=true`), not the ~4.46M assumed for months. The oldest `ModificationTimestamp` is **2021-04-30** — Trestle exposes nothing earlier, so 4.86M *is* the complete available history.
+- Trestle builds `@odata.nextLink` **with `$skip`**, and rejects `$skip + $top >= 1,000,000` (verified: `$skip=999999` with `$top=2` also 400s). So **any crawl that follows `nextLink` is capped at ~1M records and then hard-fails.** This was never a "slow machine" problem.
+- `$orderby=ModificationTimestamp` works, works alongside `$expand=Media`, and works with a `ModificationTimestamp gt` filter — so keyset pagination is viable.
+
+**Why this was never hit before:** the spare laptop crawled at ~2 rows/min and restarted from position 0 on every hang, so no single run ever approached 1M. The checkpoint added earlier that day is what finally let a run get far enough to find a wall that had always been there.
+
+### Fix 1 — keyset pagination (`1ca4413`)
+
+`fetchProperties` no longer follows `nextLink`. It orders by `ModificationTimestamp` and requests everything strictly after the last record seen, **never sending `$skip`**, so there is no ceiling. The cursor is a timestamp, so it survives a restart. A non-timestamp checkpoint (left by the old crawl) is ignored rather than replayed into a broken filter.
+
+The route stores that cursor in `SyncProgress` after every page and clears the checkpoint **only when the generator runs to completion** — a crawl that throws now keeps its checkpoint so the next run resumes.
+
+Built test-first: 12 failing tests watched fail, then implemented. Verified by replaying the exact new URL against live Trestle for 4 pages — cursor advanced, photos returned, no `$skip` sent.
+
+⚠️ **Known debt:** `SyncProgress.nextLink` now holds a *timestamp*, not a URL. The column kept its old name to avoid a migration mid-crawl. **Rename it to `cursor` once the resync finishes.**
+
+### Fix 2 — concurrent upserts (`24e94d1`)
+
+Live measurement showed fetching runs at **~14,900 records/min** while the end-to-end sync managed **~1,300/min** — so the bottleneck was the write path, which awaited one `prisma.property.upsert` at a time. Records on a page are now upserted in chunks of 10 via `Promise.allSettled`.
+
+Result: **~1,300/min → ~5,000/min**, roughly 4×. Concurrency is deliberately kept modest (well inside Prisma's default pool); higher mostly buys connection-reset errors, and since a failed upsert is not retried, each one silently drops a listing.
+
+Ryan pushed back on "start now, optimise later" and was right — the slow hour would have banked ~78k records, about 13 minutes of fast crawling, in exchange for a second deploy at 4 AM.
+
+### The `$skip`/ETA metric bug (`065ccc5`)
+
+`check-count.mjs` initially estimated progress from how far the *cursor date* moved, which assumes records are spread evenly across time. They are not — April 2021 is extremely dense — so it reported **ETA ~3,887h** against a real ~13h. Progress and ETA now come from row count against the known feed total.
+
+### DNS blip killed the crawl for 5.7 hours (`5534ff1`)
+
+Overnight the crawl died with:
+
+```
+getaddrinfo EAI_AGAIN api-trestle.corelogic.com
+```
+
+A transient DNS failure — no human involvement, almost certainly a router/ISP hiccup (it happened ~5:47 AM). The real problem was tolerance: `withRetry` is `maxAttempts=4` with 1s/2s/4s backoff, i.e. **~7 seconds**. That is fine for the 15-minute delta cron, where dying is harmless, but fatal to a 12-hour crawl. Nobody noticed for 5.7 hours.
+
+Fix: **`packages/database/watchdog.mjs`** — polls the `SyncProgress` checkpoint every 60s and re-POSTs the sync when it stops advancing, resuming from the stored cursor and losing only the in-flight page. A 5-minute cooldown prevents overlapping crawls. Chosen over raising the retry count because it covers *every* way the crawl can stop (DNS, network, unhandled error, hang), and needs no rebuild.
+
+**Gap it does not cover:** a machine reboot kills window 1 and the watchdog together, and nothing auto-restarts them.
+
+### Decisions made
+
+1. **Unbounded confirmed** — the full 4,862,377. Trestle has nothing older than 2021-04-30 anyway, so a bounded window would only discard recent data.
+2. **No upsert retry** — measured at 0.0012% (2 failures in 166,400 records, both cold-start). Revisit only if `[idx-sync] done` reports a meaningful `errors` count.
+3. **Watchdog over bigger retries** — broader coverage, no rebuild.
+4. **Keep the sync code after the resync** — it is not throwaway. The 15-minute delta cron runs through the same `client.ts` and `route.ts` forever, and the old version was outright broken (1M ceiling, plus no `$orderby`, a latent correctness bug flagged months ago).
+
+### ⚠️ Pending — credential rotation
+
+`CRON_SECRET` was found in plaintext **19 times** in the spare laptop's PowerShell history, on a company-managed machine with EDR and backup agents. File deletion limits exposure but cannot guarantee erasure. **Rotation is the actual remediation.**
+
+**Rotate nothing until the crawl finishes** — including `CRON_SECRET`. Earlier advice said it was safe to rotate immediately; that stopped being true once `watchdog.mjs` existed, since the watchdog reads it from `.env.local` while the server holds the old value in memory. Changing it mid-crawl silently disables recovery.
+
+Order once the crawl is done: `CRON_SECRET`, Neon password, CRMLS/Trestle secret, SendGrid key. Lower priority: `NEXTAUTH_SECRET`, Upstash token, R2 keys. Mapbox is public by design.
+
+### Next Session — Start Here
+
+1. **Check the resync**: `node packages/database/check-count.mjs` in window 2. Watch `progress` and `checkpoint` age. Rows/min drifting down is normal; `STALE` is the real alarm.
+2. **When it finishes** (`checkpoint: NONE` plus `[idx-sync] done ... upserted: N, errors: M` in window 1): record those totals, then **remove the ACTIVE CONSTRAINT block** at the top of this file.
+3. **Then rotate credentials** — see above. Nothing before the crawl completes.
+4. **Then clean up the deferred debt:** rename `SyncProgress.nextLink` → `cursor` (needs a migration, so it must wait for the crawl to finish).
+5. **Email work — safe to do while the crawl runs**, since it touches neither `Property` nor the desktop: the Postmark migration of `lib/email.ts`, and the per-agent email-limit brainstorming stuck on the unanswered A/B/C question (see 2026-08-04/06 notes).
+6. Older backlog, unchanged: Vercel deploy still pending; C.A.R. video permission reply; CnC ICA still not attorney-reviewed.
