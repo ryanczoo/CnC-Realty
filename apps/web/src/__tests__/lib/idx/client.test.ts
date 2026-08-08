@@ -25,6 +25,12 @@ describe("buildPropertyFilter", () => {
       "$filter=StandardStatus in ('Active','ComingSoon','ActiveUnderContract','Closed') and ModificationTimestamp gt 2026-07-01T00:00:00.000Z&"
     );
   });
+
+  it("accepts an ISO cursor string as well as a Date", () => {
+    expect(buildPropertyFilter("2026-07-01T00:00:00.000Z")).toBe(
+      "$filter=StandardStatus in ('Active','ComingSoon','ActiveUnderContract','Closed') and ModificationTimestamp gt 2026-07-01T00:00:00.000Z&"
+    );
+  });
 });
 
 function jsonResponse(body: unknown, status = 200) {
@@ -36,13 +42,19 @@ function jsonResponse(body: unknown, status = 200) {
   } as Response;
 }
 
+function record(key: string, ts: string) {
+  return { ListingKey: key, ModificationTimestamp: ts };
+}
+
+const EMPTY_PAGE = { value: [] };
+
 async function drain<T>(gen: AsyncGenerator<T>): Promise<T[]> {
   const out: T[] = [];
   for await (const v of gen) out.push(v);
   return out;
 }
 
-describe("fetchProperties resilience", () => {
+describe("fetchProperties keyset pagination", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.stubGlobal("fetch", vi.fn());
@@ -57,9 +69,164 @@ describe("fetchProperties resilience", () => {
   // concurrently with draining so these tests don't actually wait seconds.
   async function drainFast<T>(gen: AsyncGenerator<T>): Promise<T[]> {
     const resultPromise = drain(gen);
-    // Attach a no-op handler immediately so a rejection settling while we
-    // advance fake timers below isn't flagged as unhandled — the real
-    // rejection still propagates via the returned `resultPromise` itself.
+    resultPromise.catch(() => {});
+    await vi.advanceTimersByTimeAsync(100_000);
+    return resultPromise;
+  }
+
+  function urlAt(i: number): string {
+    return vi.mocked(fetch).mock.calls[i][0] as string;
+  }
+
+  it("orders by ModificationTimestamp so the cursor can advance deterministically", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse(EMPTY_PAGE));
+
+    await drainFast(fetchProperties());
+
+    expect(urlAt(0)).toContain("$orderby=ModificationTimestamp");
+  });
+
+  it("never sends $skip, so it cannot hit Trestle's 1,000,000 offset ceiling", async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(jsonResponse({ value: [record("A", "2021-05-01T00:00:00.000Z")] }))
+      .mockResolvedValueOnce(jsonResponse(EMPTY_PAGE));
+
+    await drainFast(fetchProperties());
+
+    for (const call of vi.mocked(fetch).mock.calls) {
+      expect(call[0] as string).not.toContain("$skip");
+    }
+  });
+
+  it("ignores @odata.nextLink entirely, since Trestle builds it with $skip", async () => {
+    const skipLink = "https://api.cotality.com/trestle/odata/Property?$skip=200";
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(
+        jsonResponse({ value: [record("A", "2021-05-01T00:00:00.000Z")], "@odata.nextLink": skipLink })
+      )
+      .mockResolvedValueOnce(jsonResponse(EMPTY_PAGE));
+
+    await drainFast(fetchProperties());
+
+    expect(urlAt(1)).not.toBe(skipLink);
+  });
+
+  it("yields the last record's ModificationTimestamp as the next cursor", async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(
+        jsonResponse({
+          value: [record("A", "2021-05-01T00:00:00.000Z"), record("B", "2021-05-02T00:00:00.000Z")],
+        })
+      )
+      .mockResolvedValueOnce(jsonResponse(EMPTY_PAGE));
+
+    const results = await drainFast(fetchProperties());
+
+    expect(results).toEqual([
+      {
+        properties: [{ mlsNumber: "A" }, { mlsNumber: "B" }],
+        cursor: "2021-05-02T00:00:00.000Z",
+      },
+    ]);
+  });
+
+  it("requests the following page filtered on the advanced cursor", async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(jsonResponse({ value: [record("A", "2021-05-02T00:00:00.000Z")] }))
+      .mockResolvedValueOnce(jsonResponse(EMPTY_PAGE));
+
+    await drainFast(fetchProperties());
+
+    expect(decodeURIComponent(urlAt(1))).toContain(
+      "ModificationTimestamp gt 2021-05-02T00:00:00.000Z"
+    );
+  });
+
+  it("resumes from a saved cursor instead of crawling from the beginning", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse(EMPTY_PAGE));
+
+    await drainFast(fetchProperties(undefined, "2021-06-01T00:00:00.000Z"));
+
+    expect(decodeURIComponent(urlAt(0))).toContain(
+      "ModificationTimestamp gt 2021-06-01T00:00:00.000Z"
+    );
+  });
+
+  it("ignores a saved cursor that is not a timestamp, e.g. a legacy $skip nextLink", async () => {
+    const legacy = "https://api.cotality.com/trestle/odata/Property?$skip=1000000";
+    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse(EMPTY_PAGE));
+
+    await drainFast(fetchProperties(undefined, legacy));
+
+    expect(urlAt(0)).not.toContain("$skip");
+    expect(decodeURIComponent(urlAt(0))).not.toContain("ModificationTimestamp gt");
+  });
+
+  it("stops once a page comes back empty", async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(jsonResponse({ value: [record("A", "2021-05-01T00:00:00.000Z")] }))
+      .mockResolvedValueOnce(jsonResponse(EMPTY_PAGE));
+
+    const results = await drainFast(fetchProperties());
+
+    expect(results).toHaveLength(1);
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("throws rather than looping forever when a page has no usable ModificationTimestamp", async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      jsonResponse({ value: [{ ListingKey: "A" }, { ListingKey: "B" }] })
+    );
+
+    await expect(drainFast(fetchProperties())).rejects.toThrow(/ModificationTimestamp/);
+  });
+
+  it("skips a single malformed record without failing the rest of the batch", async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(
+        jsonResponse({
+          value: [
+            record("A", "2021-05-01T00:00:00.000Z"),
+            record("BAD", "2021-05-02T00:00:00.000Z"),
+            record("C", "2021-05-03T00:00:00.000Z"),
+          ],
+        })
+      )
+      .mockResolvedValueOnce(jsonResponse(EMPTY_PAGE));
+
+    const results = await drainFast(fetchProperties());
+
+    expect(results[0].properties).toEqual([{ mlsNumber: "A" }, { mlsNumber: "C" }]);
+  });
+
+  it("still advances the cursor past a malformed record that ends a page", async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(
+        jsonResponse({
+          value: [record("A", "2021-05-01T00:00:00.000Z"), record("BAD", "2021-05-09T00:00:00.000Z")],
+        })
+      )
+      .mockResolvedValueOnce(jsonResponse(EMPTY_PAGE));
+
+    const results = await drainFast(fetchProperties());
+
+    expect(results[0].cursor).toBe("2021-05-09T00:00:00.000Z");
+  });
+});
+
+describe("fetchProperties resilience", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.stubGlobal("fetch", vi.fn());
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  async function drainFast<T>(gen: AsyncGenerator<T>): Promise<T[]> {
+    const resultPromise = drain(gen);
     resultPromise.catch(() => {});
     await vi.advanceTimersByTimeAsync(100_000);
     return resultPromise;
@@ -68,23 +235,27 @@ describe("fetchProperties resilience", () => {
   it("retries a page after a transient 5xx response and succeeds on the next attempt", async () => {
     vi.mocked(fetch)
       .mockResolvedValueOnce(jsonResponse({ error: "boom" }, 500))
-      .mockResolvedValueOnce(jsonResponse({ value: [{ ListingKey: "A" }] }));
+      .mockResolvedValueOnce(jsonResponse({ value: [record("A", "2021-05-01T00:00:00.000Z")] }))
+      .mockResolvedValueOnce(jsonResponse(EMPTY_PAGE));
 
     const results = await drainFast(fetchProperties());
 
-    expect(fetch).toHaveBeenCalledTimes(2);
-    expect(results).toEqual([{ properties: [{ mlsNumber: "A" }], nextLink: null }]);
+    expect(results).toEqual([
+      { properties: [{ mlsNumber: "A" }], cursor: "2021-05-01T00:00:00.000Z" },
+    ]);
   });
 
   it("retries a page after a network-level throw and succeeds on the next attempt", async () => {
     vi.mocked(fetch)
       .mockRejectedValueOnce(new Error("ECONNRESET"))
-      .mockResolvedValueOnce(jsonResponse({ value: [{ ListingKey: "A" }] }));
+      .mockResolvedValueOnce(jsonResponse({ value: [record("A", "2021-05-01T00:00:00.000Z")] }))
+      .mockResolvedValueOnce(jsonResponse(EMPTY_PAGE));
 
     const results = await drainFast(fetchProperties());
 
-    expect(fetch).toHaveBeenCalledTimes(2);
-    expect(results).toEqual([{ properties: [{ mlsNumber: "A" }], nextLink: null }]);
+    expect(results).toEqual([
+      { properties: [{ mlsNumber: "A" }], cursor: "2021-05-01T00:00:00.000Z" },
+    ]);
   });
 
   it("does not retry a non-5xx, non-401 error response and throws immediately", async () => {
@@ -99,41 +270,5 @@ describe("fetchProperties resilience", () => {
 
     await expect(drainFast(fetchProperties())).rejects.toThrow(/500/);
     expect(vi.mocked(fetch).mock.calls.length).toBeGreaterThan(1);
-  });
-
-  it("skips a single malformed record without failing the rest of the batch", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce(
-      jsonResponse({
-        value: [{ ListingKey: "A" }, { ListingKey: "BAD" }, { ListingKey: "C" }],
-      })
-    );
-
-    const results = await drainFast(fetchProperties());
-
-    expect(results).toEqual([{ properties: [{ mlsNumber: "A" }, { mlsNumber: "C" }], nextLink: null }]);
-  });
-
-  it("fetches startUrl directly instead of building a fresh base URL, when given", async () => {
-    const resumeUrl = "https://api-trestle.corelogic.com/trestle/odata/Property?%24skiptoken=abc123";
-    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse({ value: [{ ListingKey: "A" }] }));
-
-    await drainFast(fetchProperties(undefined, resumeUrl));
-
-    expect(fetch).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(fetch).mock.calls[0][0]).toBe(resumeUrl);
-  });
-
-  it("yields the page's nextLink alongside its properties, for checkpointing", async () => {
-    const page2Url = "https://api-trestle.corelogic.com/trestle/odata/Property?%24skiptoken=page2";
-    vi.mocked(fetch)
-      .mockResolvedValueOnce(jsonResponse({ value: [{ ListingKey: "A" }], "@odata.nextLink": page2Url }))
-      .mockResolvedValueOnce(jsonResponse({ value: [{ ListingKey: "B" }] }));
-
-    const results = await drainFast(fetchProperties());
-
-    expect(results).toEqual([
-      { properties: [{ mlsNumber: "A" }], nextLink: page2Url },
-      { properties: [{ mlsNumber: "B" }], nextLink: null },
-    ]);
   });
 });

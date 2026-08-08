@@ -38,12 +38,30 @@ interface ODataResponse {
 
 const STATUS_FILTER = "StandardStatus in ('Active','ComingSoon','ActiveUnderContract','Closed')";
 
-export function buildPropertyFilter(modifiedSince?: Date): string {
+const PAGE_SIZE = 200;
+
+export function buildPropertyFilter(modifiedSince?: Date | string): string {
   const clauses = [STATUS_FILTER];
   if (modifiedSince) {
-    clauses.push(`ModificationTimestamp gt ${modifiedSince.toISOString()}`);
+    const iso = typeof modifiedSince === "string" ? modifiedSince : modifiedSince.toISOString();
+    clauses.push(`ModificationTimestamp gt ${iso}`);
   }
   return `$filter=${clauses.join(" and ")}&`;
+}
+
+function isTimestamp(value: string | undefined): value is string {
+  return !!value && !Number.isNaN(Date.parse(value));
+}
+
+// The cursor is the ModificationTimestamp of the last record on a page. It is
+// read from the raw RESO record, not the mapped one, so a record that fails to
+// map still advances the crawl instead of stalling it.
+function lastTimestamp(records: ResoProperty[]): string | undefined {
+  for (let i = records.length - 1; i >= 0; i--) {
+    const ts = (records[i] as { ModificationTimestamp?: string }).ModificationTimestamp;
+    if (isTimestamp(ts)) return ts;
+  }
+  return undefined;
 }
 
 // Thrown for HTTP failures that a retry cannot fix (bad query, malformed request, etc.)
@@ -80,26 +98,55 @@ async function fetchPage(url: string, tokenBox: { value: string }): Promise<ODat
   );
 }
 
-// startUrl resumes an in-progress crawl from a saved @odata.nextLink instead of
-// starting over at page 1 — see SyncProgress. It fully supersedes modifiedSince
-// (the original filter is already baked into the link CRMLS issued).
-export async function* fetchProperties(modifiedSince?: Date, startUrl?: string) {
+// Keyset pagination, NOT @odata.nextLink.
+//
+// Trestle builds nextLink with $skip, and rejects any request where
+// $skip + $top reaches 1,000,000 ("$skip and $top need to be less than
+// 1000000"). Since the full feed is ~4.86M records, following nextLink caps a
+// crawl at roughly the first million and then hard-fails with a 400.
+//
+// Instead we order by ModificationTimestamp and ask for everything strictly
+// after the last record we saw. No offset is ever sent, so there is no ceiling,
+// and the cursor is a plain timestamp that survives a process restart.
+//
+// startCursor resumes an in-progress crawl — see SyncProgress. It supersedes
+// modifiedSince. A cursor that isn't a timestamp (e.g. a checkpoint written by
+// the old nextLink-based crawl) is ignored so the crawl restarts cleanly.
+export async function* fetchProperties(modifiedSince?: Date, startCursor?: string) {
   const tokenBox = { value: await getResoToken() };
-  const filter = buildPropertyFilter(modifiedSince);
-  let url: string | null =
-    startUrl ?? `${BASE_URL}/Property?${filter}$top=200&$select=${SELECT_FIELDS}&$expand=Media($select=MediaURL,Order,MediaClassification)`;
-  while (url) {
+  let cursor: string | undefined = isTimestamp(startCursor)
+    ? startCursor
+    : modifiedSince?.toISOString();
+
+  for (;;) {
+    const url =
+      `${BASE_URL}/Property?${buildPropertyFilter(cursor)}` +
+      `$orderby=ModificationTimestamp&$top=${PAGE_SIZE}&$select=${SELECT_FIELDS}` +
+      `&$expand=Media($select=MediaURL,Order,MediaClassification)`;
+
     const data = await fetchPage(url, tokenBox);
+    const records = data.value ?? [];
+    if (records.length === 0) return;
+
     const mapped: ReturnType<typeof mapResoToProperty>[] = [];
-    for (const raw of data.value ?? []) {
+    for (const raw of records) {
       try {
         mapped.push(mapResoToProperty(raw));
       } catch (err) {
         console.error("Failed to map property", (raw as { ListingKey?: string })?.ListingKey, err);
       }
     }
-    const nextLink = data["@odata.nextLink"] ?? null;
-    yield { properties: mapped, nextLink };
-    url = nextLink;
+
+    const next = lastTimestamp(records);
+    if (!next) {
+      // Without a usable timestamp the cursor cannot advance and the crawl
+      // would request this same page forever. Fail loudly instead.
+      throw new Error(
+        `RESO page of ${records.length} records had no usable ModificationTimestamp; cannot advance cursor`
+      );
+    }
+
+    yield { properties: mapped, cursor: next };
+    cursor = next;
   }
 }

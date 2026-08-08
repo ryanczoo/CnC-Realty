@@ -36,7 +36,7 @@ describe("GET /api/idx/sync", () => {
           { mlsNumber: "ML2", status: "Active", listingType: "FOR_RENT" } as any,
           { mlsNumber: "ML3", status: "Closed", listingType: "FOR_SALE" } as any,
         ],
-        nextLink: null,
+        cursor: "2021-05-01T00:00:00.000Z",
       };
     });
 
@@ -67,7 +67,7 @@ describe("GET /api/idx/sync", () => {
             { mlsNumber: "ML2", status: "Closed", listingType: "FOR_SALE", closeDate: withinYear, photos: ["b.jpg"], details: { Roof: "Shingle" } } as any,
             { mlsNumber: "ML3", status: "Closed", listingType: "FOR_SALE", closeDate: overYearAgo, photos: ["c.jpg"], details: { Roof: "Metal" } } as any,
           ],
-          nextLink: null,
+          cursor: "2021-05-01T00:00:00.000Z",
         };
       });
 
@@ -107,7 +107,7 @@ describe("GET /api/idx/sync", () => {
               details: { Roof: "Tile" },
             } as any,
           ],
-          nextLink: null,
+          cursor: "2021-05-01T00:00:00.000Z",
         };
       });
 
@@ -122,16 +122,14 @@ describe("GET /api/idx/sync", () => {
     }
   });
 
-  it("resumes from a saved checkpoint by passing its nextLink into fetchProperties", async () => {
+  it("resumes from a saved checkpoint by passing its stored cursor into fetchProperties", async () => {
     vi.mocked(prisma.syncProgress.findUnique).mockResolvedValue({
       id: "sp1",
       syncType: "full",
-      nextLink: "https://api-trestle.corelogic.com/trestle/odata/Property?%24skiptoken=resume",
+      nextLink: "2021-06-01T00:00:00.000Z",
       updatedAt: new Date(),
     } as any);
-    vi.mocked(fetchProperties).mockImplementation(async function* () {
-      yield { properties: [], nextLink: null };
-    });
+    vi.mocked(fetchProperties).mockImplementation(async function* () {});
 
     const res = await GET(
       new Request("http://localhost/api/idx/sync?type=full", {
@@ -141,27 +139,46 @@ describe("GET /api/idx/sync", () => {
     expect(res.status).toBe(200);
 
     expect(prisma.syncProgress.findUnique).toHaveBeenCalledWith({ where: { syncType: "full" } });
-    expect(fetchProperties).toHaveBeenCalledWith(
-      undefined,
-      "https://api-trestle.corelogic.com/trestle/odata/Property?%24skiptoken=resume"
-    );
+    expect(fetchProperties).toHaveBeenCalledWith(undefined, "2021-06-01T00:00:00.000Z");
   });
 
-  it("saves the checkpoint after a page that isn't the last, and clears it once the crawl finishes", async () => {
-    const page2Url = "https://api-trestle.corelogic.com/trestle/odata/Property?%24skiptoken=page2";
+  it("saves the cursor after every page and clears the checkpoint once the crawl finishes", async () => {
     vi.mocked(fetchProperties).mockImplementation(async function* () {
-      yield { properties: [{ mlsNumber: "ML1", status: "Active", listingType: "FOR_SALE" } as any], nextLink: page2Url };
-      yield { properties: [{ mlsNumber: "ML2", status: "Active", listingType: "FOR_SALE" } as any], nextLink: null };
+      yield {
+        properties: [{ mlsNumber: "ML1", status: "Active", listingType: "FOR_SALE" } as any],
+        cursor: "2021-05-01T00:00:00.000Z",
+      };
+      yield {
+        properties: [{ mlsNumber: "ML2", status: "Active", listingType: "FOR_SALE" } as any],
+        cursor: "2021-05-02T00:00:00.000Z",
+      };
     });
 
     const res = await GET(makeRequest("test-secret"));
     expect(res.status).toBe(200);
 
-    expect(prisma.syncProgress.upsert).toHaveBeenCalledWith({
+    expect(prisma.syncProgress.upsert).toHaveBeenCalledTimes(2);
+    expect(prisma.syncProgress.upsert).toHaveBeenNthCalledWith(1, {
       where: { syncType: "delta" },
-      create: { syncType: "delta", nextLink: page2Url },
-      update: { nextLink: page2Url },
+      create: { syncType: "delta", nextLink: "2021-05-01T00:00:00.000Z" },
+      update: { nextLink: "2021-05-01T00:00:00.000Z" },
     });
     expect(prisma.syncProgress.deleteMany).toHaveBeenCalledWith({ where: { syncType: "delta" } });
+  });
+
+  it("keeps the checkpoint when the crawl fails partway, so the next run can resume", async () => {
+    vi.mocked(fetchProperties).mockImplementation(async function* () {
+      yield {
+        properties: [{ mlsNumber: "ML1", status: "Active", listingType: "FOR_SALE" } as any],
+        cursor: "2021-05-01T00:00:00.000Z",
+      };
+      throw new Error("RESO fetch failed: 500");
+    });
+
+    const res = await GET(makeRequest("test-secret"));
+    expect(res.status).toBe(500);
+
+    expect(prisma.syncProgress.upsert).toHaveBeenCalledTimes(1);
+    expect(prisma.syncProgress.deleteMany).not.toHaveBeenCalled();
   });
 });

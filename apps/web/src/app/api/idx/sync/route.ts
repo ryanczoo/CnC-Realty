@@ -20,15 +20,18 @@ async function runSync(type: string) {
 
   const modifiedSince = type === "full" ? undefined : new Date(Date.now() - 30 * 60 * 1000);
 
+  // SyncProgress.nextLink holds a ModificationTimestamp cursor, not a URL — the
+  // crawl pages by keyset now (see lib/idx/client.ts). The column kept its old
+  // name to avoid a migration mid-resync; rename it once the crawl is done.
   const checkpoint = await prisma.syncProgress.findUnique({ where: { syncType: type } });
   if (checkpoint) {
-    console.log(`[idx-sync] resuming ${type} sync from checkpoint`);
+    console.log(`[idx-sync] resuming ${type} sync from cursor ${checkpoint.nextLink}`);
   }
 
   let upserted = 0;
   let errors = 0;
 
-  for await (const { properties: batch, nextLink } of fetchProperties(modifiedSince, checkpoint?.nextLink)) {
+  for await (const { properties: batch, cursor } of fetchProperties(modifiedSince, checkpoint?.nextLink)) {
     for (const property of batch) {
       if (property.status === "Closed" && property.listingType === "FOR_RENT") continue;
       const payload = isOldClosedSale(property)
@@ -47,16 +50,17 @@ async function runSync(type: string) {
       }
     }
 
-    if (nextLink) {
-      await prisma.syncProgress.upsert({
-        where: { syncType: type },
-        create: { syncType: type, nextLink },
-        update: { nextLink },
-      });
-    } else {
-      await prisma.syncProgress.deleteMany({ where: { syncType: type } });
-    }
+    await prisma.syncProgress.upsert({
+      where: { syncType: type },
+      create: { syncType: type, nextLink: cursor },
+      update: { nextLink: cursor },
+    });
   }
+
+  // Reaching here means the generator ran to completion — the crawl is finished,
+  // so drop the checkpoint. If it threw instead, the checkpoint is deliberately
+  // left in place so the next run resumes rather than restarting.
+  await prisma.syncProgress.deleteMany({ where: { syncType: type } });
 
   console.log(`[idx-sync] done in ${Date.now() - startedAt}ms — upserted: ${upserted}, errors: ${errors}`);
   return { upserted, errors, type };
