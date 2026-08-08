@@ -53,14 +53,24 @@ try {
     console.log(`crawl           : stale pre-keyset checkpoint (${String(raw).slice(0, 60)})`);
     console.log("                  harmless - the new crawl ignores it and starts fresh");
   } else {
-    const pct = ((cursorMs - FEED_START) / (now - FEED_START)) * 100;
-    console.log(`crawl cursor    : ${new Date(cursorMs).toISOString().slice(0, 16).replace("T", " ")}  (~${pct.toFixed(1)}% through the feed's date range)`);
+    // Progress is measured in rows, not cursor date: records are far denser in
+    // some periods than others, so cursor-date position says little about how
+    // much of the feed is left.
+    console.log(
+      `progress        : ${((total / TOTAL_RECORDS) * 100).toFixed(1)}% of ${fmt(TOTAL_RECORDS)} feed records`
+    );
+    console.log(
+      `crawl cursor    : ${new Date(cursorMs).toISOString().slice(0, 16).replace("T", " ")}  (informational - density varies, so this is not % done)`
+    );
 
     if (prev?.cursorMs != null && mins > 0.2) {
-      const advancedMs = cursorMs - prev.cursorMs;
-      if (advancedMs > 0) {
-        const remainingHrs = (now - cursorMs) / advancedMs * mins / 60;
-        console.log(`crawl rate      : ${(advancedMs / 86_400_000).toFixed(1)} feed-days/min  -> ETA ~${remainingHrs.toFixed(1)}h`);
+      if (cursorMs > prev.cursorMs) {
+        const perMin = delta / mins;
+        const eta = perMin > 0 ? (TOTAL_RECORDS - total) / perMin / 60 : null;
+        console.log(
+          `crawl rate      : ~${fmt(Math.round(perMin))} rows/min` +
+            (eta ? `  -> ETA ~${eta.toFixed(1)}h` : "  (rows flat - crawling records already stored)")
+        );
       } else {
         console.log(`crawl rate      : STALLED (cursor has not moved in ${mins.toFixed(1)}m)`);
       }

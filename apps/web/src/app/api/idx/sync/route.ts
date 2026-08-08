@@ -31,8 +31,16 @@ async function runSync(type: string) {
   // crawl pages by keyset now (see lib/idx/client.ts). The column kept its old
   // name to avoid a migration mid-resync; rename it once the crawl is done.
   const checkpoint = await prisma.syncProgress.findUnique({ where: { syncType: type } });
+  // A checkpoint left by the old nextLink-based crawl isn't a timestamp, so the
+  // client discards it and starts over. Say which happened rather than always
+  // claiming a resume.
   if (checkpoint) {
-    console.log(`[idx-sync] resuming ${type} sync from cursor ${checkpoint.nextLink}`);
+    const usable = !Number.isNaN(Date.parse(checkpoint.nextLink));
+    console.log(
+      usable
+        ? `[idx-sync] resuming ${type} sync from cursor ${checkpoint.nextLink}`
+        : `[idx-sync] discarding unusable ${type} checkpoint, starting from the beginning`
+    );
   }
 
   let upserted = 0;
