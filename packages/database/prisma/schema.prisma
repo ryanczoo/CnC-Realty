@@ -239,6 +239,7 @@ model User {
   image         String?
   password      String?
   role          UserRole  @default(BUYER)
+  emailOptOut   Boolean   @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   setupToken       String?   @unique
@@ -400,6 +401,7 @@ model Lead {
   lastContactedAt DateTime?
   brokerageFed      Boolean   @default(false)
   assignmentSeenAt  DateTime?
+  emailOptOut       Boolean   @default(false)
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 
@@ -420,6 +422,7 @@ model Lead {
   @@index([status])
   @@index([createdAt])
   @@index([agentId, createdAt])
+  @@index([email])
 }
 
 model Activity {
