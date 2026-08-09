@@ -6318,6 +6318,66 @@ Order once the crawl is done: `CRON_SECRET`, Neon password, CRMLS/Trestle secret
 
 ---
 
+
+---
+
+## Session Notes — 2026-08-09
+
+Ryan's laptop shut down overnight after the Postmark seam work (Tasks 1–5), so this session resumed cold. Nothing was lost — all five commits had landed. Suite went 714/714 → 761/761. Ten commits on `main`.
+
+### Postmark migration — Tasks 6–12 finished
+
+Executed via `superpowers:executing-plans` against `docs/superpowers/plans/2026-08-08-postmark-migration.md`. Full detail is in the "Postmark migration — COMPLETE" section at the end of this file; the highlights that a future session needs:
+
+**A blocker found before any code:** `.env.local` had no `POSTMARK_SERVER_TOKEN` at all, meaning outbound email had been broken in local dev since commit `5cfb6b5`. The 714 tests all passed because they mock the `postmark` module. Task 5's live smoke test had never actually run — the server showed "Never been used".
+
+**One deliberate deviation from the plan.** The plan made `recipient` optional on `SendOptions`; it is now **required when `stream: "broadcast"`** via a discriminated union. Commercial email must honour an opt-out and carry a working unsubscribe link, and neither is possible without knowing the recipient. When it landed the compiler found exactly the three broadcast call sites — no more, no fewer.
+
+### Three bugs the plan did not anticipate
+
+1. **`sendActionPlanEmail` had two callers with opposite meanings** — a drip step to a lead (marketing) and a lead's reply forwarded to their agent (not marketing). Both were on the broadcast stream, so an agent could have lost lead-reply notifications by unsubscribing from marketing. Split out `sendLeadReplyNotification`, transactional.
+2. **One-click unsubscribe was broken on arrival.** `List-Unsubscribe-Post` tells Gmail to POST to the List-Unsubscribe URL; it pointed at the confirmation *page*, which only serves GET, and the body Gmail sends is form-encoded rather than JSON. Header now targets `/api/unsubscribe`, and that route reads the token from the query string before touching the body.
+3. **Mock pollution in `idx-sync.test.ts`.** `vi.clearAllMocks()` clears calls but **not implementations**, so the throwing `upsert` from the error test leaked into every test defined after it. Fixed in `beforeEach` rather than renaming around it.
+
+### The ~896k IDX "gap" — resolved, no data missing
+
+Investigated with `superpowers:systematic-debugging` against the live Trestle API. It is the closed-rental exclusion in `api/idx/sync/route.ts`, reconciling to within **92 records** of feed drift over a 12.7-hour crawl. Full numbers in the resync section at the top of this file.
+
+Ruled out along the way, each with evidence rather than reasoning: the status filter (excludes only 17,244 Pending), early termination (our max key ≈ Trestle's max), a contiguous gap (records missing proportionally from every bucket), and pagination skipping — **replayed the crawl's exact query over a 40,000-key window and got 6,718 of 6,718, correct ordering, zero skips, with and without `$expand=Media`.**
+
+**Root cause of the confusion was the logging, not the crawl.** `runSync` counted `upserted` and `errors` but never the records the closed-rental filter dropped, so a deliberate exclusion looked identical to silent data loss. Added a `skipped` counter; `upserted + skipped + errors` now accounts for every record fetched, with a test asserting that invariant.
+
+### Email infrastructure — now complete
+
+- **DKIM + Return-Path verified.** Records added to Hostinger DNS, verified in Postmark.
+- **Both send streams smoke-tested live** (MessageIDs recorded in the Postmark section below).
+- **SendGrid DNS removed:** `s1._domainkey`, `s2._domainkey`, `em3538`. Verified against three public resolvers that exactly those three vanished and nothing collateral did. SPF needed no edit — it never contained a SendGrid include.
+- **DMARC reporting live.** Was `v=DMARC1; p=none` with no `rua=`, so it monitored nothing — that is why Postmark reported DMARC as missing despite a record existing. Now on Postmark's free monitoring (genuinely free, not a trial — the "14-day trial" banner on that page belongs to their separate paid product). Digests arrive Mondays at `ryanchong@cncrealtygroup.com`.
+
+**Do not move DMARC to `p=quarantine` or `p=reject` yet.** That needs 2–4 weekly digests first, confirming Hostinger *and* Postmark both pass alignment. Free tier retains report metadata ~2 weeks, so read digests as they arrive rather than expecting history.
+
+**Hostinger quirk worth remembering:** the TXT value field stores the surrounding quotes as part of the value, and Hostinger normalizes them on the way out. Match whatever format the existing row uses — never mix.
+
+### Windows/PowerShell traps hit this session
+
+Both cost real time and will recur:
+
+- **`Get-Content` without `-Encoding UTF8` reads as ANSI**, mangling every non-ASCII character. Splicing CLAUDE.md this way rewrote all 6,300 lines (2,088 insertions / 2,095 deletions). Caught via `git diff --numstat`, reverted, redone with `[System.IO.File]::ReadAllLines(path, UTF8)`.
+- **`Set-Content -Encoding UTF8` writes a BOM** in PowerShell 5.1. Adds an invisible diff on line 1. Use `[System.IO.File]::WriteAllText(path, text, (New-Object System.Text.UTF8Encoding($false)))`.
+
+### Outstanding
+
+1. **Credential rotation** — unblocked now that the crawl is done. `CRON_SECRET` first (found in plaintext 19× in the spare laptop's PowerShell history), then Neon password, then CRMLS/Trestle secret. The SendGrid key is moot.
+2. **Postmark paid plan** — gates inbound reply handling and the `reply` MX repoint off `mx.sendgrid.net`.
+3. **`SyncProgress.nextLink` → `cursor` rename** — the column holds a cursor, not a URL. Needs a migration, now unblocked.
+4. **Vercel deploy** — still the one unfinished Phase 6/7 item. Last session's plan was a direct `vercel --prod` CLI deploy rather than more debugging of the GitHub auto-deploy trigger.
+5. **DMARC enforcement** — revisit `p=quarantine` after 2–4 weekly digests.
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. Rotate `CRON_SECRET`, then the other credentials above — nothing blocks this now
+3. Ryan to direct: deploy, or the remaining backlog (broader transaction-management click-through testing for Purchase/Listing/Lease types is still the oldest open item)
 ## ✅ Postmark migration — COMPLETE (2026-08-09)
 
 SendGrid is gone from the codebase entirely. Plan: `docs/superpowers/plans/2026-08-08-postmark-migration.md` (all 12 tasks). Suite went 714/714 → 757/757, `tsc` clean, production build compiles.
@@ -6348,15 +6408,24 @@ Every send goes through one seam, `apps/web/src/lib/email/send.ts`. Nothing else
 - Opt-out suppresses **broadcast only**. Transactional mail always sends.
 - `emailOptOut` lives on both `Lead` and `User` (migration `20260809163849_add_email_opt_out`).
 
-### Blocked on Postmark account state, not code
+### Sending is verified and live
 
-1. **Sender signature.** `noreply@cncrealtygroup.com` is not verified, so live sends are rejected: *"The 'From' address you supplied is not a Sender Signature on your account."* Hostinger hosting the alias is irrelevant to this — Postmark verifies separately. Fix by verifying the **domain** (DKIM TXT + Return-Path CNAME in Hostinger DNS), which covers every address at once. Postmark's own DKIM selector differs from Hostinger's, so the two records coexist.
-2. **Account under review.** New Postmark accounts are restricted until approved.
-3. **Free tier has no Inbound and no Bulk API.** Task 11's code is done and unit-tested, but the end-to-end reply test needs the paid plan.
+The domain was authenticated on 2026-08-09 and **both streams were smoke-tested against the real API**, not just unit-tested:
+
+| Stream | MessageID | Result |
+|---|---|---|
+| `outbound` (transactional) | `05aa78de-a124-4cfe-a48e-e34cc2025ab6` | ErrorCode 0 |
+| `broadcast` + `List-Unsubscribe` headers | `787751b1-2f32-44d7-b5eb-fc0d05b9f8a1` | ErrorCode 0 |
+
+The broadcast test matters most: Postmark **enforces** `List-Unsubscribe` on broadcast streams, so acceptance confirms the header shape the seam generates is valid.
+
+**Still gated on the paid plan:** Inbound. Task 11's code is done and unit-tested, but the end-to-end reply test needs it. The account also showed "under review" — normal for new accounts, and it did not block sending.
+
+**A distinction worth keeping straight:** Hostinger hosting the `noreply@` alias is *not* the same as Postmark being allowed to send as it. Postmark verifies separately. The first smoke test failed with *"The 'From' address you supplied is not a Sender Signature on your account"* purely for that reason.
 
 ### Deploy-day checklist
 
-- [ ] Verify the sending domain in Postmark (DKIM + Return-Path)
+- [x] Verify the sending domain in Postmark (DKIM + Return-Path) — done 2026-08-09
 - [ ] Upgrade Postmark to a paid plan (Inbound + Bulk API)
 - [ ] Add `POSTMARK_SERVER_TOKEN`, `POSTMARK_BROADCAST_STREAM`, `POSTMARK_WEBHOOK_USER`, `POSTMARK_WEBHOOK_PASSWORD` to Vercel
 - [ ] Point the event webhook at `https://USER:PASS@cncrealtygroup.com/api/webhooks/postmark`
