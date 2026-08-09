@@ -5,6 +5,7 @@ vi.mock("@sendgrid/mail", () => ({
 }));
 
 import sgMail from "@sendgrid/mail";
+import { FROM } from "@/lib/email";
 import { sendEmail } from "@/lib/email/send";
 
 describe("sendEmail", () => {
@@ -23,6 +24,18 @@ describe("sendEmail", () => {
     expect(msg.to).toBe("a@b.com");
     expect(msg.subject).toBe("Hi");
     expect(msg.html).toBe("<p>Hello</p>");
+  });
+
+  it("sends from the app's FROM address", async () => {
+    await sendEmail({
+      to: "a@b.com",
+      subject: "Hi",
+      html: "<p>Hello</p>",
+      stream: "transactional",
+    });
+
+    const msg = vi.mocked(sgMail.send).mock.calls[0][0] as any;
+    expect(msg.from).toEqual(FROM);
   });
 
   it("derives a plain-text part from the html when text is omitted", async () => {
