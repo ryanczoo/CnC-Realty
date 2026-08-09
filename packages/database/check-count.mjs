@@ -35,8 +35,10 @@ try {
   const total = await prisma.property.count();
   const cp = await prisma.syncProgress.findUnique({ where: { syncType: "full" } });
 
+  // The cursor is a ListingKeyNumeric (a bare integer). Anything else is a
+  // checkpoint from an older pagination scheme and gets discarded by the crawl.
   const raw = cp?.nextLink;
-  const cursorMs = raw && !Number.isNaN(Date.parse(raw)) ? Date.parse(raw) : null;
+  const cursorKey = raw && /^\d+$/.test(raw) ? Number(raw) : null;
   const prev = existsSync(STATE) ? JSON.parse(readFileSync(STATE, "utf8")) : null;
   const mins = prev ? (now - prev.at) / 60000 : 0;
 
@@ -49,7 +51,7 @@ try {
 
   if (!cp) {
     console.log("crawl           : no checkpoint - FINISHED, or not started");
-  } else if (cursorMs === null) {
+  } else if (cursorKey === null) {
     console.log(`crawl           : stale pre-keyset checkpoint (${String(raw).slice(0, 60)})`);
     console.log("                  harmless - the new crawl ignores it and starts fresh");
   } else {
@@ -59,12 +61,10 @@ try {
     console.log(
       `progress        : ${((total / TOTAL_RECORDS) * 100).toFixed(1)}% of ${fmt(TOTAL_RECORDS)} feed records`
     );
-    console.log(
-      `crawl cursor    : ${new Date(cursorMs).toISOString().slice(0, 16).replace("T", " ")}  (informational - density varies, so this is not % done)`
-    );
+    console.log(`crawl cursor    : ListingKeyNumeric ${fmt(cursorKey)}`);
 
-    if (prev?.cursorMs != null && mins > 0.2) {
-      if (cursorMs > prev.cursorMs) {
+    if (prev?.cursorKey != null && mins > 0.2) {
+      if (cursorKey > prev.cursorKey) {
         const perMin = delta / mins;
         const eta = perMin > 0 ? (TOTAL_RECORDS - total) / perMin / 60 : null;
         console.log(
@@ -86,7 +86,7 @@ try {
     console.log(`\nnote: row count is near the feed total (${fmt(TOTAL_RECORDS)}) - likely near done`);
   }
 
-  writeFileSync(STATE, JSON.stringify({ total, cursorMs, at: now }));
+  writeFileSync(STATE, JSON.stringify({ total, cursorKey, at: now }));
 } catch (e) {
   console.log("ERR:", e.message);
 } finally {
