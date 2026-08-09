@@ -102,6 +102,15 @@ describe("sendEmail", () => {
     const msg = vi.mocked(sgMail.send).mock.calls[0][0] as any;
     expect(msg.replyTo).toBe("reply@b.com");
     expect(msg.attachments).toHaveLength(1);
-    expect(msg.attachments[0].filename).toBe("w9.pdf");
+
+    // The whole mapped shape, not just the filename: contentType must become
+    // SendGrid's `type`, and `disposition` must be emitted — without it the
+    // PDFs render inline in the recipient's client instead of attaching.
+    expect(msg.attachments[0]).toEqual({
+      filename: "w9.pdf",
+      content: "BASE64",
+      type: "application/pdf",
+      disposition: "attachment",
+    });
   });
 });
