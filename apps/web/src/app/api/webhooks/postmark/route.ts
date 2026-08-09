@@ -1,20 +1,6 @@
 import { NextResponse } from "next/server";
-import { timingSafeEqual } from "crypto";
 import { prisma } from "@/lib/prisma";
-
-// Postmark authenticates webhooks with HTTP Basic Auth embedded in the endpoint
-// URL, not a signed payload the way SendGrid did.
-function authorized(req: Request): boolean {
-  const header = req.headers.get("authorization") ?? "";
-  const user = process.env.POSTMARK_WEBHOOK_USER;
-  const pass = process.env.POSTMARK_WEBHOOK_PASSWORD;
-  if (!user || !pass) return false;
-
-  const expected = Buffer.from("Basic " + Buffer.from(`${user}:${pass}`).toString("base64"));
-  const given = Buffer.from(header);
-  // Length check first: timingSafeEqual throws on a length mismatch.
-  return expected.length === given.length && timingSafeEqual(expected, given);
-}
+import { isAuthorizedPostmarkWebhook } from "@/lib/postmark-webhook-auth";
 
 type PostmarkEvent = {
   RecordType?: string;
@@ -51,7 +37,7 @@ function contactUpdate(event: PostmarkEvent, leadId: string) {
 }
 
 export async function POST(req: Request) {
-  if (!authorized(req)) {
+  if (!isAuthorizedPostmarkWebhook(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
