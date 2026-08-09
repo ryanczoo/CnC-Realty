@@ -319,7 +319,7 @@ describe("Trigger execution — PATCH /api/leads/[id]", () => {
   });
 
   it("sends a branded SEND_EMAIL trigger on the transactional stream", async () => {
-    process.env.SENDGRID_API_KEY = "test-key";
+    process.env.POSTMARK_SERVER_TOKEN = "test-key";
     vi.mocked(getServerSession).mockResolvedValue(LEAD_SESSION as any);
     vi.mocked(prisma.lead.update).mockResolvedValue({ ...UPDATED_LEAD, status: "UNDER_CONTRACT" } as any);
     vi.mocked(prisma.trigger.findMany).mockResolvedValue([TRIGGER_EMAIL] as any);

@@ -142,7 +142,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
         if (trigger.actionType === "SEND_EMAIL" && trigger.emailSubject && trigger.emailBody) {
           try {
-            if (process.env.SENDGRID_API_KEY && lead.email) {
+            if (process.env.POSTMARK_SERVER_TOKEN && lead.email) {
               const bodyHtml = `<p style="color: #4b4b4b; font-size: 15px; line-height: 1.6;">${escapeHtml(trigger.emailBody).replace(/\n/g, "<br>")}</p>`;
               const html = emailLayout({ heading: trigger.emailSubject, bodyHtml });
               await sendEmail({

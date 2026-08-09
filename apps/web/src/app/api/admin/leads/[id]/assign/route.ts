@@ -63,7 +63,7 @@ export async function PATCH(
   }
 
   try {
-    if (process.env.SENDGRID_API_KEY && agent.user.email) {
+    if (process.env.POSTMARK_SERVER_TOKEN && agent.user.email) {
       const safeAgentName = escapeHtml(agent.displayName ?? "there");
       const bodyHtml = `
         <div style="color: #4b4b4b; font-size: 15px; line-height: 1.8; text-align: left;">

@@ -1,10 +1,22 @@
-import sgMail from "@sendgrid/mail";
+import { ServerClient } from "postmark";
 import { FROM, htmlToPlainText } from "@/lib/email";
 
-if (!process.env.SENDGRID_API_KEY) {
-  console.error("[email] SENDGRID_API_KEY is not set — email sending will be skipped");
-} else {
-  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+// Postmark's transactional stream. Hardcoded because it is fixed per server and
+// identical across environments. The broadcast stream id is account-specific, so
+// that one is read from the environment instead.
+const TRANSACTIONAL_STREAM = "outbound";
+
+let client: ServerClient | null = null;
+
+// Constructed lazily, not at module load: importing this module must not throw
+// in environments that never send (tests, builds, local dev without a token).
+function getClient(): ServerClient {
+  if (!client) {
+    const token = process.env.POSTMARK_SERVER_TOKEN;
+    if (!token) throw new Error("POSTMARK_SERVER_TOKEN is not set");
+    client = new ServerClient(token);
+  }
+  return client;
 }
 
 export type MessageStream = "transactional" | "broadcast";
@@ -32,37 +44,47 @@ export type SendOptions = {
 // this owns FROM, the plain-text part, stream routing, and (later) opt-out
 // suppression. `stream` is required so no call site can forget to choose.
 export async function sendEmail(opts: SendOptions): Promise<void> {
+  const from = opts.from ?? FROM;
+
   const base = {
-    from: opts.from ?? FROM,
-    to: opts.to,
-    subject: opts.subject,
-    ...(opts.replyTo ? { replyTo: opts.replyTo } : {}),
+    // Postmark takes one formatted string where SendGrid took {email, name}.
+    // The mapping lives here so the public SendOptions shape stays vendor-free.
+    From: `${from.name} <${from.email}>`,
+    To: opts.to,
+    Subject: opts.subject,
+    MessageStream:
+      opts.stream === "broadcast"
+        ? process.env.POSTMARK_BROADCAST_STREAM!
+        : TRANSACTIONAL_STREAM,
+    ...(opts.replyTo ? { ReplyTo: opts.replyTo } : {}),
     ...(opts.attachments
       ? {
-          attachments: opts.attachments.map((a) => ({
-            filename: a.filename,
-            content: a.content,
-            type: a.contentType,
-            disposition: "attachment",
+          Attachments: opts.attachments.map((a) => ({
+            Name: a.filename,
+            Content: a.content,
+            ContentType: a.contentType,
+            // Required by Postmark's Attachment type. null is the value for a
+            // downloadable attachment; a ContentID would make it an inline
+            // `cid:` reference instead, which these never are.
+            ContentID: null,
           })),
         }
       : {}),
   };
 
-  // Branch rather than spread the body parts in conditionally: SendGrid's
-  // MailDataRequired demands provable evidence that a body part is present,
-  // which an optional spread cannot give it. Each branch narrows BodyParts to
-  // one member, so this type-checks without a cast.
+  // Branch rather than spread the body parts in conditionally: each branch
+  // narrows BodyParts to one member, which is what lets the text-only path omit
+  // HtmlBody entirely without a cast.
   if (opts.html !== undefined) {
-    await sgMail.send({
+    await getClient().sendEmail({
       ...base,
-      html: opts.html,
-      text: opts.text ?? htmlToPlainText(opts.html),
+      HtmlBody: opts.html,
+      TextBody: opts.text ?? htmlToPlainText(opts.html),
     });
     return;
   }
 
-  // Text-only: no html key at all. An empty html part would render as a blank
-  // email in clients that prefer text/html.
-  await sgMail.send({ ...base, text: opts.text });
+  // Text-only: no HtmlBody key at all. An empty html part would render as a
+  // blank email in clients that prefer text/html.
+  await getClient().sendEmail({ ...base, TextBody: opts.text });
 }

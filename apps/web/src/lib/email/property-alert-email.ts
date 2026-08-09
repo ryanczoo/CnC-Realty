@@ -13,11 +13,11 @@ export async function sendPropertyAlertEmail(
   userName: string,
   properties: AlertProperty[]
 ): Promise<void> {
-  // The seam owns setApiKey now, but this early return is behaviour, not config:
-  // with no key these alerts are skipped outright rather than attempted and failed.
-  // Retarget it at the vendor's env var when the Postmark swap lands.
-  if (!process.env.SENDGRID_API_KEY) {
-    console.warn("[property-alert-email] SENDGRID_API_KEY is not set — skipping email send.");
+  // The seam owns client construction now, but this early return is behaviour,
+  // not config: with no token these alerts are skipped outright rather than
+  // attempted and failed.
+  if (!process.env.POSTMARK_SERVER_TOKEN) {
+    console.warn("[property-alert-email] POSTMARK_SERVER_TOKEN is not set — skipping email send.");
     return;
   }
 

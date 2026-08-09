@@ -32,7 +32,7 @@ function request() {
 describe("POST /api/campaigns/[id]/send — ownership", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.SENDGRID_API_KEY = "test-key";
+    process.env.POSTMARK_SERVER_TOKEN = "test-key";
     vi.mocked(prisma.campaign.findUnique).mockResolvedValue(CAMPAIGN as any);
     vi.mocked(prisma.campaign.update).mockResolvedValue({} as any);
     vi.mocked(prisma.campaignContact.updateMany).mockResolvedValue({} as any);
@@ -83,7 +83,7 @@ describe("POST /api/campaigns/[id]/send — ownership", () => {
 describe("POST /api/campaigns/[id]/send — send seam", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.SENDGRID_API_KEY = "test-key";
+    process.env.POSTMARK_SERVER_TOKEN = "test-key";
     vi.mocked(requireAuth).mockResolvedValue({
       session: { user: { id: "u1", email: "a@cnc.com", role: "AGENT", agentId: "a1" } },
       error: null,

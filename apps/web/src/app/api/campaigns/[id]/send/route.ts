@@ -32,8 +32,8 @@ export async function POST(
     );
   }
 
-  if (!process.env.SENDGRID_API_KEY) {
-    return NextResponse.json({ error: "SENDGRID_API_KEY not configured" }, { status: 500 });
+  if (!process.env.POSTMARK_SERVER_TOKEN) {
+    return NextResponse.json({ error: "POSTMARK_SERVER_TOKEN not configured" }, { status: 500 });
   }
 
   let sent = 0;

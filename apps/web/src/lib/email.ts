@@ -114,7 +114,7 @@ export async function sendLeadNotification(lead: {
   phone?: string | null;
   notes?: string | null;
 }) {
-  if (!process.env.SENDGRID_API_KEY) return;
+  if (!process.env.POSTMARK_SERVER_TOKEN) return;
 
   const safeName = `${escapeHtml(lead.firstName)} ${escapeHtml(lead.lastName)}`;
   const safeEmail = escapeHtml(lead.email);
@@ -150,7 +150,7 @@ export async function sendApplicationNotification(app: {
   lastName: string;
   email: string;
 }) {
-  if (!process.env.SENDGRID_API_KEY) return;
+  if (!process.env.POSTMARK_SERVER_TOKEN) return;
   const safeName = `${escapeHtml(app.firstName)} ${escapeHtml(app.lastName)}`;
   const safeEmail = escapeHtml(app.email);
   const bodyHtml = `
@@ -181,7 +181,7 @@ export async function sendApplicationApproved(
   firstName: string,
   setupUrl: string
 ) {
-  if (!process.env.SENDGRID_API_KEY) return;
+  if (!process.env.POSTMARK_SERVER_TOKEN) return;
   const safeName = escapeHtml(firstName);
   const safeUrl = escapeHtml(setupUrl);
 
@@ -211,7 +211,7 @@ export async function sendApplicationApproved(
 const ANNOUNCEMENT_FROM = { email: "info@cncrealtygroup.com", name: "CnC Realty" };
 
 export async function sendAnnouncement(recipients: string[], title: string, body: string) {
-  if (!process.env.SENDGRID_API_KEY) return;
+  if (!process.env.POSTMARK_SERVER_TOKEN) return;
   const safeTitle = escapeHtml(title);
   const safeBody = escapeHtml(body);
 
@@ -241,7 +241,7 @@ export async function sendAnnouncement(recipients: string[], title: string, body
 }
 
 export async function sendPasswordReset(to: string, resetUrl: string) {
-  if (!process.env.SENDGRID_API_KEY) return;
+  if (!process.env.POSTMARK_SERVER_TOKEN) return;
   const safeUrl = escapeHtml(resetUrl);
 
   const bodyHtml = `
@@ -273,7 +273,7 @@ export async function sendApplicationRejected(
   firstName: string,
   reason: string
 ) {
-  if (!process.env.SENDGRID_API_KEY) return;
+  if (!process.env.POSTMARK_SERVER_TOKEN) return;
   const safeName = escapeHtml(firstName);
   const safeReason = escapeHtml(reason);
   const bodyHtml = `
@@ -304,7 +304,7 @@ export async function sendApplicationRejected(
 const ATTACHMENTS_DIR = join(process.cwd(), "src", "lib", "email", "attachments");
 
 export async function sendApprovalDocuments(to: string, firstName: string) {
-  if (!process.env.SENDGRID_API_KEY) return;
+  if (!process.env.POSTMARK_SERVER_TOKEN) return;
   const safeName = escapeHtml(firstName);
 
   const w9 = readFileSync(join(ATTACHMENTS_DIR, "w9-blank.pdf"));

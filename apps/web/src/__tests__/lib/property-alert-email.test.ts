@@ -1,4 +1,4 @@
-process.env.SENDGRID_API_KEY = "test-key";
+process.env.POSTMARK_SERVER_TOKEN = "test-key";
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
@@ -37,14 +37,14 @@ describe("sendPropertyAlertEmail", () => {
   });
 
   it("skips the send entirely when no API key is configured", async () => {
-    const original = process.env.SENDGRID_API_KEY;
-    delete process.env.SENDGRID_API_KEY;
+    const original = process.env.POSTMARK_SERVER_TOKEN;
+    delete process.env.POSTMARK_SERVER_TOKEN;
 
     try {
       await sendPropertyAlertEmail("buyer@example.com", "Jordan", ONE_LISTING);
       expect(sendEmail).not.toHaveBeenCalled();
     } finally {
-      process.env.SENDGRID_API_KEY = original;
+      process.env.POSTMARK_SERVER_TOKEN = original;
     }
   });
 });

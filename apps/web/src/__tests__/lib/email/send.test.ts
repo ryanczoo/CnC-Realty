@@ -1,12 +1,28 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.mock("@sendgrid/mail", () => ({
-  default: { setApiKey: vi.fn(), send: vi.fn().mockResolvedValue(undefined) },
+process.env.POSTMARK_SERVER_TOKEN = "test-token";
+process.env.POSTMARK_BROADCAST_STREAM = "test-broadcast-stream";
+
+const { sendEmailMock } = vi.hoisted(() => ({
+  sendEmailMock: vi.fn().mockResolvedValue({ MessageID: "x" }),
 }));
 
-import sgMail from "@sendgrid/mail";
+// A class, not vi.fn().mockImplementation(() => ...): the seam calls
+// `new ServerClient(token)`, and an arrow implementation is not a constructor.
+vi.mock("postmark", () => ({
+  ServerClient: class {
+    sendEmail = sendEmailMock;
+  },
+}));
+
 import { FROM } from "@/lib/email";
 import { sendEmail } from "@/lib/email/send";
+
+/** The single message Postmark was handed by the call under test. */
+function sentMessage(): any {
+  expect(sendEmailMock).toHaveBeenCalledOnce();
+  return sendEmailMock.mock.calls[0][0];
+}
 
 describe("sendEmail", () => {
   beforeEach(() => vi.clearAllMocks());
@@ -19,11 +35,10 @@ describe("sendEmail", () => {
       stream: "transactional",
     });
 
-    expect(sgMail.send).toHaveBeenCalledOnce();
-    const msg = vi.mocked(sgMail.send).mock.calls[0][0] as any;
-    expect(msg.to).toBe("a@b.com");
-    expect(msg.subject).toBe("Hi");
-    expect(msg.html).toBe("<p>Hello</p>");
+    const msg = sentMessage();
+    expect(msg.To).toBe("a@b.com");
+    expect(msg.Subject).toBe("Hi");
+    expect(msg.HtmlBody).toBe("<p>Hello</p>");
   });
 
   it("sends from the app's FROM address", async () => {
@@ -34,8 +49,9 @@ describe("sendEmail", () => {
       stream: "transactional",
     });
 
-    const msg = vi.mocked(sgMail.send).mock.calls[0][0] as any;
-    expect(msg.from).toEqual(FROM);
+    // Postmark takes a single formatted string, not SendGrid's {email,name}
+    // object — the public SendOptions shape is unchanged, the seam maps it.
+    expect(sentMessage().From).toBe(`${FROM.name} <${FROM.email}>`);
   });
 
   it("uses the caller's from address when one is given", async () => {
@@ -49,9 +65,11 @@ describe("sendEmail", () => {
       stream: "transactional",
     });
 
-    const msg = vi.mocked(sgMail.send).mock.calls[0][0] as any;
-    expect(msg.from).toEqual(announcementFrom);
-    expect(msg.from).not.toEqual(FROM);
+    // sendAnnouncement depends on this: announcements must reach the monitored
+    // info@ inbox, not the unmonitored noreply@ default.
+    const msg = sentMessage();
+    expect(msg.From).toBe("CnC Realty <info@cncrealtygroup.com>");
+    expect(msg.From).not.toBe(`${FROM.name} <${FROM.email}>`);
   });
 
   it("falls back to FROM when from is explicitly undefined", async () => {
@@ -63,8 +81,7 @@ describe("sendEmail", () => {
       stream: "transactional",
     });
 
-    const msg = vi.mocked(sgMail.send).mock.calls[0][0] as any;
-    expect(msg.from).toEqual(FROM);
+    expect(sentMessage().From).toBe(`${FROM.name} <${FROM.email}>`);
   });
 
   it("derives a plain-text part from the html when text is omitted", async () => {
@@ -75,9 +92,9 @@ describe("sendEmail", () => {
       stream: "transactional",
     });
 
-    const msg = vi.mocked(sgMail.send).mock.calls[0][0] as any;
-    expect(msg.text).toContain("Hello");
-    expect(msg.text).not.toContain("<p>");
+    const msg = sentMessage();
+    expect(msg.TextBody).toContain("Hello");
+    expect(msg.TextBody).not.toContain("<p>");
   });
 
   it("sends a text-only message with no html part at all", async () => {
@@ -88,13 +105,13 @@ describe("sendEmail", () => {
       stream: "transactional",
     });
 
-    const msg = vi.mocked(sgMail.send).mock.calls[0][0] as any;
-    expect(msg.text).toBe("plain only");
+    const msg = sentMessage();
+    expect(msg.TextBody).toBe("plain only");
 
-    // Not `html: ""`. Mail clients prefer the text/html part whenever one is
-    // present, so an empty html body renders as a blank email — the key must
-    // be absent entirely, exactly as a text-only sgMail.send call was before.
-    expect(msg).not.toHaveProperty("html");
+    // Not `HtmlBody: ""`. Mail clients prefer the text/html part whenever one
+    // is present, so an empty html body renders as a blank email — the key must
+    // be absent entirely.
+    expect(msg).not.toHaveProperty("HtmlBody");
   });
 
   it("uses the caller's text part when one is given", async () => {
@@ -102,32 +119,73 @@ describe("sendEmail", () => {
       to: "a@b.com", subject: "Hi", html: "<p>x</p>", text: "custom", stream: "transactional",
     });
 
-    const msg = vi.mocked(sgMail.send).mock.calls[0][0] as any;
-    expect(msg.text).toBe("custom");
+    expect(sentMessage().TextBody).toBe("custom");
   });
 
-  it("passes replyTo and attachments through", async () => {
+  it("passes replyTo through", async () => {
     await sendEmail({
       to: "a@b.com",
       subject: "Hi",
       html: "<p>x</p>",
       replyTo: "reply@b.com",
+      stream: "transactional",
+    });
+
+    expect(sentMessage().ReplyTo).toBe("reply@b.com");
+  });
+
+  it("maps attachments to Postmark's Name/Content/ContentType shape", async () => {
+    await sendEmail({
+      to: "a@b.com",
+      subject: "Hi",
+      html: "<p>x</p>",
       attachments: [{ filename: "w9.pdf", content: "BASE64", contentType: "application/pdf" }],
       stream: "transactional",
     });
 
-    const msg = vi.mocked(sgMail.send).mock.calls[0][0] as any;
-    expect(msg.replyTo).toBe("reply@b.com");
-    expect(msg.attachments).toHaveLength(1);
+    // ContentID must be null, not absent: Postmark requires the key, and a
+    // non-null value would make the PDF an inline `cid:` reference instead of
+    // a downloadable attachment.
+    expect(sentMessage().Attachments).toEqual([
+      {
+        Name: "w9.pdf",
+        Content: "BASE64",
+        ContentType: "application/pdf",
+        ContentID: null,
+      },
+    ]);
+  });
 
-    // The whole mapped shape, not just the filename: contentType must become
-    // SendGrid's `type`, and `disposition` must be emitted — without it the
-    // PDFs render inline in the recipient's client instead of attaching.
-    expect(msg.attachments[0]).toEqual({
-      filename: "w9.pdf",
-      content: "BASE64",
-      type: "application/pdf",
-      disposition: "attachment",
+  it("omits replyTo and attachments when the caller gives neither", async () => {
+    await sendEmail({
+      to: "a@b.com",
+      subject: "Hi",
+      html: "<p>x</p>",
+      stream: "transactional",
     });
+
+    const msg = sentMessage();
+    expect(msg).not.toHaveProperty("ReplyTo");
+    expect(msg).not.toHaveProperty("Attachments");
+  });
+
+  it("routes a transactional send to the outbound stream", async () => {
+    await sendEmail({
+      to: "a@b.com", subject: "Hi", html: "<p>x</p>", stream: "transactional",
+    });
+
+    expect(sentMessage().MessageStream).toBe("outbound");
+  });
+
+  it("routes a broadcast send to the broadcast stream", async () => {
+    await sendEmail({
+      to: "a@b.com", subject: "Hi", html: "<p>x</p>", stream: "broadcast",
+    });
+
+    // Read from env, not hardcoded: the broadcast stream id is not `outbound`,
+    // and sending marketing mail down the transactional stream is what the
+    // stream split exists to prevent.
+    expect(sentMessage().MessageStream).toBe(process.env.POSTMARK_BROADCAST_STREAM);
+    expect(sentMessage().MessageStream).not.toBe("outbound");
   });
 });
