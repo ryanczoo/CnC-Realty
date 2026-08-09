@@ -29,6 +29,10 @@ describe("GET /api/idx/sync", () => {
     vi.clearAllMocks();
     process.env.CRON_SECRET = "test-secret";
     vi.mocked(prisma.syncProgress.findUnique).mockResolvedValue(null);
+    // clearAllMocks resets calls but NOT implementations, so a test that makes
+    // upsert throw leaks that behaviour into every test after it. Restore a
+    // succeeding default; the tests that need failures set their own.
+    vi.mocked(prisma.property.upsert).mockImplementation((async () => ({})) as never);
   });
 
   it("skips upserting a Closed FOR_RENT record but keeps Active FOR_RENT and Closed FOR_SALE", async () => {
@@ -220,6 +224,86 @@ describe("GET /api/idx/sync", () => {
     const body = await res.json();
     expect(body.upserted).toBe(2);
     expect(body.errors).toBe(1);
+  });
+
+  describe("skipped accounting", () => {
+    // A deliberate exclusion that is reported as neither an upsert nor an error
+    // is indistinguishable from silent data loss. Reconciling a finished crawl
+    // against the feed cost a full investigation for exactly this reason.
+    it("reports how many records the closed-rental filter skipped", async () => {
+      vi.mocked(fetchProperties).mockImplementation(async function* () {
+        yield {
+          properties: [
+            { mlsNumber: "ML1", status: "Closed", listingType: "FOR_RENT" } as any,
+            { mlsNumber: "ML2", status: "Active", listingType: "FOR_RENT" } as any,
+            { mlsNumber: "ML3", status: "Closed", listingType: "FOR_SALE" } as any,
+          ],
+          cursor: "421448857",
+        };
+      });
+
+      const body = await (await GET(makeRequest("test-secret"))).json();
+      expect(body.upserted).toBe(2);
+      expect(body.errors).toBe(0);
+      expect(body.skipped).toBe(1);
+    });
+
+    it("reports zero skipped when the page has nothing to filter out", async () => {
+      vi.mocked(fetchProperties).mockImplementation(async function* () {
+        yield {
+          properties: [{ mlsNumber: "ML1", status: "Active", listingType: "FOR_SALE" } as any],
+          cursor: "421448857",
+        };
+      });
+
+      expect((await (await GET(makeRequest("test-secret"))).json()).skipped).toBe(0);
+    });
+
+    it("accumulates skipped across pages", async () => {
+      vi.mocked(fetchProperties).mockImplementation(async function* () {
+        yield {
+          properties: [
+            { mlsNumber: "ML1", status: "Closed", listingType: "FOR_RENT" } as any,
+            { mlsNumber: "ML2", status: "Active", listingType: "FOR_SALE" } as any,
+          ],
+          cursor: "421448857",
+        };
+        yield {
+          properties: [
+            { mlsNumber: "ML3", status: "Closed", listingType: "FOR_RENT" } as any,
+            { mlsNumber: "ML4", status: "Closed", listingType: "FOR_RENT" } as any,
+          ],
+          cursor: "421448999",
+        };
+      });
+
+      const body = await (await GET(makeRequest("test-secret"))).json();
+      expect(body.skipped).toBe(3);
+      expect(body.upserted).toBe(1);
+    });
+
+    it("accounts for every fetched record as upserted, skipped, or errored", async () => {
+      vi.mocked(prisma.property.upsert).mockImplementation((async (args: any) => {
+        if (args.where.mlsNumber === "ML4") throw new Error("connection reset");
+        return {} as any;
+      }) as any);
+
+      const properties = [
+        { mlsNumber: "ML1", status: "Closed", listingType: "FOR_RENT" },
+        { mlsNumber: "ML2", status: "Active", listingType: "FOR_SALE" },
+        { mlsNumber: "ML3", status: "Closed", listingType: "FOR_SALE" },
+        { mlsNumber: "ML4", status: "Active", listingType: "FOR_RENT" },
+      ] as any[];
+
+      vi.mocked(fetchProperties).mockImplementation(async function* () {
+        yield { properties, cursor: "421448857" };
+      });
+
+      const body = await (await GET(makeRequest("test-secret"))).json();
+
+      // The invariant that makes the log trustworthy: nothing vanishes.
+      expect(body.upserted + body.skipped + body.errors).toBe(properties.length);
+    });
   });
 
   it("keeps the checkpoint when the crawl fails partway, so the next run can resume", async () => {

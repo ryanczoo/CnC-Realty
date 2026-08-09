@@ -12,7 +12,23 @@ The unbounded resync finished on Ryan's parent's desktop. Window 1 logged:
 
 **All prior restrictions are lifted.** Prisma migrations, server restarts, and credential rotation are safe again. `errors: 0` also retires the 2026-08-07 question of whether `prisma.property.upsert()` needed a retry wrapper — it did not.
 
-**Open question, not a blocker:** the feed was measured at 4,862,377 records but 3,966,531 were upserted — a ~896k gap. `errors: 0` rules out *write* failures; it says nothing about records the crawl never fetched. Plausible causes: the `$count` total covering a different filter than the crawl walks, the feed shifting over 12.7 hours, or a keyset gap on `ListingKeyNumeric`. Worth an hour before treating the data as complete statewide — home-value comps and market stats are the features that would notice.
+**The ~896k "gap" is resolved — it is not missing data.** Investigated 2026-08-09 against the live Trestle API. `api/idx/sync/route.ts` deliberately drops closed rentals before upserting (`status === "Closed" && listingType === "FOR_RENT"`), per the 2026-08-06 scope decision. Those records are fetched and then skipped, so they count as neither an upsert nor an error.
+
+Reconciliation, all figures measured not estimated:
+
+| | |
+|---|---|
+| Trestle feed matching the crawl's status filter | 4,862,686 |
+| − closed lease/rental listings, excluded by design | 896,247 |
+| = expected to store | 3,966,439 |
+| crawl actually upserted | 3,966,531 |
+| discrepancy | **92** (feed drift over a 12.7-hour crawl) |
+
+Plus 66,537 rows the final crawl never re-touched, left by the earlier pre-keyset crawl, giving the 4,033,068 total. Of those, 6,059 are closed rentals stored before the exclusion existed — harmless residue; **zero** closed rentals were written after Aug 8, confirming the filter works.
+
+Pagination was independently verified by replaying the crawl's exact query over a 40,000-key window: 6,718 of 6,718 records fetched, correct ordering, no skips, with and without the `$expand=Media`. Coverage is complete.
+
+**Worth fixing when convenient:** `runSync` logs `upserted` and `errors` but never `skipped`, which is what made a deliberate exclusion look like silent data loss. A `skipped` counter on that filter would stop this from being re-derived.
 
 **Still outstanding — credential rotation.** `CRON_SECRET` was found in plaintext 19× in the spare laptop's PowerShell history on a company-managed machine with EDR and backup agents. File deletion limits exposure but cannot guarantee erasure. Rotate in this order: `CRON_SECRET`, Neon password, CRMLS/Trestle secret. Lower priority: `NEXTAUTH_SECRET`, Upstash token, R2 keys. Mapbox is public by design. The SendGrid key is moot — SendGrid is gone entirely (see the Postmark section at the end of this file).
 

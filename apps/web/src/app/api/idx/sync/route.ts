@@ -44,11 +44,17 @@ async function runSync(type: string) {
 
   let upserted = 0;
   let errors = 0;
+  // Counted and reported, not silent. A record dropped here is neither an
+  // upsert nor an error, so without this the totals look like data loss:
+  // reconciling a finished crawl against the feed cost a full investigation
+  // before the ~896k shortfall turned out to be exactly this exclusion.
+  let skipped = 0;
 
   for await (const { properties: batch, cursor } of fetchProperties(modifiedSince, checkpoint?.nextLink)) {
     const eligible = batch.filter(
       (property) => !(property.status === "Closed" && property.listingType === "FOR_RENT")
     );
+    skipped += batch.length - eligible.length;
 
     for (let i = 0; i < eligible.length; i += UPSERT_CONCURRENCY) {
       const chunk = eligible.slice(i, i + UPSERT_CONCURRENCY);
@@ -87,8 +93,13 @@ async function runSync(type: string) {
   // left in place so the next run resumes rather than restarting.
   await prisma.syncProgress.deleteMany({ where: { syncType: type } });
 
-  console.log(`[idx-sync] done in ${Date.now() - startedAt}ms — upserted: ${upserted}, errors: ${errors}`);
-  return { upserted, errors, type };
+  // upserted + skipped + errors accounts for every record fetched, so this line
+  // can be reconciled against the feed without guesswork.
+  console.log(
+    `[idx-sync] done in ${Date.now() - startedAt}ms — upserted: ${upserted}, ` +
+      `skipped (closed rentals): ${skipped}, errors: ${errors}`
+  );
+  return { upserted, skipped, errors, type };
 }
 
 function isAuthorized(req: Request): boolean {
