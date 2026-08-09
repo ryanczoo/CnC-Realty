@@ -21,6 +21,24 @@ function getClient(): ServerClient {
 
 export type MessageStream = "transactional" | "broadcast";
 
+// Refuses rather than falls back. An unset variable would serialize
+// MessageStream as undefined, which Postmark drops — routing the send to the
+// server's default stream, `outbound`. That would put campaign and property-
+// alert mail on the transactional stream silently, with no error, which is the
+// exact contamination the stream split exists to prevent. A broadcast that does
+// not go out is recoverable; a poisoned transactional reputation is not.
+function resolveStream(stream: MessageStream): string {
+  if (stream !== "broadcast") return TRANSACTIONAL_STREAM;
+
+  const broadcast = process.env.POSTMARK_BROADCAST_STREAM;
+  if (!broadcast) {
+    throw new Error(
+      "POSTMARK_BROADCAST_STREAM is not set — refusing to send a broadcast on the transactional stream"
+    );
+  }
+  return broadcast;
+}
+
 // At least one body part, enforced at compile time: html (text derived or
 // given), or text alone. A caller with neither is a type error, not a runtime
 // one. Text-only senders must not be forced to invent an html part — mail
@@ -52,10 +70,9 @@ export async function sendEmail(opts: SendOptions): Promise<void> {
     From: `${from.name} <${from.email}>`,
     To: opts.to,
     Subject: opts.subject,
-    MessageStream:
-      opts.stream === "broadcast"
-        ? process.env.POSTMARK_BROADCAST_STREAM!
-        : TRANSACTIONAL_STREAM,
+    // Throws for an unconfigured broadcast stream, and does so while building
+    // `base` — before getClient(), so nothing reaches Postmark.
+    MessageStream: resolveStream(opts.stream),
     ...(opts.replyTo ? { ReplyTo: opts.replyTo } : {}),
     ...(opts.attachments
       ? {

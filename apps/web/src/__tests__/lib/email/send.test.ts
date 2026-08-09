@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 process.env.POSTMARK_SERVER_TOKEN = "test-token";
 process.env.POSTMARK_BROADCAST_STREAM = "test-broadcast-stream";
@@ -187,5 +187,48 @@ describe("sendEmail", () => {
     // stream split exists to prevent.
     expect(sentMessage().MessageStream).toBe(process.env.POSTMARK_BROADCAST_STREAM);
     expect(sentMessage().MessageStream).not.toBe("outbound");
+  });
+
+  describe("when POSTMARK_BROADCAST_STREAM is not configured", () => {
+    let original: string | undefined;
+
+    beforeEach(() => {
+      original = process.env.POSTMARK_BROADCAST_STREAM;
+      delete process.env.POSTMARK_BROADCAST_STREAM;
+    });
+
+    afterEach(() => {
+      if (original === undefined) delete process.env.POSTMARK_BROADCAST_STREAM;
+      else process.env.POSTMARK_BROADCAST_STREAM = original;
+    });
+
+    it("refuses a broadcast send and never calls Postmark", async () => {
+      await expect(
+        sendEmail({ to: "a@b.com", subject: "Hi", html: "<p>x</p>", stream: "broadcast" })
+      ).rejects.toThrow("POSTMARK_BROADCAST_STREAM");
+
+      // Refusing has to mean refusing. Falling through would hand Postmark a
+      // message with no MessageStream, which it routes to the server default —
+      // campaign mail on the transactional stream, silently.
+      expect(sendEmailMock).not.toHaveBeenCalled();
+    });
+
+    it("refuses a broadcast send when the variable is set but empty", async () => {
+      process.env.POSTMARK_BROADCAST_STREAM = "";
+
+      await expect(
+        sendEmail({ to: "a@b.com", subject: "Hi", html: "<p>x</p>", stream: "broadcast" })
+      ).rejects.toThrow("POSTMARK_BROADCAST_STREAM");
+
+      expect(sendEmailMock).not.toHaveBeenCalled();
+    });
+
+    it("still sends a transactional message — the guard is broadcast-only", async () => {
+      await sendEmail({
+        to: "a@b.com", subject: "Hi", html: "<p>x</p>", stream: "transactional",
+      });
+
+      expect(sentMessage().MessageStream).toBe("outbound");
+    });
   });
 });
