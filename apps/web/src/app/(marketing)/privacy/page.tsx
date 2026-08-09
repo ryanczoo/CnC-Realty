@@ -46,7 +46,7 @@ export default function PrivacyPage() {
             <ul className="space-y-2 text-base leading-relaxed text-[#1B1B1B]/80">
               <li><strong>Directly from you:</strong> When you create an account, submit a contact form, request a tour, request a home valuation, or apply to join CnC as an agent.</li>
               <li><strong>Automatically:</strong> Through cookies, web beacons, and similar tracking technologies when you browse our Site.</li>
-              <li><strong>From third parties:</strong> We may receive information from our analytics providers (PostHog), error monitoring services (Sentry), and email service providers (SendGrid) in the ordinary course of operating our Site.</li>
+              <li><strong>From third parties:</strong> We may receive information from our analytics providers (PostHog), error monitoring services (Sentry), and email service providers (Postmark, a product of ActiveCampaign, LLC) in the ordinary course of operating our Site.</li>
             </ul>
           </section>
 

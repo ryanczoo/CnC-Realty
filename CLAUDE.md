@@ -1,31 +1,24 @@
 # CnC Realty — Full Website & CRM Implementation Plan
 
-## ⚠️ ACTIVE CONSTRAINT (as of 2026-08-07) — IDX full resync running on Ryan's parent's desktop
+## ✅ IDX full resync — COMPLETE (2026-08-09)
 
-A full, **unbounded** IDX resync is running unattended on Ryan's parent's desktop (separate git clone at `C:\Users\lenac\Downloads\CnC-Realty`), continuously upserting into the shared Neon `Property` table. It runs in **production mode** (`pnpm --filter web build` then `pnpm --filter web start`), not dev mode. The feed is **4,862,377 records** (confirmed via `$count=true`, not estimated). At ~4,000–5,000 rows/min it takes roughly 12–15 hours.
+The unbounded resync finished on Ryan's parent's desktop. Window 1 logged:
 
-**The spare laptop is out of the picture** — its sync is stopped, the machine has been wiped of all CnC files, and it is being returned to Ryan's employer. Only one machine writes to the checkpoint now.
+```
+[idx-sync] done in 45729153ms — upserted: 3966531, errors: 0
+```
 
-**Three windows are open on the desktop, and they are not interchangeable:**
-- **Window 1 — `next-server`.** The sync itself lives inside this process. Never Ctrl+C it, never type in it.
-- **Window 2 — ordinary PowerShell.** Ryan's working window: `check-count.mjs`, `git pull`, POSTs.
-- **Window 3 — `node watchdog.mjs`.** Restarts the crawl if it dies. Leave running, don't type in it.
+~12.7 hours, **3,966,531 upserted, zero errors**. `check-count.mjs` reports `checkpoint: NONE` and **4,033,068 rows** in `Property` (up from ~185k). The watchdog correctly went idle rather than restarting.
 
-**Before making any change, check whether it touches the `Property` table's schema:**
-- ✅ Safe, no restriction: all frontend/UI code, email templates, any table other than `Property` (Lead, Agent, Campaign, TransactionFile, etc.), normal reads/writes through the app, committing/pushing to git, and even **`git pull` on the desktop itself** — production mode serves a prebuilt `.next` bundle, so pulling source files cannot disturb the running crawl (verified live 2026-08-07)
-- 🚫 Avoid until the resync finishes: (1) any Prisma schema migration that changes the `Property` table's structure — the sync's in-flight writes use the schema as it exists right now and could start failing mid-migration; (2) rebuilding or restarting the server on the desktop; (3) rotating **any** credential the desktop is using — Neon password, CRMLS/Trestle secret, SendGrid key, **and `CRON_SECRET`** (see below)
+**All prior restrictions are lifted.** Prisma migrations, server restarts, and credential rotation are safe again. `errors: 0` also retires the 2026-08-07 question of whether `prisma.property.upsert()` needed a retry wrapper — it did not.
 
-**`CRON_SECRET` must NOT be rotated while the crawl runs**, even though the running sync never re-checks it. `watchdog.mjs` reads `CRON_SECRET` from `.env.local` and POSTs with it; the server still holds the old value in memory, so changing the file would make every watchdog restart attempt 401 and silently disable recovery.
+**Open question, not a blocker:** the feed was measured at 4,862,377 records but 3,966,531 were upserted — a ~896k gap. `errors: 0` rules out *write* failures; it says nothing about records the crawl never fetched. Plausible causes: the `$count` total covering a different filter than the crawl walks, the feed shifting over 12.7 hours, or a keyset gap on `ListingKeyNumeric`. Worth an hour before treating the data as complete statewide — home-value comps and market stats are the features that would notice.
 
-**A restart is cheap.** The `SyncProgress` checkpoint (commit `123a585`) persists the crawl's cursor to Neon after every page, so a death resumes from where it stopped. Recovery = re-POST `/api/idx/sync?type=full`; the watchdog does this automatically within ~60s.
+**Still outstanding — credential rotation.** `CRON_SECRET` was found in plaintext 19× in the spare laptop's PowerShell history on a company-managed machine with EDR and backup agents. File deletion limits exposure but cannot guarantee erasure. Rotate in this order: `CRON_SECRET`, Neon password, CRMLS/Trestle secret. Lower priority: `NEXTAUTH_SECRET`, Upstash token, R2 keys. Mapbox is public by design. The SendGrid key is moot — SendGrid is gone entirely (see the Postmark section at the end of this file).
 
-**To check progress, run `node packages/database/check-count.mjs`** — total rows, % of 4,862,377, rows/min, ETA, and a stale-checkpoint warning.
+**Deferred debt:** `SyncProgress.nextLink` holds a cursor value, not a URL. Rename it to `cursor` — needs a migration, which is now unblocked.
 
-**Do NOT use `(Invoke-RestMethod "http://localhost:3000/api/properties?limit=1").total` as a progress metric.** It counts only `status IN (Active, ComingSoon, ActiveUnderContract)` AND `listingType = FOR_SALE` — a live count of active for-sale listings (~133k), not total rows. It legitimately moves *down* as listings go pending/closed, and it is Redis-cached for 5 minutes.
-
-**Expect `rows/min` to drift downward** as the crawl reaches listings already stored — those upserts become updates, which a row count cannot see. Real throughput is unchanged. The only genuine alarm is `checkpoint ... <-- STALE`.
-
-**Remove this section once the resync is confirmed complete** — `check-count.mjs` reports `checkpoint: NONE`, and window 1 logs `[idx-sync] done ... upserted: N, errors: M`.
+**Desktop cleanup:** windows 1 (`next start`), 2, and 3 (`watchdog.mjs`) have nothing left to do and can be closed.
 
 ## Context
 
@@ -37,7 +30,7 @@ A new real estate brokerage ("CnC Realty") needs a modern, full-featured website
 
 The repo is completely empty. Everything must be built from the ground up.
 
-**Email:** Hostinger Starter Business Email is set up. Primary mailbox: `ryanchong@cncrealtygroup.com`. Two aliases are configured under this mailbox: `info@cncrealtygroup.com` and `noreply@cncrealtygroup.com` — all emails to these addresses land in Ryan's inbox. SendGrid will send automated emails using the `noreply@` alias as the sender.
+**Email:** Hostinger Starter Business Email is set up. Primary mailbox: `ryanchong@cncrealtygroup.com`. Two aliases are configured under this mailbox: `info@cncrealtygroup.com` and `noreply@cncrealtygroup.com` — all emails to these addresses land in Ryan's inbox. Postmark sends automated email using the `noreply@` alias as the sender. Note that Hostinger hosting the alias is *not* the same as Postmark being allowed to send as it — Postmark requires its own domain (DKIM + Return-Path) or sender-signature verification.
 
 **Agent Accounts:** Agents sign up for free using **any personal email** (Gmail, Yahoo, etc.). A professional `@cncrealtygroup.com` mailbox is an **optional perk** — purchased separately through Hostinger (~$1/mo per mailbox) — and is completely unrelated to website account creation.
 
@@ -52,7 +45,7 @@ The repo is completely empty. Everything must be built from the ground up.
 | Auth | NextAuth.js (email/password + Google OAuth) |
 | Database | PostgreSQL via Prisma ORM |
 | Background jobs | Express/Fastify service (separate from Next.js) |
-| Email | SendGrid |
+| Email | Postmark (migrated off SendGrid 2026-08-09) |
 | Maps | Mapbox GL JS |
 | Storage | Cloudflare R2 (documents/images) |
 | Cache | Upstash Redis |
@@ -225,7 +218,7 @@ Full Prisma schema with all enums (`LeadStatus`, `TransactionStatus`, `CampaignT
 | CRMLS RESO Web API | Direct MLS property feed (included with broker membership) |
 | Vercel Pro | Frontend hosting + Cron Jobs |
 | Railway | CRM API + PostgreSQL |
-| SendGrid | Transactional email + campaigns |
+| Postmark | Transactional email + campaigns (separate message streams) |
 | Mapbox | Property maps |
 | Cloudflare R2 | Document/image storage |
 | Upstash Redis | Search caching + rate limiting |
@@ -4709,18 +4702,18 @@ Assorted CRM and join-page improvements committed alongside the above:
 
 ---
 
-## Post-Deploy: SendGrid Inbound Parse Webhook (Hostinger DNS)
+## Post-Deploy: Postmark Inbound (Hostinger DNS)
 
 **Do this AFTER the site is live on Vercel with cncrealtygroup.com pointing at it.**
 
-The MX record is already in Hostinger DNS: `MX | reply | 10 | mx.sendgrid.net`
+⚠️ The existing MX record points at SendGrid and **must be repointed**: `MX | reply | 10 | mx.sendgrid.net` → Postmark's inbound MX (`inbound.postmarkapp.com`). Until that changes, lead replies go nowhere.
 
-When ready to deploy, configure the webhook in SendGrid:
-1. SendGrid → Settings → Inbound Parse → Add Host & URL
-2. Host/Domain: `reply.cncrealtygroup.com`
-3. Webhook URL: `https://cncrealtygroup.com/api/action-plans/inbound`
+Then, in Postmark:
+1. Servers → the server → Message Streams → the **Inbound** stream → set the webhook URL
+2. Webhook URL: `https://USER:PASSWORD@cncrealtygroup.com/api/webhooks/postmark/inbound`, using the `POSTMARK_WEBHOOK_USER` / `POSTMARK_WEBHOOK_PASSWORD` values from `.env.local`
+3. Do the same for the event webhook: `https://USER:PASSWORD@cncrealtygroup.com/api/webhooks/postmark`
 
-That's it. The DNS is already done — this is the only remaining step after deploy.
+**Inbound requires a paid Postmark plan** — it is not available on the free tier.
 
 ---
 
@@ -6309,41 +6302,53 @@ Order once the crawl is done: `CRON_SECRET`, Neon password, CRMLS/Trestle secret
 
 ---
 
-## ⏸️ PARKED — Postmark migration (brainstorm in progress, 2026-08-08)
+## ✅ Postmark migration — COMPLETE (2026-08-09)
 
-Paused mid-brainstorm to fix the IDX crawl. **Approach agreed, no spec written yet, no code written.** Resume at "write the design doc".
+SendGrid is gone from the codebase entirely. Plan: `docs/superpowers/plans/2026-08-08-postmark-migration.md` (all 12 tasks). Suite went 714/714 → 757/757, `tsc` clean, production build compiles.
 
-### Decisions already made (do not re-litigate)
+### Architecture
 
-1. **Full migration — SendGrid removed entirely.** Not decomposed into phases. Ryan's explicit call.
-2. **Two items defer to deploy day** (config, not code): pointing Postmark's event webhook at a public URL, and repointing the `reply.cncrealtygroup.com` MX record off `mx.sendgrid.net`. Neither blocks removing SendGrid from the codebase.
-3. **Plan: sign up Free now, upgrade to Pro ($16.50/mo) at launch.** Free lacks **Bulk API** and **Inbound**, so campaigns/drips and action-plan replies can't be verified live until the upgrade. Unit tests need no account at all. Pro over Basic ($15) because $1.50 buys 2× streams/servers/domains, 28% cheaper overage, and add-on eligibility.
-4. **Message stream assignment.** Transactional: agent application received/approved/rejected, account setup, password reset, transaction file status, document approved/rejected, deadline reminders, lead assignment, contact-form notifications. **Broadcast: marketing campaigns, drip/action-plan emails, and property alerts** — recurring commercial content that must never contaminate transactional reputation.
-5. **Unsubscribe is IN SCOPE** — legally required (CAN-SPAM) and Postmark *enforces* `List-Unsubscribe` on Broadcast streams. Minimal build: token link, opt-out flag on the recipient, suppression check before every Broadcast send. Opt-out must **not** suppress transactional mail.
-6. **Approach 1 chosen** — build an internal send seam first, then swap the vendor:
-   1. Create `lib/email/send.ts` — `sendEmail({ to, subject, html, text, replyTo, attachments, stream })`, SendGrid underneath. Nothing else changes.
-   2. Migrate all libs, route call sites, and their tests onto it. Tests assert intent, not vendor payload. Suite stays green.
-   3. Swap the body of `send.ts` to Postmark — one file.
-   4. Add unsubscribe + broadcast routing on the now-single choke point.
+Every send goes through one seam, `apps/web/src/lib/email/send.ts`. Nothing else imports a vendor SDK.
 
-   Chosen because Postmark's per-send `MessageStream` **and** the opt-out suppression check both need exactly one choke point; without it they get duplicated across 5 libs and several routes and someone eventually forgets one.
+**Message streams** (IDs read from Postmark's `GET /message-streams`, not guessed):
 
-### Findings from context exploration
+| Stream ID | Type | Carries |
+|---|---|---|
+| `outbound` | Transactional | application received/approved/rejected, account setup, password reset, transaction file status, document approved/rejected, deadline reminders, lead assignment, contact-form notifications, **lead-reply-forwarded-to-agent** |
+| `broadcast` | Broadcasts | marketing campaigns, drip/action-plan steps, property alerts |
+| `inbound` | Inbound | lead replies (pauses the action plan) |
 
-- **24 files touch SendGrid.** Not "a contained change to `lib/email.ts`" as previously assumed.
-- **No send abstraction exists.** `lib/email.ts`, `deadline-email.ts`, `action-plan-email.ts`, `email/property-alert-email.ts`, `email/transaction-emails.ts` each `import sgMail` and call `sgMail.send()` directly.
-- **~11 test files assert on SendGrid's payload shape** (`vi.mocked(sgMail.send).mock.calls[0][0]`) — this is what makes a direct swap expensive.
-- **No unsubscribe mechanism exists anywhere in `src`.** The only match is the privacy policy describing one that doesn't exist. Pre-existing compliance gap, surfaced by this work.
-- Event webhook verification differs completely: SendGrid uses ECDSA (`@sendgrid/eventwebhook`, `verify.ts`); Postmark uses Basic Auth.
-- Inbound payloads differ: SendGrid Parse posts multipart form data; Postmark posts JSON.
-- `(marketing)/privacy/page.tsx` names SendGrid as a subprocessor — must be updated to match reality.
+### Two design decisions that deviate from the plan
 
-### Verified about Postmark (read live, 2026-08-08)
+**1. `recipient` is required when `stream: "broadcast"`, not optional.** `SendOptions` is a discriminated union. Commercial email must honour an opt-out and carry a working unsubscribe link; neither is possible without knowing who the recipient is, so the type system refuses a broadcast that could do neither. When this landed the compiler found exactly the three broadcast call sites — no more, no fewer.
 
-- *"transactional and broadcast traffic do not mix in Postmark, including IP ranges"* — the structural difference from SendGrid's shared pool, which is what caused the `rep.mailspike.net` bounces.
-- **Dedicated IPs are unavailable to CnC** regardless of plan — they require 300,000+ emails/month. This is a shared-IP decision either way.
-- ⚠️ Postmark is now owned by **ActiveCampaign**, a marketing-email company. Their separation policy holds today; worth re-checking periodically.
+**2. `sendActionPlanEmail` was split in two.** It had two callers with opposite meanings: a drip step to a lead (marketing) and a lead's reply forwarded to their agent (not marketing). Both were on the broadcast stream, so an agent could have lost lead-reply notifications by unsubscribing from marketing. The second is now `sendLeadReplyNotification`, transactional, no unsubscribe link.
 
-### Resume here
+### Unsubscribe
 
-Write the design doc to `docs/superpowers/specs/2026-08-08-postmark-migration-design.md`, self-review it, get Ryan's review, then invoke `writing-plans`.
+- Signed HMAC token over `NEXTAUTH_SECRET` — no table, no expiry sweep, survives in an inbox indefinitely.
+- `List-Unsubscribe` points at **`/api/unsubscribe`**, not the page. RFC 8058 one-click POSTs directly to that URL with a form-encoded body, so the route reads the token from the query string *before* touching the body. Pointing it at the page would 405.
+- The page at `/unsubscribe` never mutates on load — mail scanners prefetch links, and a mutating GET would opt out people who never clicked.
+- Opt-out suppresses **broadcast only**. Transactional mail always sends.
+- `emailOptOut` lives on both `Lead` and `User` (migration `20260809163849_add_email_opt_out`).
+
+### Blocked on Postmark account state, not code
+
+1. **Sender signature.** `noreply@cncrealtygroup.com` is not verified, so live sends are rejected: *"The 'From' address you supplied is not a Sender Signature on your account."* Hostinger hosting the alias is irrelevant to this — Postmark verifies separately. Fix by verifying the **domain** (DKIM TXT + Return-Path CNAME in Hostinger DNS), which covers every address at once. Postmark's own DKIM selector differs from Hostinger's, so the two records coexist.
+2. **Account under review.** New Postmark accounts are restricted until approved.
+3. **Free tier has no Inbound and no Bulk API.** Task 11's code is done and unit-tested, but the end-to-end reply test needs the paid plan.
+
+### Deploy-day checklist
+
+- [ ] Verify the sending domain in Postmark (DKIM + Return-Path)
+- [ ] Upgrade Postmark to a paid plan (Inbound + Bulk API)
+- [ ] Add `POSTMARK_SERVER_TOKEN`, `POSTMARK_BROADCAST_STREAM`, `POSTMARK_WEBHOOK_USER`, `POSTMARK_WEBHOOK_PASSWORD` to Vercel
+- [ ] Point the event webhook at `https://USER:PASS@cncrealtygroup.com/api/webhooks/postmark`
+- [ ] Point inbound at `https://USER:PASS@cncrealtygroup.com/api/webhooks/postmark/inbound`
+- [ ] Repoint the `reply` MX record off `mx.sendgrid.net`
+- [ ] Send one live test of each: transactional, broadcast, inbound reply
+- [ ] Cancel the SendGrid account
+
+### Known gap, deliberately not built
+
+Postmark fires a `SubscriptionChange` event when someone is suppressed through Postmark's own UI. We don't handle it, so a suppression made there wouldn't sync to `emailOptOut`. Low priority: our `List-Unsubscribe` points at our own endpoint, so Postmark isn't in that path for normal unsubscribes.
