@@ -19,17 +19,11 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
-vi.mock("@sendgrid/mail", () => ({
-  default: { setApiKey: vi.fn(), send: vi.fn().mockResolvedValue([{}, {}]) },
-}));
-vi.mock("@/lib/email", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/lib/email")>()),
-  FROM: "noreply@cncrealtygroup.com",
-}));
+vi.mock("@/lib/email/send", () => ({ sendEmail: vi.fn().mockResolvedValue(undefined) }));
 
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
-import sgMail from "@sendgrid/mail";
+import { sendEmail } from "@/lib/email/send";
 import { GET, POST } from "../../app/api/admin/triggers/route";
 import { PATCH, DELETE } from "../../app/api/admin/triggers/[id]/route";
 import { PATCH as PATCH_LEAD } from "../../app/api/leads/[id]/route";
@@ -324,13 +318,13 @@ describe("Trigger execution — PATCH /api/leads/[id]", () => {
     expect(res.status).toBe(200);
   });
 
-  it("sends a branded SEND_EMAIL trigger with a matching plain-text part", async () => {
+  it("sends a branded SEND_EMAIL trigger on the transactional stream", async () => {
     process.env.SENDGRID_API_KEY = "test-key";
     vi.mocked(getServerSession).mockResolvedValue(LEAD_SESSION as any);
     vi.mocked(prisma.lead.update).mockResolvedValue({ ...UPDATED_LEAD, status: "UNDER_CONTRACT" } as any);
     vi.mocked(prisma.trigger.findMany).mockResolvedValue([TRIGGER_EMAIL] as any);
     vi.mocked(prisma.triggerExecution.create).mockResolvedValue({ id: "e2" } as any);
-    vi.mocked(sgMail.send).mockResolvedValue(undefined as any);
+    vi.mocked(sendEmail).mockResolvedValue(undefined);
 
     const req = new Request("http://localhost/api/leads/l1", {
       method: "PATCH",
@@ -340,13 +334,17 @@ describe("Trigger execution — PATCH /api/leads/[id]", () => {
     const res = await PATCH_LEAD(req, LEAD_PARAMS);
     expect(res.status).toBe(200);
 
-    expect(sgMail.send).toHaveBeenCalledOnce();
-    const call = vi.mocked(sgMail.send).mock.calls[0][0] as any;
+    expect(sendEmail).toHaveBeenCalledOnce();
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
     expect(call.subject).toBe("Your offer was accepted!");
+    expect(call.stream).toBe("transactional");
     expect(call.html).toContain("Your offer was accepted!");
     expect(call.html).toContain("logo-gold.png");
     expect(call.html).toContain("Congratulations!");
-    expect(call.text).toContain("Congratulations!");
-    expect(call.text).not.toMatch(/<[^>]+>/);
+    // No overrides — the seam supplies the default noreply@ FROM and derives
+    // the plain-text part from the HTML.
+    expect(call.from).toBeUndefined();
+    expect(call.text).toBeUndefined();
+    expect(call.replyTo).toBeUndefined();
   });
 });

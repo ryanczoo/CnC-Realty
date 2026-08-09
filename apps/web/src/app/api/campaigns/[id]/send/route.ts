@@ -1,12 +1,8 @@
 import { NextResponse } from "next/server";
-import sgMail from "@sendgrid/mail";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, checkOwnership } from "@/lib/api-auth";
-import { FROM, emailLayout, htmlToPlainText } from "@/lib/email";
-
-if (process.env.SENDGRID_API_KEY) {
-  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-}
+import { emailLayout } from "@/lib/email";
+import { sendEmail } from "@/lib/email/send";
 
 export async function POST(
   _req: Request,
@@ -44,16 +40,14 @@ export async function POST(
   let errors = 0;
   const now = new Date();
   const html = emailLayout({ heading: campaign.subject!, bodyHtml: campaign.body! });
-  const text = htmlToPlainText(html);
 
   const results = await Promise.allSettled(
     campaign.contacts.map(async (contact) => {
-      await sgMail.send({
+      await sendEmail({
         to: contact.lead.email,
-        from: FROM,
         subject: campaign.subject!,
         html,
-        text,
+        stream: "broadcast",
       });
       return contact.id;
     })

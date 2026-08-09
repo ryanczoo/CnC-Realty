@@ -2,9 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("next-auth", () => ({ getServerSession: vi.fn() }));
 vi.mock("@/lib/auth", () => ({ authOptions: {} }));
-vi.mock("@sendgrid/mail", () => ({
-  default: { setApiKey: vi.fn(), send: vi.fn().mockResolvedValue([{}, {}]) },
-}));
+vi.mock("@/lib/email/send", () => ({ sendEmail: vi.fn().mockResolvedValue(undefined) }));
 vi.mock("@/lib/email", () => ({ FROM: "noreply@cncrealtygroup.com" }));
 vi.mock("@/lib/prisma", () => ({
   prisma: {

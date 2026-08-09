@@ -12,9 +12,9 @@ vi.mock("@/lib/prisma", () => ({
     lead: { update: vi.fn() },
   },
 }));
-vi.mock("@sendgrid/mail", () => ({ default: { setApiKey: vi.fn(), send: vi.fn() } }));
+vi.mock("@/lib/email/send", () => ({ sendEmail: vi.fn().mockResolvedValue(undefined) }));
 
-import sgMail from "@sendgrid/mail";
+import { sendEmail } from "@/lib/email/send";
 import { prisma } from "@/lib/prisma";
 import { PATCH } from "../../app/api/admin/leads/[id]/assign/route";
 
@@ -28,7 +28,7 @@ function makeRequest(agentId: string) {
 describe("PATCH /api/admin/leads/[id]/assign", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("includes a matching plain-text part alongside the assignment email's HTML", async () => {
+  it("emails the assigned agent the lead's details on the transactional stream", async () => {
     vi.mocked(prisma.agent.findUnique).mockResolvedValue({
       id: "agent-1",
       displayName: "Jane",
@@ -46,15 +46,22 @@ describe("PATCH /api/admin/leads/[id]/assign", () => {
       agentId: "agent-1",
       brokerageFed: true,
     } as any);
-    vi.mocked(sgMail.send).mockResolvedValue(undefined as any);
+    vi.mocked(sendEmail).mockResolvedValue(undefined);
 
     await PATCH(makeRequest("agent-1"), { params: { id: "lead-1" } });
 
-    expect(sgMail.send).toHaveBeenCalledOnce();
-    const call = vi.mocked(sgMail.send).mock.calls[0][0] as any;
+    expect(sendEmail).toHaveBeenCalledOnce();
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
 
-    expect(call.text).toContain("Jordan Lee");
-    expect(call.text).toContain("jordan@example.com");
-    expect(call.text).not.toMatch(/<[^>]+>/);
+    expect(call.to).toBe("jane@example.com");
+    expect(call.subject).toBe("New lead assigned to you — Jordan Lee");
+    expect(call.stream).toBe("transactional");
+    expect(call.html).toContain("Jordan Lee");
+    expect(call.html).toContain("jordan@example.com");
+    // No overrides — the seam supplies the default noreply@ FROM and derives
+    // the plain-text part from the HTML.
+    expect(call.from).toBeUndefined();
+    expect(call.text).toBeUndefined();
+    expect(call.replyTo).toBeUndefined();
   });
 });

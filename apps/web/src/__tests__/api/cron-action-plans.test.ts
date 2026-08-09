@@ -1,11 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
-vi.mock("@sendgrid/mail", () => ({ default: { setApiKey: vi.fn(), send: vi.fn() } }));
-vi.mock("@/lib/email", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/lib/email")>()),
-  FROM: "noreply@cncrealtygroup.com",
-}));
+vi.mock("@/lib/email/send", () => ({ sendEmail: vi.fn().mockResolvedValue(undefined) }));
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     leadPlanStep: { findMany: vi.fn(), update: vi.fn() },
@@ -17,7 +13,7 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 import { prisma } from "@/lib/prisma";
-import sgMail from "@sendgrid/mail";
+import { sendEmail } from "@/lib/email/send";
 import { POST } from "../../app/api/cron/action-plans/route";
 
 const CRON_SECRET = "test-secret";
@@ -57,14 +53,15 @@ describe("POST /api/cron/action-plans", () => {
     vi.mocked(prisma.leadPlanStep.findMany).mockResolvedValue([EMAIL_STEP] as any);
     vi.mocked(prisma.leadPlanStep.update).mockResolvedValue({ ...EMAIL_STEP, status: "DONE" } as any);
     vi.mocked(prisma.leadPlanEnrollment.findMany).mockResolvedValue([]);
-    vi.mocked(sgMail.send).mockResolvedValue(undefined as any);
+    vi.mocked(sendEmail).mockResolvedValue(undefined);
 
     const res = await POST(makeReq(CRON_SECRET));
     expect(res.status).toBe(200);
-    expect(sgMail.send).toHaveBeenCalledOnce();
-    const call = vi.mocked(sgMail.send).mock.calls[0][0] as any;
+    expect(sendEmail).toHaveBeenCalledOnce();
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
     expect(call.subject).toBe("Hi John");
-    expect(call.text).toContain("Hello John from Jane Agent");
+    expect(call.stream).toBe("broadcast");
+    expect(call.html).toContain("Hello John from Jane Agent");
     expect(prisma.leadPlanStep.update).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: "ls1" }, data: expect.objectContaining({ status: "DONE" }) })
     );
@@ -86,7 +83,7 @@ describe("POST /api/cron/action-plans", () => {
   it("isolates a failing step so other steps still process", async () => {
     const failingStep = { ...EMAIL_STEP, id: "ls-fail", enrollmentId: "e-fail" };
     vi.mocked(prisma.leadPlanStep.findMany).mockResolvedValue([failingStep, TASK_STEP] as any);
-    vi.mocked(sgMail.send).mockRejectedValueOnce(new Error("SendGrid down"));
+    vi.mocked(sendEmail).mockRejectedValueOnce(new Error("email send failed"));
     vi.mocked(prisma.leadTask.create).mockResolvedValue({} as any);
     vi.mocked(prisma.leadPlanStep.update).mockResolvedValue({} as any);
     vi.mocked(prisma.leadPlanEnrollment.findMany).mockResolvedValue([]);

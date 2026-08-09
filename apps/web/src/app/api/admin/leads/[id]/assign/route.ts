@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/api-auth";
-import sgMail from "@sendgrid/mail";
-import { FROM, emailLayout, escapeHtml, htmlToPlainText } from "@/lib/email";
+import { emailLayout, escapeHtml } from "@/lib/email";
+import { sendEmail } from "@/lib/email/send";
 
 export const dynamic = "force-dynamic";
 
@@ -64,7 +64,6 @@ export async function PATCH(
 
   try {
     if (process.env.SENDGRID_API_KEY && agent.user.email) {
-      sgMail.setApiKey(process.env.SENDGRID_API_KEY);
       const safeAgentName = escapeHtml(agent.displayName ?? "there");
       const bodyHtml = `
         <div style="color: #4b4b4b; font-size: 15px; line-height: 1.8; text-align: left;">
@@ -80,12 +79,11 @@ export async function PATCH(
         ctaLabel: "View Dashboard",
         ctaHref: `${process.env.NEXTAUTH_URL}/dashboard/leads`,
       });
-      await sgMail.send({
+      await sendEmail({
         to: agent.user.email,
-        from: FROM,
         subject: `New lead assigned to you — ${lead.firstName} ${lead.lastName}`,
         html,
-        text: htmlToPlainText(html),
+        stream: "transactional",
       });
     }
   } catch (e) {
