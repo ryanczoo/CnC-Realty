@@ -38,6 +38,35 @@ describe("sendEmail", () => {
     expect(msg.from).toEqual(FROM);
   });
 
+  it("uses the caller's from address when one is given", async () => {
+    const announcementFrom = { email: "info@cncrealtygroup.com", name: "CnC Realty" };
+
+    await sendEmail({
+      to: "a@b.com",
+      subject: "Hi",
+      html: "<p>Hello</p>",
+      from: announcementFrom,
+      stream: "transactional",
+    });
+
+    const msg = vi.mocked(sgMail.send).mock.calls[0][0] as any;
+    expect(msg.from).toEqual(announcementFrom);
+    expect(msg.from).not.toEqual(FROM);
+  });
+
+  it("falls back to FROM when from is explicitly undefined", async () => {
+    await sendEmail({
+      to: "a@b.com",
+      subject: "Hi",
+      html: "<p>Hello</p>",
+      from: undefined,
+      stream: "transactional",
+    });
+
+    const msg = vi.mocked(sgMail.send).mock.calls[0][0] as any;
+    expect(msg.from).toEqual(FROM);
+  });
+
   it("derives a plain-text part from the html when text is omitted", async () => {
     await sendEmail({
       to: "a@b.com",

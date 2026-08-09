@@ -1,6 +1,12 @@
 import sgMail from "@sendgrid/mail";
 import { FROM, htmlToPlainText } from "@/lib/email";
 
+if (!process.env.SENDGRID_API_KEY) {
+  console.error("[email] SENDGRID_API_KEY is not set — email sending will be skipped");
+} else {
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+}
+
 export type MessageStream = "transactional" | "broadcast";
 
 export interface SendOptions {
@@ -10,6 +16,10 @@ export interface SendOptions {
   text?: string;
   replyTo?: string;
   attachments?: { filename: string; content: string; contentType: string }[];
+  // Overrides the default FROM; callers should omit it unless they have a
+  // specific reason. Announcements set it so agent replies reach the
+  // monitored info@ inbox rather than the unmonitored noreply@ address.
+  from?: { email: string; name: string };
   stream: MessageStream;
 }
 
@@ -18,7 +28,7 @@ export interface SendOptions {
 // suppression. `stream` is required so no call site can forget to choose.
 export async function sendEmail(opts: SendOptions): Promise<void> {
   await sgMail.send({
-    from: FROM,
+    from: opts.from ?? FROM,
     to: opts.to,
     subject: opts.subject,
     html: opts.html,
