@@ -1,7 +1,7 @@
 import { ServerClient } from "postmark";
 import { FROM, htmlToPlainText } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
-import { unsubscribeUrl, type OptOutKind } from "@/lib/email/unsubscribe";
+import { unsubscribePostUrl, type OptOutKind } from "@/lib/email/unsubscribe";
 
 // Postmark's transactional stream. Hardcoded because it is fixed per server and
 // identical across environments. The broadcast stream id is account-specific, so
@@ -100,7 +100,7 @@ export async function sendEmail(opts: SendOptions): Promise<void> {
   // account-setup or deadline message would be a far worse failure.
   const unsubscribe =
     opts.stream === "broadcast"
-      ? unsubscribeUrl(opts.recipient.kind, opts.recipient.id)
+      ? unsubscribePostUrl(opts.recipient.kind, opts.recipient.id)
       : null;
 
   if (opts.stream === "broadcast" && (await isOptedOut(opts.recipient))) return;

@@ -330,9 +330,11 @@ describe("sendEmail", () => {
         Name: "List-Unsubscribe-Post",
         Value: "List-Unsubscribe=One-Click",
       });
+      // Must be the API route, not the page. One-click POSTs straight here,
+      // and a POST to the page would 405.
       expect(
         headers.find((h: { Name: string }) => h.Name === "List-Unsubscribe").Value
-      ).toContain("/unsubscribe?t=");
+      ).toContain("/api/unsubscribe?t=");
     });
 
     it("wraps the List-Unsubscribe url in angle brackets per RFC 2369", async () => {

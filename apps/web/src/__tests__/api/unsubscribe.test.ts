@@ -73,6 +73,38 @@ describe("POST /api/unsubscribe", () => {
     expect(prisma.lead.update).not.toHaveBeenCalled();
   });
 
+  it("honours an RFC 8058 one-click POST with the token in the query string", async () => {
+    // What Gmail actually sends: form-encoded body, token in the URL. Parsing
+    // this body as JSON would throw, so the query string has to win.
+    const token = makeUnsubscribeToken("lead", "lead_1");
+    const res = await POST(
+      new Request(`http://localhost/api/unsubscribe?t=${token}`, {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body: "List-Unsubscribe=One-Click",
+      })
+    );
+
+    expect(res.status).toBe(200);
+    expect(prisma.lead.update).toHaveBeenCalledWith({
+      where: { id: "lead_1" },
+      data: { emailOptOut: true },
+    });
+  });
+
+  it("rejects a one-click POST carrying a forged query token", async () => {
+    const res = await POST(
+      new Request("http://localhost/api/unsubscribe?t=garbage", {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body: "List-Unsubscribe=One-Click",
+      })
+    );
+
+    expect(res.status).toBe(400);
+    expect(prisma.lead.update).not.toHaveBeenCalled();
+  });
+
   it("stays 200 for an already-unsubscribed recipient", async () => {
     await POST(req(makeUnsubscribeToken("lead", "lead_1")));
     const res = await POST(req(makeUnsubscribeToken("lead", "lead_1")));

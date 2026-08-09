@@ -37,8 +37,17 @@ export function verifyUnsubscribeToken(
   return { kind, id };
 }
 
+// Human-facing: a page with a confirm button. Used for the footer link.
 export function unsubscribeUrl(kind: OptOutKind, id: string): string {
   return `${process.env.NEXTAUTH_URL}/unsubscribe?t=${makeUnsubscribeToken(kind, id)}`;
+}
+
+// Machine-facing: the List-Unsubscribe header target. RFC 8058 one-click has
+// the mail client POST here directly with a form-encoded body, so it must be
+// the API route rather than the page — a POST to the page would 405, and the
+// header would be advertising a capability that does not work.
+export function unsubscribePostUrl(kind: OptOutKind, id: string): string {
+  return `${process.env.NEXTAUTH_URL}/api/unsubscribe?t=${makeUnsubscribeToken(kind, id)}`;
 }
 
 // The List-Unsubscribe header is not sufficient on its own: only some clients
