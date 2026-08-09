@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 vi.mock("@/lib/api-auth", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api-auth")>()),
@@ -33,6 +33,7 @@ describe("POST /api/campaigns/[id]/send — ownership", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.POSTMARK_SERVER_TOKEN = "test-key";
+    process.env.POSTMARK_BROADCAST_STREAM = "test-broadcast-stream";
     vi.mocked(prisma.campaign.findUnique).mockResolvedValue(CAMPAIGN as any);
     vi.mocked(prisma.campaign.update).mockResolvedValue({} as any);
     vi.mocked(prisma.campaignContact.updateMany).mockResolvedValue({} as any);
@@ -84,6 +85,7 @@ describe("POST /api/campaigns/[id]/send — send seam", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.POSTMARK_SERVER_TOKEN = "test-key";
+    process.env.POSTMARK_BROADCAST_STREAM = "test-broadcast-stream";
     vi.mocked(requireAuth).mockResolvedValue({
       session: { user: { id: "u1", email: "a@cnc.com", role: "AGENT", agentId: "a1" } },
       error: null,
@@ -125,5 +127,45 @@ describe("POST /api/campaigns/[id]/send — send seam", () => {
     expect(call.html).toContain("Spring Market Update");
     expect(call.html).toContain("logo-gold.png");
     expect(call.html).toContain("<strong>Big news</strong>");
+  });
+});
+
+describe("POST /api/campaigns/[id]/send — broadcast stream preflight", () => {
+  let original: string | undefined;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.POSTMARK_SERVER_TOKEN = "test-key";
+    original = process.env.POSTMARK_BROADCAST_STREAM;
+    delete process.env.POSTMARK_BROADCAST_STREAM;
+
+    vi.mocked(requireAuth).mockResolvedValue({
+      session: { user: { id: "u1", email: "a@cnc.com", role: "AGENT", agentId: "a1" } },
+      error: null,
+    } as any);
+    vi.mocked(prisma.campaign.findUnique).mockResolvedValue({
+      ...CAMPAIGN,
+      contacts: [{ id: "cc1", lead: { email: "lead@example.com" } }],
+    } as any);
+    vi.mocked(prisma.campaign.update).mockResolvedValue({} as any);
+    vi.mocked(prisma.campaignContact.updateMany).mockResolvedValue({} as any);
+  });
+
+  afterEach(() => {
+    if (original === undefined) delete process.env.POSTMARK_BROADCAST_STREAM;
+    else process.env.POSTMARK_BROADCAST_STREAM = original;
+  });
+
+  it("fails before any state mutation and does not mark the campaign sent", async () => {
+    const res = await POST(request(), { params: { id: "c1" } });
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: "POSTMARK_BROADCAST_STREAM not configured" });
+
+    // The whole point: a campaign must not be recorded as ACTIVE/sentAt when
+    // nothing went out.
+    expect(prisma.campaign.update).not.toHaveBeenCalled();
+    expect(prisma.campaignContact.updateMany).not.toHaveBeenCalled();
+    expect(sendEmail).not.toHaveBeenCalled();
   });
 });

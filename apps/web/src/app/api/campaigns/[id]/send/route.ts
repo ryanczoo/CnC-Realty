@@ -36,6 +36,17 @@ export async function POST(
     return NextResponse.json({ error: "POSTMARK_SERVER_TOKEN not configured" }, { status: 500 });
   }
 
+  // Preflight, not per-recipient: the seam throws for an unconfigured broadcast
+  // stream, and Promise.allSettled would bury that throw as N send failures —
+  // a 200 response and a campaign marked ACTIVE/sentAt with zero delivered.
+  // Fail here, before any state mutation, so a misconfigured deploy is loud.
+  if (!process.env.POSTMARK_BROADCAST_STREAM) {
+    return NextResponse.json(
+      { error: "POSTMARK_BROADCAST_STREAM not configured" },
+      { status: 500 }
+    );
+  }
+
   let sent = 0;
   let errors = 0;
   const now = new Date();
