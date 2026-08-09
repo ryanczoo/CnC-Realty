@@ -1,10 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.mock("@sendgrid/mail", () => ({
-  default: { setApiKey: vi.fn(), send: vi.fn().mockResolvedValue(undefined) },
-}));
+vi.mock("@/lib/email/send", () => ({ sendEmail: vi.fn().mockResolvedValue(undefined) }));
 
-import sgMail from "@sendgrid/mail";
+import { sendEmail } from "@/lib/email/send";
 import {
   sendSubmitForReview,
   sendFileClosed,
@@ -18,7 +16,7 @@ describe("transaction-emails — sender identity and links", () => {
     process.env.NEXTAUTH_URL = "http://localhost:3000";
   });
 
-  it("sends from the shared branded FROM object, not a bare address", async () => {
+  it("sends on the transactional stream from the default branded FROM", async () => {
     await sendSubmitForReview({
       fileType: "Transaction",
       address: "123 Main St",
@@ -26,8 +24,29 @@ describe("transaction-emails — sender identity and links", () => {
       fileId: "f1",
     });
 
-    const call = vi.mocked(sgMail.send).mock.calls[0][0] as any;
-    expect(call.from).toEqual({ email: "noreply@cncrealtygroup.com", name: "CnC Realty" });
+    expect(sendEmail).toHaveBeenCalledOnce();
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+
+    expect(call.to).toBe("info@cncrealtygroup.com");
+    expect(call.stream).toBe("transactional");
+    // No override — the seam supplies the default noreply@ FROM.
+    expect(call.from).toBeUndefined();
+  });
+
+  it("stays text-only — these emails have no html part to render", async () => {
+    await sendSubmitForReview({
+      fileType: "Transaction",
+      address: "123 Main St",
+      agentName: "Jane Agent",
+      fileId: "f1",
+    });
+
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+
+    expect(call.text).toContain("Jane Agent");
+    // An empty html part would render as a blank email in clients that prefer
+    // text/html, so these senders must pass no html at all.
+    expect(call.html).toBeUndefined();
   });
 
   it("builds links from NEXTAUTH_URL, not a hardcoded production domain", async () => {
@@ -39,7 +58,8 @@ describe("transaction-emails — sender identity and links", () => {
       fileId: "f1",
     });
 
-    const call = vi.mocked(sgMail.send).mock.calls[0][0] as any;
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    expect(call.stream).toBe("transactional");
     expect(call.text).toContain("http://localhost:3000/dashboard/transactions/transaction/f1");
     expect(call.text).not.toContain("https://cncrealtygroup.com");
   });
@@ -59,7 +79,7 @@ describe("transaction-emails — referral files with no property address", () =>
       fileId: "f1",
     });
 
-    const call = vi.mocked(sgMail.send).mock.calls[0][0] as any;
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
     expect(call.subject).not.toContain("null");
     expect(call.text).not.toContain("null");
   });
@@ -75,7 +95,7 @@ describe("transaction-emails — referral files with no property address", () =>
       fileId: "f1",
     });
 
-    const call = vi.mocked(sgMail.send).mock.calls[0][0] as any;
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
     expect(call.subject).not.toContain("null");
     expect(call.text).not.toContain("null");
   });
@@ -89,7 +109,7 @@ describe("transaction-emails — referral files with no property address", () =>
       fileId: "f1",
     });
 
-    const call = vi.mocked(sgMail.send).mock.calls[0][0] as any;
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
     expect(call.subject).not.toContain("null");
     expect(call.text).not.toContain("null");
   });
@@ -103,7 +123,7 @@ describe("transaction-emails — referral files with no property address", () =>
       fileId: "f1",
     });
 
-    const call = vi.mocked(sgMail.send).mock.calls[0][0] as any;
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
     expect(call.subject).not.toContain("null");
     expect(call.text).not.toContain("null");
   });

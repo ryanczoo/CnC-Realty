@@ -80,6 +80,23 @@ describe("sendEmail", () => {
     expect(msg.text).not.toContain("<p>");
   });
 
+  it("sends a text-only message with no html part at all", async () => {
+    await sendEmail({
+      to: "a@b.com",
+      subject: "Hi",
+      text: "plain only",
+      stream: "transactional",
+    });
+
+    const msg = vi.mocked(sgMail.send).mock.calls[0][0] as any;
+    expect(msg.text).toBe("plain only");
+
+    // Not `html: ""`. Mail clients prefer the text/html part whenever one is
+    // present, so an empty html body renders as a blank email — the key must
+    // be absent entirely, exactly as a text-only sgMail.send call was before.
+    expect(msg).not.toHaveProperty("html");
+  });
+
   it("uses the caller's text part when one is given", async () => {
     await sendEmail({
       to: "a@b.com", subject: "Hi", html: "<p>x</p>", text: "custom", stream: "transactional",

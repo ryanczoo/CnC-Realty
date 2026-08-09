@@ -1,7 +1,4 @@
-import sgMail from "@sendgrid/mail";
-import { FROM } from "@/lib/email";
-
-sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
+import { sendEmail } from "@/lib/email/send";
 
 const BROKER_EMAIL = "info@cncrealtygroup.com";
 
@@ -15,11 +12,11 @@ export async function sendSubmitForReview(opts: {
   fileId: string;
 }): Promise<void> {
   const address = opts.address ?? NO_ADDRESS_LABEL;
-  await sgMail.send({
+  await sendEmail({
     to: BROKER_EMAIL,
-    from: FROM,
     subject: `[CnC] ${opts.fileType} File Ready for Review — ${address}`,
     text: `${opts.agentName} has submitted a ${opts.fileType.toLowerCase()} file for compliance review.\n\nProperty: ${address}\n\nReview at: ${process.env.NEXTAUTH_URL}/admin/transactions/${opts.fileType.toLowerCase()}/${opts.fileId}`,
+    stream: "transactional",
   });
 }
 
@@ -33,11 +30,11 @@ export async function sendDocumentRejected(opts: {
   fileId: string;
 }): Promise<void> {
   const address = opts.address ?? NO_ADDRESS_LABEL;
-  await sgMail.send({
+  await sendEmail({
     to: opts.agentEmail,
-    from: FROM,
     subject: `[CnC] Document Rejected — ${address}`,
     text: `Hi ${opts.agentName},\n\nThe document "${opts.documentName}" on your file for ${address} was rejected by the broker.\n\nReason: ${opts.rejectionNote}\n\nPlease re-upload at: ${process.env.NEXTAUTH_URL}/dashboard/transactions/${opts.fileType}/${opts.fileId}`,
+    stream: "transactional",
   });
 }
 
@@ -49,11 +46,11 @@ export async function sendAllDocsApproved(opts: {
   fileId: string;
 }): Promise<void> {
   const address = opts.address ?? NO_ADDRESS_LABEL;
-  await sgMail.send({
+  await sendEmail({
     to: opts.agentEmail,
-    from: FROM,
     subject: `[CnC] All Documents Approved — ${address}`,
     text: `Hi ${opts.agentName},\n\nAll required documents for ${address} have been approved. The broker can now close this file.\n\nView file: ${process.env.NEXTAUTH_URL}/dashboard/transactions/${opts.fileType}/${opts.fileId}`,
+    stream: "transactional",
   });
 }
 
@@ -65,11 +62,11 @@ export async function sendFileClosed(opts: {
   fileId: string;
 }): Promise<void> {
   const address = opts.address ?? NO_ADDRESS_LABEL;
-  await sgMail.send({
+  await sendEmail({
     to: opts.agentEmail,
-    from: FROM,
     subject: `[CnC] File Closed — ${address}`,
     text: `Hi ${opts.agentName},\n\nYour file for ${address} has been marked as CLOSED by the broker. Congratulations!\n\nView file: ${process.env.NEXTAUTH_URL}/dashboard/transactions/${opts.fileType}/${opts.fileId}`,
+    stream: "transactional",
   });
 }
 
@@ -81,10 +78,10 @@ export async function sendFileExpirationWarning(opts: {
   fileType: "listing" | "transaction";
   fileId: string;
 }): Promise<void> {
-  await sgMail.send({
+  await sendEmail({
     to: opts.agentEmail,
-    from: FROM,
     subject: `[CnC] File Expiring Soon — ${opts.address}`,
     text: `Hi ${opts.agentName},\n\nYour file for ${opts.address} expires in ${opts.expiresInDays} day(s). Please take action.\n\nView file: ${process.env.NEXTAUTH_URL}/dashboard/transactions/${opts.fileType}/${opts.fileId}`,
+    stream: "transactional",
   });
 }
