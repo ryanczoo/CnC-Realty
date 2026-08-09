@@ -3,9 +3,9 @@ process.env.NEXTAUTH_URL = "http://localhost:3000";
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.mock("@sendgrid/mail", () => ({ default: { setApiKey: vi.fn(), send: vi.fn() } }));
+vi.mock("@/lib/email/send", () => ({ sendEmail: vi.fn().mockResolvedValue(undefined) }));
 
-import sgMail from "@sendgrid/mail";
+import { sendEmail } from "@/lib/email/send";
 import {
   sendApprovalDocuments,
   sendPasswordReset,
@@ -21,29 +21,25 @@ describe("sendApprovalDocuments", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("sends one email to the agent with the W-9 and Office Policy Manual attached", async () => {
-    vi.mocked(sgMail.send).mockResolvedValue(undefined as any);
-
     await sendApprovalDocuments("jane@example.com", "Jane");
 
-    expect(sgMail.send).toHaveBeenCalledOnce();
-    const call = vi.mocked(sgMail.send).mock.calls[0][0] as any;
+    expect(sendEmail).toHaveBeenCalledOnce();
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
 
     expect(call.to).toBe("jane@example.com");
     expect(call.replyTo).toBe("info@cncrealtygroup.com");
+    expect(call.stream).toBe("transactional");
     expect(call.html).toContain("Jane");
-    expect(call.text).toContain("Jane");
-    expect(call.text).not.toMatch(/<[^>]+>/);
 
     expect(call.attachments).toHaveLength(2);
-    for (const attachment of call.attachments) {
-      expect(attachment.type).toBe("application/pdf");
-      expect(attachment.disposition).toBe("attachment");
+    for (const attachment of call.attachments!) {
+      expect(attachment.contentType).toBe("application/pdf");
       expect(typeof attachment.content).toBe("string");
       expect(attachment.content.length).toBeGreaterThan(100);
     }
-    const filenames = call.attachments.map((a: any) => a.filename);
-    expect(filenames.some((f: string) => /w-?9/i.test(f))).toBe(true);
-    expect(filenames.some((f: string) => /office policy manual/i.test(f))).toBe(true);
+    const filenames = call.attachments!.map((a) => a.filename);
+    expect(filenames.some((f) => /w-?9/i.test(f))).toBe(true);
+    expect(filenames.some((f) => /office policy manual/i.test(f))).toBe(true);
   });
 });
 
@@ -51,25 +47,22 @@ describe("sendAnnouncement", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("emails every recipient individually from info@cncrealtygroup.com", async () => {
-    vi.mocked(sgMail.send).mockResolvedValue(undefined as any);
-
     await sendAnnouncement(
       ["agent1@example.com", "agent2@example.com"],
       "Office Closed Monday",
       "We will be closed for the holiday."
     );
 
-    expect(sgMail.send).toHaveBeenCalledTimes(2);
+    expect(sendEmail).toHaveBeenCalledTimes(2);
 
-    const calls = vi.mocked(sgMail.send).mock.calls.map((c) => c[0] as any);
+    const calls = vi.mocked(sendEmail).mock.calls.map((c) => c[0]);
     expect(calls.map((c) => c.to).sort()).toEqual(["agent1@example.com", "agent2@example.com"]);
     for (const call of calls) {
       expect(call.from).toEqual({ email: "info@cncrealtygroup.com", name: "CnC Realty" });
+      expect(call.stream).toBe("transactional");
+      expect(call.subject).toBe("Office Closed Monday");
       expect(call.html).toContain("Office Closed Monday");
       expect(call.html).toContain("We will be closed for the holiday.");
-      expect(call.text).toContain("Office Closed Monday");
-      expect(call.text).toContain("We will be closed for the holiday.");
-      expect(call.text).not.toMatch(/<[^>]+>/);
     }
   });
 });
@@ -78,27 +71,23 @@ describe("sendPasswordReset", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("emails the reset link to the given address", async () => {
-    vi.mocked(sgMail.send).mockResolvedValue(undefined as any);
-
     await sendPasswordReset("jane@example.com", "http://localhost:3000/reset-password?token=abc123");
 
-    expect(sgMail.send).toHaveBeenCalledOnce();
-    const call = vi.mocked(sgMail.send).mock.calls[0][0] as any;
+    expect(sendEmail).toHaveBeenCalledOnce();
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
 
     expect(call.to).toBe("jane@example.com");
-    expect(call.from).toEqual({ email: "noreply@cncrealtygroup.com", name: "CnC Realty" });
+    expect(call.stream).toBe("transactional");
+    // No override — the seam supplies the default noreply@ FROM.
+    expect(call.from).toBeUndefined();
     expect(call.html).toContain("http://localhost:3000/reset-password?token=abc123");
-    expect(call.text).toContain("http://localhost:3000/reset-password?token=abc123");
-    expect(call.text).not.toMatch(/<[^>]+>/);
   });
 });
 
 describe("sendLeadNotification", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("includes a matching plain-text part alongside the HTML", async () => {
-    vi.mocked(sgMail.send).mockResolvedValue(undefined as any);
-
+  it("notifies the brokerage inbox with the lead's details", async () => {
     await sendLeadNotification({
       firstName: "Jordan",
       lastName: "Lee",
@@ -107,20 +96,19 @@ describe("sendLeadNotification", () => {
       notes: "Interested in Pasadena listings",
     });
 
-    const call = vi.mocked(sgMail.send).mock.calls[0][0] as any;
-    expect(call.text).toContain("Jordan Lee");
-    expect(call.text).toContain("jordan@example.com");
-    expect(call.text).toContain("Interested in Pasadena listings");
-    expect(call.text).not.toMatch(/<[^>]+>/);
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    expect(call.to).toBe("info@cncrealtygroup.com");
+    expect(call.stream).toBe("transactional");
+    expect(call.html).toContain("Jordan Lee");
+    expect(call.html).toContain("jordan@example.com");
+    expect(call.html).toContain("Interested in Pasadena listings");
   });
 });
 
 describe("sendApplicationNotification", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("includes a matching plain-text part alongside the HTML", async () => {
-    vi.mocked(sgMail.send).mockResolvedValue(undefined as any);
-
+  it("notifies the brokerage inbox with the applicant's details", async () => {
     await sendApplicationNotification({
       id: "app-1",
       firstName: "Jane",
@@ -128,39 +116,38 @@ describe("sendApplicationNotification", () => {
       email: "jane@example.com",
     });
 
-    const call = vi.mocked(sgMail.send).mock.calls[0][0] as any;
-    expect(call.text).toContain("Jane Agent");
-    expect(call.text).toContain("jane@example.com");
-    expect(call.text).not.toMatch(/<[^>]+>/);
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    expect(call.to).toBe("info@cncrealtygroup.com");
+    expect(call.stream).toBe("transactional");
+    expect(call.html).toContain("Jane Agent");
+    expect(call.html).toContain("jane@example.com");
   });
 });
 
 describe("sendApplicationApproved", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("includes a matching plain-text part alongside the HTML", async () => {
-    vi.mocked(sgMail.send).mockResolvedValue(undefined as any);
-
+  it("emails the applicant their account setup link", async () => {
     await sendApplicationApproved("jane@example.com", "Jane", "http://localhost:3000/setup-account?token=abc");
 
-    const call = vi.mocked(sgMail.send).mock.calls[0][0] as any;
-    expect(call.text).toContain("Jane");
-    expect(call.text).toContain("http://localhost:3000/setup-account?token=abc");
-    expect(call.text).not.toMatch(/<[^>]+>/);
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    expect(call.to).toBe("jane@example.com");
+    expect(call.stream).toBe("transactional");
+    expect(call.html).toContain("Jane");
+    expect(call.html).toContain("http://localhost:3000/setup-account?token=abc");
   });
 });
 
 describe("sendApplicationRejected", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("includes a matching plain-text part alongside the HTML", async () => {
-    vi.mocked(sgMail.send).mockResolvedValue(undefined as any);
-
+  it("emails the applicant the rejection reason", async () => {
     await sendApplicationRejected("jane@example.com", "Jane", "Not enough experience");
 
-    const call = vi.mocked(sgMail.send).mock.calls[0][0] as any;
-    expect(call.text).toContain("Not enough experience");
-    expect(call.text).not.toMatch(/<[^>]+>/);
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    expect(call.to).toBe("jane@example.com");
+    expect(call.stream).toBe("transactional");
+    expect(call.html).toContain("Not enough experience");
   });
 });
 

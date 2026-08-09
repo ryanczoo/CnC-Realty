@@ -1,15 +1,9 @@
-import sgMail from "@sendgrid/mail";
 import { readFileSync } from "fs";
 import { join } from "path";
-
-if (!process.env.SENDGRID_API_KEY) {
-  console.error("[email] SENDGRID_API_KEY is not set — email sending will be skipped");
-} else {
-  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-}
+import { sendEmail } from "@/lib/email/send";
 
 export const FROM = { email: "noreply@cncrealtygroup.com", name: "CnC Realty" };
-const NOTIFY = "info@cncrealtygroup.com";
+export const NOTIFY = "info@cncrealtygroup.com";
 
 export function escapeHtml(str: string): string {
   return str
@@ -142,12 +136,11 @@ export async function sendLeadNotification(lead: {
     footer: "cncrealtygroup.com",
   });
 
-  await sgMail.send({
+  await sendEmail({
     to: NOTIFY,
-    from: FROM,
     subject: `New Lead: ${lead.firstName} ${lead.lastName}`,
     html,
-    text: htmlToPlainText(html),
+    stream: "transactional",
   });
 }
 
@@ -175,12 +168,11 @@ export async function sendApplicationNotification(app: {
     footer: "cncrealtygroup.com",
   });
 
-  await sgMail.send({
+  await sendEmail({
     to: NOTIFY,
-    from: FROM,
     subject: `New Agent Application: ${safeName}`,
     html,
-    text: htmlToPlainText(html),
+    stream: "transactional",
   });
 }
 
@@ -206,15 +198,16 @@ export async function sendApplicationApproved(
     ctaHref: safeUrl,
   });
 
-  await sgMail.send({
+  await sendEmail({
     to,
-    from: FROM,
     subject: "Welcome to CnC Realty — Set Up Your Account",
     html,
-    text: htmlToPlainText(html),
+    stream: "transactional",
   });
 }
 
+// Announcements send from the monitored info@ inbox, not the default noreply@,
+// because agents reply to them and those replies must reach a human.
 const ANNOUNCEMENT_FROM = { email: "info@cncrealtygroup.com", name: "CnC Realty" };
 
 export async function sendAnnouncement(recipients: string[], title: string, body: string) {
@@ -234,16 +227,14 @@ export async function sendAnnouncement(recipients: string[], title: string, body
     footer: "cncrealtygroup.com",
   });
 
-  const text = htmlToPlainText(html);
-
   await Promise.all(
     recipients.map((to) =>
-      sgMail.send({
+      sendEmail({
         to,
-        from: ANNOUNCEMENT_FROM,
         subject: safeTitle,
         html,
-        text,
+        from: ANNOUNCEMENT_FROM,
+        stream: "transactional",
       })
     )
   );
@@ -269,12 +260,11 @@ export async function sendPasswordReset(to: string, resetUrl: string) {
     ctaHref: safeUrl,
   });
 
-  await sgMail.send({
+  await sendEmail({
     to,
-    from: FROM,
     subject: "Reset Your CnC Realty Password",
     html,
-    text: htmlToPlainText(html),
+    stream: "transactional",
   });
 }
 
@@ -303,12 +293,11 @@ export async function sendApplicationRejected(
     bodyHtml,
   });
 
-  await sgMail.send({
+  await sendEmail({
     to,
-    from: FROM,
     subject: "CnC Realty — Application Update",
     html,
-    text: htmlToPlainText(html),
+    stream: "transactional",
   });
 }
 
@@ -347,26 +336,23 @@ export async function sendApprovalDocuments(to: string, firstName: string) {
     bodyHtml,
   });
 
-  await sgMail.send({
+  await sendEmail({
     to,
-    from: FROM,
-    replyTo: NOTIFY,
     subject: "CnC Realty — Onboarding Documents",
     html,
-    text: htmlToPlainText(html),
+    replyTo: NOTIFY,
     attachments: [
       {
-        content: w9.toString("base64"),
         filename: "CnC Realty - Blank W-9.pdf",
-        type: "application/pdf",
-        disposition: "attachment",
+        content: w9.toString("base64"),
+        contentType: "application/pdf",
       },
       {
-        content: opm.toString("base64"),
         filename: "CnC Realty - Office Policy Manual.pdf",
-        type: "application/pdf",
-        disposition: "attachment",
+        content: opm.toString("base64"),
+        contentType: "application/pdf",
       },
     ],
+    stream: "transactional",
   });
 }
