@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@cnc/database";
-import { fetchProperties } from "@/lib/idx/client";
+import { fetchProperties, isKeyCursor } from "@/lib/idx/client";
 
 // maxDuration applies to GET (Vercel Cron, awaits full sync).
 // POST returns 202 immediately — the background runSync() is not bound by this limit.
@@ -35,9 +35,8 @@ async function runSync(type: string) {
   // client discards it and starts over. Say which happened rather than always
   // claiming a resume.
   if (checkpoint) {
-    const usable = !Number.isNaN(Date.parse(checkpoint.nextLink));
     console.log(
-      usable
+      isKeyCursor(checkpoint.nextLink)
         ? `[idx-sync] resuming ${type} sync from cursor ${checkpoint.nextLink}`
         : `[idx-sync] discarding unusable ${type} checkpoint, starting from the beginning`
     );

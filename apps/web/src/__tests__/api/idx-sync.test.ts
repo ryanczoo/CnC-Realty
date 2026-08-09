@@ -8,6 +8,9 @@ vi.mock("@/lib/prisma", () => ({
 }));
 vi.mock("@/lib/idx/client", () => ({
   fetchProperties: vi.fn(),
+  // Pure predicate; keep the real behaviour so the resume/discard branch is
+  // exercised rather than stubbed away.
+  isKeyCursor: (v: string | undefined | null) => !!v && /^\d+$/.test(v),
 }));
 
 import { prisma } from "@/lib/prisma";
@@ -126,7 +129,7 @@ describe("GET /api/idx/sync", () => {
     vi.mocked(prisma.syncProgress.findUnique).mockResolvedValue({
       id: "sp1",
       syncType: "full",
-      nextLink: "2021-06-01T00:00:00.000Z",
+      nextLink: "421448857",
       updatedAt: new Date(),
     } as any);
     vi.mocked(fetchProperties).mockImplementation(async function* () {});
@@ -139,7 +142,7 @@ describe("GET /api/idx/sync", () => {
     expect(res.status).toBe(200);
 
     expect(prisma.syncProgress.findUnique).toHaveBeenCalledWith({ where: { syncType: "full" } });
-    expect(fetchProperties).toHaveBeenCalledWith(undefined, "2021-06-01T00:00:00.000Z");
+    expect(fetchProperties).toHaveBeenCalledWith(undefined, "421448857");
   });
 
   it("saves the cursor after every page and clears the checkpoint once the crawl finishes", async () => {

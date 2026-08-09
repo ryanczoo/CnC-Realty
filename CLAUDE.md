@@ -6306,3 +6306,44 @@ Order once the crawl is done: `CRON_SECRET`, Neon password, CRMLS/Trestle secret
 4. **Then clean up the deferred debt:** rename `SyncProgress.nextLink` → `cursor` (needs a migration, so it must wait for the crawl to finish).
 5. **Email work — safe to do while the crawl runs**, since it touches neither `Property` nor the desktop: the Postmark migration of `lib/email.ts`, and the per-agent email-limit brainstorming stuck on the unanswered A/B/C question (see 2026-08-04/06 notes).
 6. Older backlog, unchanged: Vercel deploy still pending; C.A.R. video permission reply; CnC ICA still not attorney-reviewed.
+
+---
+
+## ⏸️ PARKED — Postmark migration (brainstorm in progress, 2026-08-08)
+
+Paused mid-brainstorm to fix the IDX crawl. **Approach agreed, no spec written yet, no code written.** Resume at "write the design doc".
+
+### Decisions already made (do not re-litigate)
+
+1. **Full migration — SendGrid removed entirely.** Not decomposed into phases. Ryan's explicit call.
+2. **Two items defer to deploy day** (config, not code): pointing Postmark's event webhook at a public URL, and repointing the `reply.cncrealtygroup.com` MX record off `mx.sendgrid.net`. Neither blocks removing SendGrid from the codebase.
+3. **Plan: sign up Free now, upgrade to Pro ($16.50/mo) at launch.** Free lacks **Bulk API** and **Inbound**, so campaigns/drips and action-plan replies can't be verified live until the upgrade. Unit tests need no account at all. Pro over Basic ($15) because $1.50 buys 2× streams/servers/domains, 28% cheaper overage, and add-on eligibility.
+4. **Message stream assignment.** Transactional: agent application received/approved/rejected, account setup, password reset, transaction file status, document approved/rejected, deadline reminders, lead assignment, contact-form notifications. **Broadcast: marketing campaigns, drip/action-plan emails, and property alerts** — recurring commercial content that must never contaminate transactional reputation.
+5. **Unsubscribe is IN SCOPE** — legally required (CAN-SPAM) and Postmark *enforces* `List-Unsubscribe` on Broadcast streams. Minimal build: token link, opt-out flag on the recipient, suppression check before every Broadcast send. Opt-out must **not** suppress transactional mail.
+6. **Approach 1 chosen** — build an internal send seam first, then swap the vendor:
+   1. Create `lib/email/send.ts` — `sendEmail({ to, subject, html, text, replyTo, attachments, stream })`, SendGrid underneath. Nothing else changes.
+   2. Migrate all libs, route call sites, and their tests onto it. Tests assert intent, not vendor payload. Suite stays green.
+   3. Swap the body of `send.ts` to Postmark — one file.
+   4. Add unsubscribe + broadcast routing on the now-single choke point.
+
+   Chosen because Postmark's per-send `MessageStream` **and** the opt-out suppression check both need exactly one choke point; without it they get duplicated across 5 libs and several routes and someone eventually forgets one.
+
+### Findings from context exploration
+
+- **24 files touch SendGrid.** Not "a contained change to `lib/email.ts`" as previously assumed.
+- **No send abstraction exists.** `lib/email.ts`, `deadline-email.ts`, `action-plan-email.ts`, `email/property-alert-email.ts`, `email/transaction-emails.ts` each `import sgMail` and call `sgMail.send()` directly.
+- **~11 test files assert on SendGrid's payload shape** (`vi.mocked(sgMail.send).mock.calls[0][0]`) — this is what makes a direct swap expensive.
+- **No unsubscribe mechanism exists anywhere in `src`.** The only match is the privacy policy describing one that doesn't exist. Pre-existing compliance gap, surfaced by this work.
+- Event webhook verification differs completely: SendGrid uses ECDSA (`@sendgrid/eventwebhook`, `verify.ts`); Postmark uses Basic Auth.
+- Inbound payloads differ: SendGrid Parse posts multipart form data; Postmark posts JSON.
+- `(marketing)/privacy/page.tsx` names SendGrid as a subprocessor — must be updated to match reality.
+
+### Verified about Postmark (read live, 2026-08-08)
+
+- *"transactional and broadcast traffic do not mix in Postmark, including IP ranges"* — the structural difference from SendGrid's shared pool, which is what caused the `rep.mailspike.net` bounces.
+- **Dedicated IPs are unavailable to CnC** regardless of plan — they require 300,000+ emails/month. This is a shared-IP decision either way.
+- ⚠️ Postmark is now owned by **ActiveCampaign**, a marketing-email company. Their separation policy holds today; worth re-checking periodically.
+
+### Resume here
+
+Write the design doc to `docs/superpowers/specs/2026-08-08-postmark-migration-design.md`, self-review it, get Ryan's review, then invoke `writing-plans`.

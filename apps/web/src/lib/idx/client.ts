@@ -5,7 +5,7 @@ import { withRetry } from "./retry";
 const BASE_URL = "https://api-trestle.corelogic.com/trestle/odata";
 const SELECT_FIELDS = [
   // Core listing fields
-  "ListingKey", "StandardStatus", "ListPrice", "ClosePrice", "CloseDate",
+  "ListingKey", "ListingKeyNumeric", "StandardStatus", "ListPrice", "ClosePrice", "CloseDate",
   "BedroomsTotal", "BathroomsTotalInteger", "BathroomsFull", "BathroomsHalf",
   "LivingArea", "LotSizeSquareFeet", "YearBuilt",
   "PropertySubType", "PropertyType", "PublicRemarks",
@@ -40,26 +40,30 @@ const STATUS_FILTER = "StandardStatus in ('Active','ComingSoon','ActiveUnderCont
 
 const PAGE_SIZE = 200;
 
-export function buildPropertyFilter(modifiedSince?: Date | string): string {
+export function buildPropertyFilter(modifiedSince?: Date | string, afterKey?: string): string {
   const clauses = [STATUS_FILTER];
   if (modifiedSince) {
     const iso = typeof modifiedSince === "string" ? modifiedSince : modifiedSince.toISOString();
     clauses.push(`ModificationTimestamp gt ${iso}`);
   }
+  if (afterKey) clauses.push(`ListingKeyNumeric gt ${afterKey}`);
   return `$filter=${clauses.join(" and ")}&`;
 }
 
-function isTimestamp(value: string | undefined): value is string {
-  return !!value && !Number.isNaN(Date.parse(value));
+// A cursor is only ever a ListingKeyNumeric. Anything else is a checkpoint left
+// by an earlier pagination scheme (a timestamp, or a $skip URL) and is ignored
+// so the crawl restarts cleanly instead of building a nonsense filter.
+export function isKeyCursor(value: string | undefined | null): value is string {
+  return !!value && /^\d+$/.test(value);
 }
 
-// The cursor is the ModificationTimestamp of the last record on a page. It is
-// read from the raw RESO record, not the mapped one, so a record that fails to
-// map still advances the crawl instead of stalling it.
-function lastTimestamp(records: ResoProperty[]): string | undefined {
+// The cursor is the ListingKeyNumeric of the last record on a page. It is read
+// from the raw RESO record, not the mapped one, so a record that fails to map
+// still advances the crawl instead of stalling it.
+function lastKey(records: ResoProperty[]): string | undefined {
   for (let i = records.length - 1; i >= 0; i--) {
-    const ts = (records[i] as { ModificationTimestamp?: string }).ModificationTimestamp;
-    if (isTimestamp(ts)) return ts;
+    const key = (records[i] as { ListingKeyNumeric?: number | string }).ListingKeyNumeric;
+    if (key !== undefined && key !== null && /^\d+$/.test(String(key))) return String(key);
   }
   return undefined;
 }
@@ -98,30 +102,36 @@ async function fetchPage(url: string, tokenBox: { value: string }): Promise<ODat
   );
 }
 
-// Keyset pagination, NOT @odata.nextLink.
+// Keyset pagination on ListingKeyNumeric — NOT @odata.nextLink, and NOT
+// ModificationTimestamp.
 //
-// Trestle builds nextLink with $skip, and rejects any request where
-// $skip + $top reaches 1,000,000 ("$skip and $top need to be less than
-// 1000000"). Since the full feed is ~4.86M records, following nextLink caps a
-// crawl at roughly the first million and then hard-fails with a 400.
+// Two things rule out the obvious approaches:
 //
-// Instead we order by ModificationTimestamp and ask for everything strictly
-// after the last record we saw. No offset is ever sent, so there is no ceiling,
-// and the cursor is a plain timestamp that survives a process restart.
+// 1. Trestle builds nextLink with $skip and rejects any request where
+//    $skip + $top reaches 1,000,000. The feed is ~4.86M records, so following
+//    nextLink caps a crawl at the first million and then 400s.
 //
-// startCursor resumes an in-progress crawl — see SyncProgress. It supersedes
-// modifiedSince. A cursor that isn't a timestamp (e.g. a checkpoint written by
-// the old nextLink-based crawl) is ignored so the crawl restarts cleanly.
+// 2. ModificationTimestamp is NOT unique. Measured against the live feed, a
+//    200-record page held only 51 distinct timestamps, and 793 records shared
+//    a single one. A `ModificationTimestamp gt <last seen>` cursor therefore
+//    skips every tied record beyond the current page — silently. That cost a
+//    full crawl, which reported success at 43.7% coverage.
+//
+// ListingKeyNumeric is the integer primary key, so it is unique by definition:
+// ties are impossible and no record can be stepped over. It is numeric, so
+// ordering has none of the pitfalls of comparing keys as strings.
+//
+// modifiedSince stays a *filter* (delta syncs still ask for recently-changed
+// records); paging within that filter is by key. startCursor resumes an
+// in-progress crawl — see SyncProgress.
 export async function* fetchProperties(modifiedSince?: Date, startCursor?: string) {
   const tokenBox = { value: await getResoToken() };
-  let cursor: string | undefined = isTimestamp(startCursor)
-    ? startCursor
-    : modifiedSince?.toISOString();
+  let cursor: string | undefined = isKeyCursor(startCursor) ? startCursor : undefined;
 
   for (;;) {
     const url =
-      `${BASE_URL}/Property?${buildPropertyFilter(cursor)}` +
-      `$orderby=ModificationTimestamp&$top=${PAGE_SIZE}&$select=${SELECT_FIELDS}` +
+      `${BASE_URL}/Property?${buildPropertyFilter(modifiedSince, cursor)}` +
+      `$orderby=ListingKeyNumeric&$top=${PAGE_SIZE}&$select=${SELECT_FIELDS}` +
       `&$expand=Media($select=MediaURL,Order,MediaClassification)`;
 
     const data = await fetchPage(url, tokenBox);
@@ -137,12 +147,12 @@ export async function* fetchProperties(modifiedSince?: Date, startCursor?: strin
       }
     }
 
-    const next = lastTimestamp(records);
+    const next = lastKey(records);
     if (!next) {
-      // Without a usable timestamp the cursor cannot advance and the crawl
-      // would request this same page forever. Fail loudly instead.
+      // Without a usable key the cursor cannot advance and the crawl would
+      // request this same page forever. Fail loudly instead.
       throw new Error(
-        `RESO page of ${records.length} records had no usable ModificationTimestamp; cannot advance cursor`
+        `RESO page of ${records.length} records had no usable ListingKeyNumeric; cannot advance cursor`
       );
     }
 
