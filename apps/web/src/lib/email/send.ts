@@ -1,5 +1,7 @@
 import { ServerClient } from "postmark";
 import { FROM, htmlToPlainText } from "@/lib/email";
+import { prisma } from "@/lib/prisma";
+import { unsubscribeUrl, type OptOutKind } from "@/lib/email/unsubscribe";
 
 // Postmark's transactional stream. Hardcoded because it is fixed per server and
 // identical across environments. The broadcast stream id is account-specific, so
@@ -46,6 +48,17 @@ function resolveStream(stream: MessageStream): string {
 // blank email.
 type BodyParts = { html: string; text?: string } | { html?: undefined; text: string };
 
+export type OptOutRecipient = { kind: OptOutKind; id: string };
+
+// Required on broadcast, optional on transactional. Commercial email must
+// honour an opt-out and carry a working unsubscribe link, and neither is
+// possible without knowing who the recipient is. Making it a compile-time
+// requirement means a future broadcast call site cannot quietly skip both —
+// the same reasoning that makes `stream` itself required.
+type StreamRouting =
+  | { stream: "transactional"; recipient?: OptOutRecipient }
+  | { stream: "broadcast"; recipient: OptOutRecipient };
+
 export type SendOptions = {
   to: string;
   subject: string;
@@ -55,13 +68,43 @@ export type SendOptions = {
   // specific reason. Announcements set it so agent replies reach the
   // monitored info@ inbox rather than the unmonitored noreply@ address.
   from?: { email: string; name: string };
-  stream: MessageStream;
-} & BodyParts;
+} & BodyParts &
+  StreamRouting;
+
+// Fails open on a missing row: a deleted lead is not an opt-out, and treating
+// every lookup miss as one would silently drop mail.
+async function isOptedOut(recipient: OptOutRecipient): Promise<boolean> {
+  const row =
+    recipient.kind === "lead"
+      ? await prisma.lead.findUnique({
+          where: { id: recipient.id },
+          select: { emailOptOut: true },
+        })
+      : await prisma.user.findUnique({
+          where: { id: recipient.id },
+          select: { emailOptOut: true },
+        });
+  return row?.emailOptOut === true;
+}
 
 // The single place the app talks to an email vendor. Callers build content;
 // this owns FROM, the plain-text part, stream routing, and (later) opt-out
 // suppression. `stream` is required so no call site can forget to choose.
 export async function sendEmail(opts: SendOptions): Promise<void> {
+  // Resolved first so a misconfigured broadcast throws before the opt-out
+  // lookup, rather than after a pointless database round trip.
+  const messageStream = resolveStream(opts.stream);
+
+  // Only broadcast mail is suppressible. Transactional mail is not commercial
+  // email, the recipient cannot unsubscribe from it, and silently dropping an
+  // account-setup or deadline message would be a far worse failure.
+  const unsubscribe =
+    opts.stream === "broadcast"
+      ? unsubscribeUrl(opts.recipient.kind, opts.recipient.id)
+      : null;
+
+  if (opts.stream === "broadcast" && (await isOptedOut(opts.recipient))) return;
+
   const from = opts.from ?? FROM;
 
   const base = {
@@ -70,9 +113,18 @@ export async function sendEmail(opts: SendOptions): Promise<void> {
     From: `${from.name} <${from.email}>`,
     To: opts.to,
     Subject: opts.subject,
-    // Throws for an unconfigured broadcast stream, and does so while building
-    // `base` — before getClient(), so nothing reaches Postmark.
-    MessageStream: resolveStream(opts.stream),
+    MessageStream: messageStream,
+    ...(unsubscribe
+      ? {
+          Headers: [
+            // Angle brackets are required by RFC 2369. The pair of headers is
+            // what makes Gmail and Apple Mail render a native Unsubscribe
+            // control instead of surfacing a "report spam" prompt.
+            { Name: "List-Unsubscribe", Value: `<${unsubscribe}>` },
+            { Name: "List-Unsubscribe-Post", Value: "List-Unsubscribe=One-Click" },
+          ],
+        }
+      : {}),
     ...(opts.replyTo ? { ReplyTo: opts.replyTo } : {}),
     ...(opts.attachments
       ? {

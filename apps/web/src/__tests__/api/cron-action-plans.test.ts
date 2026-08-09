@@ -1,3 +1,7 @@
+// Set before imports: drip bodies carry a signed unsubscribe link.
+process.env.NEXTAUTH_SECRET = "test-secret";
+process.env.NEXTAUTH_URL = "http://localhost:3000";
+
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 

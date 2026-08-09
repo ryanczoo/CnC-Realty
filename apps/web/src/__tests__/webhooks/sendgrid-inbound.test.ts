@@ -7,10 +7,10 @@ vi.mock("@/lib/prisma", () => ({
     leadPlanStep: { updateMany: vi.fn() },
   },
 }));
-vi.mock("@/lib/action-plan-email", () => ({ sendActionPlanEmail: vi.fn() }));
+vi.mock("@/lib/action-plan-email", () => ({ sendLeadReplyNotification: vi.fn() }));
 
 import { prisma } from "@/lib/prisma";
-import { sendActionPlanEmail } from "@/lib/action-plan-email";
+import { sendLeadReplyNotification } from "@/lib/action-plan-email";
 import { POST } from "../../app/api/webhooks/sendgrid/inbound/route";
 
 const AGENT = { id: "a1", user: { email: "agent@test.com" } };
@@ -45,7 +45,7 @@ describe("POST /api/webhooks/sendgrid/inbound", () => {
     vi.mocked(prisma.leadPlanEnrollment.findUnique).mockResolvedValue(ENROLLMENT as any);
     vi.mocked(prisma.leadPlanEnrollment.update).mockResolvedValue({ ...ENROLLMENT, status: "PAUSED" } as any);
     vi.mocked(prisma.leadPlanStep.updateMany).mockResolvedValue({ count: 1 } as any);
-    vi.mocked(sendActionPlanEmail).mockResolvedValue(undefined);
+    vi.mocked(sendLeadReplyNotification).mockResolvedValue(undefined);
 
     const res = await POST(makeRequest("reply+e1@reply.cncrealtygroup.com"));
     expect(res.status).toBe(200);
@@ -57,8 +57,8 @@ describe("POST /api/webhooks/sendgrid/inbound", () => {
     expect(prisma.leadPlanStep.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({ data: { status: "PAUSED" } })
     );
-    expect(sendActionPlanEmail).toHaveBeenCalledOnce();
-    const fwdCall = vi.mocked(sendActionPlanEmail).mock.calls[0][0];
+    expect(sendLeadReplyNotification).toHaveBeenCalledOnce();
+    const fwdCall = vi.mocked(sendLeadReplyNotification).mock.calls[0][0];
     expect(fwdCall.to).toBe("agent@test.com");
     expect(fwdCall.subject).toContain("[Lead Reply]");
   });
@@ -86,6 +86,6 @@ describe("POST /api/webhooks/sendgrid/inbound", () => {
     expect(res.status).toBe(200);
     expect(prisma.leadPlanEnrollment.update).toHaveBeenCalled();
     expect(prisma.leadPlanStep.updateMany).toHaveBeenCalled();
-    expect(sendActionPlanEmail).not.toHaveBeenCalled();
+    expect(sendLeadReplyNotification).not.toHaveBeenCalled();
   });
 });

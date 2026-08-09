@@ -1,4 +1,6 @@
 process.env.POSTMARK_SERVER_TOKEN = "test-key";
+process.env.NEXTAUTH_URL = "http://localhost:3000";
+process.env.NEXTAUTH_SECRET = "test-secret";
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
@@ -21,7 +23,7 @@ describe("sendPropertyAlertEmail", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("emails the matching listings on the broadcast stream", async () => {
-    await sendPropertyAlertEmail("buyer@example.com", "Jordan", ONE_LISTING);
+    await sendPropertyAlertEmail("buyer@example.com", "Jordan", ONE_LISTING, "user-1");
 
     expect(sendEmail).toHaveBeenCalledOnce();
     const call = vi.mocked(sendEmail).mock.calls[0][0];
@@ -36,12 +38,29 @@ describe("sendPropertyAlertEmail", () => {
     expect(call.html).toContain("Pasadena");
   });
 
+  it("identifies the user so the seam can honour an opt-out", async () => {
+    await sendPropertyAlertEmail("buyer@example.com", "Jordan", ONE_LISTING, "user-1");
+
+    // Alerts opt out against User, not Lead — the recipient is a registered
+    // account holder with a saved search, not a CRM lead.
+    expect(vi.mocked(sendEmail).mock.calls[0][0].recipient).toEqual({
+      kind: "user",
+      id: "user-1",
+    });
+  });
+
+  it("puts a visible unsubscribe link in the body", async () => {
+    await sendPropertyAlertEmail("buyer@example.com", "Jordan", ONE_LISTING, "user-1");
+
+    expect(vi.mocked(sendEmail).mock.calls[0][0].html).toContain("/unsubscribe?t=");
+  });
+
   it("skips the send entirely when no API key is configured", async () => {
     const original = process.env.POSTMARK_SERVER_TOKEN;
     delete process.env.POSTMARK_SERVER_TOKEN;
 
     try {
-      await sendPropertyAlertEmail("buyer@example.com", "Jordan", ONE_LISTING);
+      await sendPropertyAlertEmail("buyer@example.com", "Jordan", ONE_LISTING, "user-1");
       expect(sendEmail).not.toHaveBeenCalled();
     } finally {
       process.env.POSTMARK_SERVER_TOKEN = original;

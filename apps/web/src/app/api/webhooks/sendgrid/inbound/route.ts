@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { sendActionPlanEmail } from "@/lib/action-plan-email";
+import { sendLeadReplyNotification } from "@/lib/action-plan-email";
 
 export const dynamic = "force-dynamic";
 
@@ -36,10 +36,13 @@ export async function POST(req: NextRequest) {
 
     const agentEmail = enrollment.agent?.user?.email;
     if (agentEmail) {
-      // sendActionPlanEmail sets replyTo=reply+{enrollmentId}@... — if the agent
-      // accidentally replies to the forwarded email, this webhook fires again but the
-      // enrollment is already PAUSED, so it no-ops safely.
-      await sendActionPlanEmail({
+      // Transactional, not broadcast: this is the agent's own work landing in
+      // their inbox, not marketing they subscribed to.
+      //
+      // replyTo is reply+{enrollmentId}@... — if the agent accidentally replies
+      // to the forwarded email, this webhook fires again but the enrollment is
+      // already PAUSED, so it no-ops safely.
+      await sendLeadReplyNotification({
         to: agentEmail,
         subject: `[Lead Reply] ${subject}`,
         body: text,

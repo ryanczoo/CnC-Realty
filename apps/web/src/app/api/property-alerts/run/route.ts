@@ -126,7 +126,7 @@ export async function POST(req: Request) {
 
     // Send one email per user with all new matches
     let emailsSent = 0;
-    for (const [, { user, alerts }] of Array.from(newAlertsByUser)) {
+    for (const [userId, { user, alerts }] of Array.from(newAlertsByUser)) {
       if (!user.email) continue;
 
       const properties = alerts.map(({ property }: NewAlert) => {
@@ -147,7 +147,7 @@ export async function POST(req: Request) {
       });
 
       try {
-        await sendPropertyAlertEmail(user.email, user.name ?? "there", properties);
+        await sendPropertyAlertEmail(user.email, user.name ?? "there", properties, userId);
         emailsSent++;
       } catch (emailErr) {
         console.error("[property-alerts] Failed to send email to", user.email, emailErr);

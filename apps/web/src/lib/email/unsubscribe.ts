@@ -40,3 +40,10 @@ export function verifyUnsubscribeToken(
 export function unsubscribeUrl(kind: OptOutKind, id: string): string {
   return `${process.env.NEXTAUTH_URL}/unsubscribe?t=${makeUnsubscribeToken(kind, id)}`;
 }
+
+// The List-Unsubscribe header is not sufficient on its own: only some clients
+// surface it, and CAN-SPAM requires a visible opt-out inside the message. Every
+// broadcast body appends this.
+export function unsubscribeFooterHtml(kind: OptOutKind, id: string): string {
+  return `<p style="margin:24px 0 0;font-size:12px;color:#999999;">Don&rsquo;t want these emails? <a href="${unsubscribeUrl(kind, id)}" style="color:#9E8C61;">Unsubscribe</a></p>`;
+}

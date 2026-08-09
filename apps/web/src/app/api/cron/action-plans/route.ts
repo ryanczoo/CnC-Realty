@@ -64,6 +64,7 @@ export async function POST(req: NextRequest) {
             subject,
             body,
             enrollmentId: enrollment.id,
+            leadId: lead.id,
           });
         } else if (step.stepType === "TASK") {
           const title = substituteVars(step.taskTitle ?? "", vars);

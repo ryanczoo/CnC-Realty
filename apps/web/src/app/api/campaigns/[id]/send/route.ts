@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth, checkOwnership } from "@/lib/api-auth";
 import { emailLayout } from "@/lib/email";
 import { sendEmail } from "@/lib/email/send";
+import { unsubscribeFooterHtml } from "@/lib/email/unsubscribe";
 
 export async function POST(
   _req: Request,
@@ -16,7 +17,7 @@ export async function POST(
     include: {
       contacts: {
         where: { status: "PENDING" },
-        include: { lead: { select: { email: true, firstName: true, lastName: true } } },
+        include: { lead: { select: { id: true, email: true, firstName: true, lastName: true } } },
       },
     },
   });
@@ -47,18 +48,33 @@ export async function POST(
     );
   }
 
+  // Same reasoning: unsubscribe links are signed with this, so without it every
+  // recipient throws inside allSettled and the campaign reports success having
+  // delivered nothing.
+  if (!process.env.NEXTAUTH_SECRET) {
+    return NextResponse.json({ error: "NEXTAUTH_SECRET not configured" }, { status: 500 });
+  }
+
   let sent = 0;
   let errors = 0;
   const now = new Date();
-  const html = emailLayout({ heading: campaign.subject!, bodyHtml: campaign.body! });
 
   const results = await Promise.allSettled(
     campaign.contacts.map(async (contact) => {
+      // Built per contact, not once outside the loop: the unsubscribe link is
+      // signed for a specific lead, so a shared body would opt the wrong
+      // person out.
+      const html = emailLayout({
+        heading: campaign.subject!,
+        bodyHtml: campaign.body! + unsubscribeFooterHtml("lead", contact.lead.id),
+      });
+
       await sendEmail({
         to: contact.lead.email,
         subject: campaign.subject!,
         html,
         stream: "broadcast",
+        recipient: { kind: "lead", id: contact.lead.id },
       });
       return contact.id;
     })

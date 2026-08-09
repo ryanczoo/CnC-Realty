@@ -1,11 +1,12 @@
 process.env.NEXTAUTH_URL = "http://localhost:3000";
+process.env.NEXTAUTH_SECRET = "test-secret";
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/email/send", () => ({ sendEmail: vi.fn().mockResolvedValue(undefined) }));
 
 import { sendEmail } from "@/lib/email/send";
-import { sendActionPlanEmail } from "@/lib/action-plan-email";
+import { sendActionPlanEmail, sendLeadReplyNotification } from "@/lib/action-plan-email";
 
 describe("sendActionPlanEmail", () => {
   beforeEach(() => vi.clearAllMocks());
@@ -16,6 +17,7 @@ describe("sendActionPlanEmail", () => {
       subject: "Still thinking about your next home?",
       body: "Hi Jordan,\n\nI wanted to follow up on your interest.\n\nBest,\nRyan",
       enrollmentId: "enr-1",
+      leadId: "lead-1",
     });
 
     expect(sendEmail).toHaveBeenCalledOnce();
@@ -33,5 +35,68 @@ describe("sendActionPlanEmail", () => {
     expect(call.html).toContain("Still thinking about your next home?");
     expect(call.html).toContain("logo-gold.png");
     expect(call.html).toContain("I wanted to follow up on your interest.");
+  });
+
+  it("identifies the lead so the seam can honour an opt-out", async () => {
+    await sendActionPlanEmail({
+      to: "jordan@example.com",
+      subject: "Following up",
+      body: "hi",
+      enrollmentId: "enr-1",
+      leadId: "lead-1",
+    });
+
+    expect(vi.mocked(sendEmail).mock.calls[0][0].recipient).toEqual({
+      kind: "lead",
+      id: "lead-1",
+    });
+  });
+
+  it("puts a visible unsubscribe link in the body", async () => {
+    await sendActionPlanEmail({
+      to: "jordan@example.com",
+      subject: "Following up",
+      body: "hi",
+      enrollmentId: "enr-1",
+      leadId: "lead-1",
+    });
+
+    // The List-Unsubscribe header is not enough on its own — CAN-SPAM wants a
+    // visible opt-out inside the message.
+    expect(vi.mocked(sendEmail).mock.calls[0][0].html).toContain("/unsubscribe?t=");
+  });
+});
+
+describe("sendLeadReplyNotification", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("sends the agent's copy on the transactional stream", async () => {
+    await sendLeadReplyNotification({
+      to: "agent@cncrealtygroup.com",
+      subject: "[Lead Reply] Still interested",
+      body: "Yes, please call me",
+      enrollmentId: "enr-1",
+    });
+
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+
+    // This is the agent's own work landing in their inbox, not marketing.
+    // On the broadcast stream a marketing opt-out would silently swallow it.
+    expect(call.stream).toBe("transactional");
+    expect(call.to).toBe("agent@cncrealtygroup.com");
+    expect(call.replyTo).toBe("reply+enr-1@reply.cncrealtygroup.com");
+  });
+
+  it("carries no unsubscribe link — the agent cannot opt out of their own leads", async () => {
+    await sendLeadReplyNotification({
+      to: "agent@cncrealtygroup.com",
+      subject: "[Lead Reply] Still interested",
+      body: "Yes, please call me",
+      enrollmentId: "enr-1",
+    });
+
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    expect(call.html).not.toContain("/unsubscribe?t=");
+    expect(call.recipient).toBeUndefined();
   });
 });

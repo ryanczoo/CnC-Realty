@@ -1,4 +1,5 @@
 import { sendEmail } from "@/lib/email/send";
+import { unsubscribeFooterHtml } from "@/lib/email/unsubscribe";
 
 export interface AlertProperty {
   address: string;
@@ -11,7 +12,8 @@ export interface AlertProperty {
 export async function sendPropertyAlertEmail(
   to: string,
   userName: string,
-  properties: AlertProperty[]
+  properties: AlertProperty[],
+  userId: string
 ): Promise<void> {
   // The seam owns client construction now, but this early return is behaviour,
   // not config: with no token these alerts are skipped outright rather than
@@ -84,6 +86,7 @@ export async function sendPropertyAlertEmail(
                 You&rsquo;re receiving this because you have property alerts turned on for a saved search.
                 <a href="${baseUrl}/account" style="color:#9E8C61;">Manage your alerts</a>
               </p>
+              ${unsubscribeFooterHtml("user", userId)}
             </td>
           </tr>
           <!-- Footer -->
@@ -106,5 +109,6 @@ export async function sendPropertyAlertEmail(
     subject: `New listings matching your search`,
     html,
     stream: "broadcast",
+    recipient: { kind: "user", id: userId },
   });
 }

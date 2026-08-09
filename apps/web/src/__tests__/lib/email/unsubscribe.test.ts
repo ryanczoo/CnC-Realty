@@ -3,6 +3,7 @@ import {
   makeUnsubscribeToken,
   verifyUnsubscribeToken,
   unsubscribeUrl,
+  unsubscribeFooterHtml,
 } from "@/lib/email/unsubscribe";
 
 beforeAll(() => {
@@ -41,6 +42,25 @@ describe("unsubscribe tokens", () => {
   it("builds an absolute unsubscribe url", () => {
     expect(unsubscribeUrl("lead", "lead_123")).toMatch(
       /^https:\/\/cncrealtygroup\.com\/unsubscribe\?t=/
+    );
+  });
+});
+
+describe("unsubscribeFooterHtml", () => {
+  it("embeds a working unsubscribe link for the recipient", () => {
+    const html = unsubscribeFooterHtml("lead", "lead_123");
+    const href = html.match(/href="([^"]+)"/)?.[1];
+
+    expect(href).toBeDefined();
+    // The link has to round-trip: a footer pointing at a token the endpoint
+    // rejects is a compliance failure that looks fine to the eye.
+    const token = new URL(href!).searchParams.get("t");
+    expect(verifyUnsubscribeToken(token!)).toEqual({ kind: "lead", id: "lead_123" });
+  });
+
+  it("builds a distinct link per recipient", () => {
+    expect(unsubscribeFooterHtml("lead", "lead_1")).not.toBe(
+      unsubscribeFooterHtml("lead", "lead_2")
     );
   });
 });

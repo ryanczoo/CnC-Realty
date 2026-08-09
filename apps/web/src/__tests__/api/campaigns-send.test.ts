@@ -1,3 +1,8 @@
+// Set before imports: the route signs a per-recipient unsubscribe link at
+// send time, which needs both of these.
+process.env.NEXTAUTH_SECRET = "test-secret";
+process.env.NEXTAUTH_URL = "http://localhost:3000";
+
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 vi.mock("@/lib/api-auth", async (importOriginal) => ({
