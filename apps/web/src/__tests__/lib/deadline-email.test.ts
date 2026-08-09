@@ -1,19 +1,16 @@
-process.env.SENDGRID_API_KEY = "test-key";
 process.env.NEXTAUTH_URL = "http://localhost:3000";
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.mock("@sendgrid/mail", () => ({ default: { setApiKey: vi.fn(), send: vi.fn() } }));
+vi.mock("@/lib/email/send", () => ({ sendEmail: vi.fn().mockResolvedValue(undefined) }));
 
-import sgMail from "@sendgrid/mail";
+import { sendEmail } from "@/lib/email/send";
 import { sendDeadlineReminder } from "@/lib/deadline-email";
 
 describe("sendDeadlineReminder", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("includes a matching plain-text part alongside the HTML", async () => {
-    vi.mocked(sgMail.send).mockResolvedValue(undefined as any);
-
+  it("emails the agent the deadline details on the transactional stream", async () => {
     await sendDeadlineReminder({
       agentEmail: "agent@example.com",
       agentName: "Jane",
@@ -23,12 +20,16 @@ describe("sendDeadlineReminder", () => {
       daysOut: 3,
     });
 
-    expect(sgMail.send).toHaveBeenCalledOnce();
-    const call = vi.mocked(sgMail.send).mock.calls[0][0] as any;
+    expect(sendEmail).toHaveBeenCalledOnce();
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
 
-    expect(call.text).toContain("Jane");
-    expect(call.text).toContain("Inspection Deadline");
-    expect(call.text).toContain("123 Main St");
-    expect(call.text).not.toMatch(/<[^>]+>/);
+    expect(call.to).toBe("agent@example.com");
+    expect(call.stream).toBe("transactional");
+    // No override — the seam supplies the default noreply@ FROM.
+    expect(call.from).toBeUndefined();
+    expect(call.subject).toBe("Deadline reminder: Inspection Deadline for 123 Main St");
+    expect(call.html).toContain("Jane");
+    expect(call.html).toContain("Inspection Deadline");
+    expect(call.html).toContain("123 Main St");
   });
 });

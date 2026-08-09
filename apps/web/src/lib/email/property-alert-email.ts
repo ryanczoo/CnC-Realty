@@ -1,5 +1,4 @@
-import sgMail from "@sendgrid/mail";
-import { FROM, htmlToPlainText } from "@/lib/email";
+import { sendEmail } from "@/lib/email/send";
 
 export interface AlertProperty {
   address: string;
@@ -14,12 +13,13 @@ export async function sendPropertyAlertEmail(
   userName: string,
   properties: AlertProperty[]
 ): Promise<void> {
+  // The seam owns setApiKey now, but this early return is behaviour, not config:
+  // with no key these alerts are skipped outright rather than attempted and failed.
+  // Retarget it at the vendor's env var when the Postmark swap lands.
   if (!process.env.SENDGRID_API_KEY) {
     console.warn("[property-alert-email] SENDGRID_API_KEY is not set — skipping email send.");
     return;
   }
-
-  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
   const count = properties.length;
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cncrealtygroup.com";
@@ -101,11 +101,10 @@ export async function sendPropertyAlertEmail(
 </body>
 </html>`;
 
-  await sgMail.send({
+  await sendEmail({
     to,
-    from: FROM,
     subject: `New listings matching your search`,
     html,
-    text: htmlToPlainText(html),
+    stream: "broadcast",
   });
 }

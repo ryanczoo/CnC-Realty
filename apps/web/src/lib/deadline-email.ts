@@ -1,9 +1,5 @@
-import sgMail from "@sendgrid/mail";
-import { FROM, emailLayout, htmlToPlainText } from "@/lib/email";
-
-if (process.env.SENDGRID_API_KEY) {
-  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-}
+import { emailLayout } from "@/lib/email";
+import { sendEmail } from "@/lib/email/send";
 
 export interface DeadlineReminder {
   agentEmail: string;
@@ -40,11 +36,10 @@ export async function sendDeadlineReminder(reminder: DeadlineReminder): Promise<
     footer: "CnC Realty · Los Angeles, CA · CA DRE #02439028",
   });
 
-  await sgMail.send({
+  await sendEmail({
     to: reminder.agentEmail,
-    from: FROM,
     subject: `Deadline reminder: ${reminder.label} for ${reminder.address}`,
     html,
-    text: htmlToPlainText(html),
+    stream: "transactional",
   });
 }

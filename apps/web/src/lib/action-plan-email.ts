@@ -1,9 +1,5 @@
-import sgMail from "@sendgrid/mail";
-import { FROM, emailLayout, escapeHtml, htmlToPlainText } from "@/lib/email";
-
-if (process.env.SENDGRID_API_KEY) {
-  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-}
+import { emailLayout, escapeHtml } from "@/lib/email";
+import { sendEmail } from "@/lib/email/send";
 
 export function substituteVars(
   template: string,
@@ -26,12 +22,11 @@ export async function sendActionPlanEmail(opts: {
   const bodyHtml = `<p style="color: #4b4b4b; font-size: 15px; line-height: 1.6;">${escapeHtml(opts.body).replace(/\n/g, "<br>")}</p>`;
   const html = emailLayout({ heading: opts.subject, bodyHtml });
 
-  await sgMail.send({
+  await sendEmail({
     to: opts.to,
-    from: FROM,
-    replyTo,
     subject: opts.subject,
     html,
-    text: htmlToPlainText(html),
+    replyTo,
+    stream: "broadcast",
   });
 }
