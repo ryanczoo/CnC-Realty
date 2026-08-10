@@ -30,7 +30,15 @@ Pagination was independently verified by replaying the crawl's exact query over 
 
 **Worth fixing when convenient:** `runSync` logs `upserted` and `errors` but never `skipped`, which is what made a deliberate exclusion look like silent data loss. A `skipped` counter on that filter would stop this from being re-derived.
 
-**Still outstanding — credential rotation.** `CRON_SECRET` was found in plaintext 19× in the spare laptop's PowerShell history on a company-managed machine with EDR and backup agents. File deletion limits exposure but cannot guarantee erasure. Rotate in this order: `CRON_SECRET`, Neon password, CRMLS/Trestle secret. Lower priority: `NEXTAUTH_SECRET`, Upstash token, R2 keys. Mapbox is public by design. The SendGrid key is moot — SendGrid is gone entirely (see the Postmark section at the end of this file).
+**Credential rotation — CLOSED, resolved by factory reset (decided 2026-08-09).** This supersedes the two earlier "⚠️ Pending — credential rotation" blocks in the 2026-08-07 session notes below; do not action those.
+
+Ryan is having IT factory-reset the spare laptop rather than rotating credentials. That is the better answer, and it makes the rest of that machine's cleanup checklist moot (final history-file delete, browser sign-outs, resuming Windows Update). A reset also closes a gap the manual cleanup could not: deleted files stay recoverable from unallocated sectors until overwritten, and a reimage eliminates that.
+
+What the earlier notes overstated: EDR captures telemetry, not the contents of arbitrary text files — that is backup/DLP territory, and the repo lived in `Downloads`, which is commonly *excluded* from backup as transient. The file most likely to have been captured was the PowerShell history in `AppData\Roaming`, and it held only `CRON_SECRET`, the least valuable credential of the set. The `.env.local` sent over Messenger was a genuinely separate exposure; Ryan has deleted it.
+
+**Two rotations still worth doing, for reasons unrelated to the laptop:**
+- **`NEXTAUTH_SECRET` before launch.** It signs unsubscribe tokens. Rotating post-launch invalidates live unsubscribe links in recipients' inboxes — a compliance problem. Costs nothing today; none have been sent.
+- **Anything you want fresh, at the deploy pass.** Every credential gets typed into Vercel then anyway, so rotating at that moment is the same keystrokes.
 
 **Deferred debt:** `SyncProgress.nextLink` holds a cursor value, not a URL. Rename it to `cursor` — needs a migration, which is now unblocked.
 
@@ -6367,17 +6375,20 @@ Both cost real time and will recur:
 
 ### Outstanding
 
-1. **Credential rotation** — unblocked now that the crawl is done. `CRON_SECRET` first (found in plaintext 19× in the spare laptop's PowerShell history), then Neon password, then CRMLS/Trestle secret. The SendGrid key is moot.
+1. **Credential rotation — closed.** Resolved by factory-resetting the spare laptop; see the section at the top of this file. The one rotation still worth doing on its own merits is `NEXTAUTH_SECRET` **before launch**, because it signs unsubscribe tokens.
 2. **Postmark paid plan** — gates inbound reply handling and the `reply` MX repoint off `mx.sendgrid.net`.
 3. **`SyncProgress.nextLink` → `cursor` rename** — the column holds a cursor, not a URL. Needs a migration, now unblocked.
 4. **Vercel deploy** — still the one unfinished Phase 6/7 item. Last session's plan was a direct `vercel --prod` CLI deploy rather than more debugging of the GitHub auto-deploy trigger.
 5. **DMARC enforcement** — revisit `p=quarantine` after 2–4 weekly digests.
+6. **DKIM key rotation, recurring.** Postmark recommends regenerating the sending domain's DKIM key roughly every 3 months. Rotation is zero-downtime — the new key activates once it is visible in DNS. First one due around **November 2026**.
+7. **Neon scale-to-zero** — currently disabled, which is the correct *launch* setting (avoids cold starts on SSR property pages) but bills a warm compute 24/7 while nothing is live. Worth checking the billing page and deciding whether to enable it until deploy.
 
 ### Next Session — Start Here
 
 1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
-2. Rotate `CRON_SECRET`, then the other credentials above — nothing blocks this now
-3. Ryan to direct: deploy, or the remaining backlog (broader transaction-management click-through testing for Purchase/Listing/Lease types is still the oldest open item)
+2. Ryan to direct: deploy, or the remaining backlog (broader transaction-management click-through testing for Purchase/Listing/Lease types is still the oldest open item)
+
+
 ## ✅ Postmark migration — COMPLETE (2026-08-09)
 
 SendGrid is gone from the codebase entirely. Plan: `docs/superpowers/plans/2026-08-08-postmark-migration.md` (all 12 tasks). Suite went 714/714 → 757/757, `tsc` clean, production build compiles.
@@ -6418,6 +6429,8 @@ The domain was authenticated on 2026-08-09 and **both streams were smoke-tested 
 | `broadcast` + `List-Unsubscribe` headers | `787751b1-2f32-44d7-b5eb-fc0d05b9f8a1` | ErrorCode 0 |
 
 The broadcast test matters most: Postmark **enforces** `List-Unsubscribe` on broadcast streams, so acceptance confirms the header shape the seam generates is valid.
+
+Postmark confirmed both records by email the same day. Their DKIM confirmation notes the domain signs with a **1024-bit** key — that is Postmark's current standard, not a weakness. There is no 2048-bit option to upgrade to; their historical upgrade was 768→1024, and 1024 is exactly Google's stated minimum for bulk senders. **No action needed on key length.** Key *rotation* is a separate, recurring item — see the outstanding list in the 2026-08-09 session notes.
 
 **Still gated on the paid plan:** Inbound. Task 11's code is done and unit-tested, but the end-to-end reply test needs it. The account also showed "under review" — normal for new accounts, and it did not block sending.
 
