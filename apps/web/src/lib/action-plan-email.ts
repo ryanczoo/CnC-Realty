@@ -26,7 +26,7 @@ export async function sendActionPlanEmail(opts: {
   leadId: string;
 }): Promise<void> {
   const replyTo = `reply+${opts.enrollmentId}@reply.cncrealtygroup.com`;
-  const bodyHtml = paragraph(opts.body) + unsubscribeFooterHtml("lead", opts.leadId);
+  const bodyHtml = paragraph(opts.body) + unsubscribeFooterHtml("lead", opts.leadId, "action_plan");
   const html = emailLayout({ heading: opts.subject, bodyHtml });
 
   await sendEmail({
@@ -36,6 +36,7 @@ export async function sendActionPlanEmail(opts: {
     replyTo,
     stream: "broadcast",
     recipient: { kind: "lead", id: opts.leadId },
+    category: "action_plan",
   });
 }
 

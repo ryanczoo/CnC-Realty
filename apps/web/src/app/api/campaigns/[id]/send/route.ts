@@ -66,7 +66,7 @@ export async function POST(
       // person out.
       const html = emailLayout({
         heading: campaign.subject!,
-        bodyHtml: campaign.body! + unsubscribeFooterHtml("lead", contact.lead.id),
+        bodyHtml: campaign.body! + unsubscribeFooterHtml("lead", contact.lead.id, "campaign"),
       });
 
       await sendEmail({
@@ -75,6 +75,7 @@ export async function POST(
         html,
         stream: "broadcast",
         recipient: { kind: "lead", id: contact.lead.id },
+        category: "campaign",
       });
       return contact.id;
     })

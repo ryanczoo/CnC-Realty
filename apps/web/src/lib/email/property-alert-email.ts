@@ -86,7 +86,7 @@ export async function sendPropertyAlertEmail(
                 You&rsquo;re receiving this because you have property alerts turned on for a saved search.
                 <a href="${baseUrl}/account" style="color:#9E8C61;">Manage your alerts</a>
               </p>
-              ${unsubscribeFooterHtml("user", userId)}
+              ${unsubscribeFooterHtml("user", userId, "property_alert")}
             </td>
           </tr>
           <!-- Footer -->
@@ -110,5 +110,6 @@ export async function sendPropertyAlertEmail(
     html,
     stream: "broadcast",
     recipient: { kind: "user", id: userId },
+    category: "property_alert",
   });
 }
