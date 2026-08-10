@@ -22,15 +22,21 @@ export async function POST(req: Request) {
   const claim = verifyUnsubscribeToken(token);
   if (!claim) return NextResponse.json({ error: "Invalid token" }, { status: 400 });
 
+  // One category per click. The token says which list this message came from,
+  // and Google's sender guidance is explicit that a one-click unsubscribe
+  // removes the recipient only from that list.
   if (claim.kind === "lead") {
     await prisma.lead.update({
       where: { id: claim.id },
-      data: { emailOptOut: true },
+      data:
+        claim.category === "action_plan"
+          ? { actionPlanOptOut: true }
+          : { campaignOptOut: true },
     });
   } else {
     await prisma.user.update({
       where: { id: claim.id },
-      data: { emailOptOut: true },
+      data: { propertyAlertOptOut: true },
     });
   }
 

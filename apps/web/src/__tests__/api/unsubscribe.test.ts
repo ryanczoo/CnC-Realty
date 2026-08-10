@@ -25,22 +25,63 @@ describe("POST /api/unsubscribe", () => {
     process.env.NEXTAUTH_SECRET = "test-secret";
   });
 
-  it("sets emailOptOut on a lead", async () => {
-    const res = await POST(req(makeUnsubscribeToken("lead", "lead_1")));
+  it("sets only campaignOptOut for a campaign token", async () => {
+    const token = makeUnsubscribeToken("lead", "lead_1", "campaign");
+
+    const res = await POST(
+      new Request(`http://localhost:3000/api/unsubscribe?t=${token}`, { method: "POST" })
+    );
+
     expect(res.status).toBe(200);
     expect(prisma.lead.update).toHaveBeenCalledWith({
       where: { id: "lead_1" },
-      data: { emailOptOut: true },
+      data: { campaignOptOut: true },
+    });
+  });
+
+  it("sets only actionPlanOptOut for an action_plan token", async () => {
+    const token = makeUnsubscribeToken("lead", "lead_1", "action_plan");
+
+    await POST(
+      new Request(`http://localhost:3000/api/unsubscribe?t=${token}`, { method: "POST" })
+    );
+
+    expect(prisma.lead.update).toHaveBeenCalledWith({
+      where: { id: "lead_1" },
+      data: { actionPlanOptOut: true },
+    });
+  });
+
+  it("sets propertyAlertOptOut on the User table for a property_alert token", async () => {
+    const token = makeUnsubscribeToken("user", "user_1", "property_alert");
+
+    await POST(
+      new Request(`http://localhost:3000/api/unsubscribe?t=${token}`, { method: "POST" })
+    );
+
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: "user_1" },
+      data: { propertyAlertOptOut: true },
+    });
+    expect(prisma.lead.update).not.toHaveBeenCalled();
+  });
+
+  it("writes campaignOptOut, and nothing else, from the JSON confirmation page", async () => {
+    const res = await POST(req(makeUnsubscribeToken("lead", "lead_1", "campaign")));
+    expect(res.status).toBe(200);
+    expect(prisma.lead.update).toHaveBeenCalledWith({
+      where: { id: "lead_1" },
+      data: { campaignOptOut: true },
     });
     expect(prisma.user.update).not.toHaveBeenCalled();
   });
 
-  it("sets emailOptOut on a user", async () => {
-    const res = await POST(req(makeUnsubscribeToken("user", "user_1")));
+  it("writes propertyAlertOptOut from the JSON confirmation page", async () => {
+    const res = await POST(req(makeUnsubscribeToken("user", "user_1", "property_alert")));
     expect(res.status).toBe(200);
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: "user_1" },
-      data: { emailOptOut: true },
+      data: { propertyAlertOptOut: true },
     });
     expect(prisma.lead.update).not.toHaveBeenCalled();
   });
@@ -53,7 +94,7 @@ describe("POST /api/unsubscribe", () => {
   });
 
   it("rejects a token signed with a different secret", async () => {
-    const forged = makeUnsubscribeToken("lead", "lead_1");
+    const forged = makeUnsubscribeToken("lead", "lead_1", "campaign");
     process.env.NEXTAUTH_SECRET = "a-different-secret";
 
     const res = await POST(req(forged));
@@ -76,7 +117,7 @@ describe("POST /api/unsubscribe", () => {
   it("honours an RFC 8058 one-click POST with the token in the query string", async () => {
     // What Gmail actually sends: form-encoded body, token in the URL. Parsing
     // this body as JSON would throw, so the query string has to win.
-    const token = makeUnsubscribeToken("lead", "lead_1");
+    const token = makeUnsubscribeToken("lead", "lead_1", "action_plan");
     const res = await POST(
       new Request(`http://localhost/api/unsubscribe?t=${token}`, {
         method: "POST",
@@ -88,7 +129,7 @@ describe("POST /api/unsubscribe", () => {
     expect(res.status).toBe(200);
     expect(prisma.lead.update).toHaveBeenCalledWith({
       where: { id: "lead_1" },
-      data: { emailOptOut: true },
+      data: { actionPlanOptOut: true },
     });
   });
 
@@ -106,8 +147,8 @@ describe("POST /api/unsubscribe", () => {
   });
 
   it("stays 200 for an already-unsubscribed recipient", async () => {
-    await POST(req(makeUnsubscribeToken("lead", "lead_1")));
-    const res = await POST(req(makeUnsubscribeToken("lead", "lead_1")));
+    await POST(req(makeUnsubscribeToken("lead", "lead_1", "campaign")));
+    const res = await POST(req(makeUnsubscribeToken("lead", "lead_1", "campaign")));
     expect(res.status).toBe(200);
   });
 });
