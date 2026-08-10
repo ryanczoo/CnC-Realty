@@ -13,7 +13,12 @@
 ## Global Constraints
 
 - Test runner is Vitest. Full suite: `pnpm --filter web test`. Single file: `pnpm --filter web test <path>`.
-- Suite is at 757/757 passing before this work. It must be green at the end of every task.
+- Suite is at **761/761** passing before this work.
+- **Expected-red window, Tasks 2 through 4.** The token and seam signatures change before their callers do. During this window the gate is not "all green" but "only the expected failures":
+  - After Task 2: exactly the 4 tests in `src/__tests__/api/unsubscribe.test.ts` fail. They assert the old `emailOptOut` write and are rewritten in Task 5.
+  - `tsc --noEmit` fails after Tasks 2 and 3. Require it clean from Task 4 onward.
+  - **Any failure outside that named set is a defect.** Full green returns at Task 5.
+- `verifyUnsubscribeToken`'s return type widened rather than broke, so `api/unsubscribe/route.ts` still **compiles** while silently ignoring `claim.category`. A clean `tsc` is therefore not proof the migration is complete — Task 5 owns that route.
 - Migrations run from `packages/database` (package name `@cnc/database`): `pnpm --filter @cnc/database db:migrate`.
 - Set mock implementations in `beforeEach`. Never rely on `vi.clearAllMocks()` to reset them — it clears calls but **not** implementations. This caused the `idx-sync.test.ts` pollution on 2026-08-09.
 - Every CTA/pill button must use `PULSE_ANIMATE` + `PULSE_TRANSITION` from `@/lib/motion`. The existing unsubscribe button already does; keep it.
