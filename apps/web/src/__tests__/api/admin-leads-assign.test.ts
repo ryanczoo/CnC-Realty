@@ -46,7 +46,7 @@ describe("PATCH /api/admin/leads/[id]/assign", () => {
       agentId: "agent-1",
       brokerageFed: true,
     } as any);
-    vi.mocked(sendEmail).mockResolvedValue(undefined);
+    vi.mocked(sendEmail).mockResolvedValue({ sent: true });
 
     await PATCH(makeRequest("agent-1"), { params: { id: "lead-1" } });
 

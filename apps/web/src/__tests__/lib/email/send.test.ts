@@ -36,15 +36,28 @@ function sentMessage(): any {
 
 const LEAD = { kind: "lead" as const, id: "lead_1" };
 
-/** Broadcast sends require a recipient, so every broadcast test needs one. */
+/**
+ * Broadcast sends require a recipient, so every broadcast test needs one.
+ * Both lead columns move together: these tests care about opted-out vs not,
+ * not about which category. The per-category tests set the columns directly.
+ */
 function optedOut(value: boolean) {
-  vi.mocked(prisma.lead.findUnique).mockResolvedValue({ emailOptOut: value } as never);
+  vi.mocked(prisma.lead.findUnique).mockResolvedValue({
+    campaignOptOut: value,
+    actionPlanOptOut: value,
+  } as never);
 }
 
 describe("sendEmail", () => {
   beforeEach(() => {
+    // Implementations are set here, not left to clearAllMocks: that clears
+    // recorded calls but leaves implementations in place, so a value set by
+    // one test would otherwise leak into every test defined after it.
     vi.clearAllMocks();
     optedOut(false);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      propertyAlertOptOut: false,
+    } as never);
   });
 
   it("sends to the recipient with the given subject and html", async () => {
@@ -200,6 +213,7 @@ describe("sendEmail", () => {
   it("routes a broadcast send to the broadcast stream", async () => {
     await sendEmail({
       to: "a@b.com", subject: "Hi", html: "<p>x</p>", stream: "broadcast", recipient: LEAD,
+      category: "campaign",
     });
 
     // Read from env, not hardcoded: the broadcast stream id is not `outbound`,
@@ -226,6 +240,7 @@ describe("sendEmail", () => {
       await expect(
         sendEmail({
           to: "a@b.com", subject: "Hi", html: "<p>x</p>", stream: "broadcast", recipient: LEAD,
+          category: "campaign",
         })
       ).rejects.toThrow("POSTMARK_BROADCAST_STREAM");
 
@@ -241,6 +256,7 @@ describe("sendEmail", () => {
       await expect(
         sendEmail({
           to: "a@b.com", subject: "Hi", html: "<p>x</p>", stream: "broadcast", recipient: LEAD,
+          category: "campaign",
         })
       ).rejects.toThrow("POSTMARK_BROADCAST_STREAM");
 
@@ -262,6 +278,7 @@ describe("sendEmail", () => {
 
       await sendEmail({
         to: "a@b.com", subject: "Hi", html: "<p>x</p>", stream: "broadcast", recipient: LEAD,
+        category: "campaign",
       });
 
       expect(sendEmailMock).not.toHaveBeenCalled();
@@ -272,6 +289,7 @@ describe("sendEmail", () => {
 
       await sendEmail({
         to: "a@b.com", subject: "Hi", html: "<p>x</p>", stream: "broadcast", recipient: LEAD,
+        category: "campaign",
       });
 
       expect(sendEmailMock).toHaveBeenCalledOnce();
@@ -291,7 +309,9 @@ describe("sendEmail", () => {
     });
 
     it("reads the User table for a user recipient", async () => {
-      vi.mocked(prisma.user.findUnique).mockResolvedValue({ emailOptOut: true } as never);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        propertyAlertOptOut: true,
+      } as never);
 
       await sendEmail({
         to: "a@b.com",
@@ -299,6 +319,7 @@ describe("sendEmail", () => {
         html: "<p>x</p>",
         stream: "broadcast",
         recipient: { kind: "user", id: "user_1" },
+        category: "property_alert",
       });
 
       expect(prisma.user.findUnique).toHaveBeenCalled();
@@ -313,9 +334,62 @@ describe("sendEmail", () => {
       // the alternative silently drops mail for any row-lookup miss.
       await sendEmail({
         to: "a@b.com", subject: "Hi", html: "<p>x</p>", stream: "broadcast", recipient: LEAD,
+        category: "campaign",
       });
 
       expect(sendEmailMock).toHaveBeenCalledOnce();
+    });
+
+    it("suppresses a campaign but not a drip when only campaignOptOut is set", async () => {
+      vi.mocked(prisma.lead.findUnique).mockResolvedValue({
+        campaignOptOut: true,
+        actionPlanOptOut: false,
+      } as never);
+
+      const result = await sendEmail({
+        to: "a@b.com", subject: "Hi", html: "<p>x</p>",
+        stream: "broadcast", recipient: LEAD, category: "campaign",
+      });
+
+      expect(result).toEqual({ sent: false, reason: "opted_out" });
+      expect(sendEmailMock).not.toHaveBeenCalled();
+    });
+
+    it("sends a drip to someone who only opted out of campaigns", async () => {
+      vi.mocked(prisma.lead.findUnique).mockResolvedValue({
+        campaignOptOut: true,
+        actionPlanOptOut: false,
+      } as never);
+
+      const result = await sendEmail({
+        to: "a@b.com", subject: "Hi", html: "<p>x</p>",
+        stream: "broadcast", recipient: LEAD, category: "action_plan",
+      });
+
+      expect(result).toEqual({ sent: true });
+      expect(sendEmailMock).toHaveBeenCalledOnce();
+    });
+
+    it("reads propertyAlertOptOut from the User table for a property alert", async () => {
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        propertyAlertOptOut: true,
+      } as never);
+
+      const result = await sendEmail({
+        to: "a@b.com", subject: "Hi", html: "<p>x</p>",
+        stream: "broadcast", recipient: { kind: "user", id: "user_1" }, category: "property_alert",
+      });
+
+      expect(result).toEqual({ sent: false, reason: "opted_out" });
+      expect(prisma.lead.findUnique).not.toHaveBeenCalled();
+    });
+
+    it("reports a transactional send as sent", async () => {
+      const result = await sendEmail({
+        to: "a@b.com", subject: "Hi", html: "<p>x</p>", stream: "transactional",
+      });
+
+      expect(result).toEqual({ sent: true });
     });
   });
 
@@ -323,6 +397,7 @@ describe("sendEmail", () => {
     it("adds List-Unsubscribe headers to broadcast sends", async () => {
       await sendEmail({
         to: "a@b.com", subject: "Hi", html: "<p>x</p>", stream: "broadcast", recipient: LEAD,
+        category: "campaign",
       });
 
       const headers = sentMessage().Headers;
@@ -340,6 +415,7 @@ describe("sendEmail", () => {
     it("wraps the List-Unsubscribe url in angle brackets per RFC 2369", async () => {
       await sendEmail({
         to: "a@b.com", subject: "Hi", html: "<p>x</p>", stream: "broadcast", recipient: LEAD,
+        category: "campaign",
       });
 
       const value = sentMessage().Headers.find(

@@ -324,7 +324,7 @@ describe("Trigger execution — PATCH /api/leads/[id]", () => {
     vi.mocked(prisma.lead.update).mockResolvedValue({ ...UPDATED_LEAD, status: "UNDER_CONTRACT" } as any);
     vi.mocked(prisma.trigger.findMany).mockResolvedValue([TRIGGER_EMAIL] as any);
     vi.mocked(prisma.triggerExecution.create).mockResolvedValue({ id: "e2" } as any);
-    vi.mocked(sendEmail).mockResolvedValue(undefined);
+    vi.mocked(sendEmail).mockResolvedValue({ sent: true });
 
     const req = new Request("http://localhost/api/leads/l1", {
       method: "PATCH",

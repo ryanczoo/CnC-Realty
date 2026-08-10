@@ -1,7 +1,11 @@
 import { ServerClient } from "postmark";
 import { FROM, htmlToPlainText } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
-import { unsubscribePostUrl, type OptOutKind } from "@/lib/email/unsubscribe";
+import {
+  unsubscribePostUrl,
+  type OptOutKind,
+  type EmailCategory,
+} from "@/lib/email/unsubscribe";
 
 // Postmark's transactional stream. Hardcoded because it is fixed per server and
 // identical across environments. The broadcast stream id is account-specific, so
@@ -52,12 +56,18 @@ export type OptOutRecipient = { kind: OptOutKind; id: string };
 
 // Required on broadcast, optional on transactional. Commercial email must
 // honour an opt-out and carry a working unsubscribe link, and neither is
-// possible without knowing who the recipient is. Making it a compile-time
-// requirement means a future broadcast call site cannot quietly skip both —
-// the same reasoning that makes `stream` itself required.
+// possible without knowing who the recipient is. `category` is required for
+// the same reason: an unsubscribe click has to opt the recipient out of the
+// list this message came from and nothing else.
 type StreamRouting =
-  | { stream: "transactional"; recipient?: OptOutRecipient }
-  | { stream: "broadcast"; recipient: OptOutRecipient };
+  | { stream: "transactional"; recipient?: OptOutRecipient; category?: never }
+  | { stream: "broadcast"; recipient: OptOutRecipient; category: EmailCategory };
+
+// Returned rather than void so a caller can tell a suppressed send from a
+// delivered one. Returning void made an opt-out indistinguishable from a
+// success, which is how campaign stats came to count suppressed contacts as
+// SENT.
+export type SendResult = { sent: true } | { sent: false; reason: "opted_out" };
 
 export type SendOptions = {
   to: string;
@@ -73,24 +83,30 @@ export type SendOptions = {
 
 // Fails open on a missing row: a deleted lead is not an opt-out, and treating
 // every lookup miss as one would silently drop mail.
-async function isOptedOut(recipient: OptOutRecipient): Promise<boolean> {
-  const row =
-    recipient.kind === "lead"
-      ? await prisma.lead.findUnique({
-          where: { id: recipient.id },
-          select: { emailOptOut: true },
-        })
-      : await prisma.user.findUnique({
-          where: { id: recipient.id },
-          select: { emailOptOut: true },
-        });
-  return row?.emailOptOut === true;
+async function isOptedOut(
+  recipient: OptOutRecipient,
+  category: EmailCategory
+): Promise<boolean> {
+  if (recipient.kind === "lead") {
+    const row = await prisma.lead.findUnique({
+      where: { id: recipient.id },
+      select: { campaignOptOut: true, actionPlanOptOut: true },
+    });
+    if (!row) return false;
+    return category === "action_plan" ? row.actionPlanOptOut : row.campaignOptOut;
+  }
+
+  const row = await prisma.user.findUnique({
+    where: { id: recipient.id },
+    select: { propertyAlertOptOut: true },
+  });
+  return row?.propertyAlertOptOut === true;
 }
 
 // The single place the app talks to an email vendor. Callers build content;
 // this owns FROM, the plain-text part, stream routing, and (later) opt-out
 // suppression. `stream` is required so no call site can forget to choose.
-export async function sendEmail(opts: SendOptions): Promise<void> {
+export async function sendEmail(opts: SendOptions): Promise<SendResult> {
   // Resolved first so a misconfigured broadcast throws before the opt-out
   // lookup, rather than after a pointless database round trip.
   const messageStream = resolveStream(opts.stream);
@@ -100,10 +116,12 @@ export async function sendEmail(opts: SendOptions): Promise<void> {
   // account-setup or deadline message would be a far worse failure.
   const unsubscribe =
     opts.stream === "broadcast"
-      ? unsubscribePostUrl(opts.recipient.kind, opts.recipient.id)
+      ? unsubscribePostUrl(opts.recipient.kind, opts.recipient.id, opts.category)
       : null;
 
-  if (opts.stream === "broadcast" && (await isOptedOut(opts.recipient))) return;
+  if (opts.stream === "broadcast" && (await isOptedOut(opts.recipient, opts.category))) {
+    return { sent: false, reason: "opted_out" };
+  }
 
   const from = opts.from ?? FROM;
 
@@ -150,10 +168,11 @@ export async function sendEmail(opts: SendOptions): Promise<void> {
       HtmlBody: opts.html,
       TextBody: opts.text ?? htmlToPlainText(opts.html),
     });
-    return;
+    return { sent: true };
   }
 
   // Text-only: no HtmlBody key at all. An empty html part would render as a
   // blank email in clients that prefer text/html.
   await getClient().sendEmail({ ...base, TextBody: opts.text });
+  return { sent: true };
 }

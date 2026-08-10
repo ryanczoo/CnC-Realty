@@ -57,7 +57,7 @@ describe("POST /api/cron/action-plans", () => {
     vi.mocked(prisma.leadPlanStep.findMany).mockResolvedValue([EMAIL_STEP] as any);
     vi.mocked(prisma.leadPlanStep.update).mockResolvedValue({ ...EMAIL_STEP, status: "DONE" } as any);
     vi.mocked(prisma.leadPlanEnrollment.findMany).mockResolvedValue([]);
-    vi.mocked(sendEmail).mockResolvedValue(undefined);
+    vi.mocked(sendEmail).mockResolvedValue({ sent: true });
 
     const res = await POST(makeReq(CRON_SECRET));
     expect(res.status).toBe(200);
