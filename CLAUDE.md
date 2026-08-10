@@ -6373,15 +6373,37 @@ Both cost real time and will recur:
 - **`Get-Content` without `-Encoding UTF8` reads as ANSI**, mangling every non-ASCII character. Splicing CLAUDE.md this way rewrote all 6,300 lines (2,088 insertions / 2,095 deletions). Caught via `git diff --numstat`, reverted, redone with `[System.IO.File]::ReadAllLines(path, UTF8)`.
 - **`Set-Content -Encoding UTF8` writes a BOM** in PowerShell 5.1. Adds an invisible diff on line 1. Use `[System.IO.File]::WriteAllText(path, text, (New-Object System.Text.UTF8Encoding($false)))`.
 
+### Email infrastructure — finished and verified end to end
+
+Everything below was confirmed against the live Postmark API or a public DNS resolver, not read off a dashboard.
+
+| | |
+|---|---|
+| DKIM + Return-Path | verified in Postmark; confirmed from authoritative, Google, and Cloudflare resolvers |
+| DMARC | `v=DMARC1; p=none; pct=100; rua=…@dmarc.postmarkapp.com; sp=none; aspf=r;` — digests to `ryanchong@` Mondays |
+| Transactional send | MessageID `05aa78de-…`, ErrorCode 0 |
+| Broadcast send + `List-Unsubscribe` | MessageID `787751b1-…`, ErrorCode 0 |
+| Open / link tracking | `TrackOpens: True`, `TrackLinks: HtmlAndText` |
+| Server delivery mode | `DeliveryType: Live` |
+| SendGrid in DNS | fully removed |
+
+**Open and link tracking were OFF and are now ON.** This was a live gap between the account config and the code: the Postmark webhook handles `Open` and `Click` events and maps them to `CampaignContact` statuses, but with tracking disabled those events would never have fired. Every campaign contact would have sat at `SENT` forever and the stats page would have looked permanently dead — the kind of thing that gets misdiagnosed as a webhook bug months later.
+
+**"We're reviewing your account" does not block sending.** `GET /server` returns `DeliveryType: Live`, and both smoke tests were accepted. The "Test mode" item in the nav is a link to *enable* test mode, not an indicator that it is on. The real constraint on template testing is the **free tier's 100 emails/month**. Most template iteration needs no send at all — `emailLayout()` produces plain HTML that renders in a browser; save real sends for confirming how Gmail and Outlook rewrite CSS.
+
+**DNS is now completely SendGrid-free.** `s1._domainkey`, `s2._domainkey`, and `em3538` were removed earlier; the `reply` MX pointing at `mx.sendgrid.net` was deleted last. Verified after each step that exactly the intended rows disappeared and Hostinger's `mx1`/`mx2` mailbox delivery survived — that list had three MX rows and only one was ours to remove.
+
 ### Outstanding
 
 1. **Credential rotation — closed.** Resolved by factory-resetting the spare laptop; see the section at the top of this file. The one rotation still worth doing on its own merits is `NEXTAUTH_SECRET` **before launch**, because it signs unsubscribe tokens.
-2. **Postmark paid plan** — gates inbound reply handling and the `reply` MX repoint off `mx.sendgrid.net`.
-3. **`SyncProgress.nextLink` → `cursor` rename** — the column holds a cursor, not a URL. Needs a migration, now unblocked.
-4. **Vercel deploy** — still the one unfinished Phase 6/7 item. Last session's plan was a direct `vercel --prod` CLI deploy rather than more debugging of the GitHub auto-deploy trigger.
-5. **DMARC enforcement** — revisit `p=quarantine` after 2–4 weekly digests.
-6. **DKIM key rotation, recurring.** Postmark recommends regenerating the sending domain's DKIM key roughly every 3 months. Rotation is zero-downtime — the new key activates once it is visible in DNS. First one due around **November 2026**.
-7. **Neon scale-to-zero** — currently disabled, which is the correct *launch* setting (avoids cold starts on SSR property pages) but bills a warm compute 24/7 while nothing is live. Worth checking the billing page and deciding whether to enable it until deploy.
+2. **Postmark paid plan** — gates inbound reply handling. The `reply` MX has been **deleted** (not repointed), so `reply.cncrealtygroup.com` has no MX at all today. Add Postmark's inbound MX when inbound is enabled, using the hostname their inbound stream settings gives you at that point.
+3. **⚠️ Unsubscribe: two systems that don't talk to each other.** The broadcast stream has `SubscriptionManagementConfiguration.UnsubscribeHandlingType = "Postmark"`, so Postmark maintains its own unsubscribe handling and suppression list — in parallel with the one we built (signed tokens, `emailOptOut`, our own `List-Unsubscribe` pointing at `/api/unsubscribe`). They can disagree: someone unsubscribes through Postmark's mechanism, Postmark suppresses them, our DB still reads subscribed, we keep queuing them and Postmark silently drops it. **This is a design decision, not a toggle** — three plausible resolutions: set the stream to `None` and own it entirely, use custom handling, or keep Postmark's and sync suppressions back via the `SubscriptionChange` webhook. Not urgent (no campaign has been sent), but decide before the first one goes out. Inspect via `GET /message-streams/broadcast`.
+4. **`SyncProgress.nextLink` → `cursor` rename** — the column holds a cursor, not a URL. Needs a migration, now unblocked.
+5. **Vercel deploy** — still the one unfinished Phase 6/7 item. Last session's plan was a direct `vercel --prod` CLI deploy rather than more debugging of the GitHub auto-deploy trigger.
+6. **DMARC enforcement** — revisit `p=quarantine` after 2–4 weekly digests.
+7. **DKIM key rotation, recurring.** Postmark recommends regenerating the sending domain's DKIM key roughly every 3 months. Rotation is zero-downtime — the new key activates once it is visible in DNS. First one due around **November 2026**.
+8. **Neon scale-to-zero** — currently disabled, which is the correct *launch* setting (avoids cold starts on SSR property pages) but bills a warm compute 24/7 while nothing is live. Worth checking the billing page and deciding whether to enable it until deploy.
+9. **Delete the SendGrid account** — safe once Postmark's "We're reviewing your account" banner clears. Keeping it costs nothing and it is the only fallback if Postmark declines. Check for an active subscription before deleting; the Essentials upgrade planned for Aug 16 never happened.
 
 ### Next Session — Start Here
 
