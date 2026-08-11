@@ -60,8 +60,28 @@ export async function POST(
     return NextResponse.json({ error: "NEXTAUTH_SECRET not configured" }, { status: 500 });
   }
 
+  // A lead who unsubscribed from an earlier send is already flagged when the
+  // next campaign fires, so the contact query above filters them out and the
+  // send loop never sees them — they would sit at PENDING forever and
+  // `skipped` would only ever be non-zero inside the query-to-send race
+  // window. Mark them in one extra pass instead: two queries total regardless
+  // of list size, so the N+1 fix stays intact.
+  //
+  // Deliberately placed after the ownership and validation gates above. Run
+  // earlier, this would mutate contacts on a campaign the caller does not own,
+  // and mutate state on a request that then 400s.
+  const preMarked = await prisma.campaignContact.updateMany({
+    where: {
+      campaignId: params.id,
+      status: "PENDING",
+      lead: { campaignOptOut: true },
+    },
+    data: { status: "UNSUBSCRIBED" },
+  });
+
   let sent = 0;
-  let skipped = 0;
+  // Seeded, not zero: these contacts were suppressed before the loop began.
+  let skipped = preMarked.count;
   let errors = 0;
   const now = new Date();
 

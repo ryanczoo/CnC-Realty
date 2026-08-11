@@ -95,7 +95,13 @@ export default function CampaignDetailPage() {
     );
   }
 
-  const sentCount = campaign.contacts.filter((c) => c.status !== "PENDING").length;
+  // UNSUBSCRIBED is excluded: nothing was transmitted to those contacts, so
+  // counting them here would contradict the send banner's "N skipped" line on
+  // the same screen. BOUNCED still counts as sent — a message did go out, it
+  // just failed downstream.
+  const sentCount = campaign.contacts.filter(
+    (c) => c.status !== "PENDING" && c.status !== "UNSUBSCRIBED"
+  ).length;
   const openedCount = campaign.contacts.filter((c) => ["OPENED", "CLICKED"].includes(c.status)).length;
   const clickedCount = campaign.contacts.filter((c) => c.status === "CLICKED").length;
   const canSend = campaign.status === "DRAFT" && campaign.contacts.some((c) => c.status === "PENDING");

@@ -50,21 +50,26 @@ function request() {
 
 // vi.clearAllMocks() clears recorded calls but leaves implementations — and
 // queued mockResolvedValueOnce values — in place. Tests below chain Once
-// values, so an unconsumed queue would leak into the next test. Reset the send
-// mock explicitly and re-establish its default.
-function resetSendMock() {
+// values on both of these, so an unconsumed queue would leak into whichever
+// test runs next. Reset them explicitly and re-establish their defaults.
+//
+// updateMany's default must resolve a real `{ count }` — the route reads
+// `.count` off the pre-mark pass to seed `skipped`, so `{}` would make it NaN.
+function resetSeamMocks() {
   vi.mocked(sendEmail).mockReset().mockResolvedValue({ sent: true });
+  vi.mocked(prisma.campaignContact.updateMany)
+    .mockReset()
+    .mockResolvedValue({ count: 0 } as any);
 }
 
 describe("POST /api/campaigns/[id]/send — ownership", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    resetSendMock();
+    resetSeamMocks();
     process.env.POSTMARK_SERVER_TOKEN = "test-key";
     process.env.POSTMARK_BROADCAST_STREAM = "test-broadcast-stream";
     vi.mocked(prisma.campaign.findUnique).mockResolvedValue(CAMPAIGN as any);
     vi.mocked(prisma.campaign.update).mockResolvedValue({} as any);
-    vi.mocked(prisma.campaignContact.updateMany).mockResolvedValue({} as any);
   });
 
   it("returns 403 when the campaign belongs to a different agent", async () => {
@@ -112,7 +117,7 @@ describe("POST /api/campaigns/[id]/send — ownership", () => {
 describe("POST /api/campaigns/[id]/send — send seam", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    resetSendMock();
+    resetSeamMocks();
     process.env.POSTMARK_SERVER_TOKEN = "test-key";
     process.env.POSTMARK_BROADCAST_STREAM = "test-broadcast-stream";
     vi.mocked(requireAuth).mockResolvedValue({
@@ -127,7 +132,6 @@ describe("POST /api/campaigns/[id]/send — send seam", () => {
       contacts: [{ id: "cc1", lead: { email: "lead@example.com" } }],
     } as any);
     vi.mocked(prisma.campaign.update).mockResolvedValue({} as any);
-    vi.mocked(prisma.campaignContact.updateMany).mockResolvedValue({} as any);
   });
 
   it("sends each recipient a broadcast-stream message from the default sender", async () => {
@@ -164,7 +168,7 @@ describe("POST /api/campaigns/[id]/send — broadcast stream preflight", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    resetSendMock();
+    resetSeamMocks();
     process.env.POSTMARK_SERVER_TOKEN = "test-key";
     original = process.env.POSTMARK_BROADCAST_STREAM;
     delete process.env.POSTMARK_BROADCAST_STREAM;
@@ -178,7 +182,6 @@ describe("POST /api/campaigns/[id]/send — broadcast stream preflight", () => {
       contacts: [{ id: "cc1", lead: { email: "lead@example.com" } }],
     } as any);
     vi.mocked(prisma.campaign.update).mockResolvedValue({} as any);
-    vi.mocked(prisma.campaignContact.updateMany).mockResolvedValue({} as any);
   });
 
   afterEach(() => {
@@ -203,7 +206,7 @@ describe("POST /api/campaigns/[id]/send — broadcast stream preflight", () => {
 describe("POST /api/campaigns/[id]/send — suppressed contacts", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    resetSendMock();
+    resetSeamMocks();
     process.env.POSTMARK_SERVER_TOKEN = "test-key";
     process.env.POSTMARK_BROADCAST_STREAM = "test-broadcast-stream";
     vi.mocked(requireAuth).mockResolvedValue({
@@ -211,7 +214,6 @@ describe("POST /api/campaigns/[id]/send — suppressed contacts", () => {
       error: null,
     } as any);
     vi.mocked(prisma.campaign.update).mockResolvedValue({} as any);
-    vi.mocked(prisma.campaignContact.updateMany).mockResolvedValue({} as any);
   });
 
   it("marks a suppressed contact UNSUBSCRIBED, not SENT", async () => {
@@ -232,7 +234,16 @@ describe("POST /api/campaigns/[id]/send — suppressed contacts", () => {
   });
 
   it("accounts for every contact", async () => {
-    vi.mocked(prisma.campaign.findUnique).mockResolvedValue(CAMPAIGN_WITH(3) as any);
+    // Derived from the fixture, not hardcoded, so resizing the fixture cannot
+    // quietly turn this into a weaker assertion.
+    const campaign = CAMPAIGN_WITH(3);
+    const preMarkedCount = 2;
+
+    vi.mocked(prisma.campaign.findUnique).mockResolvedValue(campaign as any);
+    // First updateMany call is the pre-mark pass.
+    vi.mocked(prisma.campaignContact.updateMany).mockResolvedValueOnce({
+      count: preMarkedCount,
+    } as any);
     vi.mocked(sendEmail)
       .mockResolvedValueOnce({ sent: true })
       .mockResolvedValueOnce({ sent: false, reason: "opted_out" })
@@ -241,9 +252,55 @@ describe("POST /api/campaigns/[id]/send — suppressed contacts", () => {
     const res = await POST(request(), { params: { id: "c1" } });
     const { sent, skipped, errors } = await res.json();
 
-    // Same invariant the IDX sync asserts: nothing vanishes between fetched and
-    // accounted for.
-    expect(sent + skipped + errors).toBe(3);
+    // Same invariant the IDX sync asserts: nothing vanishes between fetched
+    // and accounted for. Pre-marked contacts were excluded from the contact
+    // query, so they are added to the fetched count rather than part of it.
+    expect(sent + skipped + errors).toBe(campaign.contacts.length + preMarkedCount);
+  });
+
+  it("marks pre-existing opted-out contacts UNSUBSCRIBED and counts them as skipped", async () => {
+    // The contact query filters these out, so the send loop never sees them.
+    // Without the pre-mark pass they stay PENDING forever and skipped is 0 —
+    // which is the common case, not an edge case.
+    vi.mocked(prisma.campaign.findUnique).mockResolvedValue(CAMPAIGN_WITH(1) as any);
+    vi.mocked(prisma.campaignContact.updateMany).mockResolvedValueOnce({ count: 2 } as any);
+
+    const res = await POST(request(), { params: { id: "c1" } });
+
+    expect(await res.json()).toEqual({ sent: 1, skipped: 2, errors: 0 });
+    expect(prisma.campaignContact.updateMany).toHaveBeenNthCalledWith(1, {
+      where: { campaignId: "c1", status: "PENDING", lead: { campaignOptOut: true } },
+      data: { status: "UNSUBSCRIBED" },
+    });
+  });
+
+  it("does not mark anything when the caller does not own the campaign", async () => {
+    // Ordering trap: the pre-mark pass must sit behind the ownership gate, or
+    // a 403 still mutates another agent's contacts.
+    vi.mocked(requireAuth).mockResolvedValue({
+      session: { user: { id: "u2", email: "b@cnc.com", role: "AGENT", agentId: "a2" } },
+      error: null,
+    } as any);
+    vi.mocked(prisma.campaign.findUnique).mockResolvedValue(CAMPAIGN_WITH(2) as any);
+
+    const res = await POST(request(), { params: { id: "c1" } });
+
+    expect(res.status).toBe(403);
+    expect(prisma.campaignContact.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("does not mark anything when the campaign is missing a subject", async () => {
+    // Same trap on the validation gate: a request that 400s must not have
+    // mutated state on its way to failing.
+    vi.mocked(prisma.campaign.findUnique).mockResolvedValue({
+      ...CAMPAIGN_WITH(2),
+      subject: null,
+    } as any);
+
+    const res = await POST(request(), { params: { id: "c1" } });
+
+    expect(res.status).toBe(400);
+    expect(prisma.campaignContact.updateMany).not.toHaveBeenCalled();
   });
 
   it("excludes opted-out leads from the contact query", async () => {
