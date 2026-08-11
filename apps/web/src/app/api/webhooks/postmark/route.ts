@@ -47,26 +47,25 @@ function contactUpdate(event: PostmarkEvent, leadId: string) {
 const SUPPRESSING_REASONS = new Set(["HardBounce", "SpamComplaint"]);
 
 async function applySuppression(email: string) {
-  // The same address can exist in both tables — a lead who later registered —
-  // and property alerts go to Users, so both are looked up and both updated.
-  const [lead, user] = await Promise.all([
-    prisma.lead.findFirst({ where: { email } }),
-    prisma.user.findFirst({ where: { email } }),
-  ]);
+  // Case-insensitive because nothing lowercases on write, so a lead who typed
+  // `John@Example.com` is stored with that casing and a `=` match would miss
+  // them entirely — Postgres `=` on TEXT is case-sensitive.
+  const where = { email: { equals: email, mode: "insensitive" as const } };
 
+  // updateMany, not findFirst + update: `Lead.email` is not unique and no
+  // creation path dedupes, so one person who submitted two forms has two rows.
+  // Flagging only the first leaves the dead address mailable through the other.
+  // Property alerts go to Users, so that table is always covered too — the same
+  // address can exist in both, when a lead later registers.
   await Promise.all([
-    lead
-      ? prisma.lead.update({
-          where: { id: lead.id },
-          data: { campaignOptOut: true, actionPlanOptOut: true },
-        })
-      : Promise.resolve(),
-    user
-      ? prisma.user.update({
-          where: { id: user.id },
-          data: { propertyAlertOptOut: true },
-        })
-      : Promise.resolve(),
+    prisma.lead.updateMany({
+      where,
+      data: { campaignOptOut: true, actionPlanOptOut: true },
+    }),
+    prisma.user.updateMany({
+      where,
+      data: { propertyAlertOptOut: true },
+    }),
   ]);
 }
 

@@ -2,14 +2,21 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
-    lead: { findFirst: vi.fn(), update: vi.fn() },
-    user: { findFirst: vi.fn(), update: vi.fn() },
+    lead: { findFirst: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
+    user: { findFirst: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
     campaignContact: { updateMany: vi.fn() },
   },
 }));
 
 import { prisma } from "@/lib/prisma";
 import { POST } from "@/app/api/webhooks/postmark/route";
+
+// The lookup every suppression must use: matched by address, not id, and
+// case-insensitively. Nothing lowercases Lead.email on write, and Lead.email
+// is not unique, so an id-based or case-sensitive match silently misses rows.
+const INSENSITIVE = (email: string) => ({
+  email: { equals: email, mode: "insensitive" },
+});
 
 function authorizedRequest(event: Record<string, unknown>): Request {
   const basic = Buffer.from("hook:secret").toString("base64");
@@ -33,14 +40,16 @@ describe("POST /api/webhooks/postmark — SubscriptionChange", () => {
     // into every test after it.
     vi.mocked(prisma.lead.findFirst).mockReset().mockResolvedValue(null as never);
     vi.mocked(prisma.lead.update).mockReset().mockResolvedValue({} as never);
+    vi.mocked(prisma.lead.updateMany).mockReset().mockResolvedValue({ count: 0 } as never);
     vi.mocked(prisma.user.findFirst).mockReset().mockResolvedValue(null as never);
     vi.mocked(prisma.user.update).mockReset().mockResolvedValue({} as never);
+    vi.mocked(prisma.user.updateMany).mockReset().mockResolvedValue({ count: 0 } as never);
     vi.mocked(prisma.campaignContact.updateMany).mockReset().mockResolvedValue({} as never);
   });
 
   it("opts a bounced address out of every category, on both tables", async () => {
-    vi.mocked(prisma.lead.findFirst).mockResolvedValue({ id: "lead_1" } as never);
-    vi.mocked(prisma.user.findFirst).mockResolvedValue({ id: "user_1" } as never);
+    vi.mocked(prisma.lead.updateMany).mockResolvedValue({ count: 1 } as never);
+    vi.mocked(prisma.user.updateMany).mockResolvedValue({ count: 1 } as never);
 
     const res = await POST(
       authorizedRequest({
@@ -52,19 +61,66 @@ describe("POST /api/webhooks/postmark — SubscriptionChange", () => {
     );
 
     expect(res.status).toBe(200);
-    expect(prisma.lead.update).toHaveBeenCalledWith({
-      where: { id: "lead_1" },
+    expect(prisma.lead.updateMany).toHaveBeenCalledWith({
+      where: INSENSITIVE("dead@example.com"),
       data: { campaignOptOut: true, actionPlanOptOut: true },
     });
-    expect(prisma.user.update).toHaveBeenCalledWith({
-      where: { id: "user_1" },
+    expect(prisma.user.updateMany).toHaveBeenCalledWith({
+      where: INSENSITIVE("dead@example.com"),
+      data: { propertyAlertOptOut: true },
+    });
+  });
+
+  it("flags every duplicate Lead row, not just the first", async () => {
+    // Lead.email has no @unique and no creation path dedupes, so one person who
+    // submitted two forms has two rows. Flagging one leaves the dead address
+    // mailable through the other on the very next campaign.
+    vi.mocked(prisma.lead.updateMany).mockResolvedValue({ count: 2 } as never);
+
+    await POST(
+      authorizedRequest({
+        RecordType: "SubscriptionChange",
+        Recipient: "twice@example.com",
+        SuppressSending: true,
+        SuppressionReason: "HardBounce",
+      })
+    );
+
+    // Matched by address so all matching rows are written in one statement.
+    expect(prisma.lead.updateMany).toHaveBeenCalledWith({
+      where: INSENSITIVE("twice@example.com"),
+      data: { campaignOptOut: true, actionPlanOptOut: true },
+    });
+    // No single-row path may exist: findFirst + update would flag only one of
+    // the two rows and quietly leave the other mailable.
+    expect(prisma.lead.findFirst).not.toHaveBeenCalled();
+    expect(prisma.lead.update).not.toHaveBeenCalled();
+  });
+
+  it("matches a mixed-case address against a lower-case stored row", async () => {
+    // Postgres `=` on TEXT is case-sensitive and nothing lowercases on write,
+    // so this needs both the incoming normalisation and mode: "insensitive".
+    await POST(
+      authorizedRequest({
+        RecordType: "SubscriptionChange",
+        Recipient: "John@Example.COM",
+        SuppressSending: true,
+        SuppressionReason: "HardBounce",
+      })
+    );
+
+    expect(prisma.lead.updateMany).toHaveBeenCalledWith({
+      where: INSENSITIVE("john@example.com"),
+      data: { campaignOptOut: true, actionPlanOptOut: true },
+    });
+    expect(prisma.user.updateMany).toHaveBeenCalledWith({
+      where: INSENSITIVE("john@example.com"),
       data: { propertyAlertOptOut: true },
     });
   });
 
   it("opts out on a spam complaint", async () => {
-    vi.mocked(prisma.lead.findFirst).mockResolvedValue({ id: "lead_1" } as never);
-    vi.mocked(prisma.user.findFirst).mockResolvedValue(null as never);
+    vi.mocked(prisma.lead.updateMany).mockResolvedValue({ count: 1 } as never);
 
     await POST(
       authorizedRequest({
@@ -75,16 +131,17 @@ describe("POST /api/webhooks/postmark — SubscriptionChange", () => {
       })
     );
 
-    expect(prisma.lead.update).toHaveBeenCalledWith({
-      where: { id: "lead_1" },
+    expect(prisma.lead.updateMany).toHaveBeenCalledWith({
+      where: INSENSITIVE("angry@example.com"),
       data: { campaignOptOut: true, actionPlanOptOut: true },
     });
-    expect(prisma.user.update).not.toHaveBeenCalled();
   });
 
-  it("opts out a User with no matching Lead — property-alert subscribers", async () => {
-    vi.mocked(prisma.lead.findFirst).mockResolvedValue(null as never);
-    vi.mocked(prisma.user.findFirst).mockResolvedValue({ id: "user_1" } as never);
+  it("always covers the User table — property-alert subscribers", async () => {
+    // The original bug: only Lead was ever queried, so a hard-bouncing
+    // saved-search subscriber with no Lead row was never flagged by any path.
+    vi.mocked(prisma.lead.updateMany).mockResolvedValue({ count: 0 } as never);
+    vi.mocked(prisma.user.updateMany).mockResolvedValue({ count: 1 } as never);
 
     await POST(
       authorizedRequest({
@@ -95,16 +152,13 @@ describe("POST /api/webhooks/postmark — SubscriptionChange", () => {
       })
     );
 
-    expect(prisma.lead.update).not.toHaveBeenCalled();
-    expect(prisma.user.update).toHaveBeenCalledWith({
-      where: { id: "user_1" },
+    expect(prisma.user.updateMany).toHaveBeenCalledWith({
+      where: INSENSITIVE("saved-search@example.com"),
       data: { propertyAlertOptOut: true },
     });
   });
 
   it("ignores a reactivation rather than resubscribing anyone", async () => {
-    vi.mocked(prisma.lead.findFirst).mockResolvedValue({ id: "lead_1" } as never);
-
     await POST(
       authorizedRequest({
         RecordType: "SubscriptionChange",
@@ -114,13 +168,11 @@ describe("POST /api/webhooks/postmark — SubscriptionChange", () => {
       })
     );
 
-    expect(prisma.lead.update).not.toHaveBeenCalled();
-    expect(prisma.user.update).not.toHaveBeenCalled();
+    expect(prisma.lead.updateMany).not.toHaveBeenCalled();
+    expect(prisma.user.updateMany).not.toHaveBeenCalled();
   });
 
   it("ignores an unrecognised suppression reason", async () => {
-    vi.mocked(prisma.lead.findFirst).mockResolvedValue({ id: "lead_1" } as never);
-
     await POST(
       authorizedRequest({
         RecordType: "SubscriptionChange",
@@ -130,12 +182,11 @@ describe("POST /api/webhooks/postmark — SubscriptionChange", () => {
       })
     );
 
-    expect(prisma.lead.update).not.toHaveBeenCalled();
+    expect(prisma.lead.updateMany).not.toHaveBeenCalled();
+    expect(prisma.user.updateMany).not.toHaveBeenCalled();
   });
 
   it("ignores a suppression with no reason at all", async () => {
-    vi.mocked(prisma.lead.findFirst).mockResolvedValue({ id: "lead_1" } as never);
-
     await POST(
       authorizedRequest({
         RecordType: "SubscriptionChange",
@@ -144,13 +195,11 @@ describe("POST /api/webhooks/postmark — SubscriptionChange", () => {
       })
     );
 
-    expect(prisma.lead.update).not.toHaveBeenCalled();
-    expect(prisma.user.update).not.toHaveBeenCalled();
+    expect(prisma.lead.updateMany).not.toHaveBeenCalled();
+    expect(prisma.user.updateMany).not.toHaveBeenCalled();
   });
 
   it("does not touch CampaignContact — SubscriptionChange is a per-person flag", async () => {
-    vi.mocked(prisma.lead.findFirst).mockResolvedValue({ id: "lead_1" } as never);
-
     await POST(
       authorizedRequest({
         RecordType: "SubscriptionChange",
@@ -178,8 +227,8 @@ describe("POST /api/webhooks/postmark — SubscriptionChange", () => {
     );
 
     expect(res.status).toBe(401);
-    expect(prisma.lead.update).not.toHaveBeenCalled();
-    expect(prisma.user.update).not.toHaveBeenCalled();
+    expect(prisma.lead.updateMany).not.toHaveBeenCalled();
+    expect(prisma.user.updateMany).not.toHaveBeenCalled();
   });
 
   it("still records a Bounce against CampaignContact — the two paths are additive", async () => {
@@ -197,6 +246,6 @@ describe("POST /api/webhooks/postmark — SubscriptionChange", () => {
       where: { leadId: "lead_1" },
       data: { status: "BOUNCED" },
     });
-    expect(prisma.lead.update).not.toHaveBeenCalled();
+    expect(prisma.lead.updateMany).not.toHaveBeenCalled();
   });
 });
