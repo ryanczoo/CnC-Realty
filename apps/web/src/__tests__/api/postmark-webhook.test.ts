@@ -14,8 +14,11 @@ import { POST } from "@/app/api/webhooks/postmark/route";
 // The lookup every suppression must use: matched by address, not id, and
 // case-insensitively. Nothing lowercases Lead.email on write, and Lead.email
 // is not unique, so an id-based or case-sensitive match silently misses rows.
-const INSENSITIVE = (email: string) => ({
-  email: { equals: email, mode: "insensitive" },
+//
+// Takes the expected ILIKE *pattern*, which for an ordinary address is just the
+// lower-cased address — but see the escaping tests, where the two differ.
+const INSENSITIVE = (pattern: string) => ({
+  email: { equals: pattern, mode: "insensitive" },
 });
 
 function authorizedRequest(event: Record<string, unknown>): Request {
@@ -116,6 +119,89 @@ describe("POST /api/webhooks/postmark — SubscriptionChange", () => {
     expect(prisma.user.updateMany).toHaveBeenCalledWith({
       where: INSENSITIVE("john@example.com"),
       data: { propertyAlertOptOut: true },
+    });
+  });
+
+  // mode: "insensitive" makes Prisma emit ILIKE and pass the address through as
+  // the pattern, so LIKE metacharacters in a local part would act as wildcards
+  // and silently suppress people who never bounced. Escaped with a backslash,
+  // which is Postgres's default LIKE escape character.
+  describe("LIKE metacharacter escaping", () => {
+    it("does not let an underscore match a differing character", async () => {
+      // Unescaped, `a_b@example.com` would also suppress `axb@example.com`.
+      await POST(
+        authorizedRequest({
+          RecordType: "SubscriptionChange",
+          Recipient: "a_b@example.com",
+          SuppressSending: true,
+          SuppressionReason: "HardBounce",
+        })
+      );
+
+      expect(prisma.lead.updateMany).toHaveBeenCalledWith({
+        where: INSENSITIVE("a\\_b@example.com"),
+        data: { campaignOptOut: true, actionPlanOptOut: true },
+      });
+      expect(prisma.user.updateMany).toHaveBeenCalledWith({
+        where: INSENSITIVE("a\\_b@example.com"),
+        data: { propertyAlertOptOut: true },
+      });
+    });
+
+    it("does not let a percent sign match every address at the domain", async () => {
+      // Unescaped, this would suppress the entire example.com domain.
+      await POST(
+        authorizedRequest({
+          RecordType: "SubscriptionChange",
+          Recipient: "a%@example.com",
+          SuppressSending: true,
+          SuppressionReason: "HardBounce",
+        })
+      );
+
+      expect(prisma.lead.updateMany).toHaveBeenCalledWith({
+        where: INSENSITIVE("a\\%@example.com"),
+        data: { campaignOptOut: true, actionPlanOptOut: true },
+      });
+      expect(prisma.user.updateMany).toHaveBeenCalledWith({
+        where: INSENSITIVE("a\\%@example.com"),
+        data: { propertyAlertOptOut: true },
+      });
+    });
+
+    it("escapes a literal backslash so it cannot escape the next character", async () => {
+      // The escape character itself must be escaped first, or `a\%@…` would
+      // still leave the `%` live.
+      await POST(
+        authorizedRequest({
+          RecordType: "SubscriptionChange",
+          Recipient: "a\\%@example.com",
+          SuppressSending: true,
+          SuppressionReason: "HardBounce",
+        })
+      );
+
+      expect(prisma.lead.updateMany).toHaveBeenCalledWith({
+        where: INSENSITIVE("a\\\\\\%@example.com"),
+        data: { campaignOptOut: true, actionPlanOptOut: true },
+      });
+    });
+
+    it("leaves an ordinary address untouched", async () => {
+      // Escaping must not corrupt the overwhelmingly common case.
+      await POST(
+        authorizedRequest({
+          RecordType: "SubscriptionChange",
+          Recipient: "plain.name+tag@example.co.uk",
+          SuppressSending: true,
+          SuppressionReason: "HardBounce",
+        })
+      );
+
+      expect(prisma.lead.updateMany).toHaveBeenCalledWith({
+        where: INSENSITIVE("plain.name+tag@example.co.uk"),
+        data: { campaignOptOut: true, actionPlanOptOut: true },
+      });
     });
   });
 

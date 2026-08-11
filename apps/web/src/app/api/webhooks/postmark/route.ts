@@ -50,7 +50,14 @@ async function applySuppression(email: string) {
   // Case-insensitive because nothing lowercases on write, so a lead who typed
   // `John@Example.com` is stored with that casing and a `=` match would miss
   // them entirely — Postgres `=` on TEXT is case-sensitive.
-  const where = { email: { equals: email, mode: "insensitive" as const } };
+  //
+  // But `mode: "insensitive"` makes Prisma emit ILIKE, not `=`, and it passes
+  // the value straight through as the *pattern*. Both `_` and `%` are legal in
+  // a local part, so an unescaped address would act as a wildcard: a bounce for
+  // `a%@example.com` would suppress every address at that domain. Escape them —
+  // backslash is Postgres's default LIKE escape character.
+  const pattern = email.replace(/[\\%_]/g, "\\$&");
+  const where = { email: { equals: pattern, mode: "insensitive" as const } };
 
   // updateMany, not findFirst + update: `Lead.email` is not unique and no
   // creation path dedupes, so one person who submitted two forms has two rows.
