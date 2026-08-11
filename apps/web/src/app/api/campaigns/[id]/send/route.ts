@@ -16,7 +16,12 @@ export async function POST(
     where: { id: params.id },
     include: {
       contacts: {
-        where: { status: "PENDING" },
+        // Filter here rather than relying only on the seam's per-send check:
+        // that check is one query per recipient inside Promise.allSettled, so
+        // a 1,000-lead campaign fired 1,000 concurrent lookups at Neon. The
+        // seam still checks, as a backstop against a race between this query
+        // and the send.
+        where: { status: "PENDING", lead: { campaignOptOut: false } },
         include: { lead: { select: { id: true, email: true, firstName: true, lastName: true } } },
       },
     },
@@ -56,6 +61,7 @@ export async function POST(
   }
 
   let sent = 0;
+  let skipped = 0;
   let errors = 0;
   const now = new Date();
 
@@ -69,7 +75,7 @@ export async function POST(
         bodyHtml: campaign.body! + unsubscribeFooterHtml("lead", contact.lead.id, "campaign"),
       });
 
-      await sendEmail({
+      const result = await sendEmail({
         to: contact.lead.email,
         subject: campaign.subject!,
         html,
@@ -77,25 +83,43 @@ export async function POST(
         recipient: { kind: "lead", id: contact.lead.id },
         category: "campaign",
       });
-      return contact.id;
+
+      return { contactId: contact.id, result };
     })
   );
 
-  const successIds: string[] = [];
-  for (const result of results) {
-    if (result.status === "fulfilled") {
-      sent++;
-      successIds.push(result.value);
-    } else {
-      console.error("Failed to send email:", result.reason);
+  const sentIds: string[] = [];
+  const skippedIds: string[] = [];
+
+  for (const outcome of results) {
+    if (outcome.status === "rejected") {
+      console.error("Failed to send email:", outcome.reason);
       errors++;
+      continue;
+    }
+
+    // A suppressed send is not a failure and not a delivery. Counting it as
+    // either is what made campaign stats overstate reach.
+    if (outcome.value.result.sent) {
+      sent++;
+      sentIds.push(outcome.value.contactId);
+    } else {
+      skipped++;
+      skippedIds.push(outcome.value.contactId);
     }
   }
 
-  if (successIds.length > 0) {
+  if (sentIds.length > 0) {
     await prisma.campaignContact.updateMany({
-      where: { id: { in: successIds } },
+      where: { id: { in: sentIds } },
       data: { status: "SENT", sentAt: now },
+    });
+  }
+
+  if (skippedIds.length > 0) {
+    await prisma.campaignContact.updateMany({
+      where: { id: { in: skippedIds } },
+      data: { status: "UNSUBSCRIBED" },
     });
   }
 
@@ -104,5 +128,5 @@ export async function POST(
     data: { status: "ACTIVE", sentAt: now },
   });
 
-  return NextResponse.json({ sent, errors });
+  return NextResponse.json({ sent, skipped, errors });
 }

@@ -34,7 +34,11 @@ export default function CampaignDetailPage() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [sendResult, setSendResult] = useState<{ sent: number; errors: number } | null>(null);
+  const [sendResult, setSendResult] = useState<{
+    sent: number;
+    skipped: number;
+    errors: number;
+  } | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -144,6 +148,10 @@ export default function CampaignDetailPage() {
       {sendResult && (
         <div className="rounded-xl bg-green-50 px-5 py-4 font-sans text-sm text-green-700">
           Sent to {sendResult.sent} recipient{sendResult.sent !== 1 ? "s" : ""}.
+          {/* Suppressed contacts are neither delivered nor failed — showing
+              only "sent" would make the campaign look like it reached fewer
+              people for no visible reason. */}
+          {sendResult.skipped > 0 && ` ${sendResult.skipped} skipped (unsubscribed).`}
           {sendResult.errors > 0 && ` ${sendResult.errors} failed.`}
         </div>
       )}
