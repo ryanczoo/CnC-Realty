@@ -10,6 +10,8 @@ type PostmarkEvent = {
   Email?: string;
   ReceivedAt?: string;
   BouncedAt?: string;
+  SuppressSending?: boolean;
+  SuppressionReason?: string;
 };
 
 function contactUpdate(event: PostmarkEvent, leadId: string) {
@@ -36,6 +38,38 @@ function contactUpdate(event: PostmarkEvent, leadId: string) {
   }
 }
 
+// A hard bounce means the address is gone; a complaint means stop entirely.
+// Either way every category is suppressed. Reactivations are deliberately not
+// handled: with no stored reason we cannot tell someone who opted out from
+// someone who merely bounced, and clearing the flag would put a person who
+// asked to leave back on the list. Recipients can resubscribe themselves —
+// the signed token in any past email still works.
+const SUPPRESSING_REASONS = new Set(["HardBounce", "SpamComplaint"]);
+
+async function applySuppression(email: string) {
+  // The same address can exist in both tables — a lead who later registered —
+  // and property alerts go to Users, so both are looked up and both updated.
+  const [lead, user] = await Promise.all([
+    prisma.lead.findFirst({ where: { email } }),
+    prisma.user.findFirst({ where: { email } }),
+  ]);
+
+  await Promise.all([
+    lead
+      ? prisma.lead.update({
+          where: { id: lead.id },
+          data: { campaignOptOut: true, actionPlanOptOut: true },
+        })
+      : Promise.resolve(),
+    user
+      ? prisma.user.update({
+          where: { id: user.id },
+          data: { propertyAlertOptOut: true },
+        })
+      : Promise.resolve(),
+  ]);
+}
+
 export async function POST(req: Request) {
   if (!isAuthorizedPostmarkWebhook(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -47,6 +81,20 @@ export async function POST(req: Request) {
 
     const email = (event.Recipient ?? event.Email ?? "").toLowerCase().trim();
     if (!email) return NextResponse.json({ ok: true });
+
+    // Additive to the Bounce/SpamComplaint handling below, which updates a
+    // single CampaignContact. This sets the durable per-person flag — without
+    // it a bounced address is mailable again on the next campaign, because
+    // that campaign creates fresh PENDING contact rows.
+    if (event.RecordType === "SubscriptionChange") {
+      if (
+        event.SuppressSending === true &&
+        SUPPRESSING_REASONS.has(event.SuppressionReason ?? "")
+      ) {
+        await applySuppression(email);
+      }
+      return NextResponse.json({ ok: true });
+    }
 
     const lead = await prisma.lead.findFirst({ where: { email } });
     if (!lead) return NextResponse.json({ ok: true });
