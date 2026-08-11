@@ -239,7 +239,6 @@ model User {
   image         String?
   password      String?
   role          UserRole  @default(BUYER)
-  emailOptOut   Boolean   @default(false)
   propertyAlertOptOut Boolean @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -402,7 +401,6 @@ model Lead {
   lastContactedAt DateTime?
   brokerageFed      Boolean   @default(false)
   assignmentSeenAt  DateTime?
-  emailOptOut       Boolean   @default(false)
   campaignOptOut    Boolean   @default(false)
   actionPlanOptOut  Boolean   @default(false)
   createdAt       DateTime   @default(now())
