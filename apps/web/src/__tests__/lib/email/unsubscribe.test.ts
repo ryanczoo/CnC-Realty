@@ -1,10 +1,12 @@
 import { describe, it, expect, beforeAll, beforeEach } from "vitest";
+import { createHmac } from "crypto";
 import {
   makeUnsubscribeToken,
   verifyUnsubscribeToken,
   unsubscribeUrl,
   unsubscribeFooterHtml,
   type EmailCategory,
+  type OptOutKind,
 } from "@/lib/email/unsubscribe";
 
 beforeAll(() => {
@@ -83,13 +85,22 @@ describe("category-carrying unsubscribe token", () => {
     process.env.NEXTAUTH_SECRET = "test-secret";
   });
 
-  const categories: EmailCategory[] = ["campaign", "action_plan", "property_alert"];
+  // Each category paired with the kind CATEGORY_KIND maps it to. Minting every
+  // category against "lead" — as this table used to — asserted the very
+  // invariant violation the kind/category cross-check exists to reject:
+  // property_alert belongs to a user, and a lead:property_alert token is
+  // exactly the mismatch that would read and write the wrong column.
+  const pairs: [OptOutKind, EmailCategory][] = [
+    ["lead", "campaign"],
+    ["lead", "action_plan"],
+    ["user", "property_alert"],
+  ];
 
-  it.each(categories)("round-trips the %s category", (category) => {
-    const token = makeUnsubscribeToken("lead", "lead_123", category);
+  it.each(pairs)("round-trips a %s token carrying the %s category", (kind, category) => {
+    const token = makeUnsubscribeToken(kind, "recipient_123", category);
     expect(verifyUnsubscribeToken(token)).toEqual({
-      kind: "lead",
-      id: "lead_123",
+      kind,
+      id: "recipient_123",
       category,
     });
   });
@@ -109,6 +120,40 @@ describe("category-carrying unsubscribe token", () => {
 
   it("rejects a token with no category segment", () => {
     expect(verifyUnsubscribeToken("bm90LWEtdG9rZW4.sig")).toBeNull();
+  });
+
+  // makeUnsubscribeToken cannot produce either of the payloads below — it
+  // always writes three segments, and always pairs kind with category
+  // correctly. Signing by hand is the only way to reach these branches, which
+  // is exactly why they went uncovered.
+  function handSign(rawPayload: string): string {
+    const payload = Buffer.from(rawPayload).toString("base64url");
+    const sig = createHmac("sha256", process.env.NEXTAUTH_SECRET!)
+      .update(payload)
+      .digest("base64url");
+    return `${payload}.${sig}`;
+  }
+
+  it("rejects a validly-signed token whose kind and category disagree", () => {
+    // Passes the HMAC check and names a real category, so only the
+    // kind/category cross-check can catch it. Left unguarded, this reads and
+    // writes campaignOptOut — the wrong column entirely.
+    expect(verifyUnsubscribeToken(handSign("lead:lead_123:property_alert"))).toBeNull();
+    expect(verifyUnsubscribeToken(handSign("user:user_456:campaign"))).toBeNull();
+  });
+
+  it("rejects a validly-signed payload with fewer than three segments", () => {
+    expect(verifyUnsubscribeToken(handSign("lead:lead_123"))).toBeNull();
+  });
+
+  it("still accepts a hand-signed payload that pairs correctly", () => {
+    // Guards the two tests above: proves they fail on the mismatch itself, not
+    // because handSign produces something the verifier rejects outright.
+    expect(verifyUnsubscribeToken(handSign("lead:lead_123:campaign"))).toEqual({
+      kind: "lead",
+      id: "lead_123",
+      category: "campaign",
+    });
   });
 
   it("preserves an id containing a colon", () => {

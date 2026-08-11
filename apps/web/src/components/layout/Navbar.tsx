@@ -55,6 +55,7 @@ export function Navbar() {
     pathname !== "/join/apply/submitted" &&
     pathname !== "/join/ica" &&
     pathname !== "/setup-account" &&
+    pathname !== "/unsubscribe" &&
     pathname !== "/home-value";
   const [scrolled, setScrolled] = useState(false);
   const [pastHero, setPastHero] = useState(!isTransparent);

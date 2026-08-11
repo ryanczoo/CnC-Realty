@@ -7,7 +7,16 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("@/lib/email/send", () => ({ sendEmail: vi.fn().mockResolvedValue(undefined) }));
 
 import { sendEmail } from "@/lib/email/send";
+import { verifyUnsubscribeToken } from "@/lib/email/unsubscribe";
 import { sendPropertyAlertEmail } from "@/lib/email/property-alert-email";
+
+/** The category the footer link will actually opt the recipient out of. */
+function footerCategory(html: string): string | undefined {
+  const href = html.match(/href="([^"]+\/unsubscribe\?t=[^"]+)"/)?.[1];
+  if (!href) return undefined;
+  const token = new URL(href.replace(/&amp;/g, "&")).searchParams.get("t");
+  return verifyUnsubscribeToken(token ?? "")?.category;
+}
 
 const ONE_LISTING = [
   {
@@ -53,6 +62,18 @@ describe("sendPropertyAlertEmail", () => {
     await sendPropertyAlertEmail("buyer@example.com", "Jordan", ONE_LISTING, "user-1");
 
     expect(vi.mocked(sendEmail).mock.calls[0][0].html).toContain("/unsubscribe?t=");
+  });
+
+  it("names property_alert in both the send category and the footer token", async () => {
+    await sendPropertyAlertEmail("buyer@example.com", "Jordan", ONE_LISTING, "user-1");
+
+    // Named twice as independent string literals — once in
+    // unsubscribeFooterHtml, once in sendEmail. A mismatch type-checks, so
+    // both halves are asserted together; the footer half is what actually
+    // catches an email whose opt-out link points at the wrong list.
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    expect(call.category).toBe("property_alert");
+    expect(footerCategory(call.html!)).toBe("property_alert");
   });
 
   it("skips the send entirely when no API key is configured", async () => {

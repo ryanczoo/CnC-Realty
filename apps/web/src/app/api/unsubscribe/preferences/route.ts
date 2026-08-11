@@ -1,14 +1,21 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { verifyUnsubscribeToken, type EmailCategory } from "@/lib/email/unsubscribe";
+import {
+  verifyUnsubscribeToken,
+  CATEGORY_KIND,
+  type EmailCategory,
+} from "@/lib/email/unsubscribe";
 
 // Values are "is subscribed", not "is opted out". The UI shows checkboxes the
 // recipient ticks to keep receiving something, so the API speaks the same way
 // and the inversion happens in exactly one place.
 type Preferences = Partial<Record<EmailCategory, boolean>>;
 
-const LEAD_CATEGORIES: EmailCategory[] = ["campaign", "action_plan"];
-const USER_CATEGORIES: EmailCategory[] = ["property_alert"];
+// Derived rather than hand-maintained: a category added to CATEGORY_KIND lands
+// in the right list automatically, so it cannot be forgotten here.
+const ALL_CATEGORIES = Object.keys(CATEGORY_KIND) as EmailCategory[];
+const LEAD_CATEGORIES = ALL_CATEGORIES.filter((c) => CATEGORY_KIND[c] === "lead");
+const USER_CATEGORIES = ALL_CATEGORIES.filter((c) => CATEGORY_KIND[c] === "user");
 
 export async function GET(req: Request) {
   const token = new URL(req.url).searchParams.get("t") ?? "";

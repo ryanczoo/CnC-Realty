@@ -99,6 +99,11 @@ describe("POST /api/unsubscribe/preferences", () => {
   beforeEach(() => {
     vi.mocked(prisma.lead.update).mockReset().mockResolvedValue({} as never);
     vi.mocked(prisma.user.update).mockReset().mockResolvedValue({} as never);
+    // Reset these too, even though POST never calls them: the GET block leaves
+    // a `null` implementation queued on both, and an implementation set in one
+    // describe outlives it unless it is explicitly reset here.
+    vi.mocked(prisma.lead.findUnique).mockReset();
+    vi.mocked(prisma.user.findUnique).mockReset();
     process.env.NEXTAUTH_SECRET = "test-secret";
   });
 

@@ -39,6 +39,7 @@ export default function CampaignDetailPage() {
     skipped: number;
     errors: number;
   } | null>(null);
+  const [sendError, setSendError] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -57,9 +58,19 @@ export default function CampaignDetailPage() {
   const handleSend = async () => {
     if (!confirm("Send this campaign to all pending recipients now?")) return;
     setSending(true);
+    setSendError(null);
+    setSendResult(null);
     try {
       const res = await fetch(`/api/campaigns/${id}/send`, { method: "POST" });
-      const data = await res.json();
+      const data = await res.json().catch(() => null);
+
+      // A 400/500 body has no `sent` count, so rendering it in the green
+      // success banner produced "Sent to  recipients." over a failed send.
+      if (!res.ok) {
+        setSendError(data?.error ?? "Something went wrong sending this campaign.");
+        return;
+      }
+
       setSendResult(data);
       const updated = await fetch(`/api/campaigns/${id}`).then((r) => r.json());
       setCampaign(updated);
@@ -149,6 +160,13 @@ export default function CampaignDetailPage() {
           </button>
         </div>
       </div>
+
+      {/* Send failure */}
+      {sendError && (
+        <div className="rounded-xl bg-red-50 px-5 py-4 font-sans text-sm text-red-700">
+          {sendError}
+        </div>
+      )}
 
       {/* Send result */}
       {sendResult && (

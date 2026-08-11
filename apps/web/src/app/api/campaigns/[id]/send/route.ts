@@ -60,6 +60,16 @@ export async function POST(
     return NextResponse.json({ error: "NEXTAUTH_SECRET not configured" }, { status: 500 });
   }
 
+  // The fourth ingredient of a working unsubscribe, and the quietest failure of
+  // the four: unset, the URL builders interpolate the literal string
+  // "undefined", so every message ships a List-Unsubscribe header and a footer
+  // link pointing at `undefined/...`. Postmark enforces that the header is
+  // present, not that it resolves — so this sends successfully with a dead
+  // opt-out link, which is worse than not sending at all.
+  if (!process.env.NEXTAUTH_URL) {
+    return NextResponse.json({ error: "NEXTAUTH_URL not configured" }, { status: 500 });
+  }
+
   // A lead who unsubscribed from an earlier send is already flagged when the
   // next campaign fires, so the contact query above filters them out and the
   // send loop never sees them — they would sit at PENDING forever and

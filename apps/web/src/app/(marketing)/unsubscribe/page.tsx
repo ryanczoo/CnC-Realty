@@ -4,11 +4,14 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
+// Type-only: nothing from that module reaches the client bundle, which matters
+// because it also contains the HMAC signing code.
+import type { EmailCategory } from "@/lib/email/unsubscribe";
 
-type Category = "campaign" | "action_plan" | "property_alert";
-type Preferences = Partial<Record<Category, boolean>>;
+type Preferences = Partial<Record<EmailCategory, boolean>>;
+type CategoryLabel = { title: string; blurb: string };
 
-const LABELS: Record<Category, { title: string; blurb: string }> = {
+const LABELS: Record<EmailCategory, CategoryLabel> = {
   campaign: {
     title: "Market updates & announcements",
     blurb: "Occasional news, market reports and updates from CnC Realty.",
@@ -26,7 +29,7 @@ const LABELS: Record<Category, { title: string; blurb: string }> = {
 function PreferencesForm() {
   const token = useSearchParams().get("t") ?? "";
   const [prefs, setPrefs] = useState<Preferences | null>(null);
-  const [arrivedFrom, setArrivedFrom] = useState<Category | null>(null);
+  const [arrivedFrom, setArrivedFrom] = useState<EmailCategory | null>(null);
   const [state, setState] = useState<"loading" | "idle" | "saving" | "done" | "error">("loading");
 
   // Reading preferences is a GET and never mutates. The opt-out itself only
@@ -40,8 +43,16 @@ function PreferencesForm() {
     fetch(`/api/unsubscribe/preferences?t=${encodeURIComponent(token)}`)
       .then((res) => (res.ok ? res.json() : Promise.reject(new Error("bad token"))))
       .then((data) => {
-        setPrefs(data.preferences);
-        setArrivedFrom(data.category);
+        const category = data.category as EmailCategory;
+        const stored = (data.preferences ?? {}) as Preferences;
+
+        // Pre-untick the category this link arrived from, so pressing "Save
+        // preferences" performs the opt-out the recipient came here to make.
+        // Landing with every box already ticked made the prominent button a
+        // no-op. Display state only — nothing is written until they press it.
+        // Every other category keeps its stored value.
+        setPrefs(category in stored ? { ...stored, [category]: false } : stored);
+        setArrivedFrom(category);
         setState("idle");
       })
       .catch(() => setState("error"));
@@ -95,7 +106,7 @@ function PreferencesForm() {
     );
   }
 
-  const categories = Object.keys(prefs ?? {}) as Category[];
+  const categories = Object.keys(prefs ?? {}) as EmailCategory[];
 
   return (
     <>
@@ -105,32 +116,39 @@ function PreferencesForm() {
       </p>
 
       <div className="mt-8 space-y-4 text-left">
-        {categories.map((category) => (
-          <label
-            key={category}
-            className="flex cursor-pointer items-start gap-3 rounded-xl border border-[#1B1B1B]/10 p-4"
-          >
-            <input
-              type="checkbox"
-              checked={prefs?.[category] ?? false}
-              onChange={(e) =>
-                setPrefs({ ...(prefs ?? {}), [category]: e.target.checked })
-              }
-              className="mt-1 h-5 w-5 shrink-0 accent-[#9E8C61]"
-            />
-            <span>
-              <span className="block text-[#1B1B1B]">
-                {LABELS[category].title}
-                {category === arrivedFrom && (
-                  <span className="ml-2 text-xs text-[#9E8C61]">this email</span>
-                )}
+        {categories.map((category) => {
+          // Widened deliberately: the map is exhaustive over EmailCategory, but
+          // the keys come off an API response at runtime. An unfamiliar
+          // category is skipped rather than throwing and blanking the whole
+          // page — this is the screen a legally-required link lands on.
+          const label: CategoryLabel | undefined = LABELS[category];
+          if (!label) return null;
+
+          return (
+            <label
+              key={category}
+              className="flex cursor-pointer items-start gap-3 rounded-xl border border-[#1B1B1B]/10 p-4"
+            >
+              <input
+                type="checkbox"
+                checked={prefs?.[category] ?? false}
+                onChange={(e) =>
+                  setPrefs({ ...(prefs ?? {}), [category]: e.target.checked })
+                }
+                className="mt-1 h-5 w-5 shrink-0 accent-[#9E8C61]"
+              />
+              <span>
+                <span className="block text-[#1B1B1B]">
+                  {label.title}
+                  {category === arrivedFrom && (
+                    <span className="ml-2 text-xs text-[#9E8C61]">this email</span>
+                  )}
+                </span>
+                <span className="block text-sm text-[#1B1B1B]/60">{label.blurb}</span>
               </span>
-              <span className="block text-sm text-[#1B1B1B]/60">
-                {LABELS[category].blurb}
-              </span>
-            </span>
-          </label>
-        ))}
+            </label>
+          );
+        })}
       </div>
 
       {state === "error" && (

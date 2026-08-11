@@ -81,6 +81,19 @@ export type SendOptions = {
 } & BodyParts &
   StreamRouting;
 
+type LeadOptOutFlags = { campaignOptOut: boolean; actionPlanOptOut: boolean };
+
+// Total by construction: adding a value to EmailCategory is a compile error
+// until it names the Lead column it reads, or `null` for a category leads
+// cannot receive. The ternary this replaced routed anything that was not
+// `action_plan` into campaignOptOut, so a future fourth lead category would
+// have read the wrong column with no compile error.
+const LEAD_OPT_OUT_COLUMN: Record<EmailCategory, keyof LeadOptOutFlags | null> = {
+  campaign: "campaignOptOut",
+  action_plan: "actionPlanOptOut",
+  property_alert: null,
+};
+
 // Fails open on a missing row: a deleted lead is not an opt-out, and treating
 // every lookup miss as one would silently drop mail.
 async function isOptedOut(
@@ -88,12 +101,18 @@ async function isOptedOut(
   category: EmailCategory
 ): Promise<boolean> {
   if (recipient.kind === "lead") {
+    const column = LEAD_OPT_OUT_COLUMN[category];
+    // A category a lead cannot receive: there is no column to consult. Fails
+    // open for the same reason a missing row does — suppressing on a call-site
+    // mismatch would drop mail rather than surface the mistake.
+    if (!column) return false;
+
     const row = await prisma.lead.findUnique({
       where: { id: recipient.id },
       select: { campaignOptOut: true, actionPlanOptOut: true },
     });
     if (!row) return false;
-    return category === "action_plan" ? row.actionPlanOptOut : row.campaignOptOut;
+    return row[column];
   }
 
   const row = await prisma.user.findUnique({

@@ -4,8 +4,6 @@ export type OptOutKind = "lead" | "user";
 
 export type EmailCategory = "campaign" | "action_plan" | "property_alert";
 
-const CATEGORIES: readonly string[] = ["campaign", "action_plan", "property_alert"];
-
 // Which table each category's recipient lives in. Users only ever receive
 // property alerts; leads receive campaigns and drips.
 export const CATEGORY_KIND: Record<EmailCategory, OptOutKind> = {
@@ -13,6 +11,10 @@ export const CATEGORY_KIND: Record<EmailCategory, OptOutKind> = {
   action_plan: "lead",
   property_alert: "user",
 };
+
+// Derived, not a second hand-maintained list: a category added to CATEGORY_KIND
+// is allowed here automatically, and the two can no longer disagree.
+const CATEGORIES: readonly string[] = Object.keys(CATEGORY_KIND);
 
 // Signed rather than a stored random token: an unsubscribe link has to survive
 // in an inbox indefinitely, and this needs no table, no lookup, and no cleanup.
@@ -60,6 +62,13 @@ export function verifyUnsubscribeToken(
   // A signed but unknown category is still a refusal: defaulting would opt the
   // recipient out of something they did not ask to leave.
   if (!CATEGORIES.includes(category)) return null;
+
+  // kind and category must agree. Without this, `lead:x:property_alert`
+  // verifies cleanly and then reads and writes campaignOptOut — the wrong
+  // column, on the wrong table's semantics. All three real call sites pair
+  // correctly and the mapping is 1:1 by table capability, so no legitimate
+  // token is rejected here.
+  if (CATEGORY_KIND[category as EmailCategory] !== kind) return null;
 
   return { kind, id, category: category as EmailCategory };
 }

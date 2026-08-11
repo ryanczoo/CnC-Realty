@@ -22,7 +22,16 @@ vi.mock("@/lib/prisma", () => ({
 import { requireAuth } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email/send";
+import { verifyUnsubscribeToken } from "@/lib/email/unsubscribe";
 import { POST } from "../../app/api/campaigns/[id]/send/route";
+
+/** The category the footer link will actually opt the recipient out of. */
+function footerCategory(html: string): string | undefined {
+  const href = html.match(/href="([^"]+\/unsubscribe\?t=[^"]+)"/)?.[1];
+  if (!href) return undefined;
+  const token = new URL(href.replace(/&amp;/g, "&")).searchParams.get("t");
+  return verifyUnsubscribeToken(token ?? "")?.category;
+}
 
 const CAMPAIGN = {
   id: "c1",
@@ -129,7 +138,7 @@ describe("POST /api/campaigns/[id]/send — send seam", () => {
       agentId: "a1",
       subject: "Spring Market Update",
       body: "<p><strong>Big news</strong> this quarter.</p>",
-      contacts: [{ id: "cc1", lead: { email: "lead@example.com" } }],
+      contacts: [{ id: "cc1", lead: { id: "lead_1", email: "lead@example.com" } }],
     } as any);
     vi.mocked(prisma.campaign.update).mockResolvedValue({} as any);
   });
@@ -160,6 +169,61 @@ describe("POST /api/campaigns/[id]/send — send seam", () => {
     expect(call.html).toContain("Spring Market Update");
     expect(call.html).toContain("logo-gold.png");
     expect(call.html).toContain("<strong>Big news</strong>");
+  });
+
+  it("names campaign in both the send category and the footer token", async () => {
+    await POST(request(), { params: { id: "c1" } });
+
+    // The category is written twice as independent string literals — once in
+    // unsubscribeFooterHtml, once in sendEmail. A mismatch type-checks and
+    // ships an email whose visible unsubscribe link opts the recipient out of
+    // a list the message did not come from, so both halves are asserted here.
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    expect(call.category).toBe("campaign");
+    expect(footerCategory(call.html!)).toBe("campaign");
+  });
+});
+
+describe("POST /api/campaigns/[id]/send — NEXTAUTH_URL preflight", () => {
+  let original: string | undefined;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetSeamMocks();
+    process.env.POSTMARK_SERVER_TOKEN = "test-key";
+    process.env.POSTMARK_BROADCAST_STREAM = "test-broadcast-stream";
+    original = process.env.NEXTAUTH_URL;
+    delete process.env.NEXTAUTH_URL;
+
+    vi.mocked(requireAuth).mockResolvedValue({
+      session: { user: { id: "u1", email: "a@cnc.com", role: "AGENT", agentId: "a1" } },
+      error: null,
+    } as any);
+    vi.mocked(prisma.campaign.findUnique).mockResolvedValue({
+      ...CAMPAIGN,
+      contacts: [{ id: "cc1", lead: { id: "lead_1", email: "lead@example.com" } }],
+    } as any);
+    vi.mocked(prisma.campaign.update).mockResolvedValue({} as any);
+  });
+
+  afterEach(() => {
+    if (original === undefined) delete process.env.NEXTAUTH_URL;
+    else process.env.NEXTAUTH_URL = original;
+  });
+
+  it("fails before any state mutation rather than sending a dead opt-out link", async () => {
+    const res = await POST(request(), { params: { id: "c1" } });
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: "NEXTAUTH_URL not configured" });
+
+    // Unset, this one does not throw the way the other three do — the URL
+    // builders interpolate the literal string "undefined" and Postmark accepts
+    // the send. Every message would go out successfully carrying an
+    // unsubscribe link nobody can use.
+    expect(sendEmail).not.toHaveBeenCalled();
+    expect(prisma.campaign.update).not.toHaveBeenCalled();
+    expect(prisma.campaignContact.updateMany).not.toHaveBeenCalled();
   });
 });
 

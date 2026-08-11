@@ -6,7 +6,16 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("@/lib/email/send", () => ({ sendEmail: vi.fn().mockResolvedValue(undefined) }));
 
 import { sendEmail } from "@/lib/email/send";
+import { verifyUnsubscribeToken } from "@/lib/email/unsubscribe";
 import { sendActionPlanEmail, sendLeadReplyNotification } from "@/lib/action-plan-email";
+
+/** The category the footer link will actually opt the recipient out of. */
+function footerCategory(html: string): string | undefined {
+  const href = html.match(/href="([^"]+\/unsubscribe\?t=[^"]+)"/)?.[1];
+  if (!href) return undefined;
+  const token = new URL(href.replace(/&amp;/g, "&")).searchParams.get("t");
+  return verifyUnsubscribeToken(token ?? "")?.category;
+}
 
 describe("sendActionPlanEmail", () => {
   beforeEach(() => vi.clearAllMocks());
@@ -64,6 +73,25 @@ describe("sendActionPlanEmail", () => {
     // The List-Unsubscribe header is not enough on its own — CAN-SPAM wants a
     // visible opt-out inside the message.
     expect(vi.mocked(sendEmail).mock.calls[0][0].html).toContain("/unsubscribe?t=");
+  });
+
+  it("names action_plan in both the send category and the footer token", async () => {
+    await sendActionPlanEmail({
+      to: "jordan@example.com",
+      subject: "Following up",
+      body: "hi",
+      enrollmentId: "enr-1",
+      leadId: "lead-1",
+    });
+
+    // The category is written twice as independent string literals — once in
+    // unsubscribeFooterHtml, once in sendEmail. A mismatch type-checks and
+    // ships an email whose visible unsubscribe link opts the recipient out of
+    // a list the message did not come from. Asserting only one half would not
+    // catch that, so both are asserted together.
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    expect(call.category).toBe("action_plan");
+    expect(footerCategory(call.html!)).toBe("action_plan");
   });
 });
 
