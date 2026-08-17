@@ -6397,7 +6397,7 @@ Everything below was confirmed against the live Postmark API or a public DNS res
 
 1. **Credential rotation — closed.** Resolved by factory-resetting the spare laptop; see the section at the top of this file. The one rotation still worth doing on its own merits is `NEXTAUTH_SECRET` **before launch**, because it signs unsubscribe tokens.
 2. **Postmark paid plan** — gates inbound reply handling. The `reply` MX has been **deleted** (not repointed), so `reply.cncrealtygroup.com` has no MX at all today. Add Postmark's inbound MX when inbound is enabled, using the hostname their inbound stream settings gives you at that point.
-3. **⚠️ Unsubscribe: two systems that don't talk to each other.** The broadcast stream has `SubscriptionManagementConfiguration.UnsubscribeHandlingType = "Postmark"`, so Postmark maintains its own unsubscribe handling and suppression list — in parallel with the one we built (signed tokens, `emailOptOut`, our own `List-Unsubscribe` pointing at `/api/unsubscribe`). They can disagree: someone unsubscribes through Postmark's mechanism, Postmark suppresses them, our DB still reads subscribed, we keep queuing them and Postmark silently drops it. **This is a design decision, not a toggle** — three plausible resolutions: set the stream to `None` and own it entirely, use custom handling, or keep Postmark's and sync suppressions back via the `SubscriptionChange` webhook. Not urgent (no campaign has been sent), but decide before the first one goes out. Inspect via `GET /message-streams/broadcast`.
+3. ~~**⚠️ Unsubscribe: two systems that don't talk to each other.**~~ **Resolved 2026-08-17** — see the Per-Category Unsubscribe session notes below. Stream is now `Custom`; we own the whole path.
 4. **`SyncProgress.nextLink` → `cursor` rename** — the column holds a cursor, not a URL. Needs a migration, now unblocked.
 5. **Vercel deploy** — still the one unfinished Phase 6/7 item. Last session's plan was a direct `vercel --prod` CLI deploy rather than more debugging of the GitHub auto-deploy trigger.
 6. **DMARC enforcement** — revisit `p=quarantine` after 2–4 weekly digests.
@@ -6405,10 +6405,7 @@ Everything below was confirmed against the live Postmark API or a public DNS res
 8. **Neon scale-to-zero** — currently disabled, which is the correct *launch* setting (avoids cold starts on SSR property pages) but bills a warm compute 24/7 while nothing is live. Worth checking the billing page and deciding whether to enable it until deploy.
 9. **Delete the SendGrid account** — safe once Postmark's "We're reviewing your account" banner clears. Keeping it costs nothing and it is the only fallback if Postmark declines. Check for an active subscription before deleting; the Essentials upgrade planned for Aug 16 never happened.
 
-### Next Session — Start Here
-
-1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
-2. Ryan to direct: deploy, or the remaining backlog (broader transaction-management click-through testing for Purchase/Listing/Lease types is still the oldest open item)
+### Next Session — Start Here (superseded — see 2026-08-10 / 2026-08-17 session below)
 
 
 ## ✅ Postmark migration — COMPLETE (2026-08-09)
@@ -6469,6 +6466,129 @@ Postmark confirmed both records by email the same day. Their DKIM confirmation n
 - [ ] Send one live test of each: transactional, broadcast, inbound reply
 - [ ] Cancel the SendGrid account
 
-### Known gap, deliberately not built
+### ~~Known gap, deliberately not built~~ — closed 2026-08-17
 
-Postmark fires a `SubscriptionChange` event when someone is suppressed through Postmark's own UI. We don't handle it, so a suppression made there wouldn't sync to `emailOptOut`. Low priority: our `List-Unsubscribe` points at our own endpoint, so Postmark isn't in that path for normal unsubscribes.
+This gap (Postmark's `SubscriptionChange` event going unhandled) is closed — see the Per-Category Unsubscribe session
+notes below. The webhook now sets durable per-person suppression on hard bounce and spam complaint, across both
+`Lead` and `User`.
+
+---
+
+## ✅ Per-Category Unsubscribe — COMPLETE (2026-08-10 / 2026-08-17)
+
+Resolves the "two systems that don't talk to each other" item from the 2026-08-09 notes, and does more: a single
+`emailOptOut` boolean governed three different kinds of marketing email, so unsubscribing from a campaign silently
+killed the saved-search property alerts a recipient had explicitly signed up for. Spec:
+`docs/superpowers/specs/2026-08-10-per-category-unsubscribe-design.md`. Plan (11 tasks):
+`docs/superpowers/plans/2026-08-10-per-category-unsubscribe.md`. Executed via `superpowers:subagent-driven-development`
+— fresh implementer per task, task-scoped review after each, one whole-branch review at the end, one fix wave.
+
+### What shipped
+
+One opt-out flag per category, carried in the signed unsubscribe token so a click cancels only the list the mail
+arrived in:
+
+| Category | Table | Column |
+|---|---|---|
+| `campaign` | `Lead` | `campaignOptOut` |
+| `action_plan` | `Lead` | `actionPlanOptOut` |
+| `property_alert` | `User` | `propertyAlertOptOut` |
+
+`emailOptOut` is gone — expand/contract migration, columns added with a backfill first, old column dropped last, so
+the tree stayed green and compiling after every task. A preference-centre page replaced the single unsubscribe
+button, with per-category checkboxes plus a separate "unsubscribe from all." The Postmark `SubscriptionChange`
+webhook now sets suppression across **both** `Lead` and `User` on hard bounce / spam complaint — the pre-existing
+handler only ever queried `Lead`, so a bouncing property-alert subscriber was never flagged by any code path before
+this. Two pre-existing campaign-sender bugs got fixed in the same pass: suppressed contacts were being counted and
+recorded as `SENT` (inflating stats), and opt-out lookups were N+1 across a campaign send.
+
+Suite went **761 → 813**, `tsc` clean, production build compiles. All 19 commits pushed to `origin/main`
+2026-08-17 (`8dc0945`).
+
+### Two things the review process caught that no single task's review could have
+
+**A design defect that only showed up end-to-end.** The plan specified both an N+1 pre-filter (exclude opted-out
+leads from the campaign query) and a `skipped` counter for suppressed contacts — individually correct, and they
+silently cancelled each other out: a lead already opted out from an earlier send was excluded from the query
+entirely, so they were never fetched, never counted, never marked, and sat at `PENDING` forever. A 10-recipient
+campaign with 2 opted-out leads reported `{ sent: 8, skipped: 0 }` with no explanation for the missing two — the
+exact failure the fix was supposed to prevent. Caught by the final whole-branch review, not any per-task review.
+Fixed with one extra `updateMany` that pre-marks those contacts `UNSUBSCRIBED` before the send loop runs, ordered
+strictly after the ownership check and validations (mutating state on a request that then 400s would have been
+worse than the bug).
+
+**A fix for one real bug introduced a different real bug.** Making the Postmark webhook's address lookup
+case-insensitive (`mode: "insensitive"`) compiles to `ILIKE`, and Prisma passes the address through **unescaped** —
+so `_` and `%` in a bounced address became live wildcards. A bounce for `a%@example.com` would have silently
+suppressed every address at that domain. Found by reading Prisma's emitted SQL against the live database, not by
+reading the diff — `mode: "insensitive"` looks obviously correct on inspection. Fixed by escaping LIKE metacharacters
+before the query; escape correctness verified by literally reverting it and confirming the right tests failed.
+
+Also worth recording: `CATEGORY_KIND` (category → recipient-kind map) was flagged independently by **two different
+task reviewers** as a declared invariant with zero enforcement — a `lead:x:property_alert` token would have verified
+cleanly and written the wrong column. Not reachable in practice (all real call sites pair correctly), but fixed in
+the final fix wave anyway: `verifyUnsubscribeToken` now rejects a mismatched kind/category pairing outright.
+
+### Task 11 — the plan's own mechanism didn't exist
+
+The design spec said to `PATCH` the broadcast stream to `UnsubscribeHandlingType: "none"`. That value is rejected
+for a Broadcasts stream (`422`, error `1239`) — every broadcast must carry an unsubscribe mechanism, so management
+can't be switched off entirely. The value matching the actual approved intent ("own it entirely") is `Custom`, which
+the spec always listed as a valid resolution — only the specific value chosen was wrong.
+
+`Custom` itself needed Postmark to grant account-level permission (`422`, error `1238` until then) — an external
+dependency the plan didn't anticipate. Unblocked via a support ticket (referencing Server ID 20234345 / Stream ID
+`broadcast`, describing the built system), granted by Postmark 2026-08-16. Separately, and unrelated to that ticket,
+an **older unanswered account-approval questionnaire** from 2026-08-10 was found sitting in the same inbox thread —
+answered same day, formally approved 2026-08-17 by a different Postmark rep. Neither approval blocked sending in
+practice (confirmed back on 2026-08-09), but both are now on record as resolved rather than "under review."
+
+**Live verification, through the real seam** — not a hand-rolled equivalent. A temporary script imported `sendEmail`
+from `lib/email/send.ts` unmodified and called it exactly as the app does. Delivered message diffed against the
+2026-08-09 Postmark-handled baseline:
+
+| | Before (`Postmark`) | After (`Custom`) |
+|---|---|---|
+| `List-Unsubscribe` | `<https://subscriptions.pstmrk.it/demo/unsubscribe>` | our own `/api/unsubscribe?t=…` |
+| Body | Postmark appended its own unsubscribe paragraph | unchanged — byte-identical to what was sent |
+| Accepted | Sent | Sent |
+
+Settles the spec's open question definitively: Postmark **was** the one reaching the inbox before this, not merely
+filling a gap.
+
+### `NEXTAUTH_SECRET` — reconsidered, decision unchanged
+
+Came up twice this session as a possible rotation. Clarified: rotating touches **zero source files** — every
+consumer reads it via `process.env.NEXTAUTH_SECRET` (`middleware.ts` for NextAuth's own session signing,
+`lib/email/unsubscribe.ts` for our tokens) — but it does invalidate every active login session at once, on top of
+the already-known cost of invalidating live unsubscribe links. Ryan's call: **don't rotate now.** Deploy day
+generates fresh secrets anyway, so rotating then costs the same keystrokes with no session-invalidation penalty
+today, since nothing is deployed. No action taken; stays on the deploy-day checklist as-is.
+
+### GitHub default branch — false alarm, corrected
+
+Flagged mid-session as a risk (local `origin/HEAD` pointed at the old `claude/real-estate-website-9bdWi` branch, 475
+commits behind `main`). Checked properly against GitHub's own API rather than trusting local git state:
+`default_branch: "main"` — the local pointer was simply a stale symref from clone time, never live GitHub
+configuration. Vercel's production-branch setting is a separate, independent config (confirmed via the Vercel
+dashboard), but it turned out moot either way: **no production deployment has ever run** — "Your Production Domain
+is not serving traffic." Zero risk either way; nothing to fix.
+
+### Outstanding
+
+1. **Webhook registration at deploy.** No webhooks are registered on the Postmark server today. Add `SubscriptionChange`
+   to the trigger list alongside `Open`/`Click`/`Bounce`/`SpamComplaint` when registering the event webhook — see the
+   Postmark migration deploy-day checklist above.
+2. **`NEXTAUTH_SECRET` rotation** — deferred to deploy day, unchanged from the 2026-08-09 notes. See above.
+3. **Prisma relation-filter and case-fold behaviour verified against the live DB**, not just mocks, as part of Task
+   11's cleanup — six checks (N+1 pre-filter shape, pre-mark shape, `UNSUBSCRIBED` queryable, all three per-category
+   columns selectable, case-insensitive webhook lookup) all passed. Closed; no action needed.
+4. Everything else from the 2026-08-09 outstanding list is unchanged: Postmark paid plan for inbound, Vercel deploy,
+   DMARC enforcement, DKIM rotation (~November 2026), Neon scale-to-zero, SendGrid account deletion.
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. Ryan to direct: Vercel deploy (still the one unfinished Phase 6/7 item — no production deployment has ever run),
+   or the remaining backlog (broader transaction-management click-through testing for Purchase/Listing/Lease types
+   is still the oldest open item)
