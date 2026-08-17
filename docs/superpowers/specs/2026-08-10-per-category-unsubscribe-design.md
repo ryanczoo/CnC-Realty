@@ -210,22 +210,36 @@ The contact query filters on `status: "PENDING"` only, then the seam runs a `fin
 **Fix:** filter opted-out leads in the original contact query. The per-send check in the seam stays as a backstop for
 races and for callers that do not pre-filter.
 
-## Stream configuration change
+## Stream configuration change — ✅ DONE (2026-08-16/17)
+
+**`none` does not exist for a Broadcasts stream.** `PATCH` with `UnsubscribeHandlingType: "none"` returns `422`
+(`ErrorCode 1239`, "not supported for this stream type") — every Broadcasts stream must carry an unsubscribe
+mechanism, so management cannot be switched off entirely. This was discovered only when attempted live; the value
+below is corrected from what was originally written here.
 
 ```
 PATCH /message-streams/broadcast
-{ "SubscriptionManagementConfiguration": { "UnsubscribeHandlingType": "none" } }
+{ "SubscriptionManagementConfiguration": { "UnsubscribeHandlingType": "Custom" } }
 ```
 
-Then one verification send through the real seam, confirming from the delivered message that:
+`Custom` matches the approved design intent ("own it entirely") and was always listed as a valid resolution — only
+the specific value chosen above was wrong. `Custom` is gated behind Postmark granting account-level permission
+(`422`, `ErrorCode 1238` until granted). Unblocked via a support ticket describing the built system (visible
+unsubscribe link, `List-Unsubscribe`/`List-Unsubscribe-Post` headers, own suppression store, `SubscriptionChange`
+webhook handling); Postmark enabled the permission 2026-08-16.
 
-1. `List-Unsubscribe` points at `cncrealtygroup.com/api/unsubscribe`, not `subscriptions.pstmrk.it`.
-2. Postmark no longer appends its own unsubscribe link to the body.
-3. Postmark still accepts the send (it enforces `List-Unsubscribe` on broadcast streams; ours must satisfy that).
+**Live verification, through the real seam** (not the API in isolation): a temporary script imported `sendEmail`
+from `lib/email/send.ts` unmodified and called it exactly as the app does. Delivered message diffed against the
+2026-08-09 Postmark-handled baseline:
 
-This is a live config change on an external service plus one of the 100 free monthly sends, so it needs explicit
-go-ahead before execution. It is also the only step that answers the open question of whether Postmark was overriding
-our header or merely filling a gap.
+| | Before (`Postmark`) | After (`Custom`) |
+|---|---|---|
+| `List-Unsubscribe` | `<https://subscriptions.pstmrk.it/demo/unsubscribe>` | our own `/api/unsubscribe?t=…` |
+| Body | Postmark appended its own unsubscribe paragraph | unchanged — byte-identical to what was sent |
+| Accepted | Sent | Sent |
+
+All three confirmed. This settles the open question definitively: Postmark **was** the one reaching the inbox
+before this, not merely filling a gap.
 
 ## Testing
 
@@ -250,12 +264,14 @@ implementations — the leak that caused the `idx-sync.test.ts` pollution.
 - Suppression reason / audit columns. Explicitly declined in favour of shipping.
 - "Pause for 30/60/90 days" instead of unsubscribing. Common in the wild, worth revisiting after launch.
 - Per-agent email limits. Unrelated, still open from 2026-08-04.
-- Syncing our opt-outs *into* Postmark's suppression list. Unnecessary once the stream is `none` and every send goes
-  through the seam.
+- Syncing our opt-outs *into* Postmark's suppression list. Unnecessary once the stream is `Custom` and every send
+  goes through the seam.
 
 ## Open items requiring action outside this spec
 
-1. Verify no `emailOptOut = true` rows exist before writing the migration.
-2. Ryan's go-ahead for the live `PATCH` and the verification send.
+1. ~~Verify no `emailOptOut = true` rows exist before writing the migration.~~ Superseded — the implementation used
+   an expand/contract migration with a backfill instead, closing this by construction (see the plan).
+2. ~~Ryan's go-ahead for the live `PATCH` and the verification send.~~ Done 2026-08-16/17 — see Stream configuration
+   change above.
 3. Webhook registration at deploy — add `SubscriptionChange` to the existing deploy checklist.
 4. Rotate `NEXTAUTH_SECRET` before launch.

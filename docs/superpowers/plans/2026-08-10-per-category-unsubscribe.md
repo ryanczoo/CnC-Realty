@@ -1632,63 +1632,58 @@ git commit -m "chore(db): drop the superseded emailOptOut column"
 
 ---
 
-### Task 11: Flip the Postmark stream and verify live
+### Task 11: Flip the Postmark stream and verify live — ✅ COMPLETE (2026-08-16/17)
 
-**Requires Ryan's explicit go-ahead before starting.** This changes live configuration on an external service and spends one of the 100 free monthly sends.
+**Requires Ryan's explicit go-ahead before starting.** This changes live configuration on an external service and spends one of the 100 free monthly sends. Go-ahead given 2026-08-10; execution completed 2026-08-16/17 after an external blocker (below) was cleared.
 
 **Files:**
 - Modify: `docs/superpowers/specs/2026-08-10-per-category-unsubscribe-design.md` (record the result)
-- Modify: `CLAUDE.md` (session notes)
+- Modify: `CLAUDE.md` (session notes) — deferred to end-of-session per standing cadence
 
-- [ ] **Step 1: Record the current configuration**
+**Deviation from the plan as written — `none` does not exist for a Broadcasts stream.** `PATCH` with `UnsubscribeHandlingType: "none"` returns `422` (`ErrorCode 1239`, "not supported for this stream type") — every Broadcasts stream must carry an unsubscribe mechanism, so management cannot be switched off entirely. The mechanism that matches the approved design intent ("own it entirely") is `Custom`, which the spec always listed as a valid resolution. `Custom` itself is gated behind Postmark granting account-level permission (`422`, `ErrorCode 1238`, "no permission... contact customer support") — this is an external dependency the plan did not anticipate.
 
-```bash
-curl -s -H "X-Postmark-Server-Token: $POSTMARK_SERVER_TOKEN" \
-  https://api.postmarkapp.com/message-streams/broadcast
-```
+- [x] **Step 1: Record the current configuration**
 
-Expected: `"UnsubscribeHandlingType": "Postmark"`. Save the output.
+Done 2026-08-10 and re-confirmed fresh immediately before the flip on 2026-08-16: `"UnsubscribeHandlingType": "Postmark"`, `UpdatedAt: null`.
 
-- [ ] **Step 2: Flip it to none**
+- [x] **Step 2: Flip it to `Custom`** (not `none` — see deviation above)
+
+Blocked from 2026-08-10 to 2026-08-16 on Postmark's permission gate. Unblocked via a support ticket ("Request custom unsubscribe handling approval") requesting the account-level permission be enabled, referencing Server ID 20234345 / Stream ID `broadcast`, and describing the built system (visible unsubscribe link, `List-Unsubscribe`/`List-Unsubscribe-Post` headers, own suppression store, `SubscriptionChange` webhook handling). Postmark support (Andres C) confirmed the permission enabled 2026-08-16 19:52 CDT.
 
 ```bash
 curl -s -X PATCH -H "X-Postmark-Server-Token: $POSTMARK_SERVER_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"SubscriptionManagementConfiguration":{"UnsubscribeHandlingType":"none"}}' \
+  -d '{"SubscriptionManagementConfiguration":{"UnsubscribeHandlingType":"Custom"}}' \
   https://api.postmarkapp.com/message-streams/broadcast
 ```
 
-Expected: 200 with `"UnsubscribeHandlingType": "none"`.
+Result: `200`, `"UnsubscribeHandlingType": "Custom"`, `UpdatedAt: 2026-08-16T20:54:37-04:00`. Re-confirmed with an independent fresh `GET` (not the `PATCH` response echo).
 
-- [ ] **Step 3: Send one broadcast through the real seam**
+- [x] **Step 3: Send one broadcast through the real seam**
 
-With the dev server running and `NEXTAUTH_URL` temporarily set to a public value (or accepting that the link will point at localhost), trigger one campaign send to `ryanchong@cncrealtygroup.com`.
+Not via the dev server + authenticated campaign route (too much incidental surface for a one-off check). Instead, a temporary script (`apps/web/verify-send.ts`, deleted immediately after) imported `sendEmail` from `lib/email/send.ts` **unmodified** and called it exactly as the app does — `stream: "broadcast"`, `category: "campaign"`, `recipient` a real `Lead` id — via `tsx` (borrowed the binary from `packages/database/node_modules/.bin`; no dependency added to `apps/web`). Result: `{ sent: true }`.
 
-- [ ] **Step 4: Read the delivered message back and confirm three things**
+- [x] **Step 4: Read the delivered message back and confirm three things**
 
-```bash
-curl -s -H "X-Postmark-Server-Token: $POSTMARK_SERVER_TOKEN" \
-  "https://api.postmarkapp.com/messages/outbound/<MessageID>/details"
-```
+MessageID `57f867b2-4cf9-4a85-b173-7c1cce01a675`, found via `GET /messages/outbound?subject=...`, details pulled and diffed against the 2026-08-09 Postmark-handled baseline:
 
-Confirm in the raw `Body`:
+| | 2026-08-09 (`Postmark`) | 2026-08-16 (`Custom`) |
+|---|---|---|
+| `List-Unsubscribe` | `<https://subscriptions.pstmrk.it/demo/unsubscribe>` | `<http://localhost:3000/api/unsubscribe?t=…>` — **ours** |
+| Body | Postmark appended its own unsubscribe paragraph to both parts | **Unchanged** — byte-identical to what was sent |
+| `Status` | `Sent` | `Sent` |
 
-1. `List-Unsubscribe` points at **our** `/api/unsubscribe`, not `subscriptions.pstmrk.it`.
-2. Postmark has **not** appended its own unsubscribe paragraph to either body part.
-3. `Status` is `Sent` — Postmark enforces `List-Unsubscribe` on broadcast streams, so acceptance proves our header satisfies it.
+All three confirmed. (`localhost:3000` is expected — `NEXTAUTH_URL` in local dev; production carries the real domain.)
 
-This step also settles the open question from the spec: whether Postmark was overriding our header or merely filling a gap.
+This settles the open question from the spec: Postmark **was** the one reaching the inbox before this, not merely filling a gap.
 
-- [ ] **Step 5: Record the outcome**
+- [x] **Step 5: Record the outcome**
 
-Append the verified findings to the spec and add a session-notes entry to `CLAUDE.md`. Update the deploy checklist in `CLAUDE.md` to include registering the `SubscriptionChange` webhook trigger alongside the existing event-webhook item.
+Findings appended to the spec (below) and to the plan ledger (`.superpowers/sdd/2026-08-10-per-category-unsubscribe/progress.md`). CLAUDE.md session notes deferred to end-of-session per standing cadence rather than folded in here.
 
 - [ ] **Step 6: Commit**
 
-```bash
-git add CLAUDE.md docs/superpowers/specs/2026-08-10-per-category-unsubscribe-design.md
-git commit -m "docs: record the broadcast stream flip and live verification"
-```
+Pending Ryan's go-ahead (standing rule: no commit without fresh explicit approval each time).
 
 ---
 
