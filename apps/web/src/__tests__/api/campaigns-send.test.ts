@@ -16,6 +16,7 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     campaign: { findUnique: vi.fn(), update: vi.fn() },
     campaignContact: { updateMany: vi.fn() },
+    agent: { updateMany: vi.fn() },
   },
 }));
 
@@ -36,6 +37,7 @@ function footerCategory(html: string): string | undefined {
 const CAMPAIGN = {
   id: "c1",
   agentId: "a1",
+  agent: { monthlyEmailLimit: 200 },
   subject: "Hello",
   body: "Hi there",
   contacts: [],
@@ -69,6 +71,10 @@ function resetSeamMocks() {
   vi.mocked(prisma.campaignContact.updateMany)
     .mockReset()
     .mockResolvedValue({ count: 0 } as any);
+  // Default: every quota check succeeds. ensureQuotaReset's return value is
+  // never inspected by the route, and tryConsumeEmailQuota only cares about
+  // count === 1, so one shared resolved value covers both call sites.
+  vi.mocked(prisma.agent.updateMany).mockReset().mockResolvedValue({ count: 1 } as any);
 }
 
 describe("POST /api/campaigns/[id]/send — ownership", () => {
@@ -136,6 +142,7 @@ describe("POST /api/campaigns/[id]/send — send seam", () => {
     vi.mocked(prisma.campaign.findUnique).mockResolvedValue({
       id: "c1",
       agentId: "a1",
+      agent: { monthlyEmailLimit: 200 },
       subject: "Spring Market Update",
       body: "<p><strong>Big news</strong> this quarter.</p>",
       contacts: [{ id: "cc1", lead: { id: "lead_1", email: "lead@example.com" } }],
@@ -290,7 +297,7 @@ describe("POST /api/campaigns/[id]/send — suppressed contacts", () => {
     const res = await POST(request(), { params: { id: "c1" } });
     const body = await res.json();
 
-    expect(body).toEqual({ sent: 1, skipped: 1, errors: 0 });
+    expect(body).toEqual({ sent: 1, skipped: 1, skippedLimit: 0, errors: 0 });
     expect(prisma.campaignContact.updateMany).toHaveBeenCalledWith({
       where: { id: { in: ["contact_2"] } },
       data: { status: "UNSUBSCRIBED" },
@@ -331,7 +338,7 @@ describe("POST /api/campaigns/[id]/send — suppressed contacts", () => {
 
     const res = await POST(request(), { params: { id: "c1" } });
 
-    expect(await res.json()).toEqual({ sent: 1, skipped: 2, errors: 0 });
+    expect(await res.json()).toEqual({ sent: 1, skipped: 2, skippedLimit: 0, errors: 0 });
     expect(prisma.campaignContact.updateMany).toHaveBeenNthCalledWith(1, {
       where: { campaignId: "c1", status: "PENDING", lead: { campaignOptOut: true } },
       data: { status: "UNSUBSCRIBED" },
@@ -377,5 +384,59 @@ describe("POST /api/campaigns/[id]/send — suppressed contacts", () => {
       status: "PENDING",
       lead: { campaignOptOut: false },
     });
+  });
+
+  it("skips a recipient over quota, leaves the contact PENDING, and reports skippedLimit", async () => {
+    vi.mocked(prisma.campaign.findUnique).mockResolvedValue(CAMPAIGN_WITH(2) as any);
+    // First agent.updateMany call is ensureQuotaReset (batch-level, called
+    // once); the next two are tryConsumeEmailQuota, one per recipient.
+    vi.mocked(prisma.agent.updateMany)
+      .mockResolvedValueOnce({ count: 0 } as any) // ensureQuotaReset: boundary not passed, no-op
+      .mockResolvedValueOnce({ count: 1 } as any) // recipient 1: quota available
+      .mockResolvedValueOnce({ count: 0 } as any); // recipient 2: at limit
+
+    const res = await POST(request(), { params: { id: "c1" } });
+    const body = await res.json();
+
+    expect(body).toEqual({ sent: 1, skipped: 0, skippedLimit: 1, errors: 0 });
+    // The over-quota contact was never sent to at all.
+    expect(sendEmail).toHaveBeenCalledOnce();
+    // It must not be marked UNSUBSCRIBED — it should be retried once quota resets.
+    // (Narrowed from a bare `data` match: the pre-mark pass unconditionally
+    // calls updateMany with this exact `data` shape for opted-out leads on
+    // every request, so an unconstrained match on `data` alone would fail
+    // here regardless of the quota-skip contact's own status. What this test
+    // actually needs to prove is that contact_2 itself is never targeted by
+    // either post-send updateMany call.)
+    expect(prisma.campaignContact.updateMany).not.toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: { in: expect.arrayContaining(["contact_2"]) } } })
+    );
+  });
+
+  it("accounts for every contact including limit-skipped ones", async () => {
+    const campaign = CAMPAIGN_WITH(3);
+    vi.mocked(prisma.campaign.findUnique).mockResolvedValue(campaign as any);
+    vi.mocked(prisma.agent.updateMany)
+      .mockResolvedValueOnce({ count: 0 } as any) // ensureQuotaReset
+      .mockResolvedValueOnce({ count: 1 } as any) // recipient 1: sent
+      .mockResolvedValueOnce({ count: 0 } as any) // recipient 2: over limit
+      .mockResolvedValueOnce({ count: 1 } as any); // recipient 3: sent
+    vi.mocked(sendEmail).mockResolvedValue({ sent: true });
+
+    const res = await POST(request(), { params: { id: "c1" } });
+    const { sent, skipped, skippedLimit, errors } = await res.json();
+
+    expect(sent + skipped + skippedLimit + errors).toBe(campaign.contacts.length);
+  });
+
+  it("checks quota once per batch (ensureQuotaReset), not once per recipient", async () => {
+    vi.mocked(prisma.campaign.findUnique).mockResolvedValue(CAMPAIGN_WITH(3) as any);
+
+    await POST(request(), { params: { id: "c1" } });
+
+    // 1 ensureQuotaReset call + 3 tryConsumeEmailQuota calls (one per
+    // recipient) = 4 total. Not 3 (missing the reset) and not 6 (reset
+    // called redundantly per recipient).
+    expect(prisma.agent.updateMany).toHaveBeenCalledTimes(4);
   });
 });

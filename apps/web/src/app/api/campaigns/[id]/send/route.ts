@@ -4,6 +4,7 @@ import { requireAuth, checkOwnership } from "@/lib/api-auth";
 import { emailLayout } from "@/lib/email";
 import { sendEmail } from "@/lib/email/send";
 import { unsubscribeFooterHtml } from "@/lib/email/unsubscribe";
+import { ensureQuotaReset, tryConsumeEmailQuota } from "@/lib/email-quota";
 
 export async function POST(
   _req: Request,
@@ -15,6 +16,7 @@ export async function POST(
   const campaignRecord = await prisma.campaign.findUnique({
     where: { id: params.id },
     include: {
+      agent: { select: { monthlyEmailLimit: true } },
       contacts: {
         // Filter here rather than relying only on the seam's per-send check:
         // that check is one query per recipient inside Promise.allSettled, so
@@ -89,14 +91,17 @@ export async function POST(
     data: { status: "UNSUBSCRIBED" },
   });
 
-  let sent = 0;
-  // Seeded, not zero: these contacts were suppressed before the loop began.
-  let skipped = preMarked.count;
-  let errors = 0;
   const now = new Date();
+  // Once per batch, not once per recipient — see lib/email-quota.ts.
+  await ensureQuotaReset(campaign.agentId, now);
 
   const results = await Promise.allSettled(
     campaign.contacts.map(async (contact) => {
+      const quotaAvailable = await tryConsumeEmailQuota(campaign.agentId, campaign.agent.monthlyEmailLimit);
+      if (!quotaAvailable) {
+        return { contactId: contact.id, outcome: "limit" as const };
+      }
+
       // Built per contact, not once outside the loop: the unsubscribe link is
       // signed for a specific lead, so a shared body would opt the wrong
       // person out.
@@ -114,28 +119,36 @@ export async function POST(
         category: "campaign",
       });
 
-      return { contactId: contact.id, result };
+      return { contactId: contact.id, outcome: result.sent ? ("sent" as const) : ("suppressed" as const) };
     })
   );
 
+  let sent = 0;
+  // Seeded, not zero: these contacts were suppressed before the loop began.
+  let skipped = preMarked.count;
+  let skippedLimit = 0;
+  let errors = 0;
   const sentIds: string[] = [];
   const skippedIds: string[] = [];
 
-  for (const outcome of results) {
-    if (outcome.status === "rejected") {
-      console.error("Failed to send email:", outcome.reason);
+  for (const settled of results) {
+    if (settled.status === "rejected") {
+      console.error("Failed to send email:", settled.reason);
       errors++;
       continue;
     }
 
-    // A suppressed send is not a failure and not a delivery. Counting it as
-    // either is what made campaign stats overstate reach.
-    if (outcome.value.result.sent) {
+    const { contactId, outcome } = settled.value;
+    if (outcome === "sent") {
       sent++;
-      sentIds.push(outcome.value.contactId);
-    } else {
+      sentIds.push(contactId);
+    } else if (outcome === "suppressed") {
       skipped++;
-      skippedIds.push(outcome.value.contactId);
+      skippedIds.push(contactId);
+    } else {
+      // "limit" — over quota. Left PENDING (no id pushed to either array),
+      // not UNSUBSCRIBED, so a future send of this same campaign retries it.
+      skippedLimit++;
     }
   }
 
@@ -158,5 +171,5 @@ export async function POST(
     data: { status: "ACTIVE", sentAt: now },
   });
 
-  return NextResponse.json({ sent, skipped, errors });
+  return NextResponse.json({ sent, skipped, skippedLimit, errors });
 }
