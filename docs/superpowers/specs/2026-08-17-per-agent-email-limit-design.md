@@ -41,10 +41,13 @@ agent's first send correctly triggers the reset-and-count-from-zero path rather 
 
 ## Reset boundary
 
-Calendar-month, same for every agent (1st of the month, `America/Los_Angeles` — matches the site's other date
-handling). Simple to communicate to agents and to reason about; not tied to Postmark's own billing cycle, which
-doesn't need to align for this purely internal cap. Flagged here as an assumption, not confirmed with Ryan
-separately — revisit if it turns out to matter.
+Calendar-month, same for every agent (1st of the month, **UTC** — corrected during plan-writing; this section
+originally said `America/Los_Angeles` "matches the site's other date handling," which turned out to be false on
+inspection — there is no timezone-aware date logic anywhere in this codebase, and the one comparable case
+(`deal-pipeline.ts`) explicitly uses UTC). UTC is simple to communicate to agents and to reason about, avoids
+hand-rolled DST math for a low-stakes internal cap, and is not tied to Postmark's own billing cycle, which doesn't
+need to align for this purely internal cap. The implementation (`apps/web/src/lib/email-quota.ts`) uses UTC
+throughout; this was the plan's own self-correction, not a deviation from it.
 
 "Advance `monthlyResetAt` to the next 1st" means the first 1st-of-month midnight strictly after the moment of the
 reset — so a reset triggered on the 1st itself lands on the *following* month's 1st, not the same day. This avoids

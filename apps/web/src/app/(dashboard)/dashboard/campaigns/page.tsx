@@ -13,41 +13,56 @@ export default async function CampaignsPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const agentId = role !== "ADMIN" ? ((session!.user as any).agentId as string | null) : null;
 
-  let campaigns: {
+  type CampaignRow = {
     id: string;
     name: string;
     type: string;
     status: string;
     createdAt: Date;
     _count: { contacts: number };
-  }[] = [];
+  };
 
-  try {
-    campaigns = await prisma.campaign.findMany({
-      where: agentId ? { agentId } : {},
-      include: { _count: { select: { contacts: true } } },
-      orderBy: { createdAt: "desc" },
-      take: 500,
-    });
-  } catch {
-    // Show empty state on DB error
+  // Independent fetches, each with its own fallback (empty list vs. hidden
+  // quota line) — run concurrently via allSettled so a slow/failing query on
+  // one side never delays or blanks out the other. Two async functions keep
+  // each side's try/catch scoped exactly as before the parallelization.
+  async function fetchCampaigns(): Promise<CampaignRow[]> {
+    try {
+      return await prisma.campaign.findMany({
+        where: agentId ? { agentId } : {},
+        include: { _count: { select: { contacts: true } } },
+        orderBy: { createdAt: "desc" },
+        take: 500,
+      });
+    } catch {
+      // Show empty state on DB error
+      return [];
+    }
   }
 
-  let quotaText: string | null = null;
-  if (agentId) {
+  async function fetchQuotaText(): Promise<string | null> {
+    if (!agentId) return null;
     try {
       const agent = await prisma.agent.findUnique({
         where: { id: agentId },
         select: { monthlyEmailLimit: true, monthlyEmailsSent: true, monthlyResetAt: true },
       });
-      if (agent) {
-        const remaining = remainingQuota(agent, new Date());
-        quotaText = `${remaining} / ${agent.monthlyEmailLimit} sends left this month`;
-      }
+      if (!agent) return null;
+      const remaining = remainingQuota(agent, new Date());
+      return `${remaining} / ${agent.monthlyEmailLimit} sends left this month`;
     } catch {
       // Show the page without the quota line on DB error.
+      return null;
     }
   }
+
+  const [campaignsResult, quotaTextResult] = await Promise.allSettled([
+    fetchCampaigns(),
+    fetchQuotaText(),
+  ]);
+
+  const campaigns: CampaignRow[] = campaignsResult.status === "fulfilled" ? campaignsResult.value : [];
+  const quotaText: string | null = quotaTextResult.status === "fulfilled" ? quotaTextResult.value : null;
 
   return (
     <div>

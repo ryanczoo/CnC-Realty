@@ -274,6 +274,71 @@ describe("POST /api/campaigns/[id]/send — broadcast stream preflight", () => {
   });
 });
 
+describe("POST /api/campaigns/[id]/send — missing owning agent", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetSeamMocks();
+    process.env.POSTMARK_SERVER_TOKEN = "test-key";
+    process.env.POSTMARK_BROADCAST_STREAM = "test-broadcast-stream";
+    vi.mocked(requireAuth).mockResolvedValue({
+      session: { user: { id: "u3", email: "admin@cnc.com", role: "ADMIN", agentId: null } },
+      error: null,
+    } as any);
+    vi.mocked(prisma.campaign.update).mockResolvedValue({} as any);
+  });
+
+  it("returns 400 and mutates nothing when the campaign has no owning agent", async () => {
+    vi.mocked(prisma.campaign.findUnique).mockResolvedValue({
+      ...CAMPAIGN_WITH(2),
+      agentId: null,
+      agent: null,
+    } as any);
+
+    const res = await POST(request(), { params: { id: "c1" } });
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "Campaign has no owning agent" });
+    expect(prisma.campaignContact.updateMany).not.toHaveBeenCalled();
+    expect(prisma.agent.updateMany).not.toHaveBeenCalled();
+    expect(sendEmail).not.toHaveBeenCalled();
+    expect(prisma.campaign.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/campaigns/[id]/send — quota charged to the campaign's agent", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetSeamMocks();
+    process.env.POSTMARK_SERVER_TOKEN = "test-key";
+    process.env.POSTMARK_BROADCAST_STREAM = "test-broadcast-stream";
+    vi.mocked(prisma.campaign.update).mockResolvedValue({} as any);
+  });
+
+  it("bills quota to campaign.agentId, not the ADMIN caller's own id", async () => {
+    // Campaign is owned by agent "a1"; the caller is an ADMIN with a
+    // different (or null) agentId. checkOwnership lets ADMIN through
+    // regardless — the bug this guards against is the route quietly reading
+    // session.user.agentId instead of campaign.agentId for quota calls.
+    vi.mocked(requireAuth).mockResolvedValue({
+      session: { user: { id: "u-admin", email: "admin@cnc.com", role: "ADMIN", agentId: "admin-own-id" } },
+      error: null,
+    } as any);
+    vi.mocked(prisma.campaign.findUnique).mockResolvedValue(CAMPAIGN_WITH(1) as any);
+
+    const res = await POST(request(), { params: { id: "c1" } });
+    expect(res.status).toBe(200);
+
+    for (const call of vi.mocked(prisma.agent.updateMany).mock.calls) {
+      const where = call[0].where as any;
+      expect(where.id).toBe("a1");
+      expect(where.id).not.toBe("admin-own-id");
+    }
+    expect(prisma.agent.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ id: "a1" }) })
+    );
+  });
+});
+
 describe("POST /api/campaigns/[id]/send — suppressed contacts", () => {
   beforeEach(() => {
     vi.clearAllMocks();

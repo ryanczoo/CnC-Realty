@@ -43,6 +43,10 @@ export async function ensureQuotaReset(agentId: string, now: Date): Promise<void
  * true iff this call is the one that consumed the last unit of quota
  * available; false means the agent was already at their limit and this
  * send must be skipped.
+ *
+ * Requires `ensureQuotaReset` to have already run for this agent within the
+ * current request/batch — this function does not check the reset boundary
+ * itself.
  */
 export async function tryConsumeEmailQuota(agentId: string, limit: number): Promise<boolean> {
   const result = await prisma.agent.updateMany({

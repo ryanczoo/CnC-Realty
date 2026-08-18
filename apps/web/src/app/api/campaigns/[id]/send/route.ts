@@ -72,6 +72,19 @@ export async function POST(
     return NextResponse.json({ error: "NEXTAUTH_URL not configured" }, { status: 500 });
   }
 
+  // Schema declares agentId/agent optional (no creation path sets them null
+  // today), but the batch below dereferences both unconditionally. Guard
+  // before the pre-mark updateMany so an invalid campaign mutates nothing.
+  if (!campaign.agentId || !campaign.agent) {
+    return NextResponse.json({ error: "Campaign has no owning agent" }, { status: 400 });
+  }
+  // Captured into locals, not read off `campaign` inside the closure below:
+  // TypeScript does not carry a narrowed property's type into a nested
+  // function, since it cannot prove the property is unchanged by the time
+  // the callback runs.
+  const agentId = campaign.agentId;
+  const monthlyEmailLimit = campaign.agent.monthlyEmailLimit;
+
   // A lead who unsubscribed from an earlier send is already flagged when the
   // next campaign fires, so the contact query above filters them out and the
   // send loop never sees them — they would sit at PENDING forever and
@@ -93,11 +106,11 @@ export async function POST(
 
   const now = new Date();
   // Once per batch, not once per recipient — see lib/email-quota.ts.
-  await ensureQuotaReset(campaign.agentId, now);
+  await ensureQuotaReset(agentId, now);
 
   const results = await Promise.allSettled(
     campaign.contacts.map(async (contact) => {
-      const quotaAvailable = await tryConsumeEmailQuota(campaign.agentId, campaign.agent.monthlyEmailLimit);
+      const quotaAvailable = await tryConsumeEmailQuota(agentId, monthlyEmailLimit);
       if (!quotaAvailable) {
         return { contactId: contact.id, outcome: "limit" as const };
       }

@@ -37,6 +37,7 @@ export default function CampaignDetailPage() {
   const [sendResult, setSendResult] = useState<{
     sent: number;
     skipped: number;
+    skippedLimit: number;
     errors: number;
   } | null>(null);
   const [sendError, setSendError] = useState<string | null>(null);
@@ -176,6 +177,7 @@ export default function CampaignDetailPage() {
               only "sent" would make the campaign look like it reached fewer
               people for no visible reason. */}
           {sendResult.skipped > 0 && ` ${sendResult.skipped} skipped (unsubscribed).`}
+          {sendResult.skippedLimit > 0 && ` ${sendResult.skippedLimit} held back — monthly email limit reached.`}
           {sendResult.errors > 0 && ` ${sendResult.errors} failed.`}
         </div>
       )}

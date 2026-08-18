@@ -8,6 +8,7 @@ export function AgentEmailLimitEditor({ agentId, currentLimit }: { agentId: stri
   const [saving, setSaving] = useState(false);
 
   async function save() {
+    if (value.trim() === "") return;
     const parsed = Number(value);
     if (!Number.isInteger(parsed) || parsed < 0) return;
     setSaving(true);

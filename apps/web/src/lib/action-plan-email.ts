@@ -1,5 +1,5 @@
 import { emailLayout, escapeHtml } from "@/lib/email";
-import { sendEmail } from "@/lib/email/send";
+import { sendEmail, type SendResult } from "@/lib/email/send";
 import { unsubscribeFooterHtml } from "@/lib/email/unsubscribe";
 
 export function substituteVars(
@@ -24,12 +24,12 @@ export async function sendActionPlanEmail(opts: {
   body: string;
   enrollmentId: string;
   leadId: string;
-}): Promise<void> {
+}): Promise<SendResult> {
   const replyTo = `reply+${opts.enrollmentId}@reply.cncrealtygroup.com`;
   const bodyHtml = paragraph(opts.body) + unsubscribeFooterHtml("lead", opts.leadId, "action_plan");
   const html = emailLayout({ heading: opts.subject, bodyHtml });
 
-  await sendEmail({
+  return sendEmail({
     to: opts.to,
     subject: opts.subject,
     html,

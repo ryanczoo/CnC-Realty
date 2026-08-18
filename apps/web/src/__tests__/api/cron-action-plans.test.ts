@@ -5,7 +5,9 @@ process.env.NEXTAUTH_URL = "http://localhost:3000";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
-vi.mock("@/lib/email/send", () => ({ sendEmail: vi.fn().mockResolvedValue(undefined) }));
+// Resolves a SendResult, not undefined: the route reads `.sent` off the
+// result to decide whether to refund the quota unit it already consumed.
+vi.mock("@/lib/email/send", () => ({ sendEmail: vi.fn().mockResolvedValue({ sent: true }) }));
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     leadPlanStep: { findMany: vi.fn(), update: vi.fn() },
@@ -168,6 +170,35 @@ describe("POST /api/cron/action-plans", () => {
     expect(res.status).toBe(200);
     expect(prisma.leadTask.create).toHaveBeenCalledOnce();
     expect(prisma.agent.updateMany).toHaveBeenCalledTimes(1);
+  });
+
+  it("refunds the quota unit and still marks the step DONE when the send is suppressed (e.g. opted out)", async () => {
+    vi.mocked(prisma.leadPlanStep.findMany).mockResolvedValue([EMAIL_STEP] as any);
+    vi.mocked(prisma.leadPlanStep.update).mockResolvedValue({ ...EMAIL_STEP, status: "DONE" } as any);
+    vi.mocked(prisma.leadPlanEnrollment.findMany).mockResolvedValue([]);
+    // ensureQuotaReset (no-op) + tryConsumeEmailQuota (succeeds, count===1) +
+    // the compensating refund decrement (also targets agent.updateMany).
+    vi.mocked(prisma.agent.updateMany)
+      .mockResolvedValueOnce({ count: 0 } as any) // ensureQuotaReset
+      .mockResolvedValueOnce({ count: 1 } as any) // tryConsumeEmailQuota: consumed
+      .mockResolvedValueOnce({ count: 1 } as any); // refund decrement
+    vi.mocked(sendEmail).mockResolvedValue({ sent: false, reason: "opted_out" });
+
+    const res = await POST(makeReq(CRON_SECRET));
+    expect(res.status).toBe(200);
+
+    // The step still completes — opting out is permanent, only billing was wrong.
+    expect(prisma.leadPlanStep.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: "ls1" }, data: expect.objectContaining({ status: "DONE" }) })
+    );
+
+    // Exact shape of the refund call — distinguishable from the earlier
+    // ensureQuotaReset/tryConsumeEmailQuota calls in this same test by its where clause.
+    expect(prisma.agent.updateMany).toHaveBeenCalledWith({
+      where: { id: "a1", monthlyEmailsSent: { gt: 0 } },
+      data: { monthlyEmailsSent: { decrement: 1 } },
+    });
+    expect(prisma.agent.updateMany).toHaveBeenCalledTimes(3);
   });
 
   it("checks the reset boundary once per distinct agent, not once per step", async () => {

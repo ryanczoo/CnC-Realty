@@ -77,13 +77,23 @@ export async function POST(req: NextRequest) {
 
           const subject = substituteVars(step.subject ?? "", vars);
           const body = substituteVars(step.body ?? "", vars);
-          await sendActionPlanEmail({
+          const result = await sendActionPlanEmail({
             to: lead.email,
             subject,
             body,
             enrollmentId: enrollment.id,
             leadId: lead.id,
           });
+
+          if (!result.sent) {
+            // Quota was already consumed above but the message was suppressed
+            // (e.g. opted out) — refund the unit. The step still completes
+            // below: opting out is permanent, only the billing was wrong.
+            await prisma.agent.updateMany({
+              where: { id: agent.id, monthlyEmailsSent: { gt: 0 } },
+              data: { monthlyEmailsSent: { decrement: 1 } },
+            });
+          }
         } else if (step.stepType === "TASK") {
           const title = substituteVars(step.taskTitle ?? "", vars);
           await prisma.leadTask.create({
