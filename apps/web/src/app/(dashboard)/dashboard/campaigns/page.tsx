@@ -3,6 +3,7 @@ import { Plus } from "lucide-react";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { remainingQuota } from "@/lib/email-quota";
 import { CampaignCard } from "@/components/campaigns/CampaignCard";
 
 export default async function CampaignsPage() {
@@ -32,12 +33,31 @@ export default async function CampaignsPage() {
     // Show empty state on DB error
   }
 
+  let quotaText: string | null = null;
+  if (agentId) {
+    try {
+      const agent = await prisma.agent.findUnique({
+        where: { id: agentId },
+        select: { monthlyEmailLimit: true, monthlyEmailsSent: true, monthlyResetAt: true },
+      });
+      if (agent) {
+        const remaining = remainingQuota(agent, new Date());
+        quotaText = `${remaining} / ${agent.monthlyEmailLimit} sends left this month`;
+      }
+    } catch {
+      // Show the page without the quota line on DB error.
+    }
+  }
+
   return (
     <div>
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="font-sans text-2xl font-medium text-[#1B1B1B]">Campaigns</h1>
           <p className="mt-1 font-sans text-sm text-[#1B1B1B]/50">Create and send emails or DRIP campaigns to your leads here</p>
+          {quotaText && (
+            <p className="mt-1 font-sans text-xs text-[#1B1B1B]/40">{quotaText}</p>
+          )}
         </div>
         <Link
           href="/dashboard/campaigns/new"
