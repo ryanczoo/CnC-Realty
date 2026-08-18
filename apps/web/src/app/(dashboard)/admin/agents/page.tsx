@@ -4,6 +4,7 @@ import { AdminTable } from "@/components/admin/AdminTable";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PromoteButton } from "./PromoteButton";
 import { AgentTitleEditor } from "./AgentTitleEditor";
+import { AgentEmailLimitEditor } from "./AgentEmailLimitEditor";
 import { DownloadIcaButton } from "./DownloadIcaButton";
 import { formatDate } from "@/lib/utils";
 import { requireAdminPage } from "@/lib/server-utils";
@@ -24,6 +25,7 @@ export default async function AdminAgentsPage() {
     slug: string;
     title: string | null;
     licenseNum: string | null;
+    monthlyEmailLimit: number;
     createdAt: Date;
     signedIcaKey: string | null;
     user: { email: string; role: string; createdAt: Date };
@@ -55,7 +57,7 @@ export default async function AdminAgentsPage() {
         <EmptyState message="No agents yet" />
       ) : (
         <AdminTable
-          headers={["Agent Name", "Email", "Title", "License", "Leads", "Joined", "Role", "Signed ICA", "Actions"]}
+          headers={["Agent Name", "Email", "Title", "License", "Email Limit", "Leads", "Joined", "Role", "Signed ICA", "Actions"]}
         >
           {agents.map((agent) => (
             <tr
@@ -73,6 +75,9 @@ export default async function AdminAgentsPage() {
               </td>
               <td className="px-4 py-3 text-[#1B1B1B]/60">
                 {agent.licenseNum ?? <span className="text-[#1B1B1B]/30">—</span>}
+              </td>
+              <td className="px-4 py-3">
+                <AgentEmailLimitEditor agentId={agent.id} currentLimit={agent.monthlyEmailLimit} />
               </td>
               <td className="px-4 py-3 text-[#1B1B1B]">{agent._count.leads}</td>
               <td className="px-4 py-3 text-xs text-[#1B1B1B]/60">

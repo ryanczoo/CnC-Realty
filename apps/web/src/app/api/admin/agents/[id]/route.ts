@@ -12,17 +12,38 @@ export async function PATCH(
   if (error) return error;
 
   const body = await req.json().catch(() => ({}));
-  const { title } = body as { title?: unknown };
+  const { title, monthlyEmailLimit } = body as { title?: unknown; monthlyEmailLimit?: unknown };
 
-  if (typeof title !== "string" || !title.trim()) {
-    return NextResponse.json({ error: "Title is required" }, { status: 400 });
+  const data: { title?: string; monthlyEmailLimit?: number } = {};
+
+  if (title !== undefined) {
+    if (typeof title !== "string" || !title.trim()) {
+      return NextResponse.json({ error: "Title is required" }, { status: 400 });
+    }
+    data.title = title.trim();
   }
 
-  const agent = await prisma.agent.update({
-    where: { id: params.id },
-    data: { title: title.trim() },
-    select: { id: true, title: true },
-  }).catch(() => null);
+  if (monthlyEmailLimit !== undefined) {
+    if (typeof monthlyEmailLimit !== "number" || !Number.isInteger(monthlyEmailLimit) || monthlyEmailLimit < 0) {
+      return NextResponse.json(
+        { error: "Monthly email limit must be a non-negative integer" },
+        { status: 400 }
+      );
+    }
+    data.monthlyEmailLimit = monthlyEmailLimit;
+  }
+
+  if (Object.keys(data).length === 0) {
+    return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
+  }
+
+  const agent = await prisma.agent
+    .update({
+      where: { id: params.id },
+      data,
+      select: { id: true, title: true, monthlyEmailLimit: true },
+    })
+    .catch(() => null);
 
   if (!agent) return NextResponse.json({ error: "Agent not found" }, { status: 404 });
 
