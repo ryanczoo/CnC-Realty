@@ -12,6 +12,12 @@ export default async function CampaignsPage() {
   const role = (session!.user as any).role;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const agentId = role !== "ADMIN" ? ((session!.user as any).agentId as string | null) : null;
+  // Unfiltered by role — an ADMIN can have their own Agent record (e.g. a
+  // broker who also sends campaigns personally) and still has a real quota
+  // to see, even though `agentId` above is deliberately nulled for them so
+  // the campaign LIST stays brokerage-wide instead of scoped to just them.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const personalAgentId = (session!.user as any).agentId as string | null;
 
   type CampaignRow = {
     id: string;
@@ -41,10 +47,10 @@ export default async function CampaignsPage() {
   }
 
   async function fetchQuotaText(): Promise<string | null> {
-    if (!agentId) return null;
+    if (!personalAgentId) return null;
     try {
       const agent = await prisma.agent.findUnique({
-        where: { id: agentId },
+        where: { id: personalAgentId },
         select: { monthlyEmailLimit: true, monthlyEmailsSent: true, monthlyResetAt: true },
       });
       if (!agent) return null;
