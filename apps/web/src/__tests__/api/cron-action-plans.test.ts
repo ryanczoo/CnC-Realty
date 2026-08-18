@@ -12,7 +12,7 @@ vi.mock("@/lib/prisma", () => ({
     leadPlanEnrollment: { findMany: vi.fn(), update: vi.fn() },
     leadTask: { create: vi.fn() },
     lead: { findUnique: vi.fn() },
-    agent: { findUnique: vi.fn() },
+    agent: { findUnique: vi.fn(), updateMany: vi.fn() },
   },
 }));
 
@@ -31,7 +31,13 @@ function makeReq(auth?: string) {
 }
 
 const LEAD = { id: "l1", firstName: "John", lastName: "Doe", email: "john@example.com" };
-const AGENT = { id: "a1", displayName: "Jane Agent", phone: "555-1234", user: { email: "agent@test.com" } };
+const AGENT = {
+  id: "a1",
+  displayName: "Jane Agent",
+  phone: "555-1234",
+  monthlyEmailLimit: 200,
+  user: { email: "agent@test.com" },
+};
 const EMAIL_STEP = {
   id: "ls1", enrollmentId: "e1", stepType: "EMAIL",
   subject: "Hi {{first_name}}", body: "Hello {{first_name}} from {{agent_name}}",
@@ -46,7 +52,10 @@ const TASK_STEP = {
 };
 
 describe("POST /api/cron/action-plans", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(prisma.agent.updateMany).mockResolvedValue({ count: 1 } as any);
+  });
 
   it("returns 401 without auth", async () => {
     const res = await POST(makeReq());
@@ -108,9 +117,10 @@ describe("POST /api/cron/action-plans", () => {
   });
 
   it("marks enrollment COMPLETED when all steps done", async () => {
-    vi.mocked(prisma.leadPlanStep.findMany)
-      .mockResolvedValueOnce([]) // no pending steps
-      .mockResolvedValueOnce([]); // all steps DONE
+    // The route calls leadPlanStep.findMany exactly once (for due steps);
+    // enrollment completion is checked via leadPlanEnrollment.findMany below,
+    // not a second leadPlanStep.findMany call.
+    vi.mocked(prisma.leadPlanStep.findMany).mockResolvedValue([]); // no pending steps
     vi.mocked(prisma.leadPlanEnrollment.findMany).mockResolvedValue([
       { id: "e1", steps: [{ status: "DONE" }] },
     ] as any);
@@ -121,5 +131,61 @@ describe("POST /api/cron/action-plans", () => {
     expect(prisma.leadPlanEnrollment.update).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ status: "COMPLETED" }) })
     );
+  });
+
+  it("skips an EMAIL step over quota, leaves it PENDING (not SKIPPED), and reports skippedLimit", async () => {
+    vi.mocked(prisma.leadPlanStep.findMany).mockResolvedValue([EMAIL_STEP] as any);
+    vi.mocked(prisma.leadPlanEnrollment.findMany).mockResolvedValue([]);
+    // First call is the once-per-agent ensureQuotaReset; second is this
+    // step's tryConsumeEmailQuota, which reports the agent already at limit.
+    vi.mocked(prisma.agent.updateMany)
+      .mockResolvedValueOnce({ count: 0 } as any)
+      .mockResolvedValueOnce({ count: 0 } as any);
+
+    const res = await POST(makeReq(CRON_SECRET));
+    const body = await res.json();
+
+    expect(body.skippedLimit).toBe(1);
+    expect(body.processed).toBe(0);
+    expect(sendEmail).not.toHaveBeenCalled();
+    // Must stay PENDING, not be marked SKIPPED or DONE — the cron's own
+    // dueAt <= now query re-selects it once quota is available again.
+    expect(prisma.leadPlanStep.update).not.toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: "ls1" } })
+    );
+  });
+
+  it("still processes a TASK step normally when the same agent is over their email quota", async () => {
+    vi.mocked(prisma.leadPlanStep.findMany).mockResolvedValue([TASK_STEP] as any);
+    vi.mocked(prisma.leadPlanEnrollment.findMany).mockResolvedValue([]);
+    vi.mocked(prisma.leadTask.create).mockResolvedValue({} as any);
+    vi.mocked(prisma.leadPlanStep.update).mockResolvedValue({} as any);
+    // Even if quota is exhausted, a TASK step never calls tryConsumeEmailQuota
+    // at all — only ensureQuotaReset runs, once.
+    vi.mocked(prisma.agent.updateMany).mockResolvedValueOnce({ count: 0 } as any);
+
+    const res = await POST(makeReq(CRON_SECRET));
+    expect(res.status).toBe(200);
+    expect(prisma.leadTask.create).toHaveBeenCalledOnce();
+    expect(prisma.agent.updateMany).toHaveBeenCalledTimes(1);
+  });
+
+  it("checks the reset boundary once per distinct agent, not once per step", async () => {
+    const secondStep = {
+      ...EMAIL_STEP,
+      id: "ls3",
+      enrollmentId: "e3",
+      enrollment: { ...EMAIL_STEP.enrollment, id: "e3" }, // same agentId "a1"
+    };
+    vi.mocked(prisma.leadPlanStep.findMany).mockResolvedValue([EMAIL_STEP, secondStep] as any);
+    vi.mocked(prisma.leadPlanEnrollment.findMany).mockResolvedValue([]);
+    vi.mocked(prisma.leadPlanStep.update).mockResolvedValue({} as any);
+    vi.mocked(sendEmail).mockResolvedValue({ sent: true });
+
+    await POST(makeReq(CRON_SECRET));
+
+    // 1 ensureQuotaReset (both steps share agent "a1") + 2 tryConsumeEmailQuota
+    // (one per EMAIL step) = 3 total, not 4.
+    expect(prisma.agent.updateMany).toHaveBeenCalledTimes(3);
   });
 });

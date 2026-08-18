@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { substituteVars, sendActionPlanEmail } from "@/lib/action-plan-email";
+import { ensureQuotaReset, tryConsumeEmailQuota } from "@/lib/email-quota";
 import type { Prisma } from "@cnc/database";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +25,7 @@ export async function POST(req: NextRequest) {
         include: {
           lead: { select: { id: true, firstName: true, lastName: true, email: true } },
           agent: {
-            select: { id: true, displayName: true, phone: true, user: { select: { email: true } } },
+            select: { id: true, displayName: true, phone: true, monthlyEmailLimit: true, user: { select: { email: true } } },
           },
         },
       },
@@ -32,12 +33,20 @@ export async function POST(req: NextRequest) {
     orderBy: { dueAt: "asc" },
   });
 
+  // One reset check per distinct agent represented in this batch, not once
+  // per step — matches how ensureQuotaReset is meant to be called (see
+  // lib/email-quota.ts). A step's own agentId lives at
+  // step.enrollment.agentId; no need to go through the loaded agent relation
+  // just to dedupe.
+  const agentIds = Array.from(new Set(dueSteps.map((s) => s.enrollment.agentId)));
+  await Promise.all(agentIds.map((id) => ensureQuotaReset(id, now)));
+
   // Each step's send/create + status update is independent of every other
   // step, so run them concurrently instead of one at a time. Every branch
   // still resolves (never rejects) so Promise.all can't short-circuit on
   // the first failure — that would abandon the remaining steps.
   const stepResults = await Promise.all(
-    dueSteps.map(async (step): Promise<"processed" | "error"> => {
+    dueSteps.map(async (step): Promise<"processed" | "error" | "skipped-limit"> => {
       try {
         const { enrollment } = step;
         const { lead, agent } = enrollment;
@@ -57,6 +66,15 @@ export async function POST(req: NextRequest) {
             });
             return "processed";
           }
+
+          const quotaAvailable = await tryConsumeEmailQuota(agent.id, agent.monthlyEmailLimit);
+          if (!quotaAvailable) {
+            // Left PENDING, not marked SKIPPED: this is circumstantial, not
+            // permanent. dueAt is already <= now, so the cron's own query
+            // re-selects this step on its next run once quota resets.
+            return "skipped-limit";
+          }
+
           const subject = substituteVars(step.subject ?? "", vars);
           const body = substituteVars(step.body ?? "", vars);
           await sendActionPlanEmail({
@@ -92,9 +110,11 @@ export async function POST(req: NextRequest) {
 
   let processed = 0;
   let errors = 0;
+  let skippedLimit = 0;
   for (const result of stepResults) {
     if (result === "processed") processed++;
-    else errors++;
+    else if (result === "error") errors++;
+    else skippedLimit++;
   }
 
   // Check for newly-completed enrollments (always run, not just when steps were processed)
@@ -119,5 +139,5 @@ export async function POST(req: NextRequest) {
     )
   );
 
-  return NextResponse.json({ processed, errors });
+  return NextResponse.json({ processed, errors, skippedLimit });
 }
