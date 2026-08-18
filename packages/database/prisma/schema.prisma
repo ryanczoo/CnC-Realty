@@ -319,6 +319,9 @@ model Agent {
   volumeClosed     Float    @default(0)
   propertiesRented Int      @default(0)
   signedIcaKey     String?
+  monthlyEmailLimit Int      @default(200)
+  monthlyEmailsSent Int      @default(0)
+  monthlyResetAt    DateTime @default(now())
   createdAt        DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
