@@ -162,7 +162,7 @@ export default function ApplicationDetailPage() {
           ) : (
             <div className="space-y-2">
               <textarea
-                className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
+                className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-4 py-3 text-sm text-[#1B1B1B] focus:outline-none focus:ring-2 focus:ring-red-300"
                 rows={3}
                 placeholder="Reason for rejection (sent to applicant)…"
                 value={rejectReason}
