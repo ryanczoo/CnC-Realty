@@ -3,6 +3,7 @@
     { "path": "/api/idx/sync?type=delta", "schedule": "*/15 * * * *" },
     { "path": "/api/property-alerts/run", "schedule": "0 9 * * *" },
     { "path": "/api/cron/deadline-reminders", "schedule": "0 16 * * *" },
-    { "path": "/api/cron/action-plans", "schedule": "0 8 * * *" }
+    { "path": "/api/cron/action-plans", "schedule": "0 8 * * *" },
+    { "path": "/api/cron/listing-expiration-warnings", "schedule": "0 17 * * *" }
   ]
 }
