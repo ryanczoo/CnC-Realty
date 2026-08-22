@@ -34,7 +34,7 @@ describe("transaction-emails — sender identity and links", () => {
     expect(call.from).toBeUndefined();
   });
 
-  it("stays text-only — these emails have no html part to render", async () => {
+  it("wraps the body in the branded emailLayout, same as every other transactional email", async () => {
     await sendSubmitForReview({
       fileType: "Transaction",
       address: "123 Main St",
@@ -44,10 +44,10 @@ describe("transaction-emails — sender identity and links", () => {
 
     const call = vi.mocked(sendEmail).mock.calls[0][0];
 
-    expect(call.text).toContain("Jane Agent");
-    // An empty html part would render as a blank email in clients that prefer
-    // text/html, so these senders must pass no html at all.
-    expect(call.html).toBeUndefined();
+    expect(call.html).toContain("Jane Agent");
+    expect(call.html).toContain("logo-gold.png");
+    // No manual text part — the seam derives plain text from the html.
+    expect(call.text).toBeUndefined();
   });
 
   it("builds links from NEXTAUTH_URL, not a hardcoded production domain", async () => {
@@ -61,8 +61,8 @@ describe("transaction-emails — sender identity and links", () => {
 
     const call = vi.mocked(sendEmail).mock.calls[0][0];
     expect(call.stream).toBe("transactional");
-    expect(call.text).toContain("http://localhost:3000/dashboard/transactions/transaction/f1");
-    expect(call.text).not.toContain("https://cncrealtygroup.com");
+    expect(call.html).toContain("http://localhost:3000/dashboard/transactions/transaction/f1");
+    expect(call.html).not.toContain("https://cncrealtygroup.com");
   });
 });
 
@@ -83,7 +83,7 @@ describe("transaction-emails — referral files with no property address", () =>
     const call = vi.mocked(sendEmail).mock.calls[0][0];
     expect(call.stream).toBe("transactional");
     expect(call.subject).not.toContain("null");
-    expect(call.text).not.toContain("null");
+    expect(call.html).not.toContain("null");
   });
 
   it("sendDocumentRejected falls back to a generic label instead of the literal word 'null'", async () => {
@@ -100,7 +100,7 @@ describe("transaction-emails — referral files with no property address", () =>
     const call = vi.mocked(sendEmail).mock.calls[0][0];
     expect(call.stream).toBe("transactional");
     expect(call.subject).not.toContain("null");
-    expect(call.text).not.toContain("null");
+    expect(call.html).not.toContain("null");
   });
 
   it("sendAllDocsApproved falls back to a generic label instead of the literal word 'null'", async () => {
@@ -115,7 +115,7 @@ describe("transaction-emails — referral files with no property address", () =>
     const call = vi.mocked(sendEmail).mock.calls[0][0];
     expect(call.stream).toBe("transactional");
     expect(call.subject).not.toContain("null");
-    expect(call.text).not.toContain("null");
+    expect(call.html).not.toContain("null");
   });
 
   it("sendFileClosed falls back to a generic label instead of the literal word 'null'", async () => {
@@ -130,7 +130,7 @@ describe("transaction-emails — referral files with no property address", () =>
     const call = vi.mocked(sendEmail).mock.calls[0][0];
     expect(call.stream).toBe("transactional");
     expect(call.subject).not.toContain("null");
-    expect(call.text).not.toContain("null");
+    expect(call.html).not.toContain("null");
   });
 });
 
@@ -158,6 +158,8 @@ describe("transaction-emails — sendFileExpirationWarning", () => {
 
     expect(call.to).toBe("jane@example.com");
     expect(call.stream).toBe("transactional");
-    expect(call.text).toContain("3 day(s)");
+    expect(call.html).toContain("3 day");
+    expect(call.html).toContain("logo-gold.png");
+    expect(call.text).toBeUndefined();
   });
 });
