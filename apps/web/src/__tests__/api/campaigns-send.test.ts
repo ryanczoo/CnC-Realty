@@ -174,7 +174,7 @@ describe("POST /api/campaigns/[id]/send — send seam", () => {
 
     const call = vi.mocked(sendEmail).mock.calls[0][0];
     expect(call.html).toContain("Spring Market Update");
-    expect(call.html).toContain("logo-gold.png");
+    expect(call.html).toContain("logo-black.png");
     expect(call.html).toContain("<strong>Big news</strong>");
   });
 

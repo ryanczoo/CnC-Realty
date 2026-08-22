@@ -42,7 +42,7 @@ describe("sendActionPlanEmail", () => {
     expect(call.subject).toBe("Still thinking about your next home?");
     // Branded: heading appears, logo image present, body content preserved
     expect(call.html).toContain("Still thinking about your next home?");
-    expect(call.html).toContain("logo-gold.png");
+    expect(call.html).toContain("logo-black.png");
     expect(call.html).toContain("I wanted to follow up on your interest.");
   });
 

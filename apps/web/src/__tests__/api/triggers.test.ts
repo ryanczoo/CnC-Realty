@@ -339,7 +339,7 @@ describe("Trigger execution — PATCH /api/leads/[id]", () => {
     expect(call.subject).toBe("Your offer was accepted!");
     expect(call.stream).toBe("transactional");
     expect(call.html).toContain("Your offer was accepted!");
-    expect(call.html).toContain("logo-gold.png");
+    expect(call.html).toContain("logo-black.png");
     expect(call.html).toContain("Congratulations!");
     // No overrides — the seam supplies the default noreply@ FROM and derives
     // the plain-text part from the HTML.

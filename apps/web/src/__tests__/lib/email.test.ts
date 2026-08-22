@@ -180,9 +180,20 @@ describe("emailLayout", () => {
     expect(iconsIndex).toBeGreaterThan(footerIndex);
   });
 
-  it("applies the off-white background to the full email surface, not just the content box", () => {
+  it("keeps only the header/footer margins off-white, with a white content card in between", () => {
     const result = html();
+    // The page canvas (body + outer wrapper) stays off-white -- that's what
+    // shows behind the logo header and the footer/social-icons area, since
+    // neither of those gets its own contrasting background.
     expect(result).toMatch(/<body[^>]*background-color:\s*#F2F0EF/i);
+    // But the heading + body content sits inside its own white card, not
+    // directly on the off-white page background.
+    expect(result).toMatch(/background-color:\s*#ffffff/i);
+  });
+
+  it("uses the black logo, not the gold one", () => {
+    expect(html()).toContain("logo-black.png");
+    expect(html()).not.toContain("logo-gold.png");
   });
 
   it("renders the YouTube icon larger than Facebook and Instagram so they read as the same visual size", () => {

@@ -45,7 +45,7 @@ describe("transaction-emails — sender identity and links", () => {
     const call = vi.mocked(sendEmail).mock.calls[0][0];
 
     expect(call.html).toContain("Jane Agent");
-    expect(call.html).toContain("logo-gold.png");
+    expect(call.html).toContain("logo-black.png");
     // No manual text part — the seam derives plain text from the html.
     expect(call.text).toBeUndefined();
   });
@@ -159,7 +159,7 @@ describe("transaction-emails — sendFileExpirationWarning", () => {
     expect(call.to).toBe("jane@example.com");
     expect(call.stream).toBe("transactional");
     expect(call.html).toContain("3 day");
-    expect(call.html).toContain("logo-gold.png");
+    expect(call.html).toContain("logo-black.png");
     expect(call.text).toBeUndefined();
   });
 });
