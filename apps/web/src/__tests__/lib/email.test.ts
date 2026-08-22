@@ -174,21 +174,38 @@ describe("emailLayout", () => {
     expect(result).toContain("/icon-instagram.png");
     expect(result).toContain("/icon-youtube.png");
 
-    const footerIndex = result.indexOf("The CnC Realty Team");
+    const footerIndex = result.indexOf("CnC Realty Group");
     const iconsIndex = result.indexOf("/icon-facebook.png");
     expect(footerIndex).toBeGreaterThan(-1);
     expect(iconsIndex).toBeGreaterThan(footerIndex);
   });
 
-  it("keeps only the header/footer margins off-white, with a white content card in between", () => {
+  it("keeps only the header/footer margins off-white, with a full-width white section in between", () => {
     const result = html();
-    // The page canvas (body + outer wrapper) stays off-white -- that's what
-    // shows behind the logo header and the footer/social-icons area, since
-    // neither of those gets its own contrasting background.
+    // The page canvas (body) stays off-white -- that's what shows behind the
+    // logo header and the footer/social-icons area, since neither of those
+    // gets its own contrasting background.
     expect(result).toMatch(/<body[^>]*background-color:\s*#F2F0EF/i);
-    // But the heading + body content sits inside its own white card, not
+    // But the heading + body content sits inside its own white section, not
     // directly on the off-white page background.
     expect(result).toMatch(/background-color:\s*#ffffff/i);
+  });
+
+  it("makes the white section full width, not a narrower rounded box", () => {
+    const result = html();
+    // Whatever element carries the white background must not also carry a
+    // border-radius or its own max-width -- either would make it read as a
+    // floating card with visible off-white gutters beside it, instead of a
+    // full-width section that spans the same width as the header/footer.
+    const whiteDivMatch = result.match(/<div style="([^"]*background-color:\s*#ffffff[^"]*)"/i);
+    expect(whiteDivMatch).not.toBeNull();
+    const whiteDivStyle = whiteDivMatch![1];
+    expect(whiteDivStyle).not.toMatch(/border-radius/i);
+    expect(whiteDivStyle).not.toMatch(/max-width/i);
+  });
+
+  it("uses a plain hyphen in the footer signature, not an em dash", () => {
+    expect(html()).toContain("- CnC Realty Group");
   });
 
   it("uses the black logo, not the gold one", () => {

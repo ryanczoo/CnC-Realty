@@ -59,7 +59,7 @@ export function emailLayout(opts: {
   footer?: string;
 }): string {
   const logoUrl = `${process.env.NEXTAUTH_URL}/logo-black.png`;
-  const footer = opts.footer ?? "— The CnC Realty Team";
+  const footer = opts.footer ?? "- CnC Realty Group";
   const socialIcons: Array<{ href: string; icon: string; alt: string; size: number }> = [
     { href: "https://www.facebook.com/CnCRealtyGroup", icon: "icon-facebook.png", alt: "Facebook", size: 24 },
     { href: "https://www.instagram.com/cncrealty", icon: "icon-instagram.png", alt: "Instagram", size: 24 },
@@ -73,11 +73,11 @@ export function emailLayout(opts: {
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" />
       </head>
       <body style="margin: 0; padding: 0; background-color: #F2F0EF;">
-        <div style="font-family: ${EMAIL_FONT_STACK}; max-width: 480px; margin: 0 auto; padding: 40px 32px;">
-          <div style="text-align: center; margin-bottom: 24px;">
+        <div style="font-family: ${EMAIL_FONT_STACK}; max-width: 480px; margin: 0 auto;">
+          <div style="text-align: center; padding: 40px 32px 24px;">
             <img src="${logoUrl}" alt="CnC Realty" width="160" style="display: inline-block; border: 0;" />
           </div>
-          <div style="background-color: #ffffff; border-radius: 8px; padding: 32px;">
+          <div style="background-color: #ffffff; padding: 32px;">
             <h2 style="color: #1B1B1B; font-weight: 400; font-size: 22px; margin: 0 0 16px; text-align: center;">
               ${opts.heading}
             </h2>
@@ -92,10 +92,10 @@ export function emailLayout(opts: {
                 : ""
             }
           </div>
-          <p style="color: #8a8a8a; font-size: 13px; text-align: center; margin: 24px 0 12px;">
-            ${footer}
-          </p>
-          <div style="text-align: center;">
+          <div style="padding: 24px 32px 40px; text-align: center;">
+            <p style="color: #8a8a8a; font-size: 13px; margin: 0 0 12px;">
+              ${footer}
+            </p>
             ${socialIcons
               .map(
                 (s) =>
