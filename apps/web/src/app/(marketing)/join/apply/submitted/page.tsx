@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { RevealLine } from "@/components/ui/reveal-text";
 import { PageCTA } from "@/components/ui/PageCTA";
+import { ConfettiCannon } from "@/components/join/ConfettiCannon";
 
 export const metadata: Metadata = {
   title: "Application Submitted | CnC Realty",
@@ -9,7 +10,8 @@ export const metadata: Metadata = {
 
 export default function ApplicationSubmittedPage() {
   return (
-    <main className="min-h-screen bg-[#F2F0EF]">
+    <main className="relative min-h-screen bg-[#F2F0EF]">
+      <ConfettiCannon />
       <div className="mx-auto max-w-4xl px-4 pt-32 pb-8">
         <h1 className="-ml-40 mb-12 font-sans font-light leading-[1.05]">
           <span className="block text-[1.9rem] xl:text-[2.2rem] text-[#1B1B1B]">
@@ -56,8 +58,7 @@ export default function ApplicationSubmittedPage() {
           </ol>
 
           <p>
-            Once completed, we will certify your acceptance and send you a welcome email with your
-            account instructions along with access to all the tools CnC Realty has to offer.
+            Once completed, we will certify your request and send you a welcome email.
           </p>
         </div>
       </div>
