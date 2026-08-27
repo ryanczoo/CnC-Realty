@@ -6592,3 +6592,169 @@ is not serving traffic." Zero risk either way; nothing to fix.
 2. Ryan to direct: Vercel deploy (still the one unfinished Phase 6/7 item — no production deployment has ever run),
    or the remaining backlog (broader transaction-management click-through testing for Purchase/Listing/Lease types
    is still the oldest open item)
+
+---
+
+## Session Notes — 2026-08-25 / 2026-08-26 (confetti animation + welcome email redesign)
+
+### What Was Completed
+
+Two commits on `main`: `a562bfa` (confetti feature), `96f042e` (email redesign + shared footer).
+
+### Confetti animation on `/join/apply/submitted` — full saga, landed on live browser chroma-key
+
+Ryan wanted a celebratory confetti effect on the application-submitted page. Went through several
+real attempts before landing on one that actually works well:
+
+1. **CSS `mix-blend-mode: screen` on a black-background MP4** — black never disappeared. Root-caused
+   (via Puppeteer, real evidence not guessing) to a `z-index` on the wrapper `div` creating its own
+   stacking context with nothing behind it to blend against. Fixed by dropping the z-index — but then
+   the gold confetti washed out toward white, an inherent limitation of blend-mode against a light
+   backdrop, not fixable by tuning.
+2. **Canvas + JS luminance-to-alpha** (brightness → transparency, real per-pixel computation, no
+   blend-mode) — worked, colors stayed true, but Ryan didn't like the visual result and asked to
+   revert to a simpler GIF.
+3. **Plain animated GIF** (`<img>`, real native alpha, zero processing) — worked, was live and
+   approved for a while. Swapped between a couple of candidate GIFs before settling back on the
+   original one, sized at 900×900, centered.
+4. **Green-screen video → alpha WebM via ffmpeg `chromakey` filter** — Ryan wanted the fuller
+   twin-cannon video effect back with true color. Baking transparency into the file (rather than
+   computing it live) seemed like it would be the *simpler* code path, matching how the GIF swaps
+   felt like "just a fast file change." Hit a real, confirmed ffmpeg/libvpx bug: the VP9 alpha
+   channel desyncs from the color channel frame-to-frame in this exact pipeline — some frames render
+   fully opaque green (alpha silently failing), others render correctly transparent-but-blank. Proved
+   this was pipeline-wide, not specific to this video, by running an unrelated 2-second mid-clip
+   segment through the identical encode and getting the identical failure pattern. Abandoned this
+   path entirely — not something a different trim point or different source video would fix.
+5. **Canvas + live JS chroma-key (color-distance-based, not brightness-based)** — the version that
+   shipped. Plays the plain, ordinary green-screen MP4 (no alpha-file trickery at all); every frame,
+   canvas draws the video, computes each pixel's distance from the known green
+   (`RGB(119,253,154)`, measured exactly via direct pixel sampling), and maps that to alpha — far
+   from green stays opaque regardless of brightness, near green goes transparent, with a soft
+   transition band (30–80 units) and green-spill suppression (clamps an elevated green channel
+   toward the other channels' max) so edges don't carry a green fringe. New file:
+   `apps/web/src/lib/chroma-key-alpha.ts`, TDD'd (8 tests).
+
+**Two real bugs found and fixed while dialing in the chroma-key visual, both root-caused with
+direct pixel sampling, not guessed:**
+- **Downscaling before keying blended confetti color with the background.** Small confetti pieces
+  are only a few source pixels wide; drawing 1280×720 down to a smaller canvas *before* running the
+  key math pre-mixed each piece's true color with the surrounding green. Fixed by keying at the
+  video's native 1280×720 resolution instead of a downscaled canvas.
+- **`yuv420p` chroma subsampling was still blending small pieces' color with green independent of
+  video compression quality** — even a near-lossless CRF-0 re-encode didn't fix it, since 4:2:0
+  subsampling shares color information across 2×2 pixel blocks regardless of bitrate. Switched the
+  video encode to `yuv444p` (full-resolution chroma, no subsampling) — fixed larger pieces
+  completely. Smaller, fast-moving flecks still show some residual dulling from motion blur baked
+  into the original render (true color genuinely blended with green at the sub-pixel level during
+  the source's own rendering) — widened green-spill suppression to apply to *all* foreground pixels,
+  not just the partial-alpha transition band, which helped but can't fully undo motion-blur blending.
+  Flagged this as a known, accepted limitation rather than a bug to keep chasing.
+
+**Trim window:** initially cut to 0–5s based on a coarse 1-second-interval density sampling of the
+source; Ryan asked why the burst felt cut short, and finer-grained sampling (checked every 0.2s)
+found the real explosion happens in a ~0.2s window around t≈0.1–0.3s that the coarse sampling had
+skipped right over — the 0–5s trim wasn't wrong on duration, just missing that the exciting part is
+front-loaded. Ryan then asked for the full original video back (it's 10s, not 5s) since the 5s trim
+had been Claude's own unprompted decision, not something he'd asked for — re-encoded using the
+complete source, no trim.
+
+**Performance, confirmed with direct live measurement, not assumption:** the component is still
+`ssr:false`, deferred, route-isolated, `preload="none"` — page load is unaffected, confirmed
+unchanged throughout every iteration. At the final native-1280×720 resolution, measured actual
+per-frame cost live (in a clean, uncontended environment — confirmed via `netstat` that only one dev
+server was running): **average 26.8ms/frame against a 33.3ms budget for 30fps, with some individual
+frames up to 45.7ms** — comfortably under budget on average, but close enough to the edge that the
+confetti animation itself may show occasional minor stutter (not the page, not anything else on it).
+Ryan chose to leave it as-is rather than trade visual quality for more performance headroom.
+
+**Real files, final state:**
+- `apps/web/src/lib/chroma-key-alpha.ts` — the pure, TDD'd color-distance-to-alpha function.
+- `apps/web/src/components/join/ConfettiCannon.tsx` / `ConfettiCannonInner.tsx` — dynamic
+  (`ssr:false`) wrapper + the actual canvas/video component. No `z-index` on the wrapper (the
+  stacking-context lesson from attempt #1, still holds even though this version doesn't use
+  blend-mode).
+- `apps/web/public/videos/join-confetti-greenscreen-444.mp4` — full 10s source, `yuv444p`, no audio.
+- Dead ends cleaned up before committing: the abandoned alpha-WebM file, the fallback GIF (confirmed
+  via grep that nothing referenced it anymore), and a stray debris file that leaked into
+  `apps/web/` from an earlier path-escaping mistake in a bash redirect.
+
+### Welcome/approved email — full redesign, iterated over many rounds
+
+`sendApplicationApproved` (`apps/web/src/lib/email.ts`) went through many small, TDD'd rounds of
+copy/structure changes over the session. Final state:
+- Heading: "Hey {name}, Welcome to CnC!" under the hero photo (unchanged placement from earlier
+  sessions). Intro line: "Your application is approved."
+- Button relabeled "Create Password" (was "Set Up My Account").
+- New instructional block under the button: a DRE eLicensing update guide — "please confirm your
+  [linked] DRE eLicensing account has been updated:", two bold, quoted numbered steps ("Select
+  \"Add/Change main office address\"" / "Select \"Change Responsible Broker/Add Responsible
+  Broker\""), sub-items as bullets (`&bull;`) instead of lettered `a./b./c.`, wider paragraph spacing
+  (32px between sections, 12px between closely-related lines, up from an original 16px/0px), closing
+  with "Congrats again on joining a community built *by* agents *for* agents" (italicized, no period).
+  All body text (except the button) bumped to 1.5x size.
+- **Hero photo replaced**: the old flower/HOME photo swapped for a Santa Barbara beach/palm-tree
+  shot Ryan supplied, cropped to the exact same banner dimensions/aspect the old photo used, then
+  **re-exported at a much higher native resolution** (2400px wide vs. the original 800px) after Ryan
+  noticed real quality loss — root cause was that `emailLayout()` has no `max-width` cap (a
+  deliberate earlier design decision), so on a wide viewport the image was being upscaled well past
+  its own native pixel resolution.
+- **DRE eLicensing account** is now a live link to `https://secure.dre.ca.gov/elicensing/`.
+
+### Footer/header — now genuinely shared across every email
+
+Ryan asked to confirm the header/footer changes applied to every email using `emailLayout()`. Real
+answer at the time: the header (logo) already was universal, but the footer was not — each function
+either passed its own custom override or fell back to a stale plain-text default. Ryan's instruction:
+make the footer the same everywhere too. Implemented by moving the icon-based footer (the
+"- CnC Realty Team" sign-off + phone/email) into `emailLayout()`'s own default (new
+`defaultFooter()` helper) and removing every per-call override:
+`sendLeadNotification`, `sendApplicationNotification`, `sendAnnouncement` (all previously
+`"cncrealtygroup.com"`), `sendPasswordReset`, `sendApprovalDocuments`, `sendApplicationRejected`
+(all previously the old plain `"- CnC Realty Group"` default), and `sendDeadlineReminder` in
+`apps/web/src/lib/deadline-email.ts` (previously `"CnC Realty · Los Angeles, CA · CA DRE #02439028"`
+— **this removed the DRE license number from that one email**; Ryan asked directly whether that's
+legally fine, informal (not attorney-reviewed) answer given was: very likely fine since that email
+is an internal agent-facing operational notice, not consumer-facing advertising/solicitation, which
+is what the CA disclosure requirement is actually aimed at — but flagged clearly as reasoning from
+statute intent, not a legal opinion, same open-item class as the ICA never having had attorney
+review.
+
+**Phone and mail icons**: Ryan asked whether the site's existing mail/phone icons (used on live
+agent profile pages, `AgentAboutSection.tsx`) could replace the literal "Office:"/"Email:" labels in
+the footer. Real constraint surfaced and explained: inline `<svg>` isn't reliably rendered by many
+email clients (Outlook desktop especially), unlike the social icons already in `emailLayout()`,
+which are PNGs. Pulled the *exact* SVG source for both icons directly from the codebase — the mail
+icon's hand-authored path from `AgentAboutSection.tsx`, the phone icon's path from the installed
+`lucide-react` package itself (confirmed defaults: `viewBox 0 0 24 24`, `stroke-width 2`, round
+linecap/linejoin) — rasterized both to gray (`#8a8a8a`) PNGs via `sharp` at native 64×64 (matching
+the existing social-icon convention), and verified visually before wiring them in. New assets:
+`apps/web/public/icon-mail.png`, `apps/web/public/icon-phone.png`.
+
+### Process notes worth remembering
+
+- **Postmark's raw `Body` field from `/messages/outbound/{id}/details` is quoted-printable-encoded**
+  with soft line-wraps (`=\r\n`) — a naive substring search on it can produce false negatives if the
+  wrap happens to split the exact string being searched for (hit this twice this session, on
+  `icon-phone.png` specifically). Strip `=\r?\n` before searching raw Postmark API bodies.
+- **Puppeteer tool round-trip latency in this environment grew to 5–8+ seconds** by the end of the
+  session, exceeding the confetti video's own duration — made single navigate-then-screenshot
+  verification unreliable. Worked around by temporarily adding `loop` to the video element to
+  guarantee a catchable live state regardless of latency, then removing it once verified.
+- Cleaned up 2 extra dev-server processes mid-session (one a week-old leftover from a previous
+  session, one Claude's own failed cleanup attempt) — confirmed via `Get-CimInstance Win32_Process`
+  start times before killing anything, not guessed.
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. **Email redesign thread may still be open** — this session picked it back up mid-stream per
+   Ryan's own "then go back to the email redesign" instruction from an earlier session, and it's had
+   heavy iteration since. Worth checking with Ryan whether `sendApplicationApproved` (and now the
+   shared footer) are considered done, or whether there's more to refine.
+3. Confetti animation is live and approved as-is (native-resolution chroma-key, full 10s video,
+   minor known frame-budget tightness Ryan chose not to trade away).
+4. Older backlog, unchanged: Vercel deploy (still the one unfinished Phase 6/7 item — no production
+   deployment has ever run); broader transaction-management click-through testing (Purchase/Listing/
+   Lease types) is still the oldest open item; CnC ICA still not attorney-reviewed (same open-item
+   class as tonight's DRE-disclosure question).
