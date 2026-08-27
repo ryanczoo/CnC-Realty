@@ -51,6 +51,15 @@ export function htmlToPlainText(html: string): string {
 // content, since the brokerage is the one paying for it.
 const EMAIL_FONT_STACK = "'Inter', -apple-system, 'Segoe UI', Roboto, Arial, sans-serif";
 
+// Shared sign-off for every email that doesn't pass its own footer --
+// keeps the icon-based contact block in one place instead of duplicated
+// across each send function.
+function defaultFooter(): string {
+  const phoneIcon = `<img src="${process.env.NEXTAUTH_URL}/icon-phone.png" alt="Phone" width="14" height="14" style="display: inline-block; vertical-align: middle; margin-right: 6px; border: 0;" />`;
+  const mailIcon = `<img src="${process.env.NEXTAUTH_URL}/icon-mail.png" alt="Email" width="14" height="14" style="display: inline-block; vertical-align: middle; margin-right: 6px; border: 0;" />`;
+  return `- CnC Realty Team<br><br>${phoneIcon} (562) 335-1759<br>${mailIcon} info@cncrealtygroup.com`;
+}
+
 export function emailLayout(opts: {
   heading: string;
   bodyHtml: string;
@@ -59,7 +68,7 @@ export function emailLayout(opts: {
   footer?: string;
 }): string {
   const logoUrl = `${process.env.NEXTAUTH_URL}/logo-black.png`;
-  const footer = opts.footer ?? "- CnC Realty Group";
+  const footer = opts.footer ?? defaultFooter();
   const socialIcons: Array<{ href: string; icon: string; alt: string; size: number }> = [
     { href: "https://www.facebook.com/CnCRealtyGroup", icon: "icon-facebook.png", alt: "Facebook", size: 24 },
     { href: "https://www.instagram.com/cncrealty", icon: "icon-instagram.png", alt: "Instagram", size: 24 },
@@ -73,14 +82,18 @@ export function emailLayout(opts: {
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" />
       </head>
       <body style="margin: 0; padding: 0; background-color: #F2F0EF;">
-        <div style="font-family: ${EMAIL_FONT_STACK}; max-width: 480px; margin: 0 auto;">
+        <div style="font-family: ${EMAIL_FONT_STACK}; width: 100%;">
           <div style="text-align: center; padding: 40px 32px 24px;">
             <img src="${logoUrl}" alt="CnC Realty" width="160" style="display: inline-block; border: 0;" />
           </div>
-          <div style="background-color: #ffffff; padding: 32px;">
-            <h2 style="color: #1B1B1B; font-weight: 400; font-size: 22px; margin: 0 0 16px; text-align: center;">
-              ${opts.heading}
-            </h2>
+          <div style="padding: 32px;">
+            ${
+              opts.heading
+                ? `<h2 style="color: #1B1B1B; font-weight: 400; font-size: 22px; margin: 0 0 16px; text-align: center;">
+                     ${opts.heading}
+                   </h2>`
+                : ""
+            }
             ${opts.bodyHtml}
             ${
               opts.ctaLabel && opts.ctaHref
@@ -138,7 +151,6 @@ export async function sendLeadNotification(lead: {
   const html = emailLayout({
     heading: "New Lead Received",
     bodyHtml,
-    footer: "cncrealtygroup.com",
   });
 
   await sendEmail({
@@ -175,7 +187,6 @@ export async function sendApplicationNotification(app: {
     bodyHtml,
     ctaLabel: "Review Application",
     ctaHref: `${process.env.NEXTAUTH_URL}/admin/applications/${app.id}`,
-    footer: "cncrealtygroup.com",
   });
 
   await sendEmail({
@@ -200,17 +211,44 @@ export async function sendApplicationApproved(
   const safeName = escapeHtml(firstName);
   const safeUrl = escapeHtml(setupUrl);
 
+  // This photo is specific to the welcome email, not the shared header --
+  // it's the first thing in bodyHtml precisely so it doesn't leak into
+  // every other email that reuses emailLayout(). The heading also moved in
+  // here, after the photo, so emailLayout's own heading slot is left empty
+  // for this email specifically.
   const bodyHtml = `
-    <p style="color: #4b4b4b; font-size: 15px; line-height: 1.6; text-align: center; margin: 0 0 8px;">
-      Your application has been approved. Click the button below to set your password and access your dashboard.
+    <div style="margin: 0 0 24px;">
+      <img src="${process.env.NEXTAUTH_URL}/agent-welcome-photo.jpg" alt="" width="100%" style="display: block; width: 100%; border-radius: 8px; border: 0;" />
+    </div>
+    <h2 style="color: #1B1B1B; font-weight: 400; font-size: 33px; margin: 0 0 16px; text-align: center;">
+      Hey ${safeName}, Welcome to CnC!
+    </h2>
+    <p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.6; text-align: center; margin: 0 0 8px;">
+      Your application is approved.
     </p>
+    <div style="text-align: center; margin: 32px 0 0;">
+      <a href="${safeUrl}" style="display: inline-block; background-color: #9E8C61; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; padding: 14px 36px; border-radius: 9999px;">
+        Create Password
+      </a>
+    </div>
+    <div style="margin: 32px 0 0; color: #4b4b4b; font-size: 22.5px; line-height: 1.8; text-align: center;">
+      <p style="margin: 0 0 32px;">
+        Once you finish setting up your account, please confirm your <a href="https://secure.dre.ca.gov/elicensing/" style="color: #9E8C61;">DRE eLicensing account</a> has been updated:
+      </p>
+      <p style="margin: 0 0 12px; font-weight: 700;">1. Select "Add/Change main office address"</p>
+      <p style="margin: 0 0 32px; padding-left: 20px;">&bull; Enter&nbsp;</p>
+      <p style="margin: 0 0 12px; font-weight: 700;">2. Select "Change Responsible Broker/Add Responsible Broker"</p>
+      <p style="margin: 0 0 12px; padding-left: 20px;">&bull; Select No for "Is the broker available to certify your acceptance now?"</p>
+      <p style="margin: 0 0 12px; padding-left: 20px;">&bull; Enter info@cncrealtygroup.com for Broker's email address</p>
+      <p style="margin: 0 0 32px; padding-left: 20px;">&bull; Enter 02439028 for Broker's license #</p>
+      <p style="margin: 0 0 32px;">Now you're ready to take advantage of all the tools and resources CnC has to offer!</p>
+      <p style="margin: 0;">Congrats again on joining a community built <em>by</em> agents <em>for</em> agents</p>
+    </div>
   `;
 
   const html = emailLayout({
-    heading: `Welcome to CnC Realty, ${safeName}!`,
+    heading: "",
     bodyHtml,
-    ctaLabel: "Set Up My Account",
-    ctaHref: safeUrl,
   });
 
   await sendEmail({
@@ -242,7 +280,6 @@ export async function sendAnnouncement(recipients: string[], title: string, body
   const html = emailLayout({
     heading: safeTitle,
     bodyHtml,
-    footer: "cncrealtygroup.com",
   });
 
   await Promise.all(

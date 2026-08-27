@@ -33,7 +33,6 @@ export async function sendDeadlineReminder(reminder: DeadlineReminder): Promise<
     bodyHtml,
     ctaLabel: "View Transaction",
     ctaHref: `${process.env.NEXTAUTH_URL}/dashboard/transactions`,
-    footer: "CnC Realty · Los Angeles, CA · CA DRE #02439028",
   });
 
   await sendEmail({
