@@ -9,7 +9,7 @@ import { ContactForm } from "./ContactForm";
 import { MortgageCalculator } from "./MortgageCalculator";
 import { AgentAttribution } from "./AgentAttribution";
 import { CrmlsDisclaimer } from "./CrmlsDisclaimer";
-import { buildStatsFields, buildDetailSections } from "@/lib/property-ui-helpers";
+import { buildStatsFields, buildDetailSections, formatFeatureValue } from "@/lib/property-ui-helpers";
 import { formatPropertyStatus } from "@/types/property";
 import { useSavedProperties } from "@/hooks/useSavedProperties";
 
@@ -277,10 +277,10 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
                         </h3>
                         <div className="grid grid-cols-2 gap-x-6 gap-y-2.5">
                           {section.fields.map(([label, value]) => (
-                            <div key={label} className="flex justify-between gap-2">
-                              <span className="text-sm text-[#1B1B1B]/70">{label}</span>
-                              <span className="text-right text-sm text-[#1B1B1B]">
-                                {value != null && value !== "" && value !== false ? String(value) : "N/A"}
+                            <div key={label} className="min-w-0">
+                              <span className="block text-sm text-[#1B1B1B]/70">{label}</span>
+                              <span className="block break-words text-sm text-[#1B1B1B]">
+                                {formatFeatureValue(value)}
                               </span>
                             </div>
                           ))}

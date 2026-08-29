@@ -7,7 +7,7 @@ import { propertyJsonLd } from "@/lib/json-ld";
 
 export const revalidate = 300;
 import { prisma } from "@/lib/prisma";
-import { buildStatsFields, buildDetailSections } from "@/lib/property-ui-helpers";
+import { buildStatsFields, buildDetailSections, formatFeatureValue } from "@/lib/property-ui-helpers";
 import { formatPropertyStatus } from "@/types/property";
 import { PhotoGallery } from "@/components/properties/PhotoGallery";
 import { MortgageCalculator } from "@/components/properties/MortgageCalculator";
@@ -191,10 +191,10 @@ export default async function PropertyDetailPage({ params }: PageProps) {
                   </h3>
                   <div className="grid grid-cols-2 gap-x-8 gap-y-2.5 text-sm">
                     {section.fields.map(([label, value]) => (
-                      <div key={label} className="flex justify-between gap-2">
-                        <span className="text-[#1B1B1B]/70">{label}</span>
-                        <span className="text-right text-[#1B1B1B]">
-                          {value != null && value !== "" && value !== false ? String(value) : "N/A"}
+                      <div key={label} className="min-w-0">
+                        <span className="block text-[#1B1B1B]/70">{label}</span>
+                        <span className="block break-words text-[#1B1B1B]">
+                          {formatFeatureValue(value)}
                         </span>
                       </div>
                     ))}

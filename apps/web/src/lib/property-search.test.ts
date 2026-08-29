@@ -27,4 +27,10 @@ describe("buildPropertySearchParams", () => {
     const params = buildPropertySearchParams("Los Angeles, CA");
     expect(params.get("query")).toBe("Los Angeles, CA");
   });
+
+  it("strips the bed-count fragment from the query when there's no 'in {city}' clause", () => {
+    const params = buildPropertySearchParams("3 bed whittier");
+    expect(params.get("minBeds")).toBe("3");
+    expect(params.get("query")).toBe("whittier");
+  });
 });

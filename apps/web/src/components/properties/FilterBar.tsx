@@ -3,11 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { SearchFilters } from "@/types/property";
+import { buildPropertySearchParams } from "@/lib/property-search";
 
 interface Props {
   filters: SearchFilters;
   setFilter: (key: keyof SearchFilters, value: string) => void;
-  applyFilter: (key: keyof SearchFilters, value: string) => void;
+  applyFilters: (patch: Partial<SearchFilters>) => void;
   clearFilters: () => void;
   hasActiveFilters: boolean;
   total: number;
@@ -51,7 +52,7 @@ type DropdownKey = "listingType" | "price" | "beds" | "baths" | "type" | null;
 export function FilterBar({
   filters,
   setFilter,
-  applyFilter,
+  applyFilters,
   clearFilters,
   hasActiveFilters,
   total,
@@ -68,7 +69,15 @@ export function FilterBar({
   }, [filters.query]);
 
   function submitQuery() {
-    applyFilter("query", queryDraft);
+    // Parse natural-language phrasing ("3 beds in whittier") the same way
+    // the homepage hero and Buy page search do, so this box isn't a plain
+    // literal city/zip field the moment someone types more than a place name.
+    const parsed = buildPropertySearchParams(queryDraft);
+    const minBeds = parsed.get("minBeds");
+    applyFilters({
+      query: parsed.get("query") ?? "",
+      ...(minBeds ? { minBeds } : {}),
+    });
   }
 
   function toggle(key: DropdownKey) {

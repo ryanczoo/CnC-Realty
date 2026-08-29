@@ -38,19 +38,25 @@ export function useSearchFilters() {
     [router]
   );
 
-  // Applies a filter immediately, bypassing the debounce — used for
-  // explicit-submit interactions (Enter key, search button click) where the
-  // 400ms delay of setFilter would feel unresponsive, and where we don't
+  // Applies one or more filters immediately, bypassing the debounce — used
+  // for explicit-submit interactions (Enter key, search button click) where
+  // the 400ms delay of setFilter would feel unresponsive, and where we don't
   // want every keystroke to trigger a search (see setFilter for that).
-  const applyFilter = useCallback(
-    (key: keyof SearchFilters, value: string) => {
+  // Takes a patch object (not a single key/value) so multiple fields — e.g.
+  // a parsed "3 beds in whittier" search setting both query and minBeds —
+  // land in one state update instead of two calls racing each other off the
+  // same stale `filters` closure.
+  const applyFilters = useCallback(
+    (patch: Partial<SearchFilters>) => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
-      const next = { ...filters, [key]: value };
-      setFiltersState(next);
-      const qs = buildFilterQueryString(next);
-      router.replace(`/properties${qs ? `?${qs}` : ""}`, { scroll: false });
+      setFiltersState((prev) => {
+        const next = { ...prev, ...patch };
+        const qs = buildFilterQueryString(next);
+        router.replace(`/properties${qs ? `?${qs}` : ""}`, { scroll: false });
+        return next;
+      });
     },
-    [router, filters]
+    [router]
   );
 
   const clearFilters = useCallback(() => {
@@ -63,5 +69,5 @@ export function useSearchFilters() {
     .filter(([k]) => k !== "listingType")
     .some(([, v]) => Boolean(v));
 
-  return { filters, setFilter, applyFilter, clearFilters, hasActiveFilters };
+  return { filters, setFilter, applyFilters, clearFilters, hasActiveFilters };
 }

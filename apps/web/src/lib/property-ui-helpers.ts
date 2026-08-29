@@ -25,6 +25,21 @@ export function buildStatsFields(
   );
 }
 
+// RESO enum fields (InteriorFeatures, LaundryFeatures, LotFeatures, etc.)
+// arrive from CRMLS as PascalCase tokens joined by bare commas, e.g.
+// "BreakfastBar,CeilingFans,EatInKitchen" — no spaces anywhere. Split each
+// token's word boundaries and re-join with ", " so it reads as prose.
+// Acronym runs (FHA, VA) have no lowercase-before-uppercase transition, so
+// they pass through unsplit. Values that are already spaced prose (e.g. a
+// Directions field) have no such transitions either and pass through as-is.
+export function formatFeatureValue(value: unknown): string {
+  if (value == null || value === "" || value === false) return "N/A";
+  return String(value)
+    .split(",")
+    .map((part) => part.trim().replace(/([a-z0-9])([A-Z])/g, "$1 $2"))
+    .join(", ");
+}
+
 export function buildDetailSections(
   r: Record<string, unknown>,
   lotSize: number | null,

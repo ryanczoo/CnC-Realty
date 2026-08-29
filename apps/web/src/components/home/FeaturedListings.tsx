@@ -52,7 +52,7 @@ export function FeaturedListings({ listings: propListings, city, count }: Props)
           transition={PULSE_TRANSITION}
           className="inline-flex items-center rounded-full bg-[#1B1B1B] px-7 py-3.5 text-sm font-medium text-white"
         >
-          View All
+          Search All
         </MotionLink>
       </div>
     </section>
