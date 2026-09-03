@@ -41,6 +41,97 @@ describe("sendApprovalDocuments", () => {
     expect(filenames.some((f) => /w-?9/i.test(f))).toBe(true);
     expect(filenames.some((f) => /office policy manual/i.test(f))).toBe(true);
   });
+
+  it("subject is just 'Onboarding Documents'", async () => {
+    await sendApprovalDocuments("jane@example.com", "Jane");
+
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    expect(call.subject).toBe("Onboarding Documents");
+  });
+
+  it("puts the header photo right below the shared logo header, above the heading text", async () => {
+    await sendApprovalDocuments("jane@example.com", "Jane");
+
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    const html = call.html!;
+    const logoIndex = html.indexOf("logo-black.png");
+    const photoIndex = html.indexOf("onboarding-photo.jpg");
+    const headingIndex = html.indexOf("Let's get started, Jane!");
+
+    expect(logoIndex).toBeGreaterThan(-1);
+    expect(photoIndex).toBeGreaterThan(logoIndex);
+    expect(headingIndex).toBeGreaterThan(photoIndex);
+  });
+
+  it("uses the reworded copy and trimmed bullet lists", async () => {
+    await sendApprovalDocuments("jane@example.com", "Jane");
+
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    const html = call.html!;
+
+    expect(html).toContain('Here is some "boring" stuff we have to get out of the way...');
+    expect(html).toContain("Attached you will find the following:");
+    expect(html).toContain("<li>Blank IRS W-9 Form</li>");
+    expect(html).toContain("<li>Office Policy</li>");
+    expect(html).not.toContain("Welcome to CnC Realty! Attached you'll find:");
+    expect(html).not.toContain("A blank IRS Form W-9");
+    expect(html).not.toContain("CnC Realty's Office Policy Manual");
+
+    expect(html).toContain("Please complete and provide the following for our records:");
+    expect(html).toContain("&#10003; IRS W-9 Form");
+    expect(html).toContain("&#10003; Copy of California DRE license");
+    expect(html).not.toContain("<li>IRS W-9 Form</li>");
+    expect(html).not.toContain("<li>Copy of California DRE license</li>");
+    expect(html).not.toContain("Please reply to this email with:");
+    expect(html).not.toContain("Your completed W-9");
+    expect(html).not.toContain("A copy of your active California DRE license");
+    expect(html).not.toContain("A headshot for your agent profile page");
+  });
+
+  it("links 'Board of REALTORS®' to car.org in the closing MLS-membership line", async () => {
+    await sendApprovalDocuments("jane@example.com", "Jane");
+
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    const html = call.html!;
+
+    expect(html).toContain('<a href="https://www.car.org" style="color: #9E8C61;">Board of REALTORS&reg;</a>');
+    expect(html).toContain("and a local MLS Association! This is required for access to the MLS, ZipForms, legal guidance, and more.");
+    expect(html).not.toContain("MLS association that covers the area(s) you work in");
+    expect(html).not.toContain("to gain access to the MLS, ZipForms, legal guidance, and more!");
+  });
+
+  it("matches the welcome email's body text size, and bolds the two 'attached/please provide' headers", async () => {
+    await sendApprovalDocuments("jane@example.com", "Jane");
+
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    const html = call.html!;
+
+    expect(html).not.toContain("font-size: 15px");
+    expect(html).toContain(
+      'style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; text-align: left; font-weight: 700; margin: 0 0 16px;">\n      Attached you will find the following:'
+    );
+    expect(html).toContain(
+      'style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; text-align: left; font-weight: 700; margin: 0 0 16px;">\n      Please complete and provide the following for our records:'
+    );
+  });
+
+  it("matches the welcome email's heading size, and indents both the bullet list and the checkmarks", async () => {
+    await sendApprovalDocuments("jane@example.com", "Jane");
+
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    const html = call.html!;
+
+    expect(html).toContain(
+      '<h2 style="color: #1B1B1B; font-weight: 400; font-size: 33px; margin: 0 0 16px; text-align: center;">'
+    );
+    expect(html).toContain('<ul style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; margin: 0 0 16px; padding-left: 40px;">');
+    expect(html).toContain(
+      '<p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; text-align: left; margin: 0 0 8px; padding-left: 20px;">&#10003; IRS W-9 Form</p>'
+    );
+    expect(html).toContain(
+      '<p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; text-align: left; margin: 0 0 16px; padding-left: 20px;">&#10003; Copy of California DRE license</p>'
+    );
+  });
 });
 
 describe("sendAnnouncement", () => {
@@ -128,7 +219,7 @@ describe("sendApplicationApproved", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("emails the applicant their account setup link", async () => {
-    await sendApplicationApproved("jane@example.com", "Jane", "http://localhost:3000/setup-account?token=abc");
+    await sendApplicationApproved("jane@example.com", "Jane", "http://localhost:3000/setup-account?token=abc", "jane-doe-a1b2c3");
 
     const call = vi.mocked(sendEmail).mock.calls[0][0];
     expect(call.to).toBe("jane@example.com");
@@ -138,24 +229,42 @@ describe("sendApplicationApproved", () => {
   });
 
   it("includes the welcome photo, in the body content (not the shared header)", async () => {
-    await sendApplicationApproved("jane@example.com", "Jane", "http://localhost:3000/setup-account?token=abc");
+    await sendApplicationApproved("jane@example.com", "Jane", "http://localhost:3000/setup-account?token=abc", "jane-doe-a1b2c3");
 
     const call = vi.mocked(sendEmail).mock.calls[0][0];
     expect(call.html).toContain("agent-welcome-photo.jpg");
   });
 
+  it("attaches the black, gold, and white logo PNGs", async () => {
+    await sendApplicationApproved("jane@example.com", "Jane", "http://localhost:3000/setup-account?token=abc", "jane-doe-a1b2c3");
+
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    expect(call.attachments).toHaveLength(3);
+    for (const attachment of call.attachments!) {
+      expect(attachment.contentType).toBe("image/png");
+      expect(typeof attachment.content).toBe("string");
+      expect(attachment.content.length).toBeGreaterThan(100);
+    }
+    const filenames = call.attachments!.map((a) => a.filename);
+    expect(filenames).toEqual([
+      "CnC Realty Logo - Black.png",
+      "CnC Realty Logo - Gold.png",
+      "CnC Realty Logo - White.png",
+    ]);
+  });
+
   it("puts the welcome heading under the photo, not above it", async () => {
-    await sendApplicationApproved("jane@example.com", "Jane", "http://localhost:3000/setup-account?token=abc");
+    await sendApplicationApproved("jane@example.com", "Jane", "http://localhost:3000/setup-account?token=abc", "jane-doe-a1b2c3");
 
     const call = vi.mocked(sendEmail).mock.calls[0][0];
     const photoIndex = call.html!.indexOf("agent-welcome-photo.jpg");
-    const headingIndex = call.html!.indexOf("Hey Jane, Welcome to CnC!");
+    const headingIndex = call.html!.indexOf("Hey Jane, We've Been Expecting You!");
     expect(photoIndex).toBeGreaterThan(-1);
     expect(headingIndex).toBeGreaterThan(photoIndex);
   });
 
   it("uses the new welcome copy instead of the old approval message", async () => {
-    await sendApplicationApproved("jane@example.com", "Jane", "http://localhost:3000/setup-account?token=abc");
+    await sendApplicationApproved("jane@example.com", "Jane", "http://localhost:3000/setup-account?token=abc", "jane-doe-a1b2c3");
 
     const call = vi.mocked(sendEmail).mock.calls[0][0];
     expect(call.html).toContain("Your application is approved.");
@@ -163,7 +272,7 @@ describe("sendApplicationApproved", () => {
   });
 
   it("labels the CTA button 'Create Password', not 'Set Up My Account'", async () => {
-    await sendApplicationApproved("jane@example.com", "Jane", "http://localhost:3000/setup-account?token=abc");
+    await sendApplicationApproved("jane@example.com", "Jane", "http://localhost:3000/setup-account?token=abc", "jane-doe-a1b2c3");
 
     const call = vi.mocked(sendEmail).mock.calls[0][0];
     expect(call.html).toContain("Create Password");
@@ -171,7 +280,7 @@ describe("sendApplicationApproved", () => {
   });
 
   it("includes DRE eLicensing update instructions after the button", async () => {
-    await sendApplicationApproved("jane@example.com", "Jane", "http://localhost:3000/setup-account?token=abc");
+    await sendApplicationApproved("jane@example.com", "Jane", "http://localhost:3000/setup-account?token=abc", "jane-doe-a1b2c3");
 
     const call = vi.mocked(sendEmail).mock.calls[0][0];
     const html = call.html!;
@@ -189,7 +298,7 @@ describe("sendApplicationApproved", () => {
   });
 
   it("center-aligns the DRE instructions block underneath the button", async () => {
-    await sendApplicationApproved("jane@example.com", "Jane", "http://localhost:3000/setup-account?token=abc");
+    await sendApplicationApproved("jane@example.com", "Jane", "http://localhost:3000/setup-account?token=abc", "jane-doe-a1b2c3");
 
     const call = vi.mocked(sendEmail).mock.calls[0][0];
     expect(call.html).toContain(
@@ -198,15 +307,39 @@ describe("sendApplicationApproved", () => {
   });
 
   it("links 'DRE eLicensing account' to the real DRE eLicensing site", async () => {
-    await sendApplicationApproved("jane@example.com", "Jane", "http://localhost:3000/setup-account?token=abc");
+    await sendApplicationApproved("jane@example.com", "Jane", "http://localhost:3000/setup-account?token=abc", "jane-doe-a1b2c3");
 
     const call = vi.mocked(sendEmail).mock.calls[0][0];
     expect(call.html).toContain('<a href="https://secure.dre.ca.gov/elicensing/"');
     expect(call.html).toContain(">DRE eLicensing account</a>");
   });
 
+  it("links the agent's personal webpage using their slug, after the 'ready to take advantage' line", async () => {
+    await sendApplicationApproved("jane@example.com", "Jane", "http://localhost:3000/setup-account?token=abc", "jane-doe-a1b2c3");
+
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    const html = call.html!;
+    const profileUrl = "http://localhost:3000/agents/jane-doe-a1b2c3";
+    const readyIndex = html.indexOf("ready to take advantage");
+    const linkIndex = html.indexOf(`href="${profileUrl}"`);
+
+    expect(readyIndex).toBeGreaterThan(-1);
+    expect(linkIndex).toBeGreaterThan(readyIndex);
+    expect(html).toContain("Customize your personal webpage</p>");
+    expect(html).toContain(`<a href="${profileUrl}" style="color: #9E8C61;">${profileUrl}</a>`);
+  });
+
+  it("lists the dashboard, CnC Academy, and connecting with other agents as next steps", async () => {
+    await sendApplicationApproved("jane@example.com", "Jane", "http://localhost:3000/setup-account?token=abc", "jane-doe-a1b2c3");
+
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    expect(call.html).toContain("Explore the CnC dashboard");
+    expect(call.html).toContain("Learn tips &amp; tricks from CnC Academy");
+    expect(call.html).toContain("Connect with your fellow CnC agents");
+  });
+
   it("rewords the DRE update intro and the office-address step, bolding the two step headers", async () => {
-    await sendApplicationApproved("jane@example.com", "Jane", "http://localhost:3000/setup-account?token=abc");
+    await sendApplicationApproved("jane@example.com", "Jane", "http://localhost:3000/setup-account?token=abc", "jane-doe-a1b2c3");
 
     const call = vi.mocked(sendEmail).mock.calls[0][0];
     const html = call.html!;
@@ -215,18 +348,18 @@ describe("sendApplicationApproved", () => {
     expect(html).not.toContain("with CnC Realty's info:");
     expect(html).not.toContain("you have updated your DRE eLicensing account");
     expect(html).toContain(
-      '<p style="margin: 0 0 12px; font-weight: 700;">1. Select "Add/Change main office address"</p>'
+      '<p style="margin: 0 0 20px; font-weight: 700;">1. Select "Add/Change main office address"</p>'
     );
     expect(html).not.toContain("and update to:");
     expect(html).not.toContain("and change it to reflect:");
     expect(html).toContain(
-      '<p style="margin: 0 0 12px; font-weight: 700;">2. Select "Change Responsible Broker/Add Responsible Broker"</p>'
+      '<p style="margin: 0 0 20px; font-weight: 700;">2. Select "Change Responsible Broker/Add Responsible Broker"</p>'
     );
     expect(html).not.toContain('Responsible Broker."');
   });
 
   it("uses bullets instead of lettered sub-items under both numbered steps", async () => {
-    await sendApplicationApproved("jane@example.com", "Jane", "http://localhost:3000/setup-account?token=abc");
+    await sendApplicationApproved("jane@example.com", "Jane", "http://localhost:3000/setup-account?token=abc", "jane-doe-a1b2c3");
 
     const call = vi.mocked(sendEmail).mock.calls[0][0];
     const html = call.html!;
@@ -235,14 +368,14 @@ describe("sendApplicationApproved", () => {
     expect(html).not.toMatch(/>a\.\s/);
     expect(html).not.toMatch(/>b\.\s/);
     expect(html).not.toMatch(/>c\.\s/);
-    expect(html).toContain('<p style="margin: 0 0 32px; padding-left: 20px;">&bull; Enter&nbsp;</p>');
+    expect(html).toContain('<p style="margin: 0 0 44px; padding-left: 20px; font-size: 18px;">&bull; Enter&nbsp;</p>');
     expect(html).toContain('&bull; Select No for "Is the broker available to certify your acceptance now?"');
     expect(html).toContain("&bull; Enter info@cncrealtygroup.com for Broker's email address");
     expect(html).toContain("&bull; Enter 02439028 for Broker's license #");
   });
 
   it("gives paragraphs more breathing room than the original tight 16px/0 spacing", async () => {
-    await sendApplicationApproved("jane@example.com", "Jane", "http://localhost:3000/setup-account?token=abc");
+    await sendApplicationApproved("jane@example.com", "Jane", "http://localhost:3000/setup-account?token=abc", "jane-doe-a1b2c3");
 
     const call = vi.mocked(sendEmail).mock.calls[0][0];
     const html = call.html!;
@@ -253,11 +386,15 @@ describe("sendApplicationApproved", () => {
     expect(instructionsBlock).not.toContain("margin: 0 0 16px");
     expect(instructionsBlock).not.toContain('margin: 0; padding-left: 20px;');
     expect(instructionsBlock).not.toContain("margin: 0 0 24px");
-    expect(instructionsBlock).toContain("margin: 0 0 32px");
+    expect(instructionsBlock).not.toContain("margin: 0 0 12px;");
+    expect(instructionsBlock).not.toContain("margin: 0 0 8px;");
+    expect(instructionsBlock).not.toContain("margin: 0 0 32px");
+    expect(instructionsBlock).toContain("margin: 0 0 44px");
+    expect(instructionsBlock).toContain("margin: 0 0 20px");
   });
 
   it("moves the sign-off and contact info into the shared footer, replacing the default", async () => {
-    await sendApplicationApproved("jane@example.com", "Jane", "http://localhost:3000/setup-account?token=abc");
+    await sendApplicationApproved("jane@example.com", "Jane", "http://localhost:3000/setup-account?token=abc", "jane-doe-a1b2c3");
 
     const call = vi.mocked(sendEmail).mock.calls[0][0];
     const html = call.html!;
@@ -281,7 +418,7 @@ describe("sendApplicationApproved", () => {
   });
 
   it("uses gray icon images instead of 'Office:'/'Email:' text labels in the footer", async () => {
-    await sendApplicationApproved("jane@example.com", "Jane", "http://localhost:3000/setup-account?token=abc");
+    await sendApplicationApproved("jane@example.com", "Jane", "http://localhost:3000/setup-account?token=abc", "jane-doe-a1b2c3");
 
     const call = vi.mocked(sendEmail).mock.calls[0][0];
     const html = call.html!;
@@ -302,7 +439,7 @@ describe("sendApplicationApproved", () => {
   });
 
   it("bumps body text to 1.5x size but leaves the CTA button untouched", async () => {
-    await sendApplicationApproved("jane@example.com", "Jane", "http://localhost:3000/setup-account?token=abc");
+    await sendApplicationApproved("jane@example.com", "Jane", "http://localhost:3000/setup-account?token=abc", "jane-doe-a1b2c3");
 
     const call = vi.mocked(sendEmail).mock.calls[0][0];
     const html = call.html!;
@@ -403,6 +540,19 @@ describe("emailLayout", () => {
   it("uses the black logo, not the gold one", () => {
     expect(html()).toContain("logo-black.png");
     expect(html()).not.toContain("logo-gold.png");
+  });
+
+  it("wraps the header logo in a link back to the homepage, without changing the image itself", () => {
+    const result = html();
+    expect(result).toContain(
+      '<a href="http://localhost:3000" style="display: inline-block; border: 0; text-decoration: none;">'
+    );
+    expect(result).toContain(
+      '<img src="http://localhost:3000/logo-black.png" alt="CnC Realty" width="160" style="display: inline-block; border: 0;" />'
+    );
+    const linkIndex = result.indexOf('<a href="http://localhost:3000"');
+    const imgIndex = result.indexOf("logo-black.png");
+    expect(imgIndex).toBeGreaterThan(linkIndex);
   });
 
   it("renders the YouTube icon larger than Facebook and Instagram so they read as the same visual size", () => {

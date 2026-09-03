@@ -1,5 +1,11 @@
 # CnC Realty — Full Website & CRM Implementation Plan
 
+## ⚠️ Pending — office address (blocked on Ryan securing office space)
+
+Once Ryan secures an office space, add the address to:
+1. **Agent welcome email** (`sendApplicationApproved` in `apps/web/src/lib/email.ts`)
+2. **Application-submitted page** (`/join/apply/submitted`)
+
 ## ✅ IDX full resync — COMPLETE (2026-08-09)
 
 The unbounded resync finished on Ryan's parent's desktop. Window 1 logged:

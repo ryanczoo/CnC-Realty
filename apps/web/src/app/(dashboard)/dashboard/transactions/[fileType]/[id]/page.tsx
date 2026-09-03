@@ -36,7 +36,11 @@ export default function FileDetailPage() {
   const { data: session } = useSession();
   const { fileType, id } = params;
 
-  const [tab, setTab] = useState<Tab>("overview");
+  const [tab, setTab] = useState<Tab>(() => {
+    if (typeof window === "undefined") return "overview";
+    const requested = new URLSearchParams(window.location.search).get("tab");
+    return (BASE_TABS.some((t) => t.key === requested) ? requested : "overview") as Tab;
+  });
   const [file, setFile] = useState<ListingFileDetail | TransactionFileDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState<FileTaskRecord[]>([]);

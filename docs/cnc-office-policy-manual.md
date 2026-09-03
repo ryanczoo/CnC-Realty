@@ -37,7 +37,7 @@ This supervision is limited to licensed-activity compliance. It does not extend 
 1. The transaction file is complete in the platform, and
 2. Broker (or your assigned TC) has certified the file.
 
-Closing a transaction without an open, certified file is grounds for withholding commission until the deficiency is corrected (ICA Section 10.3). If you want to receive commission directly from escrow, your file must be submitted for review at least two business days before close of escrow (ICA Section 7.3).
+Closing a transaction without an open, certified file is grounds for withholding commission until the deficiency is corrected (ICA Section 10.3). If you want to receive commission directly from escrow, your file must be submitted for review at least two business days before close of escrow (ICA Section 7.3). Otherwise, once Broker receives the commission funds from escrow, your share is paid out within five (5) business days (ICA Section 7.1).
 
 ---
 

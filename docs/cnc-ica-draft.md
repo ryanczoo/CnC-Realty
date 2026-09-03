@@ -80,7 +80,7 @@ Associate-Licensee shall be familiar with and comply with all applicable laws, p
 
 ## 7. COMPENSATION / BROKER FEES
 
-**7.1. Compensation Structure.** Compensation shall be charged to the parties who enter into listing or buyer agreements for services requiring a real estate license. Associate-Licensee may use its own discretion regarding the commission fee to charge its clients, subject to the minimum fee described below. Broker's fee shall be deducted at closing before disbursement to Associate-Licensee.
+**7.1. Compensation Structure.** Compensation shall be charged to the parties who enter into listing or buyer agreements for services requiring a real estate license. Associate-Licensee may use its own discretion regarding the commission fee to charge its clients, subject to the minimum fee described below. Broker's fee shall be deducted at closing before disbursement to Associate-Licensee, which Broker shall complete within five (5) business days of Broker's receipt of the commission funds from escrow.
 
 **7.2. Flat Transaction Fee.** Broker's flat fee per closed transaction is **$990**, inclusive of Errors & Omissions (E&O) insurance coverage as described in Section 9 for sale values up to and including $1,000,000. For transactions exceeding $1,000,000, an E&O Supplement is added to the base fee.
 

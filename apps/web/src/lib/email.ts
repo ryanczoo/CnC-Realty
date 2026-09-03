@@ -84,7 +84,9 @@ export function emailLayout(opts: {
       <body style="margin: 0; padding: 0; background-color: #F2F0EF;">
         <div style="font-family: ${EMAIL_FONT_STACK}; width: 100%;">
           <div style="text-align: center; padding: 40px 32px 24px;">
-            <img src="${logoUrl}" alt="CnC Realty" width="160" style="display: inline-block; border: 0;" />
+            <a href="${process.env.NEXTAUTH_URL}" style="display: inline-block; border: 0; text-decoration: none;">
+              <img src="${logoUrl}" alt="CnC Realty" width="160" style="display: inline-block; border: 0;" />
+            </a>
           </div>
           <div style="padding: 32px;">
             ${
@@ -200,7 +202,8 @@ export async function sendApplicationNotification(app: {
 export async function sendApplicationApproved(
   to: string,
   firstName: string,
-  setupUrl: string
+  setupUrl: string,
+  slug: string
 ) {
   if (!process.env.POSTMARK_SERVER_TOKEN) {
     console.warn(
@@ -210,6 +213,11 @@ export async function sendApplicationApproved(
   }
   const safeName = escapeHtml(firstName);
   const safeUrl = escapeHtml(setupUrl);
+  const safeProfileUrl = escapeHtml(`${process.env.NEXTAUTH_URL}/agents/${slug}`);
+
+  const logoBlack = readFileSync(join(ATTACHMENTS_DIR, "cnc-logo-black.png"));
+  const logoGold = readFileSync(join(ATTACHMENTS_DIR, "cnc-logo-gold.png"));
+  const logoWhite = readFileSync(join(ATTACHMENTS_DIR, "cnc-logo-white.png"));
 
   // This photo is specific to the welcome email, not the shared header --
   // it's the first thing in bodyHtml precisely so it doesn't leak into
@@ -217,13 +225,13 @@ export async function sendApplicationApproved(
   // here, after the photo, so emailLayout's own heading slot is left empty
   // for this email specifically.
   const bodyHtml = `
-    <div style="margin: 0 0 24px;">
+    <div style="margin: 0 0 32px;">
       <img src="${process.env.NEXTAUTH_URL}/agent-welcome-photo.jpg" alt="" width="100%" style="display: block; width: 100%; border-radius: 8px; border: 0;" />
     </div>
-    <h2 style="color: #1B1B1B; font-weight: 400; font-size: 33px; margin: 0 0 16px; text-align: center;">
-      Hey ${safeName}, Welcome to CnC!
+    <h2 style="color: #1B1B1B; font-weight: 400; font-size: 33px; margin: 0 0 24px; text-align: center;">
+      Hey ${safeName}, We've Been Expecting You!
     </h2>
-    <p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.6; text-align: center; margin: 0 0 8px;">
+    <p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.6; text-align: center; margin: 0 0 20px;">
       Your application is approved.
     </p>
     <div style="text-align: center; margin: 32px 0 0;">
@@ -232,16 +240,21 @@ export async function sendApplicationApproved(
       </a>
     </div>
     <div style="margin: 32px 0 0; color: #4b4b4b; font-size: 22.5px; line-height: 1.8; text-align: center;">
-      <p style="margin: 0 0 32px;">
+      <p style="margin: 0 0 44px;">
         Once you finish setting up your account, please confirm your <a href="https://secure.dre.ca.gov/elicensing/" style="color: #9E8C61;">DRE eLicensing account</a> has been updated:
       </p>
-      <p style="margin: 0 0 12px; font-weight: 700;">1. Select "Add/Change main office address"</p>
-      <p style="margin: 0 0 32px; padding-left: 20px;">&bull; Enter&nbsp;</p>
-      <p style="margin: 0 0 12px; font-weight: 700;">2. Select "Change Responsible Broker/Add Responsible Broker"</p>
-      <p style="margin: 0 0 12px; padding-left: 20px;">&bull; Select No for "Is the broker available to certify your acceptance now?"</p>
-      <p style="margin: 0 0 12px; padding-left: 20px;">&bull; Enter info@cncrealtygroup.com for Broker's email address</p>
-      <p style="margin: 0 0 32px; padding-left: 20px;">&bull; Enter 02439028 for Broker's license #</p>
-      <p style="margin: 0 0 32px;">Now you're ready to take advantage of all the tools and resources CnC has to offer!</p>
+      <p style="margin: 0 0 20px; font-weight: 700;">1. Select "Add/Change main office address"</p>
+      <p style="margin: 0 0 44px; padding-left: 20px; font-size: 18px;">&bull; Enter&nbsp;</p>
+      <p style="margin: 0 0 20px; font-weight: 700;">2. Select "Change Responsible Broker/Add Responsible Broker"</p>
+      <p style="margin: 0 0 20px; padding-left: 20px; font-size: 18px;">&bull; Select No for "Is the broker available to certify your acceptance now?"</p>
+      <p style="margin: 0 0 20px; padding-left: 20px; font-size: 18px;">&bull; Enter info@cncrealtygroup.com for Broker's email address</p>
+      <p style="margin: 0 0 44px; padding-left: 20px; font-size: 18px;">&bull; Enter 02439028 for Broker's license #</p>
+      <p style="margin: 0 0 44px;">Now you're ready to take advantage of all the tools and resources CnC has to offer!</p>
+      <p style="margin: 0 0 6px; font-weight: 700;">&rarr; Customize your personal webpage</p>
+      <p style="margin: 0 0 14px; font-size: 18px;"><a href="${safeProfileUrl}" style="color: #9E8C61;">${safeProfileUrl}</a></p>
+      <p style="margin: 0 0 14px; font-weight: 700;">&rarr; Learn tips &amp; tricks from CnC Academy</p>
+      <p style="margin: 0 0 14px; font-weight: 700;">&rarr; Connect with your fellow CnC agents</p>
+      <p style="margin: 0 0 44px; font-weight: 700;">&rarr; Explore the CnC dashboard</p>
       <p style="margin: 0;">Congrats again on joining a community built <em>by</em> agents <em>for</em> agents</p>
     </div>
   `;
@@ -253,8 +266,25 @@ export async function sendApplicationApproved(
 
   await sendEmail({
     to,
-    subject: "Welcome to CnC Realty — Set Up Your Account",
+    subject: "Welcome to CnC Realty",
     html,
+    attachments: [
+      {
+        filename: "CnC Realty Logo - Black.png",
+        content: logoBlack.toString("base64"),
+        contentType: "image/png",
+      },
+      {
+        filename: "CnC Realty Logo - Gold.png",
+        content: logoGold.toString("base64"),
+        contentType: "image/png",
+      },
+      {
+        filename: "CnC Realty Logo - White.png",
+        content: logoWhite.toString("base64"),
+        contentType: "image/png",
+      },
+    ],
     stream: "transactional",
   });
 }
@@ -303,19 +333,19 @@ export async function sendPasswordReset(to: string, resetUrl: string) {
   const safeUrl = escapeHtml(resetUrl);
 
   const bodyHtml = `
-    <p style="color: #4b4b4b; font-size: 15px; line-height: 1.6; text-align: center; margin: 0 0 8px;">
-      We received a request to reset your password. Click the button below to choose a new one. This link expires in 2 hours.
-    </p>
-    <p style="color: #8a8a8a; font-size: 13px; text-align: center; margin: 16px 0 0;">
+    <div style="text-align: center; margin: 32px 0;">
+      <a href="${safeUrl}" style="display: inline-block; background-color: #9E8C61; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; padding: 14px 36px; border-radius: 9999px;">
+        Reset Password
+      </a>
+    </div>
+    <p style="color: #8a8a8a; font-size: 13px; text-align: center; margin: 0;">
       If you didn't request this, you can safely ignore this email.
     </p>
   `;
 
   const html = emailLayout({
-    heading: "Reset Your Password",
+    heading: "Here's a link to reset your password. It will expire in 2 hours!",
     bodyHtml,
-    ctaLabel: "Reset Password",
-    ctaHref: safeUrl,
   });
 
   await sendEmail({
@@ -377,34 +407,40 @@ export async function sendApprovalDocuments(to: string, firstName: string) {
   const opm = readFileSync(join(ATTACHMENTS_DIR, "cnc-office-policy-manual.pdf"));
 
   const bodyHtml = `
-    <p style="color: #4b4b4b; font-size: 15px; line-height: 1.6; text-align: left; margin: 0 0 16px;">
-      Welcome to CnC Realty! Attached you'll find:
+    <div style="margin: 0 0 24px;">
+      <img src="${process.env.NEXTAUTH_URL}/onboarding-photo.jpg" alt="" width="100%" style="display: block; width: 100%; border-radius: 8px; border: 0;" />
+    </div>
+    <h2 style="color: #1B1B1B; font-weight: 400; font-size: 33px; margin: 0 0 16px; text-align: center;">
+      Let's get started, ${safeName}!
+    </h2>
+    <p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; text-align: center; margin: 0 0 32px;">
+      Here is some "boring" stuff we have to get out of the way...
     </p>
-    <ul style="color: #4b4b4b; font-size: 15px; line-height: 1.8; margin: 0 0 16px; padding-left: 20px;">
-      <li>A blank IRS Form W-9</li>
-      <li>CnC Realty's Office Policy Manual</li>
-    </ul>
-    <p style="color: #4b4b4b; font-size: 15px; line-height: 1.6; text-align: left; margin: 0 0 16px;">
-      Please reply to this email with:
+    <p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; text-align: left; font-weight: 700; margin: 0 0 16px;">
+      Attached you will find the following:
     </p>
-    <ul style="color: #4b4b4b; font-size: 15px; line-height: 1.8; margin: 0 0 16px; padding-left: 20px;">
-      <li>Your completed W-9</li>
-      <li>A copy of your active California DRE license</li>
-      <li>A headshot for your agent profile page</li>
+    <ul style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; margin: 0 0 16px; padding-left: 40px;">
+      <li>Blank IRS W-9 Form</li>
+      <li>Office Policy</li>
     </ul>
-    <p style="color: #4b4b4b; font-size: 15px; line-height: 1.6; text-align: left; margin: 0;">
-      One more thing — if you haven't already, join the Board of REALTORS®/MLS association that covers the area(s) you work in. CnC doesn't select or pay for this membership, but it's required for MLS access.
+    <p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; text-align: left; font-weight: 700; margin: 0 0 16px;">
+      Please complete and provide the following for our records:
+    </p>
+    <p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; text-align: left; margin: 0 0 8px; padding-left: 20px;">&#10003; IRS W-9 Form</p>
+    <p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; text-align: left; margin: 0 0 16px; padding-left: 20px;">&#10003; Copy of California DRE license</p>
+    <p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; text-align: center; margin: 32px 0 0;">
+      Also, don't forget to join the <a href="https://www.car.org" style="color: #9E8C61;">Board of REALTORS&reg;</a> and a local MLS Association! This is required for access to the MLS, ZipForms, legal guidance, and more.
     </p>
   `;
 
   const html = emailLayout({
-    heading: `Welcome, ${safeName}!`,
+    heading: "",
     bodyHtml,
   });
 
   await sendEmail({
     to,
-    subject: "CnC Realty — Onboarding Documents",
+    subject: "Onboarding Documents",
     html,
     replyTo: NOTIFY,
     attachments: [

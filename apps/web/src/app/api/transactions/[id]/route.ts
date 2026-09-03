@@ -74,7 +74,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (body.status === "CLOSED") {
       const agentRecord = await prisma.agent.findUnique({ where: { id: tx.agentId }, include: { user: true } });
       if (agentRecord?.user) {
-        await sendFileClosed({ agentEmail: agentRecord.user.email, agentName: agentRecord.user.name ?? "Agent", address: tx.propertyAddress, fileType: "transaction", fileId: params.id });
+        await sendFileClosed({ agentEmail: agentRecord.user.email, agentName: agentRecord.user.name ?? "Agent", address: tx.propertyAddress, city: tx.city, state: tx.state, zip: tx.zip, fileType: "transaction", fileId: params.id });
       }
     }
   }

@@ -41,14 +41,17 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
 
   if (isReadyToClose(checklistItems)) {
     const fileRecord = isListing
-      ? await prisma.listingFile.findUnique({ where: { id: fileId }, select: { propertyAddress: true, agent: { select: { user: { select: { email: true, name: true } } } } } })
-      : await prisma.transactionFile.findUnique({ where: { id: fileId }, select: { propertyAddress: true, agent: { select: { user: { select: { email: true, name: true } } } } } });
+      ? await prisma.listingFile.findUnique({ where: { id: fileId }, select: { propertyAddress: true, city: true, state: true, zip: true, agent: { select: { user: { select: { email: true, name: true } } } } } })
+      : await prisma.transactionFile.findUnique({ where: { id: fileId }, select: { propertyAddress: true, city: true, state: true, zip: true, agent: { select: { user: { select: { email: true, name: true } } } } } });
 
     if (fileRecord?.agent?.user) {
       await sendAllDocsApproved({
         agentEmail: fileRecord.agent.user.email,
         agentName: fileRecord.agent.user.name ?? "Agent",
         address: fileRecord.propertyAddress,
+        city: fileRecord.city,
+        state: fileRecord.state,
+        zip: fileRecord.zip,
         fileType: isListing ? "listing" : "transaction",
         fileId,
       });

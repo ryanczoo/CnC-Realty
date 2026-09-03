@@ -43,6 +43,9 @@ describe("POST /api/cron/deadline-reminders", () => {
       {
         id: "t1",
         propertyAddress: "123 Main St",
+        city: "Los Angeles",
+        state: "CA",
+        zip: "90012",
         closeOfEscrow: tomorrow,
         inspectionDeadline: null,
         appraisalDeadline: null,
@@ -54,7 +57,14 @@ describe("POST /api/cron/deadline-reminders", () => {
     expect(res.status).toBe(200);
     expect(sendDeadlineReminder).toHaveBeenCalledTimes(1);
     expect(sendDeadlineReminder).toHaveBeenCalledWith(
-      expect.objectContaining({ label: "Close of Escrow", agentEmail: "agent@test.com", daysOut: 1 })
+      expect.objectContaining({
+        label: "Close of Escrow",
+        agentEmail: "agent@test.com",
+        daysOut: 1,
+        city: "Los Angeles",
+        state: "CA",
+        zip: "90012",
+      })
     );
   });
 });

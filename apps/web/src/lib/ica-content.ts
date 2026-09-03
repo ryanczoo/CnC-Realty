@@ -25,7 +25,7 @@ export type IcaSection = {
 };
 
 /** Bump this (YYYY-MM-DD) any time the sections/tables below change. */
-export const ICA_VERSION = "2026-07-07";
+export const ICA_VERSION = "2026-08-30";
 
 export const ICA_INTRO: RichText = [
   "This Independent Contractor Agreement (“Agreement”) is made between ",
@@ -111,7 +111,7 @@ export const ICA_SECTIONS: IcaSection[] = [
   {
     num: "7", title: "Compensation / Broker Fees",
     content: [
-      { type: "sub", id: "7.1", boldLead: "Compensation Structure.", text: "Compensation shall be charged to the parties who enter into listing or buyer agreements for services requiring a real estate license. Associate-Licensee may use its own discretion regarding the commission fee to charge its clients, subject to the minimum fee described below. Broker’s fee shall be deducted at closing before disbursement to Associate-Licensee." },
+      { type: "sub", id: "7.1", boldLead: "Compensation Structure.", text: "Compensation shall be charged to the parties who enter into listing or buyer agreements for services requiring a real estate license. Associate-Licensee may use its own discretion regarding the commission fee to charge its clients, subject to the minimum fee described below. Broker’s fee shall be deducted at closing before disbursement to Associate-Licensee, which Broker shall complete within five (5) business days of Broker’s receipt of the commission funds from escrow." },
       { type: "sub", id: "7.2", boldLead: "Flat Transaction Fee.", text: [
         "Broker’s flat fee per closed transaction is ",
         { bold: "$990" },
