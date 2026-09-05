@@ -71,6 +71,13 @@ enum ContactStatus {
   UNSUBSCRIBED
 }
 
+enum DeliveryStatus {
+  PENDING
+  SENT
+  SKIPPED
+  ERROR
+}
+
 // ─── Phase 5A enums ──────────────────────────────────────────────────────────
 
 enum ListingStatus {
@@ -704,8 +711,9 @@ model CampaignContact {
   openedAt   DateTime?
   clickedAt  DateTime?
 
-  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  lead     Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  campaign   Campaign             @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  lead       Lead                 @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  deliveries CampaignDelivery[]
 
   @@unique([campaignId, leadId])
   @@index([leadId])
@@ -720,7 +728,23 @@ model DripStep {
   body       String
   createdAt  DateTime @default(now())
 
-  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaign   Campaign             @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  deliveries CampaignDelivery[]
+}
+
+model CampaignDelivery {
+  id                String         @id @default(cuid())
+  campaignContactId String
+  dripStepId        String?
+  dueAt             DateTime
+  status            DeliveryStatus @default(PENDING)
+  executedAt        DateTime?
+  createdAt         DateTime       @default(now())
+
+  campaignContact CampaignContact @relation(fields: [campaignContactId], references: [id], onDelete: Cascade)
+  dripStep        DripStep?       @relation(fields: [dripStepId], references: [id], onDelete: Cascade)
+
+  @@index([status, dueAt])
 }
 
 // ─── Action Plan models ──────────────────────────────────────────────────────
