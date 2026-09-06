@@ -690,6 +690,7 @@ model Campaign {
   type        CampaignType
   status      CampaignStatus @default(DRAFT)
   subject     String?
+  heading     String?
   body        String?
   scheduledAt DateTime?
   sentAt      DateTime?
@@ -725,6 +726,7 @@ model DripStep {
   stepOrder  Int
   delayDays  Int      @default(0)
   subject    String
+  heading    String?
   body       String
   createdAt  DateTime @default(now())
 
@@ -769,6 +771,7 @@ model ActionPlanStep {
   delayDays Int          @default(0)
   stepType  PlanStepType
   subject   String?
+  heading   String?
   body      String?
   taskTitle String?
   createdAt DateTime     @default(now())
@@ -800,6 +803,7 @@ model LeadPlanStep {
   stepOrder    Int
   stepType     PlanStepType
   subject      String?
+  heading      String?
   body         String?
   taskTitle    String?
   dueAt        DateTime
