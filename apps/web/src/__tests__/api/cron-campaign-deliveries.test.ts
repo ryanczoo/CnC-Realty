@@ -213,4 +213,43 @@ describe("POST /api/cron/campaign-deliveries", () => {
       data: { status: "COMPLETED" },
     });
   });
+
+  it("uses the campaign's heading over subject for a plain scheduled email", async () => {
+    vi.mocked(prisma.campaignDelivery.findMany).mockResolvedValue([
+      plainEmailDelivery({
+        campaignContact: {
+          id: "cc1",
+          lead: LEAD,
+          campaign: {
+            id: "c1",
+            agentId: "a1",
+            agent: AGENT,
+            subject: "Hello",
+            heading: "A Bigger Hello",
+            body: "<p>Hi there</p>",
+          },
+        },
+      }),
+    ] as any);
+
+    await POST(makeReq(CRON_SECRET));
+
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    expect(call.subject).toBe("Hello"); // literal subject unaffected
+    expect(call.html).toContain("A Bigger Hello");
+  });
+
+  it("uses a drip step's heading over its subject", async () => {
+    vi.mocked(prisma.campaignDelivery.findMany).mockResolvedValue([
+      dripStepDelivery({
+        dripStep: { id: "step1", subject: "Step subject", heading: "Step Heading", body: "Plain text" },
+      }),
+    ] as any);
+
+    await POST(makeReq(CRON_SECRET));
+
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    expect(call.subject).toBe("Step subject");
+    expect(call.html).toContain("Step Heading");
+  });
 });

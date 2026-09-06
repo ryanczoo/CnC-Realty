@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { emailLayout, escapeHtml } from "@/lib/email";
+import { emailLayout, escapeHtml, buildHeadingBodyHtml } from "@/lib/email";
 import { sendEmail } from "@/lib/email/send";
 import { unsubscribeFooterHtml } from "@/lib/email/unsubscribe";
 import { ensureQuotaReset, tryConsumeEmailQuota } from "@/lib/email-quota";
@@ -8,25 +8,6 @@ import { paragraph } from "@/lib/action-plan-email";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
-
-// Duplicated from campaigns/[id]/send/route.ts deliberately — Task 9 extracts
-// both into one shared helper once the heading field exists. Kept identical
-// to that route's markup so a scheduled/drip email looks the same as an
-// immediately-sent one.
-function buildBodyHtml(heading: string, innerHtml: string): string {
-  return `
-    <h2 style="color: #1B1B1B; font-weight: 400; font-size: 33px; margin: 0 0 24px; text-align: center;">
-      ${heading}
-    </h2>
-    <style>
-      #campaign-content p { margin: 0 0 20px; }
-      #campaign-content p:last-child { margin-bottom: 0; }
-    </style>
-    <div id="campaign-content" style="color: #4b4b4b; font-size: 22.5px; line-height: 1.6; text-align: left;">
-      ${innerHtml}
-    </div>
-  `;
-}
 
 export async function POST(req: NextRequest) {
   if (req.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -46,13 +27,14 @@ export async function POST(req: NextRequest) {
               id: true,
               agentId: true,
               subject: true,
+              heading: true,
               body: true,
               agent: { select: { monthlyEmailLimit: true } },
             },
           },
         },
       },
-      dripStep: { select: { id: true, subject: true, body: true } },
+      dripStep: { select: { id: true, subject: true, heading: true, body: true } },
     },
     orderBy: { dueAt: "asc" },
   });
@@ -78,13 +60,14 @@ export async function POST(req: NextRequest) {
         }
 
         const subject = dripStep ? dripStep.subject : campaign.subject ?? "";
+        const heading = dripStep ? (dripStep.heading || dripStep.subject) : (campaign.heading || campaign.subject) ?? "";
         const innerHtml = dripStep
           ? paragraph(dripStep.body ?? "")
           : campaign.body ?? "";
         const html = emailLayout({
           heading: "",
           bodyHtml:
-            buildBodyHtml(escapeHtml(subject), innerHtml) +
+            buildHeadingBodyHtml({ heading: escapeHtml(heading), bodyHtml: innerHtml }) +
             unsubscribeFooterHtml("lead", lead.id, "campaign"),
         });
 
