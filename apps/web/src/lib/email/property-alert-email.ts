@@ -1,5 +1,5 @@
 import { sendEmail } from "@/lib/email/send";
-import { unsubscribeFooterHtml } from "@/lib/email/unsubscribe";
+import { unsubscribeLinkHtml } from "@/lib/email/unsubscribe";
 
 export interface AlertProperty {
   address: string;
@@ -24,7 +24,7 @@ export async function sendPropertyAlertEmail(
   }
 
   const count = properties.length;
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cncrealtygroup.com";
+  const baseUrl = process.env.NEXTAUTH_URL;
 
   const propertyRows = properties
     .map((p) => {
@@ -58,7 +58,7 @@ export async function sendPropertyAlertEmail(
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>New listings matching your search</title>
+  <title>Check Out These New Listings!</title>
 </head>
 <body style="margin:0;padding:0;background:#F2F0EF;font-family:Arial,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#F2F0EF;padding:40px 20px;">
@@ -68,25 +68,23 @@ export async function sendPropertyAlertEmail(
           <!-- Header -->
           <tr>
             <td style="background:#1B1B1B;padding:24px 32px;">
-              <p style="margin:0;font-size:20px;font-weight:600;color:#fff;">CnC Realty</p>
-              <p style="margin:4px 0 0;font-size:12px;color:#9E8C61;letter-spacing:1px;text-transform:uppercase;">Property Alerts</p>
+              <img src="${baseUrl}/logo-white.png" alt="CnC Realty" width="90" style="display:block;border:0;" />
+              <p style="margin:8px 0 0;font-size:20px;color:#9E8C61;letter-spacing:1px;text-transform:uppercase;text-align:center;">Property Alerts</p>
             </td>
           </tr>
           <!-- Body -->
           <tr>
             <td style="padding:32px;">
-              <p style="margin:0 0 8px;font-size:16px;color:#1B1B1B;">Hi ${userName},</p>
-              <p style="margin:0 0 24px;font-size:15px;color:#444;">
+              <p style="margin:0 0 20px;font-size:22.5px;line-height:1.6;color:#4b4b4b;text-align:center;">Hi ${userName},</p>
+              <p style="margin:0 0 20px;font-size:22.5px;line-height:1.6;color:#4b4b4b;text-align:center;">
                 We found <strong>${count} new listing${count === 1 ? "" : "s"}</strong> matching your saved search:
               </p>
               <table width="100%" cellpadding="0" cellspacing="0">
                 ${propertyRows}
               </table>
-              <p style="margin:24px 0 0;font-size:13px;color:#999;">
-                You&rsquo;re receiving this because you have property alerts turned on for a saved search.
-                <a href="${baseUrl}/account" style="color:#9E8C61;">Manage your alerts</a>
+              <p style="margin:24px 0 0;font-size:13px;color:#999;text-align:center;">
+                You&rsquo;re receiving these emails based off your search criteria. <a href="${baseUrl}/account" style="color:#9E8C61;">Manage your alerts</a> ${unsubscribeLinkHtml("user", userId, "property_alert")}
               </p>
-              ${unsubscribeFooterHtml("user", userId, "property_alert")}
             </td>
           </tr>
           <!-- Footer -->
@@ -106,7 +104,7 @@ export async function sendPropertyAlertEmail(
 
   await sendEmail({
     to,
-    subject: `New listings matching your search`,
+    subject: `Check Out These New Listings!`,
     html,
     stream: "broadcast",
     recipient: { kind: "user", id: userId },

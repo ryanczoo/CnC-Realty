@@ -86,6 +86,17 @@ export function unsubscribePostUrl(kind: OptOutKind, id: string, category: Email
   return `${process.env.NEXTAUTH_URL}/api/unsubscribe?t=${makeUnsubscribeToken(kind, id, category)}`;
 }
 
+// Just the text + link, no wrapping element -- lets a caller compose it inline
+// with its own sentence (e.g. property alerts) instead of always getting a
+// standalone paragraph. unsubscribeFooterHtml wraps this for every other caller.
+export function unsubscribeLinkHtml(
+  kind: OptOutKind,
+  id: string,
+  category: EmailCategory
+): string {
+  return `Don&rsquo;t want these emails? <a href="${unsubscribeUrl(kind, id, category)}" style="color:#9E8C61;">Unsubscribe</a>`;
+}
+
 // The List-Unsubscribe header is not sufficient on its own: only some clients
 // surface it, and CAN-SPAM requires a visible opt-out inside the message. Every
 // broadcast body appends this.
@@ -94,5 +105,5 @@ export function unsubscribeFooterHtml(
   id: string,
   category: EmailCategory
 ): string {
-  return `<p style="margin:24px 0 0;font-size:12px;color:#999999;">Don&rsquo;t want these emails? <a href="${unsubscribeUrl(kind, id, category)}" style="color:#9E8C61;">Unsubscribe</a></p>`;
+  return `<p style="margin:24px 0 0;font-size:12px;color:#999999;text-align:center;">${unsubscribeLinkHtml(kind, id, category)}</p>`;
 }

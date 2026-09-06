@@ -64,24 +64,32 @@ export async function PATCH(
 
   try {
     if (process.env.POSTMARK_SERVER_TOKEN && agent.user.email) {
-      const safeAgentName = escapeHtml(agent.displayName ?? "there");
+      const agentDisplayName = agent.displayName ?? "there";
+      const firstName = agentDisplayName.trim().split(/\s+/)[0] || agentDisplayName;
+      const safeFirstName = escapeHtml(firstName);
       const bodyHtml = `
-        <div style="color: #4b4b4b; font-size: 15px; line-height: 1.8; text-align: left;">
-          <p style="margin: 0 0 8px;"><strong style="color: #1B1B1B;">Name:</strong> ${escapeHtml(`${lead.firstName} ${lead.lastName}`)}</p>
-          <p style="margin: 0 0 8px;"><strong style="color: #1B1B1B;">Email:</strong> ${escapeHtml(lead.email)}</p>
-          <p style="margin: 0 0 8px;"><strong style="color: #1B1B1B;">Phone:</strong> ${lead.phone ? escapeHtml(lead.phone) : "Not provided"}</p>
-          <p style="margin: 0;"><strong style="color: #1B1B1B;">Status:</strong> ${escapeHtml(lead.status)}</p>
+        <div style="margin: 0 0 32px;">
+          <img src="${process.env.NEXTAUTH_URL}/lead-assignment-photo.jpg" alt="" width="100%" style="display: block; width: 100%; border-radius: 8px; border: 0;" />
+        </div>
+        <h2 style="color: #1B1B1B; font-weight: 400; font-size: 33px; margin: 0 0 24px; text-align: center;">
+          Hi ${safeFirstName}, You Just Got A Lead!
+        </h2>
+        <div style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; text-align: left;">
+          <p style="margin: 0 0 14px;"><strong style="font-weight: 700;">Name:</strong> ${escapeHtml(`${lead.firstName} ${lead.lastName}`)}</p>
+          <p style="margin: 0 0 14px;"><strong style="font-weight: 700;">Email:</strong> ${escapeHtml(lead.email)}</p>
+          <p style="margin: 0 0 14px;"><strong style="font-weight: 700;">Phone:</strong> ${lead.phone ? escapeHtml(lead.phone) : "Not provided"}</p>
+          <p style="margin: 0;"><strong style="font-weight: 700;">Status:</strong> ${escapeHtml(lead.status)}</p>
         </div>
       `;
       const html = emailLayout({
-        heading: `Hi ${safeAgentName}, you have a new lead`,
+        heading: "",
         bodyHtml,
         ctaLabel: "View Dashboard",
         ctaHref: `${process.env.NEXTAUTH_URL}/dashboard/leads`,
       });
       await sendEmail({
         to: agent.user.email,
-        subject: `New lead assigned to you — ${lead.firstName} ${lead.lastName}`,
+        subject: `New Lead - ${lead.firstName} ${lead.lastName}`,
         html,
         stream: "transactional",
       });

@@ -78,6 +78,11 @@ describe("unsubscribeFooterHtml", () => {
       unsubscribeFooterHtml("lead", "lead_2", "campaign")
     );
   });
+
+  it("centers the footer line -- shared by every broadcast email that uses it", () => {
+    const html = unsubscribeFooterHtml("lead", "lead_123", "campaign");
+    expect(html).toContain("text-align:center");
+  });
 });
 
 describe("category-carrying unsubscribe token", () => {

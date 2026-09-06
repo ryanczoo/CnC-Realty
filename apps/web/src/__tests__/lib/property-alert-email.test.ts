@@ -38,7 +38,7 @@ describe("sendPropertyAlertEmail", () => {
     const call = vi.mocked(sendEmail).mock.calls[0][0];
 
     expect(call.to).toBe("buyer@example.com");
-    expect(call.subject).toBe("New listings matching your search");
+    expect(call.subject).toBe("Check Out These New Listings!");
     expect(call.stream).toBe("broadcast");
     // No override — the seam supplies the default noreply@ FROM.
     expect(call.from).toBeUndefined();
@@ -74,6 +74,56 @@ describe("sendPropertyAlertEmail", () => {
     const call = vi.mocked(sendEmail).mock.calls[0][0];
     expect(call.category).toBe("property_alert");
     expect(footerCategory(call.html!)).toBe("property_alert");
+  });
+
+  it("uses the white logo image in the header instead of a text wordmark", async () => {
+    await sendPropertyAlertEmail("buyer@example.com", "Jordan", ONE_LISTING, "user-1");
+
+    const html = vi.mocked(sendEmail).mock.calls[0][0].html!;
+    expect(html).toContain('<img src="http://localhost:3000/logo-white.png" alt="CnC Realty" width="90" style="display:block;border:0;" />');
+    expect(html).not.toContain(">CnC Realty</p>");
+  });
+
+  it("builds links from NEXTAUTH_URL, not a hardcoded production domain", async () => {
+    await sendPropertyAlertEmail("buyer@example.com", "Jordan", ONE_LISTING, "user-1");
+
+    const html = vi.mocked(sendEmail).mock.calls[0][0].html!;
+    expect(html).toContain("http://localhost:3000/properties/ML123");
+    expect(html).toContain("http://localhost:3000/account");
+    expect(html).not.toContain("cncrealtygroup.com");
+  });
+
+  it("matches the welcome email's body text style for the greeting and intro lines", async () => {
+    await sendPropertyAlertEmail("buyer@example.com", "Jordan", ONE_LISTING, "user-1");
+
+    const html = vi.mocked(sendEmail).mock.calls[0][0].html!;
+    expect(html).toContain(
+      '<p style="margin:0 0 20px;font-size:22.5px;line-height:1.6;color:#4b4b4b;text-align:center;">Hi Jordan,</p>'
+    );
+    expect(html).toContain(
+      '<p style="margin:0 0 20px;font-size:22.5px;line-height:1.6;color:#4b4b4b;text-align:center;">'
+    );
+  });
+
+  it("puts the search-criteria sentence, Manage your alerts, and Unsubscribe on one centered line", async () => {
+    await sendPropertyAlertEmail("buyer@example.com", "Jordan", ONE_LISTING, "user-1");
+
+    const html = vi.mocked(sendEmail).mock.calls[0][0].html!;
+    const paraIndex = html.indexOf('font-size:13px;color:#999;text-align:center;');
+    const criteriaIndex = html.indexOf("You&rsquo;re receiving these emails based off your search criteria.");
+    const manageIndex = html.indexOf("Manage your alerts");
+    const dontWantIndex = html.indexOf("Don&rsquo;t want these emails?");
+    const unsubIndex = html.indexOf("Unsubscribe");
+    const closingPIndex = html.indexOf("</p>", paraIndex);
+
+    // All four pieces live inside the same <p>...</p> -- not split across
+    // separate paragraphs -- and appear in reading order.
+    expect(paraIndex).toBeGreaterThan(-1);
+    expect(criteriaIndex).toBeGreaterThan(paraIndex);
+    expect(manageIndex).toBeGreaterThan(criteriaIndex);
+    expect(dontWantIndex).toBeGreaterThan(manageIndex);
+    expect(unsubIndex).toBeGreaterThan(dontWantIndex);
+    expect(closingPIndex).toBeGreaterThan(unsubIndex);
   });
 
   it("skips the send entirely when no API key is configured", async () => {

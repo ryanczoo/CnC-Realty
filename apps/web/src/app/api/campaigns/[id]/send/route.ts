@@ -118,9 +118,29 @@ export async function POST(
       // Built per contact, not once outside the loop: the unsubscribe link is
       // signed for a specific lead, so a shared body would opt the wrong
       // person out.
+      //
+      // The heading/body styling matches the welcome-agent email (33px
+      // centered heading, 22.5px/#4b4b4b body) rather than emailLayout's
+      // generic 22px heading slot — kept out of that slot (heading: "")
+      // the same way the other custom-styled emails do it. The scoped
+      // <style> block sets consistent paragraph spacing on the agent's
+      // Tiptap-authored body, which ships its own <p> tags with no inline
+      // margin of their own.
       const html = emailLayout({
-        heading: campaign.subject!,
-        bodyHtml: campaign.body! + unsubscribeFooterHtml("lead", contact.lead.id, "campaign"),
+        heading: "",
+        bodyHtml: `
+          <h2 style="color: #1B1B1B; font-weight: 400; font-size: 33px; margin: 0 0 24px; text-align: center;">
+            ${campaign.subject}
+          </h2>
+          <style>
+            #campaign-content p { margin: 0 0 20px; }
+            #campaign-content p:last-child { margin-bottom: 0; }
+          </style>
+          <div id="campaign-content" style="color: #4b4b4b; font-size: 22.5px; line-height: 1.6; text-align: left;">
+            ${campaign.body}
+          </div>
+          ${unsubscribeFooterHtml("lead", contact.lead.id, "campaign")}
+        `,
       });
 
       const result = await sendEmail({
