@@ -10,6 +10,7 @@ const stepSchema = z.object({
   delayDays: z.number().int().min(0).default(0),
   stepType: z.enum(["EMAIL", "TASK"]),
   subject: z.string().optional(),
+  heading: z.string().optional(),
   body: z.string().optional(),
   taskTitle: z.string().optional(),
 });

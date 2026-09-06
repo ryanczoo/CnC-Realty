@@ -18,6 +18,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string; st
     delayDays: z.number().int().min(0).optional(),
     stepType: z.enum(["EMAIL", "TASK"]).optional(),
     subject: z.string().nullable().optional(),
+    heading: z.string().nullable().optional(),
     body: z.string().nullable().optional(),
     taskTitle: z.string().nullable().optional(),
   });

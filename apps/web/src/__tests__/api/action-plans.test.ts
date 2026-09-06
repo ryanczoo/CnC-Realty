@@ -141,6 +141,22 @@ describe("POST /api/admin/action-plans/[id]/steps", () => {
     const res = await POST_STEP(req, PLAN_PARAMS);
     expect(res.status).toBe(201);
   });
+
+  it("persists an optional heading alongside subject", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(ADMIN_SESSION as any);
+    vi.mocked(prisma.actionPlan.findUnique).mockResolvedValue(PLAN as any);
+    vi.mocked(prisma.actionPlanStep.create).mockResolvedValue(STEP as any);
+    const req = new Request("http://localhost", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ stepOrder: 1, delayDays: 0, stepType: "EMAIL", subject: "Hi", heading: "A Warmer Hi", body: "Hello" }),
+    });
+    const res = await POST_STEP(req, PLAN_PARAMS);
+    expect(res.status).toBe(201);
+    expect(prisma.actionPlanStep.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ heading: "A Warmer Hi" }) })
+    );
+  });
 });
 
 describe("DELETE /api/admin/action-plans/[id]/steps/[stepId]", () => {
