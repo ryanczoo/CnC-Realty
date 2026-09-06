@@ -347,4 +347,40 @@ describe("Trigger execution — PATCH /api/leads/[id]", () => {
     expect(call.text).toBeUndefined();
     expect(call.replyTo).toBeUndefined();
   });
+
+  it("carries a plan step's heading into the new enrollment's LeadPlanStep rows", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(LEAD_SESSION as any);
+    vi.mocked(prisma.lead.update).mockResolvedValue(UPDATED_LEAD as any);
+    vi.mocked(prisma.trigger.findMany).mockResolvedValue([
+      {
+        ...TRIGGER_ENROLL,
+        actionPlan: {
+          id: "p1",
+          isActive: true,
+          steps: [
+            { stepOrder: 1, delayDays: 0, stepType: "EMAIL", subject: "Hi", heading: "A Warmer Hi", body: "Hello", taskTitle: null },
+          ],
+        },
+      },
+    ] as any);
+    vi.mocked(prisma.leadPlanEnrollment.findFirst).mockResolvedValue(null);
+
+    const createMany = vi.fn().mockResolvedValue({ count: 1 });
+    const tx = {
+      leadPlanEnrollment: { create: vi.fn().mockResolvedValue({ id: "enr1" }) },
+      leadPlanStep: { createMany },
+    };
+    vi.mocked(prisma.$transaction).mockImplementation((cb: any) => cb(tx));
+
+    const req = new Request("http://localhost/api/leads/l1", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "QUALIFIED" }),
+    });
+    const res = await PATCH_LEAD(req, LEAD_PARAMS);
+
+    expect(res.status).toBe(200);
+    const call = createMany.mock.calls[0][0] as any;
+    expect(call.data[0].heading).toBe("A Warmer Hi");
+  });
 });

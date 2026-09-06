@@ -130,6 +130,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
                     stepOrder: s.stepOrder,
                     stepType: s.stepType,
                     subject: s.subject,
+                    heading: s.heading,
                     body: s.body,
                     taskTitle: s.taskTitle,
                     dueAt,

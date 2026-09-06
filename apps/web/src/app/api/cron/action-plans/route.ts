@@ -76,10 +76,12 @@ export async function POST(req: NextRequest) {
           }
 
           const subject = substituteVars(step.subject ?? "", vars);
+          const heading = step.heading ? substituteVars(step.heading, vars) : undefined;
           const body = substituteVars(step.body ?? "", vars);
           const result = await sendActionPlanEmail({
             to: lead.email,
             subject,
+            heading,
             body,
             enrollmentId: enrollment.id,
             leadId: lead.id,

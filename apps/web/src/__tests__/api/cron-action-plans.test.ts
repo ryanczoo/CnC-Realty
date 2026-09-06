@@ -219,4 +219,17 @@ describe("POST /api/cron/action-plans", () => {
     // (one per EMAIL step) = 3 total, not 4.
     expect(prisma.agent.updateMany).toHaveBeenCalledTimes(3);
   });
+
+  it("passes the step's heading through to sendActionPlanEmail, substituted", async () => {
+    const stepWithHeading = { ...EMAIL_STEP, heading: "Hi {{first_name}}, a warmer heading" };
+    vi.mocked(prisma.leadPlanStep.findMany).mockResolvedValue([stepWithHeading] as any);
+    vi.mocked(prisma.leadPlanStep.update).mockResolvedValue({} as any);
+    vi.mocked(prisma.leadPlanEnrollment.findMany).mockResolvedValue([]);
+    vi.mocked(sendEmail).mockResolvedValue({ sent: true });
+
+    await POST(makeReq(CRON_SECRET));
+
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    expect(call.html).toContain("Hi John, a warmer heading");
+  });
 });

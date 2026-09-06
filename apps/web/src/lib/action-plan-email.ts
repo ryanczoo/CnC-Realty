@@ -1,4 +1,4 @@
-import { emailLayout, escapeHtml } from "@/lib/email";
+import { emailLayout, escapeHtml, buildHeadingBodyHtml } from "@/lib/email";
 import { sendEmail, type SendResult } from "@/lib/email/send";
 import { unsubscribeFooterHtml } from "@/lib/email/unsubscribe";
 
@@ -14,20 +14,23 @@ export function substituteVars(
 }
 
 export function paragraph(body: string): string {
-  return `<p style="color: #4b4b4b; font-size: 15px; line-height: 1.6;">${escapeHtml(body).replace(/\n/g, "<br>")}</p>`;
+  return `<p>${escapeHtml(body).replace(/\n/g, "<br>")}</p>`;
 }
 
 /** A drip step going out to a lead. Marketing: suppressible, unsubscribable. */
 export async function sendActionPlanEmail(opts: {
   to: string;
   subject: string;
+  heading?: string;
   body: string;
   enrollmentId: string;
   leadId: string;
 }): Promise<SendResult> {
   const replyTo = `reply+${opts.enrollmentId}@reply.cncrealtygroup.com`;
-  const bodyHtml = paragraph(opts.body) + unsubscribeFooterHtml("lead", opts.leadId, "action_plan");
-  const html = emailLayout({ heading: opts.subject, bodyHtml });
+  const bodyHtml =
+    buildHeadingBodyHtml({ heading: opts.heading || opts.subject, bodyHtml: paragraph(opts.body) }) +
+    unsubscribeFooterHtml("lead", opts.leadId, "action_plan");
+  const html = emailLayout({ heading: "", bodyHtml });
 
   return sendEmail({
     to: opts.to,
@@ -54,7 +57,7 @@ export async function sendLeadReplyNotification(opts: {
   await sendEmail({
     to: opts.to,
     subject: opts.subject,
-    html: emailLayout({ heading: opts.subject, bodyHtml: paragraph(opts.body) }),
+    html: emailLayout({ heading: "", bodyHtml: buildHeadingBodyHtml({ heading: opts.subject, bodyHtml: paragraph(opts.body) }) }),
     replyTo: `reply+${opts.enrollmentId}@reply.cncrealtygroup.com`,
     stream: "transactional",
   });

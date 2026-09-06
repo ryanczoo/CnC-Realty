@@ -95,6 +95,67 @@ describe("sendActionPlanEmail", () => {
   });
 });
 
+describe("sendActionPlanEmail — visual upgrade + heading fallback", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("renders the 33px heading style, not the generic 22px emailLayout heading", async () => {
+    await sendActionPlanEmail({
+      to: "jordan@example.com",
+      subject: "Following up",
+      body: "hi",
+      enrollmentId: "enr-1",
+      leadId: "lead-1",
+    });
+
+    const html = vi.mocked(sendEmail).mock.calls[0][0].html!;
+    expect(html).toContain("font-size: 33px");
+    expect(html).toContain("font-size: 22.5px");
+  });
+
+  it("uses heading over subject in the body when heading is provided", async () => {
+    await sendActionPlanEmail({
+      to: "jordan@example.com",
+      subject: "Following up",
+      heading: "A Warmer Heading",
+      body: "hi",
+      enrollmentId: "enr-1",
+      leadId: "lead-1",
+    });
+
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    expect(call.subject).toBe("Following up"); // literal subject unaffected
+    expect(call.html).toContain("A Warmer Heading");
+  });
+
+  it("falls back to subject when heading is not provided", async () => {
+    await sendActionPlanEmail({
+      to: "jordan@example.com",
+      subject: "Following up",
+      body: "hi",
+      enrollmentId: "enr-1",
+      leadId: "lead-1",
+    });
+
+    expect(vi.mocked(sendEmail).mock.calls[0][0].html).toContain("Following up");
+  });
+});
+
+describe("sendLeadReplyNotification — visual upgrade", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("renders the 33px heading style", async () => {
+    await sendLeadReplyNotification({
+      to: "agent@cncrealtygroup.com",
+      subject: "[Lead Reply] Still interested",
+      body: "Yes, please call me",
+      enrollmentId: "enr-1",
+    });
+
+    const html = vi.mocked(sendEmail).mock.calls[0][0].html!;
+    expect(html).toContain("font-size: 33px");
+  });
+});
+
 describe("sendLeadReplyNotification", () => {
   beforeEach(() => vi.clearAllMocks());
 
