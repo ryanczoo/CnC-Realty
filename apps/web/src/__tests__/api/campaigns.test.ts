@@ -47,6 +47,51 @@ describe("POST /api/campaigns — Zod validation error message", () => {
   });
 });
 
+describe("POST /api/campaigns — heading", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(requireAuth).mockResolvedValue(AGENT_SESSION);
+  });
+
+  it("persists an optional heading alongside subject", async () => {
+    vi.mocked(prisma.campaign.create).mockResolvedValue({ id: "c1" } as any);
+
+    await createCampaign(
+      makeRequest("http://localhost/api/campaigns", {
+        name: "Spring",
+        type: "EMAIL",
+        subject: "Spring Update",
+        heading: "Big News",
+      })
+    );
+
+    expect(prisma.campaign.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ heading: "Big News" }) })
+    );
+  });
+});
+
+describe("PATCH /api/campaigns/[id] — heading", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(requireAuth).mockResolvedValue(AGENT_SESSION);
+    vi.mocked(prisma.campaign.findUnique).mockResolvedValue({ id: "c1", agentId: "a1" } as any);
+  });
+
+  it("updates heading when provided", async () => {
+    vi.mocked(prisma.campaign.update).mockResolvedValue({} as any);
+
+    await patchCampaign(
+      makeRequest("http://localhost/api/campaigns/c1", { heading: "New Heading" }, "PATCH"),
+      { params: { id: "c1" } }
+    );
+
+    expect(prisma.campaign.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ heading: "New Heading" }) })
+    );
+  });
+});
+
 describe("PATCH /api/campaigns/[id] — Zod validation error message", () => {
   beforeEach(() => {
     vi.clearAllMocks();

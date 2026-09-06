@@ -8,6 +8,7 @@ const createSchema = z.object({
   name: z.string().min(1, "Name required"),
   type: z.enum(["EMAIL", "DRIP"]),
   subject: z.string().optional(),
+  heading: z.string().optional(),
 });
 
 export async function GET() {
@@ -44,6 +45,7 @@ export async function POST(req: Request) {
         name: data.name,
         type: data.type,
         subject: data.subject ?? null,
+        heading: data.heading ?? null,
         body: "",
         status: "DRAFT",
         agentId,

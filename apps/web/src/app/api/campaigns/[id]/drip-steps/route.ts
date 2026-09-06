@@ -29,7 +29,7 @@ export async function POST(req: Request, { params }: Params) {
   if (!exists) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (forbidden) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  let steps: Array<{ stepOrder: number; delayDays: number; subject: string; body: string }>;
+  let steps: Array<{ stepOrder: number; delayDays: number; subject: string; heading?: string; body: string }>;
   try {
     steps = await req.json();
   } catch {

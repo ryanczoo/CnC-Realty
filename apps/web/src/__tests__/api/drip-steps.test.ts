@@ -111,4 +111,19 @@ describe('POST /api/campaigns/[id]/drip-steps', () => {
     const data = await res.json();
     expect(data.error).toBe('Invalid request body');
   });
+
+  it('persists an optional heading per step alongside subject', async () => {
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: 'u1', role: 'AGENT', agentId: 'a1' } } as any);
+    vi.mocked(prisma.campaign.findUnique).mockResolvedValue({ id: 'c1', agentId: 'a1' } as any);
+    vi.mocked(prisma.$transaction).mockResolvedValue(undefined as any);
+
+    const steps = [{ stepOrder: 1, delayDays: 0, subject: 'Welcome', heading: 'A Warm Welcome', body: 'Hi there!' }];
+    await POST(
+      new Request('http://localhost', { method: 'POST', body: JSON.stringify(steps), headers: { 'Content-Type': 'application/json' } }),
+      { params: { id: 'c1' } }
+    );
+
+    const createManyCall = vi.mocked(prisma.dripStep.createMany).mock.calls[0][0] as any;
+    expect(createManyCall.data[0].heading).toBe('A Warm Welcome');
+  });
 });

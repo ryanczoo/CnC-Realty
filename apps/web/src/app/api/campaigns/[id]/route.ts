@@ -6,6 +6,7 @@ import { requireAuth, checkOwnership } from "@/lib/api-auth";
 const patchSchema = z.object({
   name: z.string().min(1).optional(),
   subject: z.string().optional(),
+  heading: z.string().optional(),
   body: z.string().optional(),
   scheduledAt: z.string().datetime().optional().nullable(),
   status: z.enum(["DRAFT", "SCHEDULED", "ACTIVE", "PAUSED", "COMPLETED"]).optional(),
@@ -63,6 +64,7 @@ export async function PATCH(
       data: {
         ...(data.name !== undefined && { name: data.name }),
         ...(data.subject !== undefined && { subject: data.subject }),
+        ...(data.heading !== undefined && { heading: data.heading }),
         ...(data.body !== undefined && { body: data.body }),
         ...(data.scheduledAt !== undefined && {
           scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : null,
