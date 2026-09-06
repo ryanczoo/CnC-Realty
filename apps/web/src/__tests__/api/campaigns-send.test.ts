@@ -189,6 +189,41 @@ describe("POST /api/campaigns/[id]/send — send seam", () => {
     expect(call.category).toBe("campaign");
     expect(footerCategory(call.html!)).toBe("campaign");
   });
+
+  it("uses the campaign's heading in the h2 when set, falling back to subject otherwise", async () => {
+    vi.mocked(prisma.campaign.findUnique).mockResolvedValue({
+      id: "c1",
+      agentId: "a1",
+      agent: { monthlyEmailLimit: 200 },
+      subject: "Spring Market Update",
+      heading: "A Big Announcement",
+      body: "<p>Body</p>",
+      contacts: [{ id: "cc1", lead: { id: "lead_1", email: "lead@example.com" } }],
+    } as any);
+
+    await POST(request(), { params: { id: "c1" } });
+
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    expect(call.subject).toBe("Spring Market Update"); // literal subject line unaffected
+    expect(call.html).toContain("A Big Announcement"); // heading used instead
+  });
+
+  it("falls back to subject for the heading when heading is not set", async () => {
+    vi.mocked(prisma.campaign.findUnique).mockResolvedValue({
+      id: "c1",
+      agentId: "a1",
+      agent: { monthlyEmailLimit: 200 },
+      subject: "Spring Market Update",
+      heading: null,
+      body: "<p>Body</p>",
+      contacts: [{ id: "cc1", lead: { id: "lead_1", email: "lead@example.com" } }],
+    } as any);
+
+    await POST(request(), { params: { id: "c1" } });
+
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    expect(call.html).toContain("Spring Market Update");
+  });
 });
 
 describe("POST /api/campaigns/[id]/send — NEXTAUTH_URL preflight", () => {
