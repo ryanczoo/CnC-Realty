@@ -124,6 +124,25 @@ export function emailLayout(opts: {
   `;
 }
 
+// Shared by every email that needs the welcome-agent-style heading (33px,
+// centered) over a 22.5px/#4b4b4b body — the campaign send route, the
+// scheduled/drip cron, and Action Plan emails all render through this so the
+// markup exists in exactly one place.
+export function buildHeadingBodyHtml(opts: { heading: string; bodyHtml: string }): string {
+  return `
+    <h2 style="color: #1B1B1B; font-weight: 400; font-size: 33px; margin: 0 0 24px; text-align: center;">
+      ${opts.heading}
+    </h2>
+    <style>
+      #campaign-content p { margin: 0 0 20px; }
+      #campaign-content p:last-child { margin-bottom: 0; }
+    </style>
+    <div id="campaign-content" style="color: #4b4b4b; font-size: 22.5px; line-height: 1.6; text-align: left;">
+      ${opts.bodyHtml}
+    </div>
+  `;
+}
+
 export async function sendLeadNotification(lead: {
   firstName: string;
   lastName: string;
@@ -302,13 +321,19 @@ export async function sendAnnouncement(recipients: string[], title: string, body
   const safeBody = escapeHtml(body);
 
   const bodyHtml = `
-    <p style="color: #4b4b4b; font-size: 15px; line-height: 1.6; text-align: left; margin: 0; white-space: pre-wrap;">
+    <div style="margin: 0 0 32px;">
+      <img src="${process.env.NEXTAUTH_URL}/announcement-photo.jpg" alt="" width="100%" style="display: block; width: 100%; border-radius: 8px; border: 0;" />
+    </div>
+    <h2 style="color: #1B1B1B; font-weight: 400; font-size: 33px; margin: 0 0 24px; text-align: center;">
+      ${safeTitle}
+    </h2>
+    <p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.6; text-align: left; margin: 0; white-space: pre-wrap;">
       ${safeBody}
     </p>
   `;
 
   const html = emailLayout({
-    heading: safeTitle,
+    heading: "",
     bodyHtml,
   });
 
@@ -316,7 +341,7 @@ export async function sendAnnouncement(recipients: string[], title: string, body
     recipients.map((to) =>
       sendEmail({
         to,
-        subject: safeTitle,
+        subject: `Announcement: ${safeTitle}`,
         html,
         from: ANNOUNCEMENT_FROM,
         stream: "transactional",
@@ -367,28 +392,33 @@ export async function sendApplicationRejected(
     );
     return;
   }
-  const safeName = escapeHtml(firstName);
+  const firstNameOnly = firstName.trim().split(/\s+/)[0] || firstName;
+  const safeName = escapeHtml(firstNameOnly);
   const safeReason = escapeHtml(reason);
   const bodyHtml = `
-    <p style="color: #4b4b4b; font-size: 15px; line-height: 1.6; text-align: center; margin: 0 0 16px;">
-      Thank you for your interest in joining CnC Realty. After reviewing your application, we are
-      unable to move forward at this time.
+    <div style="margin: 0 0 32px;">
+      <img src="${process.env.NEXTAUTH_URL}/application-rejected-photo.jpg" alt="" width="100%" style="display: block; width: 100%; border-radius: 8px; border: 0;" />
+    </div>
+    <h2 style="color: #1B1B1B; font-weight: 400; font-size: 33px; margin: 0 0 24px; text-align: center;">
+      Hi ${safeName}, We Are So Sorry
+    </h2>
+    <p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.6; text-align: center; margin: 0 0 20px;">
+      After a thorough review, we are unable to move forward with your application at this time.
     </p>
-    ${safeReason ? `<p style="color: #4b4b4b; font-size: 15px; line-height: 1.6; text-align: center; margin: 0 0 16px;"><strong style="color: #1B1B1B;">Reason:</strong> ${safeReason}</p>` : ""}
-    <p style="color: #4b4b4b; font-size: 15px; line-height: 1.6; text-align: center; margin: 0;">
-      If you have questions, please reach out to
-      <a href="mailto:info@cncrealtygroup.com" style="color: #9E8C61;">info@cncrealtygroup.com</a>.
+    ${safeReason ? `<p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.6; text-align: center; margin: 0 0 20px;"><strong style="font-weight: 700;">Reason:</strong> ${safeReason}</p>` : ""}
+    <p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.6; text-align: center; margin: 0;">
+      Thank you for your interest in joining CnC Realty. If you have any questions, please feel free to <a href="mailto:info@cncrealtygroup.com" style="color: #9E8C61;">reach out</a>!
     </p>
   `;
 
   const html = emailLayout({
-    heading: `Hi ${safeName},`,
+    heading: "",
     bodyHtml,
   });
 
   await sendEmail({
     to,
-    subject: "CnC Realty — Application Update",
+    subject: "Application Response",
     html,
     stream: "transactional",
   });

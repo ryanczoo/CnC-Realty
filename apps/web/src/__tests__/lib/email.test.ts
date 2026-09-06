@@ -15,6 +15,7 @@ import {
   sendApplicationApproved,
   sendApplicationRejected,
   emailLayout,
+  buildHeadingBodyHtml,
 } from "@/lib/email";
 
 describe("sendApprovalDocuments", () => {
@@ -151,10 +152,46 @@ describe("sendAnnouncement", () => {
     for (const call of calls) {
       expect(call.from).toEqual({ email: "info@cncrealtygroup.com", name: "CnC Realty" });
       expect(call.stream).toBe("transactional");
-      expect(call.subject).toBe("Office Closed Monday");
+      expect(call.subject).toBe("Announcement: Office Closed Monday");
       expect(call.html).toContain("Office Closed Monday");
       expect(call.html).toContain("We will be closed for the holiday.");
     }
+  });
+
+  it("styles the title like the welcome email's heading, and the body to match its text size/color", async () => {
+    await sendAnnouncement(["agent1@example.com"], "Office Closed Monday", "We will be closed for the holiday.");
+
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    const html = call.html!;
+    const logoIndex = html.indexOf("logo-black.png");
+    const headingIndex = html.indexOf("Office Closed Monday");
+
+    expect(logoIndex).toBeGreaterThan(-1);
+    expect(headingIndex).toBeGreaterThan(logoIndex);
+    expect(html).toContain(
+      '<h2 style="color: #1B1B1B; font-weight: 400; font-size: 33px; margin: 0 0 24px; text-align: center;">'
+    );
+    expect(html).toContain(
+      '<p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.6; text-align: left; margin: 0; white-space: pre-wrap;">'
+    );
+    expect(html).not.toContain("font-size: 15px");
+  });
+
+  it("includes the announcement photo, sized like the welcome email's photo, above the heading", async () => {
+    await sendAnnouncement(["agent1@example.com"], "Office Closed Monday", "We will be closed for the holiday.");
+
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    const html = call.html!;
+    const logoIndex = html.indexOf("logo-black.png");
+    const photoIndex = html.indexOf("announcement-photo.jpg");
+    const headingIndex = html.indexOf("Office Closed Monday", photoIndex);
+
+    expect(logoIndex).toBeGreaterThan(-1);
+    expect(photoIndex).toBeGreaterThan(logoIndex);
+    expect(headingIndex).toBeGreaterThan(photoIndex);
+    expect(html).toContain(
+      '<img src="http://localhost:3000/announcement-photo.jpg" alt="" width="100%" style="display: block; width: 100%; border-radius: 8px; border: 0;" />'
+    );
   });
 });
 
@@ -468,6 +505,34 @@ describe("sendApplicationRejected", () => {
     const call = vi.mocked(sendEmail).mock.calls[0][0];
     expect(call.html).not.toContain("agent-welcome-photo.jpg");
   });
+
+  it("uses its own photo, a welcome-style heading with just the first name, and matching body/bold styling", async () => {
+    await sendApplicationRejected("jane@example.com", "Jane Applicant", "Not enough experience");
+
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    const html = call.html!;
+    const logoIndex = html.indexOf("logo-black.png");
+    const photoIndex = html.indexOf("application-rejected-photo.jpg");
+    const headingIndex = html.indexOf("We Are So Sorry");
+
+    expect(logoIndex).toBeGreaterThan(-1);
+    expect(photoIndex).toBeGreaterThan(logoIndex);
+    expect(headingIndex).toBeGreaterThan(photoIndex);
+    expect(html).toContain(
+      '<h2 style="color: #1B1B1B; font-weight: 400; font-size: 33px; margin: 0 0 24px; text-align: center;">\n      Hi Jane, We Are So Sorry'
+    );
+    expect(html).not.toContain("Hi Jane Applicant");
+    expect(html).toContain(
+      '<p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.6; text-align: center; margin: 0 0 20px;">\n      After a thorough review, we are unable to move forward with your application at this time.'
+    );
+    expect(html).toContain('<strong style="font-weight: 700;">Reason:</strong> Not enough experience');
+    expect(html).toContain(
+      'Thank you for your interest in joining CnC Realty. If you have any questions, please feel free to <a href="mailto:info@cncrealtygroup.com" style="color: #9E8C61;">reach out</a>!'
+    );
+    expect(html).not.toContain("font-size: 15px");
+    expect(html).not.toContain("Thank you for your interest in joining CnC Realty. After reviewing");
+    expect(html).not.toContain("If you have questions, please reach out to");
+  });
 });
 
 describe("emailLayout", () => {
@@ -578,5 +643,22 @@ describe("emailLayout", () => {
     for (const tag of iconImgTags) {
       expect(tag).toMatch(/vertical-align:\s*middle/);
     }
+  });
+});
+
+describe("buildHeadingBodyHtml", () => {
+  it("renders the 33px centered heading and 22.5px/#4b4b4b body styling", () => {
+    const html = buildHeadingBodyHtml({ heading: "My Heading", bodyHtml: "<p>Body text</p>" });
+
+    expect(html).toContain("My Heading");
+    expect(html).toContain("font-size: 33px");
+    expect(html).toContain("font-size: 22.5px");
+    expect(html).toContain("#4b4b4b");
+    expect(html).toContain("<p>Body text</p>");
+  });
+
+  it("scopes paragraph spacing to its own content, not globally", () => {
+    const html = buildHeadingBodyHtml({ heading: "H", bodyHtml: "<p>x</p>" });
+    expect(html).toContain("#campaign-content p { margin: 0 0 20px; }");
   });
 });
