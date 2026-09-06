@@ -19,6 +19,7 @@ export default function NewCampaignPage() {
   const [name, setName] = useState("");
   const [type, setType] = useState<CampaignType>("EMAIL");
   const [subject, setSubject] = useState("");
+  const [heading, setHeading] = useState("");
   const [body, setBody] = useState("");
   const [dripSteps, setDripSteps] = useState<DripStepData[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -44,7 +45,7 @@ export default function NewCampaignPage() {
       const createRes = await fetch("/api/campaigns", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, type, subject: type === "DRIP" ? "" : subject }),
+        body: JSON.stringify({ name, type, subject: type === "DRIP" ? "" : subject, heading: type === "DRIP" ? "" : heading }),
       });
       if (!createRes.ok) {
         const data = await createRes.json();
@@ -152,16 +153,28 @@ export default function NewCampaignPage() {
               </div>
             </div>
             {type === "EMAIL" && (
-              <div className="flex flex-col gap-1.5">
-                <label className="font-sans text-sm text-[#1B1B1B]/60">Subject Line</label>
-                <input
-                  type="text"
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                  placeholder="Enter email subject..."
-                  className="rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-4 py-2.5 font-sans text-sm text-[#1B1B1B] outline-none focus:border-[#9E8C61] placeholder:text-[#1B1B1B]/30"
-                />
-              </div>
+              <>
+                <div className="flex flex-col gap-1.5">
+                  <label className="font-sans text-sm text-[#1B1B1B]/60">Subject Line</label>
+                  <input
+                    type="text"
+                    value={subject}
+                    onChange={(e) => setSubject(e.target.value)}
+                    placeholder="Enter email subject..."
+                    className="rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-4 py-2.5 font-sans text-sm text-[#1B1B1B] outline-none focus:border-[#9E8C61] placeholder:text-[#1B1B1B]/30"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="font-sans text-sm text-[#1B1B1B]/60">Heading (optional)</label>
+                  <input
+                    type="text"
+                    value={heading}
+                    onChange={(e) => setHeading(e.target.value)}
+                    placeholder="Defaults to subject line"
+                    className="rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-4 py-2.5 font-sans text-sm text-[#1B1B1B] outline-none focus:border-[#9E8C61] placeholder:text-[#1B1B1B]/30"
+                  />
+                </div>
+              </>
             )}
           </div>
         )}

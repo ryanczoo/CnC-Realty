@@ -10,6 +10,7 @@ type PlanStep = {
   delayDays: number;
   stepType: "EMAIL" | "TASK";
   subject: string | null;
+  heading: string | null;
   body: string | null;
   taskTitle: string | null;
 };
@@ -28,6 +29,7 @@ export function ActionPlanStepDrawer({ open, planId, step, onClose, onSaved, onD
   const [delayDays, setDelayDays] = useState(0);
   const [stepType, setStepType] = useState<"EMAIL" | "TASK">("EMAIL");
   const [subject, setSubject] = useState("");
+  const [heading, setHeading] = useState("");
   const [body, setBody] = useState("");
   const [taskTitle, setTaskTitle] = useState("");
   const [saving, setSaving] = useState(false);
@@ -39,6 +41,7 @@ export function ActionPlanStepDrawer({ open, planId, step, onClose, onSaved, onD
       setDelayDays(step.delayDays);
       setStepType(step.stepType);
       setSubject(step.subject ?? "");
+      setHeading(step.heading ?? "");
       setBody(step.body ?? "");
       setTaskTitle(step.taskTitle ?? "");
       setError(null);
@@ -47,6 +50,7 @@ export function ActionPlanStepDrawer({ open, planId, step, onClose, onSaved, onD
       setDelayDays(0);
       setStepType("EMAIL");
       setSubject("");
+      setHeading("");
       setBody("");
       setTaskTitle("");
       setError(null);
@@ -57,7 +61,7 @@ export function ActionPlanStepDrawer({ open, planId, step, onClose, onSaved, onD
     setSaving(true);
     setError(null);
     try {
-      const payload = { stepOrder, delayDays, stepType, subject: subject || null, body: body || null, taskTitle: taskTitle || null };
+      const payload = { stepOrder, delayDays, stepType, subject: subject || null, heading: heading || null, body: body || null, taskTitle: taskTitle || null };
       const url = step
         ? `/api/admin/action-plans/${planId}/steps/${step.id}`
         : `/api/admin/action-plans/${planId}/steps`;
@@ -131,6 +135,12 @@ export function ActionPlanStepDrawer({ open, planId, step, onClose, onSaved, onD
                 <input value={subject} onChange={(e) => setSubject(e.target.value)}
                   className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm outline-none focus:border-[#9E8C61]"
                   placeholder="e.g. Hi {{first_name}}, welcome to CnC!" />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs text-[#1B1B1B]/50">Heading (optional — defaults to subject)</label>
+                <input value={heading} onChange={(e) => setHeading(e.target.value)}
+                  className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm outline-none focus:border-[#9E8C61]"
+                  placeholder="e.g. A Warm Welcome" />
               </div>
               <div>
                 <label className="mb-1 block text-xs text-[#1B1B1B]/50">Body *</label>

@@ -12,6 +12,7 @@ type PlanStep = {
   delayDays: number;
   stepType: "EMAIL" | "TASK";
   subject: string | null;
+  heading: string | null;
   body: string | null;
   taskTitle: string | null;
 };

@@ -4,6 +4,7 @@ export type DripStepData = {
   stepOrder: number;
   delayDays: number;
   subject: string;
+  heading: string;
   body: string;
 };
 
@@ -20,6 +21,7 @@ export function DripSequenceEditor({ steps, onChange }: Props) {
         stepOrder: steps.length + 1,
         delayDays: steps.length === 0 ? 0 : 3,
         subject: "",
+        heading: "",
         body: "",
       },
     ]);
@@ -77,6 +79,14 @@ export function DripSequenceEditor({ steps, onChange }: Props) {
             placeholder="Subject line…"
             value={step.subject}
             onChange={(e) => updateStep(i, "subject", e.target.value)}
+            className="rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-4 py-2.5 font-sans text-sm text-[#1B1B1B] outline-none focus:border-[#9E8C61] placeholder:text-[#1B1B1B]/30"
+          />
+
+          <input
+            type="text"
+            placeholder="Heading (optional) — defaults to subject line"
+            value={step.heading}
+            onChange={(e) => updateStep(i, "heading", e.target.value)}
             className="rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-4 py-2.5 font-sans text-sm text-[#1B1B1B] outline-none focus:border-[#9E8C61] placeholder:text-[#1B1B1B]/30"
           />
 
