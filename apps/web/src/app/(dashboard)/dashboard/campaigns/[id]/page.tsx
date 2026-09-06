@@ -93,8 +93,14 @@ export default function CampaignDetailPage() {
   const handleStartNow = async () => {
     if (!confirm("Start this campaign now instead of waiting for its scheduled time?")) return;
     setStartingNow(true);
+    setSendError(null);
     try {
-      await fetch(`/api/campaigns/${id}/start-now`, { method: "POST" });
+      const res = await fetch(`/api/campaigns/${id}/start-now`, { method: "POST" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setSendError(data?.error ?? "Something went wrong starting this campaign.");
+        return;
+      }
       const updated = await fetch(`/api/campaigns/${id}`).then((r) => r.json());
       setCampaign(updated);
     } finally {
@@ -265,29 +271,33 @@ export default function CampaignDetailPage() {
             />
           </div>
         )}
-        {campaign.type === "DRIP" && campaign.steps.length > 0 && (
+        {campaign.type === "DRIP" && (
           <div className="mt-5 border-t border-[#1B1B1B]/5 pt-5">
             <p className="mb-3 font-sans text-sm text-[#1B1B1B]/50">Drip Steps</p>
-            <div className="flex flex-col gap-4">
-              {campaign.steps.map((step) => {
-                const sentCount = step.deliveries.filter((d) => d.status === "SENT").length;
-                const totalCount = step.deliveries.length;
-                return (
-                  <div key={step.id} className="rounded-lg border border-[#1B1B1B]/10 p-4">
-                    <div className="mb-2 flex items-center justify-between">
-                      <p className="font-sans text-sm font-medium text-[#1B1B1B]">
-                        Step {step.stepOrder} — {step.delayDays === 0 ? "immediately" : `${step.delayDays} day(s) after the previous step`}
-                      </p>
-                      <p className="font-sans text-xs text-[#1B1B1B]/50">
-                        {sentCount} of {totalCount} sent
-                      </p>
+            {campaign.steps.length === 0 ? (
+              <p className="font-sans text-sm text-[#1B1B1B]/40">No steps configured yet.</p>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {campaign.steps.map((step) => {
+                  const sentCount = step.deliveries.filter((d) => d.status === "SENT").length;
+                  const totalCount = step.deliveries.length;
+                  return (
+                    <div key={step.id} className="rounded-lg border border-[#1B1B1B]/10 p-4">
+                      <div className="mb-2 flex items-center justify-between">
+                        <p className="font-sans text-sm font-medium text-[#1B1B1B]">
+                          Step {step.stepOrder} — {step.delayDays === 0 ? "immediately" : `${step.delayDays} day(s) after the previous step`}
+                        </p>
+                        <p className="font-sans text-xs text-[#1B1B1B]/50">
+                          {sentCount} of {totalCount} sent
+                        </p>
+                      </div>
+                      <p className="font-sans text-sm text-[#1B1B1B]/80">{step.heading || step.subject}</p>
+                      <p className="mt-1 font-sans text-xs text-[#1B1B1B]/50">{step.body}</p>
                     </div>
-                    <p className="font-sans text-sm text-[#1B1B1B]/80">{step.heading || step.subject}</p>
-                    <p className="mt-1 font-sans text-xs text-[#1B1B1B]/50">{step.body}</p>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </div>
