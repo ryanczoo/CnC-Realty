@@ -118,6 +118,9 @@ export async function POST(req: NextRequest) {
         return "processed";
       } catch (e) {
         console.error(`[campaign-deliveries-cron] delivery ${delivery.id} failed:`, e);
+        await prisma.campaignDelivery
+          .update({ where: { id: delivery.id }, data: { status: "ERROR", executedAt: now } })
+          .catch(() => {});
         return "error";
       }
     })
@@ -145,12 +148,24 @@ export async function POST(req: NextRequest) {
     )
   );
 
+  // Compute campaign IDs from deliveries that were actually processed or errored
+  // (exclude skipped-limit since those never left PENDING status)
+  const processedCampaignIds = Array.from(
+    new Set(
+      dueDeliveries
+        .map((d, i) => ({ campaignId: d.campaignContact.campaign.id, outcome: results[i] }))
+        .filter((entry) => entry.outcome !== "skipped-limit")
+        .map((entry) => entry.campaignId)
+    )
+  );
+
   const campaignIds = Array.from(
     new Set(dueDeliveries.map((d) => d.campaignContact.campaign.id))
   );
+
   // SCHEDULED → ACTIVE the moment a campaign's first delivery actually sends.
   await Promise.all(
-    campaignIds.map((id) =>
+    processedCampaignIds.map((id) =>
       prisma.campaign.updateMany({
         where: { id, status: "SCHEDULED" },
         data: { status: "ACTIVE", sentAt: now },

@@ -152,8 +152,8 @@ describe("POST /api/cron/campaign-deliveries", () => {
 
     expect(body.errors).toBe(1);
     expect(body.processed).toBe(1);
-    expect(prisma.campaignDelivery.update).not.toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: "d-fail" } })
+    expect(prisma.campaignDelivery.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: "d-fail" }, data: expect.objectContaining({ status: "ERROR" }) })
     );
     expect(prisma.campaignDelivery.update).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: "d2" }, data: expect.objectContaining({ status: "SENT" }) })
@@ -183,6 +183,19 @@ describe("POST /api/cron/campaign-deliveries", () => {
         where: { id: "c1", status: "SCHEDULED" },
         data: expect.objectContaining({ status: "ACTIVE" }),
       })
+    );
+  });
+
+  it("does not flip a SCHEDULED campaign to ACTIVE when its only due delivery was held back by quota", async () => {
+    vi.mocked(prisma.campaignDelivery.findMany).mockResolvedValue([plainEmailDelivery()] as any);
+    vi.mocked(prisma.agent.updateMany)
+      .mockResolvedValueOnce({ count: 0 } as any) // ensureQuotaReset
+      .mockResolvedValueOnce({ count: 0 } as any); // tryConsumeEmailQuota: at limit
+
+    await POST(makeReq(CRON_SECRET));
+
+    expect(prisma.campaign.updateMany).not.toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ id: "c1", status: "SCHEDULED" }) })
     );
   });
 
