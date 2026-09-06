@@ -74,17 +74,20 @@ export default function NewCampaignPage() {
         }),
       ]);
 
-      if (!sendNow && scheduledAt) {
-        await fetch(`/api/campaigns/${campaign.id}`, {
-          method: "PATCH",
+      if (sendNow && type === "EMAIL") {
+        // Unchanged, still the synchronous immediate-send path.
+        await fetch(`/api/campaigns/${campaign.id}/send`, { method: "POST" });
+      } else {
+        // Covers a scheduled one-off EMAIL and every DRIP campaign
+        // (sendNow or scheduled) — both now go through the delivery engine.
+        await fetch(`/api/campaigns/${campaign.id}/schedule`, {
+          method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            scheduledAt: new Date(scheduledAt).toISOString(),
-            status: "SCHEDULED",
+            sendNow,
+            scheduledAt: !sendNow && scheduledAt ? new Date(scheduledAt).toISOString() : undefined,
           }),
         });
-      } else if (sendNow && type === "EMAIL") {
-        await fetch(`/api/campaigns/${campaign.id}/send`, { method: "POST" });
       }
 
       router.push("/dashboard/campaigns");
