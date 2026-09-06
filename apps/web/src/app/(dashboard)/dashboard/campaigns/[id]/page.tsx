@@ -25,6 +25,15 @@ interface Campaign {
   createdAt: string;
   contacts: ContactRow[];
   _count: { contacts: number };
+  steps: {
+    id: string;
+    stepOrder: number;
+    delayDays: number;
+    subject: string;
+    heading?: string | null;
+    body: string;
+    deliveries: { status: string }[];
+  }[];
 }
 
 export default function CampaignDetailPage() {
@@ -33,6 +42,7 @@ export default function CampaignDetailPage() {
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [startingNow, setStartingNow] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [sendResult, setSendResult] = useState<{
     sent: number;
@@ -80,6 +90,18 @@ export default function CampaignDetailPage() {
     }
   };
 
+  const handleStartNow = async () => {
+    if (!confirm("Start this campaign now instead of waiting for its scheduled time?")) return;
+    setStartingNow(true);
+    try {
+      await fetch(`/api/campaigns/${id}/start-now`, { method: "POST" });
+      const updated = await fetch(`/api/campaigns/${id}`).then((r) => r.json());
+      setCampaign(updated);
+    } finally {
+      setStartingNow(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!confirm("Delete this campaign? This cannot be undone.")) return;
     setDeleting(true);
@@ -116,7 +138,11 @@ export default function CampaignDetailPage() {
   ).length;
   const openedCount = campaign.contacts.filter((c) => ["OPENED", "CLICKED"].includes(c.status)).length;
   const clickedCount = campaign.contacts.filter((c) => c.status === "CLICKED").length;
-  const canSend = campaign.status === "DRAFT" && campaign.contacts.some((c) => c.status === "PENDING");
+  const canSend =
+    campaign.type === "EMAIL" &&
+    campaign.status === "DRAFT" &&
+    campaign.contacts.some((c) => c.status === "PENDING");
+  const canStartNow = campaign.status === "SCHEDULED";
 
   return (
     <div className="flex flex-col gap-8">
@@ -149,6 +175,16 @@ export default function CampaignDetailPage() {
               className="rounded-full bg-[#9E8C61] px-4 py-2 font-sans text-sm text-white hover:bg-[#9E8C61]/80 disabled:opacity-40 transition-colors"
             >
               {sending ? "Sending…" : "Send Now"}
+            </button>
+          )}
+          {canStartNow && (
+            <button
+              type="button"
+              onClick={handleStartNow}
+              disabled={startingNow}
+              className="rounded-full bg-[#9E8C61] px-4 py-2 font-sans text-sm text-white hover:bg-[#9E8C61]/80 disabled:opacity-40 transition-colors"
+            >
+              {startingNow ? "Starting…" : "Start Now"}
             </button>
           )}
           <button
@@ -220,13 +256,38 @@ export default function CampaignDetailPage() {
             </div>
           )}
         </dl>
-        {campaign.body && (
+        {campaign.type === "EMAIL" && campaign.body && (
           <div className="mt-5 border-t border-[#1B1B1B]/5 pt-5">
             <p className="mb-3 font-sans text-sm text-[#1B1B1B]/50">Body Preview</p>
             <div
               className="prose prose-sm max-w-none font-sans text-sm text-[#1B1B1B]"
               dangerouslySetInnerHTML={{ __html: campaign.body }}
             />
+          </div>
+        )}
+        {campaign.type === "DRIP" && campaign.steps.length > 0 && (
+          <div className="mt-5 border-t border-[#1B1B1B]/5 pt-5">
+            <p className="mb-3 font-sans text-sm text-[#1B1B1B]/50">Drip Steps</p>
+            <div className="flex flex-col gap-4">
+              {campaign.steps.map((step) => {
+                const sentCount = step.deliveries.filter((d) => d.status === "SENT").length;
+                const totalCount = step.deliveries.length;
+                return (
+                  <div key={step.id} className="rounded-lg border border-[#1B1B1B]/10 p-4">
+                    <div className="mb-2 flex items-center justify-between">
+                      <p className="font-sans text-sm font-medium text-[#1B1B1B]">
+                        Step {step.stepOrder} — {step.delayDays === 0 ? "immediately" : `${step.delayDays} day(s) after the previous step`}
+                      </p>
+                      <p className="font-sans text-xs text-[#1B1B1B]/50">
+                        {sentCount} of {totalCount} sent
+                      </p>
+                    </div>
+                    <p className="font-sans text-sm text-[#1B1B1B]/80">{step.heading || step.subject}</p>
+                    <p className="mt-1 font-sans text-xs text-[#1B1B1B]/50">{step.body}</p>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>

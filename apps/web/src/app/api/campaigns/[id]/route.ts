@@ -31,6 +31,10 @@ export async function GET(
           lead: { select: { id: true, firstName: true, lastName: true, email: true } },
         },
       },
+      steps: {
+        orderBy: { stepOrder: "asc" },
+        include: { deliveries: { select: { status: true } } },
+      },
       _count: { select: { contacts: true } },
     },
   });
