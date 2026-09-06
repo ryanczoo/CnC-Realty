@@ -13,7 +13,7 @@ export function substituteVars(
     .replace(/\{\{agent_phone\}\}/g, vars.agentPhone);
 }
 
-function paragraph(body: string): string {
+export function paragraph(body: string): string {
   return `<p style="color: #4b4b4b; font-size: 15px; line-height: 1.6;">${escapeHtml(body).replace(/\n/g, "<br>")}</p>`;
 }
 
