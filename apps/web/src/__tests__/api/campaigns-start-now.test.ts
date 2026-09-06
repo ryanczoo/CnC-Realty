@@ -5,7 +5,7 @@ vi.mock("@/lib/api-auth", async (importOriginal) => ({
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     campaign: { findUnique: vi.fn(), update: vi.fn() },
-    campaignDelivery: { findMany: vi.fn(), update: vi.fn() },
+    campaignDelivery: { findMany: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
   },
 }));
 
@@ -29,6 +29,7 @@ describe("POST /api/campaigns/[id]/start-now", () => {
     vi.mocked(requireAuth).mockResolvedValue(AGENT_SESSION);
     vi.mocked(prisma.campaign.update).mockResolvedValue({} as any);
     vi.mocked(prisma.campaignDelivery.update).mockResolvedValue({} as any);
+    vi.mocked(prisma.campaignDelivery.updateMany).mockResolvedValue({ count: 1 } as any);
   });
 
   it("returns 403 when the campaign belongs to a different agent", async () => {
@@ -58,30 +59,61 @@ describe("POST /api/campaigns/[id]/start-now", () => {
   });
 
   it("shifts every PENDING delivery by the same delta, preserving relative spacing", async () => {
+    const early = new Date("2030-01-10T00:00:00.000Z");
+    const late = new Date("2030-01-13T00:00:00.000Z"); // 3 days after `early`
     vi.mocked(prisma.campaign.findUnique).mockResolvedValue({ id: "c1", agentId: "a1", status: "SCHEDULED" } as any);
     vi.mocked(prisma.campaignDelivery.findMany).mockResolvedValue([
-      { id: "d1", dueAt: new Date("2030-01-10T00:00:00.000Z") },
-      { id: "d2", dueAt: new Date("2030-01-13T00:00:00.000Z") }, // 3 days after d1
+      { id: "d1", dueAt: early },
+      // Same dueAt as d1 — a second recipient on the same drip step. Both are
+      // covered by one grouped updateMany, not one update per row.
+      { id: "d1b", dueAt: new Date(early.getTime()) },
+      { id: "d2", dueAt: late },
     ] as any);
 
     const before = Date.now();
     const res = await POST(request(), { params: { id: "c1" } });
     expect(res.status).toBe(200);
 
-    const calls = vi.mocked(prisma.campaignDelivery.update).mock.calls;
+    // One write per distinct dueAt (2), not one per pending row (3).
+    const calls = vi.mocked(prisma.campaignDelivery.updateMany).mock.calls.map((c) => c[0] as any);
     expect(calls).toHaveLength(2);
-    const d1Call = calls.find((c) => (c[0] as any).where.id === "d1")![0] as any;
-    const d2Call = calls.find((c) => (c[0] as any).where.id === "d2")![0] as any;
+    expect(prisma.campaignDelivery.update).not.toHaveBeenCalled();
 
-    // d1 (the earliest) becomes due essentially immediately.
-    expect(d1Call.data.dueAt.getTime()).toBeGreaterThanOrEqual(before);
-    // d2 keeps its original 3-day gap relative to d1's new time.
-    const gapMs = d2Call.data.dueAt.getTime() - d1Call.data.dueAt.getTime();
+    const earlyCall = calls.find((c) => c.where.dueAt.getTime() === early.getTime())!;
+    const lateCall = calls.find((c) => c.where.dueAt.getTime() === late.getTime())!;
+
+    // Each group is scoped to this campaign's still-PENDING rows only.
+    for (const call of calls) {
+      expect(call.where.status).toBe("PENDING");
+      expect(call.where.campaignContact).toEqual({ campaignId: "c1" });
+    }
+
+    // The earliest becomes due essentially immediately.
+    expect(earlyCall.data.dueAt.getTime()).toBeGreaterThanOrEqual(before);
+    // The later group keeps its original 3-day gap relative to the new time.
+    const gapMs = lateCall.data.dueAt.getTime() - earlyCall.data.dueAt.getTime();
     expect(gapMs).toBe(3 * 24 * 60 * 60 * 1000);
 
     expect(prisma.campaign.update).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: "c1" }, data: expect.objectContaining({ status: "ACTIVE" }) })
     );
+  });
+
+  it("never pushes an already-overdue delivery further into the future", async () => {
+    // Overdue happens for real: quota exhaustion holds deliveries back while
+    // the campaign stays SCHEDULED. An unclamped positive delta would move
+    // every pending row forward — the opposite of "start now."
+    const overdue = new Date("2020-01-01T00:00:00.000Z");
+    vi.mocked(prisma.campaign.findUnique).mockResolvedValue({ id: "c1", agentId: "a1", status: "SCHEDULED" } as any);
+    vi.mocked(prisma.campaignDelivery.findMany).mockResolvedValue([
+      { id: "d1", dueAt: overdue },
+    ] as any);
+
+    const res = await POST(request(), { params: { id: "c1" } });
+    expect(res.status).toBe(200);
+
+    const call = vi.mocked(prisma.campaignDelivery.updateMany).mock.calls[0][0] as any;
+    expect(call.data.dueAt.getTime()).toBeLessThanOrEqual(overdue.getTime());
   });
 
   it("leaves already-terminal deliveries alone", async () => {

@@ -32,7 +32,8 @@ interface Campaign {
     subject: string;
     heading?: string | null;
     body: string;
-    deliveries: { status: string }[];
+    _count: { deliveries: number };
+    deliveries: { id: string }[];
   }[];
 }
 
@@ -279,8 +280,8 @@ export default function CampaignDetailPage() {
             ) : (
               <div className="flex flex-col gap-4">
                 {campaign.steps.map((step) => {
-                  const sentCount = step.deliveries.filter((d) => d.status === "SENT").length;
-                  const totalCount = step.deliveries.length;
+                  const sentCount = step.deliveries.length;
+                  const totalCount = step._count.deliveries;
                   return (
                     <div key={step.id} className="rounded-lg border border-[#1B1B1B]/10 p-4">
                       <div className="mb-2 flex items-center justify-between">

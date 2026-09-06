@@ -6,6 +6,9 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     campaign: { findUnique: vi.fn(), update: vi.fn() },
     campaignDelivery: { createMany: vi.fn() },
+    // The route materializes rows and advances the campaign's status in one
+    // transaction, so the mock has to actually run the operations it is handed.
+    $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
   },
 }));
 
@@ -33,10 +36,17 @@ function draftCampaign(overrides: object = {}) {
     agentId: "a1",
     status: "DRAFT",
     type: "EMAIL",
+    subject: "Hello",
+    body: "<p>Hi there</p>",
     contacts: [{ id: "cc1" }],
     steps: [],
     ...overrides,
   };
+}
+
+/** A step with content, so it clears the per-step validation gate. */
+function step(id: string, stepOrder: number, delayDays: number, overrides: object = {}) {
+  return { id, stepOrder, delayDays, subject: `Subject ${stepOrder}`, body: "Body", ...overrides };
 }
 
 describe("POST /api/campaigns/[id]/schedule — ownership", () => {
@@ -90,6 +100,35 @@ describe("POST /api/campaigns/[id]/schedule — validation", () => {
     expect(res.status).toBe(400);
     expect((await res.json()).error).toMatch(/steps/i);
     expect(prisma.campaignDelivery.createMany).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when an EMAIL campaign has no subject or body", async () => {
+    // /send already refuses this; without the same gate here a blank campaign
+    // materializes and the cron sends every recipient an empty message.
+    vi.mocked(prisma.campaign.findUnique).mockResolvedValue(
+      draftCampaign({ subject: "", body: "" }) as any
+    );
+
+    const res = await POST(request({ sendNow: true }), { params: { id: "c1" } });
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toMatch(/subject and body/i);
+    expect(prisma.campaignDelivery.createMany).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when any DRIP step has an empty subject or body", async () => {
+    vi.mocked(prisma.campaign.findUnique).mockResolvedValue(
+      draftCampaign({
+        type: "DRIP",
+        steps: [step("step1", 1, 0), step("step2", 2, 3, { body: "" })],
+      }) as any
+    );
+
+    const res = await POST(request({ sendNow: true }), { params: { id: "c1" } });
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toMatch(/step/i);
+    expect(prisma.campaignDelivery.createMany).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
   it("returns 400 when scheduling for later without a scheduledAt", async () => {
@@ -172,11 +211,7 @@ describe("POST /api/campaigns/[id]/schedule — materialization", () => {
       draftCampaign({
         type: "DRIP",
         contacts: [{ id: "cc1" }],
-        steps: [
-          { id: "step1", stepOrder: 1, delayDays: 0 },
-          { id: "step2", stepOrder: 2, delayDays: 3 },
-          { id: "step3", stepOrder: 3, delayDays: 3 },
-        ],
+        steps: [step("step1", 1, 0), step("step2", 2, 3), step("step3", 3, 3)],
       }) as any
     );
 
@@ -200,10 +235,7 @@ describe("POST /api/campaigns/[id]/schedule — materialization", () => {
       draftCampaign({
         type: "DRIP",
         contacts: [{ id: "cc1" }, { id: "cc2" }],
-        steps: [
-          { id: "step1", stepOrder: 1, delayDays: 0 },
-          { id: "step2", stepOrder: 2, delayDays: 3 },
-        ],
+        steps: [step("step1", 1, 0), step("step2", 2, 3)],
       }) as any
     );
 

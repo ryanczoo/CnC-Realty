@@ -34,7 +34,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     where: { id: params.id },
     include: {
       contacts: { select: { id: true } },
-      steps: { orderBy: { stepOrder: "asc" }, select: { id: true, delayDays: true } },
+      steps: { orderBy: { stepOrder: "asc" }, select: { id: true, delayDays: true, subject: true, body: true } },
     },
   });
   if (!campaign) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -52,6 +52,18 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   }
   if (campaign.type === "DRIP" && campaign.steps.length === 0) {
     return NextResponse.json({ error: "DRIP campaign has no steps" }, { status: 400 });
+  }
+  if (campaign.type === "EMAIL" && (!campaign.subject || !campaign.body)) {
+    return NextResponse.json(
+      { error: "Campaign must have a subject and body before scheduling" },
+      { status: 400 }
+    );
+  }
+  if (campaign.type === "DRIP" && campaign.steps.some((s) => !s.subject || !s.body)) {
+    return NextResponse.json(
+      { error: "Every DRIP step must have a subject and body before scheduling" },
+      { status: 400 }
+    );
   }
 
   let startTime: Date;
@@ -90,14 +102,18 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     }
   }
 
-  await prisma.campaignDelivery.createMany({ data: rows });
-
-  await prisma.campaign.update({
-    where: { id: params.id },
-    data: data.sendNow
-      ? { status: "ACTIVE", sentAt: startTime }
-      : { status: "SCHEDULED" },
-  });
+  // One transaction, not two awaited writes: a partial failure must never
+  // leave delivery rows materialized against a campaign still stuck at DRAFT,
+  // which would let a retry re-materialize a second full set and double-send.
+  await prisma.$transaction([
+    prisma.campaignDelivery.createMany({ data: rows }),
+    prisma.campaign.update({
+      where: { id: params.id },
+      data: data.sendNow
+        ? { status: "ACTIVE", sentAt: startTime }
+        : { status: "SCHEDULED" },
+    }),
+  ]);
 
   return NextResponse.json({ ok: true });
 }

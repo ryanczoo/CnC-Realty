@@ -1,13 +1,13 @@
 process.env.NEXTAUTH_SECRET = "test-secret";
 process.env.NEXTAUTH_URL = "http://localhost:3000";
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { NextRequest } from "next/server";
 
 vi.mock("@/lib/email/send", () => ({ sendEmail: vi.fn().mockResolvedValue({ sent: true }) }));
 vi.mock("@/lib/prisma", () => ({
   prisma: {
-    campaignDelivery: { findMany: vi.fn(), update: vi.fn() },
+    campaignDelivery: { findMany: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
     campaignContact: { updateMany: vi.fn() },
     campaign: { updateMany: vi.fn(), findMany: vi.fn() },
     agent: { updateMany: vi.fn() },
@@ -16,7 +16,7 @@ vi.mock("@/lib/prisma", () => ({
 
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email/send";
-import { POST } from "../../app/api/cron/campaign-deliveries/route";
+import { POST, GET } from "../../app/api/cron/campaign-deliveries/route";
 
 const CRON_SECRET = "test-secret";
 process.env.CRON_SECRET = CRON_SECRET;
@@ -63,14 +63,27 @@ function dripStepDelivery(overrides: object = {}) {
   };
 }
 
+function resetMocks() {
+  vi.mocked(prisma.agent.updateMany).mockResolvedValue({ count: 1 } as any);
+  vi.mocked(prisma.campaignDelivery.update).mockResolvedValue({} as any);
+  vi.mocked(prisma.campaignDelivery.updateMany).mockResolvedValue({ count: 0 } as any);
+  vi.mocked(prisma.campaignContact.updateMany).mockResolvedValue({ count: 0 } as any);
+  vi.mocked(prisma.campaign.updateMany).mockResolvedValue({ count: 0 } as any);
+  vi.mocked(prisma.campaign.findMany).mockResolvedValue([]);
+}
+
+function setEnv() {
+  process.env.POSTMARK_SERVER_TOKEN = "test-key";
+  process.env.POSTMARK_BROADCAST_STREAM = "test-broadcast-stream";
+  process.env.NEXTAUTH_SECRET = "test-secret";
+  process.env.NEXTAUTH_URL = "http://localhost:3000";
+}
+
 describe("POST /api/cron/campaign-deliveries", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(prisma.agent.updateMany).mockResolvedValue({ count: 1 } as any);
-    vi.mocked(prisma.campaignDelivery.update).mockResolvedValue({} as any);
-    vi.mocked(prisma.campaignContact.updateMany).mockResolvedValue({ count: 0 } as any);
-    vi.mocked(prisma.campaign.updateMany).mockResolvedValue({ count: 0 } as any);
-    vi.mocked(prisma.campaign.findMany).mockResolvedValue([]);
+    setEnv();
+    resetMocks();
   });
 
   it("returns 401 without auth", async () => {
@@ -152,8 +165,12 @@ describe("POST /api/cron/campaign-deliveries", () => {
 
     expect(body.errors).toBe(1);
     expect(body.processed).toBe(1);
-    expect(prisma.campaignDelivery.update).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: "d-fail" }, data: expect.objectContaining({ status: "ERROR" }) })
+    // Left PENDING, not marked ERROR: ERROR is terminal and the cron's own
+    // query never re-selects it, so a transient failure must not write any
+    // terminal status for this delivery — the next run picks it up again.
+    // Same shape as the over-quota test above: nothing is written for its id.
+    expect(prisma.campaignDelivery.update).not.toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: "d-fail" } })
     );
     expect(prisma.campaignDelivery.update).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: "d2" }, data: expect.objectContaining({ status: "SENT" }) })
@@ -168,9 +185,50 @@ describe("POST /api/cron/campaign-deliveries", () => {
     await POST(makeReq(CRON_SECRET));
 
     expect(prisma.campaignContact.updateMany).toHaveBeenCalledWith({
-      where: { id: "cc1", deliveries: { none: { status: "PENDING" } } },
+      where: {
+        id: "cc1",
+        status: "PENDING",
+        deliveries: { none: { status: "PENDING" } },
+        NOT: { deliveries: { some: { status: "SKIPPED" } } },
+      },
       data: { status: "SENT" },
     });
+  });
+
+  it("marks a contact UNSUBSCRIBED, not SENT, when it has a SKIPPED delivery", async () => {
+    vi.mocked(prisma.campaignDelivery.findMany).mockResolvedValue([plainEmailDelivery()] as any);
+    // The send is suppressed, so this contact's only delivery ends SKIPPED.
+    vi.mocked(sendEmail).mockResolvedValueOnce({ sent: false, reason: "opted_out" });
+
+    await POST(makeReq(CRON_SECRET));
+
+    expect(prisma.campaignContact.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: "cc1",
+        status: "PENDING",
+        deliveries: { none: { status: "PENDING" } },
+        AND: { deliveries: { some: { status: "SKIPPED" } } },
+      },
+      data: { status: "UNSUBSCRIBED" },
+    });
+  });
+
+  it("guards both rollups on status PENDING so an OPENED contact is never downgraded", async () => {
+    vi.mocked(prisma.campaignDelivery.findMany).mockResolvedValue([plainEmailDelivery()] as any);
+
+    await POST(makeReq(CRON_SECRET));
+
+    // A contact already flipped to OPENED/CLICKED by the webhook cannot match
+    // either where clause, so neither rollup can write over it. Asserted on
+    // the where shape rather than by simulating real Prisma filtering.
+    const rollups = vi
+      .mocked(prisma.campaignContact.updateMany)
+      .mock.calls.map((c) => c[0] as any);
+    expect(rollups).toHaveLength(2);
+    for (const call of rollups) {
+      expect(call.where.status).toBe("PENDING");
+    }
+    expect(rollups.map((c) => c.data.status).sort()).toEqual(["SENT", "UNSUBSCRIBED"]);
   });
 
   it("flips a SCHEDULED campaign to ACTIVE with sentAt on its first successful send", async () => {
@@ -251,5 +309,99 @@ describe("POST /api/cron/campaign-deliveries", () => {
     const call = vi.mocked(sendEmail).mock.calls[0][0];
     expect(call.subject).toBe("Step subject");
     expect(call.html).toContain("Step Heading");
+  });
+
+  it("pre-marks opted-out deliveries SKIPPED and excludes them from the send batch", async () => {
+    // The main query filters opted-out leads out at the database, so the batch
+    // the route actually processes contains only the still-subscribed one.
+    vi.mocked(prisma.campaignDelivery.findMany).mockResolvedValue([plainEmailDelivery()] as any);
+
+    await POST(makeReq(CRON_SECRET));
+
+    // (b) The pre-mark pass resolves opted-out rows to a terminal state rather
+    // than leaving them PENDING forever.
+    const premark = vi.mocked(prisma.campaignDelivery.updateMany).mock.calls[0][0] as any;
+    expect(premark.where).toMatchObject({
+      status: "PENDING",
+      campaignContact: { lead: { campaignOptOut: true } },
+    });
+    expect(premark.data.status).toBe("SKIPPED");
+    expect(premark.data.executedAt).toBeInstanceOf(Date);
+
+    // (a) The send batch only ever selects leads who have not opted out, so no
+    // opted-out recipient can reach sendEmail — the N+1 per-recipient check in
+    // the seam is no longer the thing doing the filtering.
+    const query = vi.mocked(prisma.campaignDelivery.findMany).mock.calls[0][0] as any;
+    expect(query.where).toMatchObject({
+      status: "PENDING",
+      campaignContact: { lead: { campaignOptOut: false } },
+    });
+    expect(sendEmail).toHaveBeenCalledOnce();
+    expect(vi.mocked(sendEmail).mock.calls[0][0].to).toBe("lead@example.com");
+  });
+
+  it("bounds one invocation's batch so a huge backlog cannot fan out unbounded", async () => {
+    vi.mocked(prisma.campaignDelivery.findMany).mockResolvedValue([plainEmailDelivery()] as any);
+
+    await POST(makeReq(CRON_SECRET));
+
+    const query = vi.mocked(prisma.campaignDelivery.findMany).mock.calls[0][0] as any;
+    expect(query.take).toBe(500);
+  });
+
+  it("exposes GET as an alias of POST — Vercel Cron invokes scheduled routes with GET", async () => {
+    expect(GET).toBe(POST);
+
+    vi.mocked(prisma.campaignDelivery.findMany).mockResolvedValue([plainEmailDelivery()] as any);
+    const res = await GET(
+      new NextRequest("http://localhost/api/cron/campaign-deliveries", {
+        headers: { authorization: `Bearer ${CRON_SECRET}` },
+      })
+    );
+    expect(res.status).toBe(200);
+    expect(sendEmail).toHaveBeenCalledOnce();
+  });
+});
+
+describe("POST /api/cron/campaign-deliveries — env preflight", () => {
+  const VARS = [
+    "POSTMARK_SERVER_TOKEN",
+    "POSTMARK_BROADCAST_STREAM",
+    "NEXTAUTH_SECRET",
+    "NEXTAUTH_URL",
+  ] as const;
+
+  const originals: Record<string, string | undefined> = {};
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    setEnv();
+    resetMocks();
+    for (const v of VARS) originals[v] = process.env[v];
+  });
+
+  afterEach(() => {
+    for (const v of VARS) {
+      if (originals[v] === undefined) delete process.env[v];
+      else process.env[v] = originals[v];
+    }
+  });
+
+  it.each(VARS)("returns 500 and touches no database when %s is unset", async (name) => {
+    delete process.env[name];
+
+    const res = await POST(makeReq(CRON_SECRET));
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: `${name} not configured` });
+
+    // Fails before any state mutation, so a misconfigured deploy cannot mark
+    // deliveries terminal or roll contacts/campaigns forward with nothing sent.
+    expect(prisma.campaignDelivery.findMany).not.toHaveBeenCalled();
+    expect(prisma.campaignDelivery.updateMany).not.toHaveBeenCalled();
+    expect(prisma.campaignDelivery.update).not.toHaveBeenCalled();
+    expect(prisma.campaignContact.updateMany).not.toHaveBeenCalled();
+    expect(prisma.campaign.updateMany).not.toHaveBeenCalled();
+    expect(sendEmail).not.toHaveBeenCalled();
   });
 });

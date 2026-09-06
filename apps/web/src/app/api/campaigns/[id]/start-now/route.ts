@@ -25,13 +25,24 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
 
   if (pending.length > 0) {
     const earliestDueAt = Math.min(...pending.map((d) => d.dueAt.getTime()));
-    const delta = Date.now() - earliestDueAt;
+    // Clamped to non-positive: if the earliest delivery is already overdue
+    // (e.g. was held back by quota exhaustion while the campaign stayed
+    // SCHEDULED), a positive delta would push every pending delivery
+    // further into the future — the opposite of "start now."
+    const delta = Math.min(0, Date.now() - earliestDueAt);
 
+    // Grouped by distinct dueAt rather than one update per row: there are at
+    // most as many distinct values as there are drip steps, typically far
+    // fewer than the number of pending recipient rows.
+    const byDueAt = new Map<number, Date>();
+    for (const d of pending) {
+      byDueAt.set(d.dueAt.getTime(), d.dueAt);
+    }
     await Promise.all(
-      pending.map((d) =>
-        prisma.campaignDelivery.update({
-          where: { id: d.id },
-          data: { dueAt: new Date(d.dueAt.getTime() + delta) },
+      Array.from(byDueAt.entries()).map(([time, originalDueAt]) =>
+        prisma.campaignDelivery.updateMany({
+          where: { status: "PENDING", campaignContact: { campaignId: params.id }, dueAt: originalDueAt },
+          data: { dueAt: new Date(time + delta) },
         })
       )
     );

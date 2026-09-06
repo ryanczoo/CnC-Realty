@@ -14,10 +14,57 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  if (!process.env.POSTMARK_SERVER_TOKEN) {
+    return NextResponse.json({ error: "POSTMARK_SERVER_TOKEN not configured" }, { status: 500 });
+  }
+
+  // Preflight, not per-delivery: the seam throws for an unconfigured broadcast
+  // stream, and the per-delivery catch below would bury that throw as N
+  // failures — a 200 response reporting only `errors`, with nothing delivered.
+  // Fail here, before any state mutation, so a misconfigured deploy is loud.
+  if (!process.env.POSTMARK_BROADCAST_STREAM) {
+    return NextResponse.json({ error: "POSTMARK_BROADCAST_STREAM not configured" }, { status: 500 });
+  }
+
+  // Same reasoning: unsubscribe links are signed with this, so without it every
+  // recipient throws inside the per-delivery catch and the run reports success
+  // having delivered nothing.
+  if (!process.env.NEXTAUTH_SECRET) {
+    return NextResponse.json({ error: "NEXTAUTH_SECRET not configured" }, { status: 500 });
+  }
+
+  // The quietest failure of the four: unset, the URL builders interpolate the
+  // literal string "undefined", so every message ships a List-Unsubscribe
+  // header and a footer link pointing at `undefined/...`. Postmark enforces
+  // that the header is present, not that it resolves — so this sends
+  // successfully with a dead opt-out link, which is worse than not sending.
+  if (!process.env.NEXTAUTH_URL) {
+    return NextResponse.json({ error: "NEXTAUTH_URL not configured" }, { status: 500 });
+  }
+
   const now = new Date();
 
+  // Pre-mark: a lead who opted out since their delivery was materialized is
+  // flagged here, mirroring the same pattern in /send. Without this, the
+  // main query below would simply never select these rows again — they'd
+  // stay PENDING forever instead of resolving to a terminal state, and their
+  // contact/campaign could never roll up to SENT/COMPLETED.
+  await prisma.campaignDelivery.updateMany({
+    where: {
+      status: "PENDING",
+      dueAt: { lte: now },
+      campaignContact: { lead: { campaignOptOut: true } },
+    },
+    data: { status: "SKIPPED", executedAt: now },
+  });
+
   const dueDeliveries = await prisma.campaignDelivery.findMany({
-    where: { status: "PENDING", dueAt: { lte: now } },
+    where: {
+      status: "PENDING",
+      dueAt: { lte: now },
+      campaignContact: { lead: { campaignOptOut: false } },
+    },
+    take: 500,
     include: {
       campaignContact: {
         include: {
@@ -100,10 +147,11 @@ export async function POST(req: NextRequest) {
         });
         return "processed";
       } catch (e) {
+        // Left PENDING, not marked ERROR: a transient failure here (network
+        // blip, a momentary Postmark 500) should retry on the next hourly
+        // run, not be permanently dropped. The next run's `dueAt <= now`
+        // query re-selects it automatically.
         console.error(`[campaign-deliveries-cron] delivery ${delivery.id} failed:`, e);
-        await prisma.campaignDelivery
-          .update({ where: { id: delivery.id }, data: { status: "ERROR", executedAt: now } })
-          .catch(() => {});
         return "error";
       }
     })
@@ -125,8 +173,26 @@ export async function POST(req: NextRequest) {
   await Promise.all(
     contactIds.map((id) =>
       prisma.campaignContact.updateMany({
-        where: { id, deliveries: { none: { status: "PENDING" } } },
+        where: {
+          id,
+          status: "PENDING",
+          deliveries: { none: { status: "PENDING" } },
+          NOT: { deliveries: { some: { status: "SKIPPED" } } },
+        },
         data: { status: "SENT" },
+      })
+    )
+  );
+  await Promise.all(
+    contactIds.map((id) =>
+      prisma.campaignContact.updateMany({
+        where: {
+          id,
+          status: "PENDING",
+          deliveries: { none: { status: "PENDING" } },
+          AND: { deliveries: { some: { status: "SKIPPED" } } },
+        },
+        data: { status: "UNSUBSCRIBED" },
       })
     )
   );
@@ -172,3 +238,5 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ processed, skippedLimit, errors });
 }
+
+export const GET = POST;

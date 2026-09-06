@@ -81,7 +81,7 @@ export default function NewCampaignPage() {
       } else {
         // Covers a scheduled one-off EMAIL and every DRIP campaign
         // (sendNow or scheduled) — both now go through the delivery engine.
-        await fetch(`/api/campaigns/${campaign.id}/schedule`, {
+        const scheduleRes = await fetch(`/api/campaigns/${campaign.id}/schedule`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -89,6 +89,10 @@ export default function NewCampaignPage() {
             scheduledAt: !sendNow && scheduledAt ? new Date(scheduledAt).toISOString() : undefined,
           }),
         });
+        if (!scheduleRes.ok) {
+          const data = await scheduleRes.json().catch(() => null);
+          throw new Error(data?.error ?? "Failed to schedule campaign");
+        }
       }
 
       router.push("/dashboard/campaigns");
