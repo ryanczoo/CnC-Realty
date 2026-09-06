@@ -93,6 +93,7 @@ export async function POST(req: NextRequest) {
 
   const results = await Promise.all(
     dueDeliveries.map(async (delivery): Promise<"processed" | "error" | "skipped-limit"> => {
+      let quotaConsumed = false;
       try {
         const { campaignContact, dripStep } = delivery;
         const { lead, campaign } = campaignContact;
@@ -105,6 +106,7 @@ export async function POST(req: NextRequest) {
         if (!quotaAvailable) {
           return "skipped-limit";
         }
+        quotaConsumed = true;
 
         const subject = dripStep ? dripStep.subject : campaign.subject ?? "";
         const heading = dripStep ? (dripStep.heading || dripStep.subject) : (campaign.heading || campaign.subject) ?? "";
@@ -130,6 +132,7 @@ export async function POST(req: NextRequest) {
         if (!result.sent) {
           // Quota was already consumed above; refund it since the message
           // never actually went out. Mirrors cron/action-plans/route.ts.
+          quotaConsumed = false;
           await prisma.agent.updateMany({
             where: { id: campaign.agentId, monthlyEmailsSent: { gt: 0 } },
             data: { monthlyEmailsSent: { decrement: 1 } },
@@ -151,6 +154,23 @@ export async function POST(req: NextRequest) {
         // blip, a momentary Postmark 500) should retry on the next hourly
         // run, not be permanently dropped. The next run's `dueAt <= now`
         // query re-selects it automatically.
+        //
+        // Quota may have already been consumed above (tryConsumeEmailQuota
+        // succeeded, then something below it threw) — refund it here too,
+        // mirroring the !result.sent branch. Without this, a delivery that
+        // keeps failing leaks one quota unit every hourly retry instead of
+        // once. Guarded by quotaConsumed (not just agentId) so an exception
+        // thrown before or during tryConsumeEmailQuota itself — where no
+        // quota was ever taken — doesn't trigger a bogus refund.
+        if (quotaConsumed) {
+          const agentId = delivery.campaignContact.campaign.agentId;
+          if (agentId) {
+            await prisma.agent.updateMany({
+              where: { id: agentId, monthlyEmailsSent: { gt: 0 } },
+              data: { monthlyEmailsSent: { decrement: 1 } },
+            });
+          }
+        }
         console.error(`[campaign-deliveries-cron] delivery ${delivery.id} failed:`, e);
         return "error";
       }

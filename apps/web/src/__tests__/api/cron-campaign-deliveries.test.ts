@@ -154,6 +154,27 @@ describe("POST /api/cron/campaign-deliveries", () => {
     });
   });
 
+  it("refunds quota when a delivery fails with a thrown exception", async () => {
+    vi.mocked(prisma.campaignDelivery.findMany).mockResolvedValue([plainEmailDelivery()] as any);
+    vi.mocked(sendEmail).mockRejectedValueOnce(new Error("postmark down"));
+    vi.mocked(prisma.agent.updateMany)
+      .mockResolvedValueOnce({ count: 0 } as any) // ensureQuotaReset
+      .mockResolvedValueOnce({ count: 1 } as any) // tryConsumeEmailQuota: consumed
+      .mockResolvedValueOnce({ count: 1 } as any); // refund
+
+    const res = await POST(makeReq(CRON_SECRET));
+    expect(res.status).toBe(200);
+
+    // Quota was already consumed before sendEmail threw; the message never
+    // actually went out, so the unit must be given back — otherwise a
+    // delivery that's left PENDING to retry next hour (see the isolation
+    // test below) silently burns one quota unit every single run forever.
+    expect(prisma.agent.updateMany).toHaveBeenCalledWith({
+      where: { id: "a1", monthlyEmailsSent: { gt: 0 } },
+      data: { monthlyEmailsSent: { decrement: 1 } },
+    });
+  });
+
   it("isolates a failing delivery so others still process", async () => {
     const failing = plainEmailDelivery({ id: "d-fail" });
     const ok = dripStepDelivery();
