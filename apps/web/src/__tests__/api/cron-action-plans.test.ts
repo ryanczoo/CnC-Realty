@@ -232,4 +232,21 @@ describe("POST /api/cron/action-plans", () => {
     const call = vi.mocked(sendEmail).mock.calls[0][0];
     expect(call.html).toContain("Hi John, a warmer heading");
   });
+
+  it("currently authorizes when CRON_SECRET is unset and the header literally says 'Bearer undefined'", async () => {
+    const original = process.env.CRON_SECRET;
+    delete process.env.CRON_SECRET;
+    try {
+      vi.mocked(prisma.leadPlanStep.findMany).mockResolvedValue([]);
+      vi.mocked(prisma.leadPlanEnrollment.findMany).mockResolvedValue([]);
+      const req = new NextRequest("http://localhost/api/cron/action-plans", {
+        method: "POST",
+        headers: { authorization: "Bearer undefined" },
+      });
+      const res = await POST(req as any);
+      expect(res.status).not.toBe(200); // after the fix, this becomes 401
+    } finally {
+      process.env.CRON_SECRET = original;
+    }
+  });
 });

@@ -94,4 +94,20 @@ describe("POST /api/cron/listing-expiration-warnings", () => {
       expect.objectContaining({ fileId: "listing-1" })
     );
   });
+
+  it("currently authorizes when CRON_SECRET is unset and the header literally says 'Bearer undefined'", async () => {
+    const original = process.env.CRON_SECRET;
+    delete process.env.CRON_SECRET;
+    try {
+      vi.mocked(prisma.listingFile.findMany).mockResolvedValue([]);
+      const req = new NextRequest("http://localhost/api/cron/listing-expiration-warnings", {
+        method: "POST",
+        headers: { authorization: "Bearer undefined" },
+      });
+      const res = await POST(req as any);
+      expect(res.status).not.toBe(200); // after the fix, this becomes 401
+    } finally {
+      process.env.CRON_SECRET = original;
+    }
+  });
 });

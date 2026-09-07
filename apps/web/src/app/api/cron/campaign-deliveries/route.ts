@@ -5,12 +5,13 @@ import { sendEmail } from "@/lib/email/send";
 import { unsubscribeFooterHtml } from "@/lib/email/unsubscribe";
 import { ensureQuotaReset, tryConsumeEmailQuota } from "@/lib/email-quota";
 import { paragraph } from "@/lib/action-plan-email";
+import { isAuthorizedCronRequest } from "@/lib/cron-auth";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
-  if (req.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!isAuthorizedCronRequest(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

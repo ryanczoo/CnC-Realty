@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendFileExpirationWarning } from "@/lib/email/transaction-emails";
+import { isAuthorizedCronRequest } from "@/lib/cron-auth";
 
 export const maxDuration = 60;
 
@@ -20,8 +21,7 @@ function windowFor(daysFromNow: number): { gte: Date; lte: Date } {
 }
 
 export async function POST(req: NextRequest) {
-  const auth = req.headers.get("authorization");
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!isAuthorizedCronRequest(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

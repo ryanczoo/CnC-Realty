@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { substituteVars, sendActionPlanEmail } from "@/lib/action-plan-email";
 import { ensureQuotaReset, tryConsumeEmailQuota } from "@/lib/email-quota";
+import { isAuthorizedCronRequest } from "@/lib/cron-auth";
 import type { Prisma } from "@cnc/database";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
-  if (req.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!isAuthorizedCronRequest(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
