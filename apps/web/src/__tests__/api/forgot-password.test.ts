@@ -5,9 +5,13 @@ vi.mock("@/lib/prisma", () => ({
   prisma: { user: { findUnique: vi.fn(), update: vi.fn() } },
 }));
 vi.mock("@/lib/email", () => ({ sendPasswordReset: vi.fn() }));
+vi.mock("@/lib/rate-limit", () => ({
+  publicFormRateLimit: { limit: vi.fn().mockResolvedValue({ success: true, reset: Date.now() + 60000 }) },
+}));
 
 import { prisma } from "@/lib/prisma";
 import { sendPasswordReset } from "@/lib/email";
+import { publicFormRateLimit } from "@/lib/rate-limit";
 import { POST } from "../../app/api/auth/forgot-password/route";
 
 function makeRequest(body: object) {
@@ -80,5 +84,11 @@ describe("POST /api/auth/forgot-password", () => {
 
     const savedToken = vi.mocked(prisma.user.update).mock.calls[0][0].data.resetToken;
     expect(resetUrl).toContain(`/reset-password?token=${savedToken}`);
+  });
+
+  it("returns 429 when rate limited", async () => {
+    vi.mocked(publicFormRateLimit.limit).mockResolvedValueOnce({ success: false, reset: Date.now() + 5000 } as any);
+    const res = await POST(makeRequest({ email: "someone@example.com" }));
+    expect(res.status).toBe(429);
   });
 });

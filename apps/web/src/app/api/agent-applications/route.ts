@@ -7,6 +7,7 @@ import { namesMatch } from "@/lib/ica-signature";
 import { generateSignedIcaPdf } from "@/lib/ica-pdf";
 import { uploadToR2, deleteR2Object } from "@/lib/r2";
 import { ICA_VERSION } from "@/lib/ica-content";
+import { publicFormRateLimit } from "@/lib/rate-limit";
 
 const schema = z.object({
   firstName:      z.string().min(1, "First name required"),
@@ -55,6 +56,19 @@ async function verifyRecaptcha(token: string): Promise<boolean> {
 }
 
 export async function POST(req: Request) {
+  const rateLimitIp = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  try {
+    const { success, reset } = await publicFormRateLimit.limit(rateLimitIp);
+    if (!success) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        { status: 429, headers: { "Retry-After": String(Math.ceil((reset - Date.now()) / 1000)) } }
+      );
+    }
+  } catch (err) {
+    console.error("[agent-applications] rate limiter unavailable, proceeding:", err);
+  }
+
   try {
     const body = await req.json();
     const data = schema.parse(body);

@@ -7,6 +7,7 @@ import {
   getMarketSnapshot,
   firstPhoto,
 } from "@/lib/home-value-estimate";
+import { publicFormRateLimit } from "@/lib/rate-limit";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -15,6 +16,19 @@ export async function GET(req: Request) {
 
   if (!address || !zip) {
     return NextResponse.json({ error: "address and zip are required" }, { status: 400 });
+  }
+
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  try {
+    const { success, reset } = await publicFormRateLimit.limit(ip);
+    if (!success) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        { status: 429, headers: { "Retry-After": String(Math.ceil((reset - Date.now()) / 1000)) } }
+      );
+    }
+  } catch (err) {
+    console.error("[home-value/estimate] rate limiter unavailable, proceeding:", err);
   }
 
   const manualBeds = searchParams.get("beds") ? Number(searchParams.get("beds")) : null;

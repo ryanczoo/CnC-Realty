@@ -15,6 +15,9 @@ vi.mock('@/lib/r2', () => ({
   uploadToR2: vi.fn().mockResolvedValue(undefined),
   deleteR2Object: vi.fn().mockResolvedValue(undefined),
 }));
+vi.mock('@/lib/rate-limit', () => ({
+  publicFormRateLimit: { limit: vi.fn().mockResolvedValue({ success: true, reset: Date.now() + 60000 }) },
+}));
 
 // Mock reCAPTCHA verification — success by default
 global.fetch = vi.fn().mockResolvedValue({
@@ -23,7 +26,16 @@ global.fetch = vi.fn().mockResolvedValue({
 
 import { prisma } from '@/lib/prisma';
 import { uploadToR2, deleteR2Object } from '@/lib/r2';
+import { publicFormRateLimit } from '@/lib/rate-limit';
 import { POST } from '../../app/api/agent-applications/route';
+
+function makeValidRequest() {
+  return new Request('http://localhost/api/agent-applications', {
+    method: 'POST',
+    body: JSON.stringify(VALID_BODY),
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
 
 const VALID_BODY = {
   firstName: 'Jane',
@@ -167,5 +179,11 @@ describe('POST /api/agent-applications', () => {
     const res = await POST(req);
     expect(res.status).toBe(500);
     expect(deleteR2Object).toHaveBeenCalledWith(expect.stringMatching(/^signed-ica\/.+\.pdf$/));
+  });
+
+  it('returns 429 when the rate limit is exceeded', async () => {
+    vi.mocked(publicFormRateLimit.limit).mockResolvedValueOnce({ success: false, reset: Date.now() + 5000 } as any);
+    const res = await POST(makeValidRequest());
+    expect(res.status).toBe(429);
   });
 });

@@ -3,8 +3,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("@/lib/prisma", () => ({
   prisma: { property: { findMany: vi.fn() } },
 }));
+vi.mock("@/lib/rate-limit", () => ({
+  publicFormRateLimit: { limit: vi.fn().mockResolvedValue({ success: true, reset: Date.now() + 60000 }) },
+}));
 
 import { prisma } from "@/lib/prisma";
+import { publicFormRateLimit } from "@/lib/rate-limit";
 import { GET } from "../../app/api/home-value/estimate/route";
 
 function makeRequest(qs: string) {
@@ -215,5 +219,11 @@ describe("GET /api/home-value/estimate", () => {
     expect(res.status).toBe(200);
     expect(body.needsManualEntry).toBe(true);
     expect(prisma.property.findMany).toHaveBeenCalledTimes(2);
+  });
+
+  it("returns 429 when the rate limit is exceeded", async () => {
+    vi.mocked(publicFormRateLimit.limit).mockResolvedValueOnce({ success: false, reset: Date.now() + 5000 } as any);
+    const res = await GET(makeRequest("address=123 Main St&zip=91101"));
+    expect(res.status).toBe(429);
   });
 });
