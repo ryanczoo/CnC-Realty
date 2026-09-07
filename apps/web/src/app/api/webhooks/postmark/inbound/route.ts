@@ -40,11 +40,16 @@ export async function POST(req: Request) {
 
     const enrollment = await prisma.leadPlanEnrollment.findUnique({
       where: { id: enrollmentId },
-      include: { agent: { include: { user: { select: { email: true } } } } },
+      include: {
+        agent: { include: { user: { select: { email: true } } } },
+        lead: { select: { email: true } },
+      },
     });
 
-    // Not ACTIVE means already handled. The agent replying to the forwarded
-    // notification re-triggers this webhook, so this is the loop guard.
+    // Not ACTIVE means this reply was already handled — e.g. Postmark
+    // retrying the same inbound payload. (The agent's own reply no longer
+    // loops back here: sendLeadReplyNotification's replyTo now points at the
+    // lead directly, so it never re-triggers this webhook.)
     if (!enrollment || enrollment.status !== "ACTIVE") {
       return NextResponse.json({ ok: true });
     }
@@ -60,14 +65,15 @@ export async function POST(req: Request) {
     });
 
     const agentEmail = enrollment.agent?.user?.email;
-    if (agentEmail) {
+    const leadEmail = enrollment.lead?.email;
+    if (agentEmail && leadEmail) {
       await sendLeadReplyNotification({
         to: agentEmail,
         subject: `[Lead Reply] ${mail.Subject ?? "(no subject)"}`,
         // StrippedTextReply drops the quoted original; without it the agent
         // gets the whole thread echoed back on every reply.
         body: mail.StrippedTextReply ?? mail.TextBody ?? "",
-        enrollmentId,
+        leadEmail,
       });
     }
 

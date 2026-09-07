@@ -20,6 +20,10 @@ const ENROLLMENT = {
   id: "enr1",
   status: "ACTIVE",
   agent: { user: { email: "agent@test.com" } },
+  // Deliberately distinct from REPLY.From below, so a passing assertion
+  // proves the webhook reads the CRM's on-file lead email (the enrollment
+  // relation), not just echoing the raw inbound mail's From header.
+  lead: { email: "lead-on-file@example.com" },
 };
 
 function req(body: Record<string, unknown>, auth: string | null = GOOD) {
@@ -73,7 +77,18 @@ describe("POST /api/webhooks/postmark/inbound", () => {
     const call = vi.mocked(sendLeadReplyNotification).mock.calls[0][0];
     expect(call.to).toBe("agent@test.com");
     expect(call.subject).toBe("[Lead Reply] Re: your inquiry");
-    expect(call.enrollmentId).toBe("enr1");
+  });
+
+  it("passes the lead's on-file email so the agent can reply directly to them", async () => {
+    await POST(req(REPLY));
+
+    expect(prisma.leadPlanEnrollment.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        include: expect.objectContaining({ lead: { select: { email: true } } }),
+      })
+    );
+    const call = vi.mocked(sendLeadReplyNotification).mock.calls[0][0];
+    expect(call.leadEmail).toBe("lead-on-file@example.com");
   });
 
   it("forwards the stripped reply rather than the quoted history", async () => {

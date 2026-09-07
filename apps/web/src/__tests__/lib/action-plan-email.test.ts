@@ -148,7 +148,7 @@ describe("sendLeadReplyNotification — visual upgrade", () => {
       to: "agent@cncrealtygroup.com",
       subject: "[Lead Reply] Still interested",
       body: "Yes, please call me",
-      enrollmentId: "enr-1",
+      leadEmail: "jordan@example.com",
     });
 
     const html = vi.mocked(sendEmail).mock.calls[0][0].html!;
@@ -164,7 +164,7 @@ describe("sendLeadReplyNotification", () => {
       to: "agent@cncrealtygroup.com",
       subject: "[Lead Reply] Still interested",
       body: "Yes, please call me",
-      enrollmentId: "enr-1",
+      leadEmail: "jordan@example.com",
     });
 
     const call = vi.mocked(sendEmail).mock.calls[0][0];
@@ -173,7 +173,22 @@ describe("sendLeadReplyNotification", () => {
     // On the broadcast stream a marketing opt-out would silently swallow it.
     expect(call.stream).toBe("transactional");
     expect(call.to).toBe("agent@cncrealtygroup.com");
-    expect(call.replyTo).toBe("reply+enr-1@reply.cncrealtygroup.com");
+  });
+
+  it("replies go straight to the lead, not through the internal loop-guard address", async () => {
+    // The agent hitting Reply in their own inbox must land in the lead's
+    // inbox, sent from the agent's own personal email account — never through
+    // Postmark, so it never touches CnC's monthly quota.
+    await sendLeadReplyNotification({
+      to: "agent@cncrealtygroup.com",
+      subject: "[Lead Reply] Still interested",
+      body: "Yes, please call me",
+      leadEmail: "jordan@example.com",
+    });
+
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    expect(call.replyTo).toBe("jordan@example.com");
+    expect(call.replyTo).not.toContain("reply.cncrealtygroup.com");
   });
 
   it("carries no unsubscribe link — the agent cannot opt out of their own leads", async () => {
@@ -181,7 +196,7 @@ describe("sendLeadReplyNotification", () => {
       to: "agent@cncrealtygroup.com",
       subject: "[Lead Reply] Still interested",
       body: "Yes, please call me",
-      enrollmentId: "enr-1",
+      leadEmail: "jordan@example.com",
     });
 
     const call = vi.mocked(sendEmail).mock.calls[0][0];

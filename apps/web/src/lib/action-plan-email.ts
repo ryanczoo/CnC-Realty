@@ -47,18 +47,24 @@ export async function sendActionPlanEmail(opts: {
  * A lead's reply forwarded to their agent. Transactional, not broadcast: this
  * is work the agent needs to see, they never subscribed to it, and a marketing
  * opt-out must not silently swallow it.
+ *
+ * replyTo is the lead's own address, not an internal loop-guard address: the
+ * agent hitting Reply in their own inbox should land directly in the lead's
+ * inbox, sent from the agent's own personal email account. That never touches
+ * Postmark or this app's send seam, so it costs nothing against CnC's monthly
+ * quota, and the lead sees the agent's real address — intentional, not hidden.
  */
 export async function sendLeadReplyNotification(opts: {
   to: string;
   subject: string;
   body: string;
-  enrollmentId: string;
+  leadEmail: string;
 }): Promise<void> {
   await sendEmail({
     to: opts.to,
     subject: opts.subject,
     html: emailLayout({ heading: "", bodyHtml: buildHeadingBodyHtml({ heading: opts.subject, bodyHtml: paragraph(opts.body) }) }),
-    replyTo: `reply+${opts.enrollmentId}@reply.cncrealtygroup.com`,
+    replyTo: opts.leadEmail,
     stream: "transactional",
   });
 }
