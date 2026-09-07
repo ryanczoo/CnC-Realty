@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getFileAndVerifyAccess } from "@/lib/api-auth";
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
@@ -15,6 +16,13 @@ export async function POST(req: Request) {
   }
 
   const isListing = fileType === "LISTING";
+  const file = await getFileAndVerifyAccess(
+    isListing ? "listing" : "transaction",
+    fileId,
+    session.user.agentId,
+    session.user.role
+  );
+  if (!file) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const doc = await prisma.fileDocument.create({
     data: {

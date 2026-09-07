@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getPresignedPutUrl, buildR2Key } from "@/lib/r2";
+import { getFileAndVerifyAccess } from "@/lib/api-auth";
 import { createId } from "@paralleldrive/cuid2";
 
 const ALLOWED_TYPES = [
@@ -32,6 +33,9 @@ export async function GET(req: Request) {
   if (size > MAX_SIZE) {
     return NextResponse.json({ error: "File exceeds 50MB limit" }, { status: 400 });
   }
+
+  const file = await getFileAndVerifyAccess(fileType, fileId, session.user.agentId, session.user.role);
+  if (!file) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const documentId = createId();
   const key = buildR2Key(fileType, fileId, documentId, filename);

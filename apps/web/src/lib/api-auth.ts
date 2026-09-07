@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
 type Role = "BUYER" | "AGENT" | "ADMIN";
 
@@ -38,4 +39,22 @@ export function checkOwnership<T extends { agentId: string | null }>(
   if (!record) return { exists: false, forbidden: false, record: null };
   if (role === "ADMIN") return { exists: true, forbidden: false, record };
   return { exists: true, forbidden: !callerAgentId || record.agentId !== callerAgentId, record };
+}
+
+// Resolves a ListingFile or TransactionFile by id and verifies the caller
+// owns it (or is ADMIN), in one call. Shared by every route that receives a
+// fileType/fileId pair and needs to gate access to the parent file before
+// touching a child record (parties, tasks, notes, documents).
+export async function getFileAndVerifyAccess(
+  fileType: "listing" | "transaction",
+  fileId: string,
+  callerAgentId: string | null,
+  role: string
+): Promise<{ id: string; agentId: string } | null> {
+  const file = fileType === "listing"
+    ? await prisma.listingFile.findUnique({ where: { id: fileId }, select: { id: true, agentId: true } })
+    : await prisma.transactionFile.findUnique({ where: { id: fileId }, select: { id: true, agentId: true } });
+  const { exists, forbidden, record } = checkOwnership(file, callerAgentId, role);
+  if (!exists || forbidden) return null;
+  return record;
 }

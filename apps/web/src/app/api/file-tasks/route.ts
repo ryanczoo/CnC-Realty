@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getFileAndVerifyAccess } from "@/lib/api-auth";
 
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
@@ -15,6 +16,9 @@ export async function GET(req: Request) {
   if (fileType !== "listing" && fileType !== "transaction") {
     return NextResponse.json({ error: "fileType must be 'listing' or 'transaction'" }, { status: 400 });
   }
+
+  const file = await getFileAndVerifyAccess(fileType, fileId, session.user.agentId, session.user.role);
+  if (!file) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const tasks = await prisma.fileTask.findMany({
     where: fileType === "listing" ? { listingFileId: fileId } : { transactionFileId: fileId },
@@ -38,6 +42,9 @@ export async function POST(req: Request) {
   if (fileType !== "listing" && fileType !== "transaction") {
     return NextResponse.json({ error: "fileType must be 'listing' or 'transaction'" }, { status: 400 });
   }
+
+  const file = await getFileAndVerifyAccess(fileType, fileId, session.user.agentId, session.user.role);
+  if (!file) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const task = await prisma.fileTask.create({
     data: {

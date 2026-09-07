@@ -2,29 +2,20 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { checkOwnership } from "@/lib/api-auth";
-
-async function getFileAndVerifyAccess(fileType: string, fileId: string, agentId: string | null, userRole: string) {
-  const file = fileType === "listing"
-    ? await prisma.listingFile.findUnique({ where: { id: fileId } })
-    : await prisma.transactionFile.findUnique({ where: { id: fileId } });
-  const { exists, forbidden, record } = checkOwnership(file, agentId, userRole);
-  if (!exists || forbidden) return null;
-  return record;
-}
+import { getFileAndVerifyAccess } from "@/lib/api-auth";
 
 export async function POST(req: Request, { params }: { params: { fileType: string; id: string } }) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const file = await getFileAndVerifyAccess(params.fileType, params.id, session.user.agentId, session.user.role);
+  const isListing = params.fileType === "listing";
+  const file = await getFileAndVerifyAccess(isListing ? "listing" : "transaction", params.id, session.user.agentId, session.user.role);
   if (!file) return NextResponse.json({ error: "Not found or forbidden" }, { status: 404 });
 
   const body = await req.json();
   const { role, name, email, phone, company, licenseNumber } = body;
   if (!role || !name) return NextResponse.json({ error: "role and name are required" }, { status: 400 });
 
-  const isListing = params.fileType === "listing";
   const party = await prisma.fileParty.create({
     data: {
       fileType: isListing ? "LISTING" : "TRANSACTION",
