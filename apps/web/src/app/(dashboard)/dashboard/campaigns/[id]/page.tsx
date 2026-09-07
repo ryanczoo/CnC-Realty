@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { CAMPAIGN_STATUS_COLORS, CONTACT_STATUS_COLORS } from "@/lib/campaign-ui";
 import { toSentenceCase } from "@/lib/utils";
+import { sanitizeHtml } from "@/lib/sanitize-html";
 
 interface ContactRow {
   id: string;
@@ -268,7 +269,7 @@ export default function CampaignDetailPage() {
             <p className="mb-3 font-sans text-sm text-[#1B1B1B]/50">Body Preview</p>
             <div
               className="prose prose-sm max-w-none font-sans text-sm text-[#1B1B1B]"
-              dangerouslySetInnerHTML={{ __html: campaign.body }}
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(campaign.body) }}
             />
           </div>
         )}
