@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { propertyJsonLd } from "@/lib/json-ld";
+import { propertyJsonLd, jsonLdScriptSafe } from "@/lib/json-ld";
 
 export const revalidate = 300;
 import { prisma } from "@/lib/prisma";
@@ -85,7 +85,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(
+          __html: jsonLdScriptSafe(
             propertyJsonLd({
               mlsNumber: property.mlsNumber,
               address: property.address,

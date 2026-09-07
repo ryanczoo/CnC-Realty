@@ -78,3 +78,16 @@ export function localBusinessJsonLd() {
     areaServed: "California",
   };
 }
+
+// Every caller that embeds one of this file's objects into a
+// <script type="application/ld+json"> tag via dangerouslySetInnerHTML must
+// run the stringified result through this first. JSON.stringify alone does
+// not escape "<" or ">", so a "</script>" sequence inside attacker-controlled
+// text (an agent's bio, an MLS description) can close the script tag early
+// and inject a sibling <script> that the browser executes. Both angle
+// brackets are escaped as \uXXXX sequences, which remain valid JSON string
+// content and parse back to the original characters for any consumer
+// (search engine crawlers, JSON.parse) that reads the script tag's text.
+export function jsonLdScriptSafe(obj: unknown): string {
+  return JSON.stringify(obj).replace(/[<>]/g, (c) => (c === "<" ? "\\u003c" : "\\u003e"));
+}

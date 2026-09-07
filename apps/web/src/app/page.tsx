@@ -1,4 +1,4 @@
-import { localBusinessJsonLd } from "@/lib/json-ld";
+import { localBusinessJsonLd, jsonLdScriptSafe } from "@/lib/json-ld";
 import { FAQ } from "@/components/home/FAQ";
 import { GradientBridge } from "@/components/ui/GradientBridge";
 import { FeaturedListingsServer } from "@/components/home/FeaturedListingsServer";
@@ -14,7 +14,7 @@ export default function HomePage() {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessJsonLd()) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdScriptSafe(localBusinessJsonLd()) }}
       />
       <HeroSection />
       <FeaturedListingsServer />

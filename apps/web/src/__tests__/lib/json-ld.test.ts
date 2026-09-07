@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { propertyJsonLd, agentJsonLd, localBusinessJsonLd } from "@/lib/json-ld";
+import { propertyJsonLd, agentJsonLd, localBusinessJsonLd, jsonLdScriptSafe } from "@/lib/json-ld";
 
 const baseProperty = {
   mlsNumber: "A12345",
@@ -65,5 +65,20 @@ describe("agentJsonLd", () => {
 describe("localBusinessJsonLd", () => {
   it("sets @type to RealEstateAgent", () => {
     expect(localBusinessJsonLd()["@type"]).toBe("RealEstateAgent");
+  });
+});
+
+describe("jsonLdScriptSafe", () => {
+  it("neutralizes a </script> sequence so it cannot close the surrounding script tag", () => {
+    const malicious = agentJsonLd({
+      name: "Jane",
+      slug: "jane",
+      bio: '</script><script>alert(1)</script>',
+      headshot: null,
+      phone: null,
+    });
+    const safe = jsonLdScriptSafe(malicious);
+    expect(safe).not.toContain("</script>");
+    expect(safe).toContain("\\u003c/script\\u003e");
   });
 });
