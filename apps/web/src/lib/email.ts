@@ -131,7 +131,7 @@ export function buildHeadingBodyHtml(opts: { heading: string; bodyHtml: string; 
   return `
     ${photoHtml}
     <h2 style="color: #1B1B1B; font-weight: 400; font-size: 33px; margin: 0 0 24px; text-align: center;">
-      ${opts.heading}
+      ${escapeHtml(opts.heading)}
     </h2>
     <style>
       #campaign-content p { margin: 0 0 20px; }

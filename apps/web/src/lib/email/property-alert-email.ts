@@ -1,5 +1,6 @@
 import { sendEmail } from "@/lib/email/send";
 import { unsubscribeLinkHtml } from "@/lib/email/unsubscribe";
+import { escapeHtml } from "@/lib/email";
 
 export interface AlertProperty {
   address: string;
@@ -43,8 +44,8 @@ export async function sendPropertyAlertEmail(
         <tr>
           <td style="padding:16px 0;border-bottom:1px solid #eee;">
             ${photoHtml}
-            <p style="margin:0 0 4px;font-size:15px;font-weight:600;color:#1B1B1B;">${p.address}</p>
-            <p style="margin:0 0 4px;font-size:13px;color:#666;">${p.city}</p>
+            <p style="margin:0 0 4px;font-size:15px;font-weight:600;color:#1B1B1B;">${escapeHtml(p.address)}</p>
+            <p style="margin:0 0 4px;font-size:13px;color:#666;">${escapeHtml(p.city)}</p>
             <p style="margin:0 0 8px;font-size:16px;font-weight:700;color:#9E8C61;">${price}</p>
             <a href="${link}" style="display:inline-block;background:#1B1B1B;color:#fff;text-decoration:none;padding:8px 16px;border-radius:20px;font-size:13px;">View Listing →</a>
           </td>
@@ -75,7 +76,7 @@ export async function sendPropertyAlertEmail(
           <!-- Body -->
           <tr>
             <td style="padding:32px;">
-              <p style="margin:0 0 20px;font-size:22.5px;line-height:1.6;color:#4b4b4b;text-align:center;">Hi ${userName},</p>
+              <p style="margin:0 0 20px;font-size:22.5px;line-height:1.6;color:#4b4b4b;text-align:center;">Hi ${escapeHtml(userName)},</p>
               <p style="margin:0 0 20px;font-size:22.5px;line-height:1.6;color:#4b4b4b;text-align:center;">
                 We found <strong>${count} new listing${count === 1 ? "" : "s"}</strong> matching your saved search:
               </p>

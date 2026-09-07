@@ -126,6 +126,20 @@ describe("sendPropertyAlertEmail", () => {
     expect(closingPIndex).toBeGreaterThan(unsubIndex);
   });
 
+  it("escapes HTML in the user's name and property address/city", async () => {
+    await sendPropertyAlertEmail(
+      "buyer@example.com",
+      '<img src=x onerror=alert(1)>',
+      [{ address: "<b>123 Main</b>", city: "<i>LA</i>", listPrice: 500000, mlsNumber: "M1", photoUrl: null }],
+      "user1"
+    );
+
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    expect(call.html).not.toContain("<img src=x onerror=alert(1)>");
+    expect(call.html).not.toContain("<b>123 Main</b>");
+    expect(call.html).not.toContain("<i>LA</i>");
+  });
+
   it("skips the send entirely when no API key is configured", async () => {
     const original = process.env.POSTMARK_SERVER_TOKEN;
     delete process.env.POSTMARK_SERVER_TOKEN;

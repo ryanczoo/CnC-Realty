@@ -57,7 +57,7 @@ describe("sendApprovalDocuments", () => {
     const html = call.html!;
     const logoIndex = html.indexOf("logo-black.png");
     const photoIndex = html.indexOf("onboarding-photo.jpg");
-    const headingIndex = html.indexOf("Let's get started, Jane!");
+    const headingIndex = html.indexOf("Let&#39;s get started, Jane!");
 
     expect(logoIndex).toBeGreaterThan(-1);
     expect(photoIndex).toBeGreaterThan(logoIndex);
@@ -219,7 +219,7 @@ describe("sendPasswordReset", () => {
 
     const html = vi.mocked(sendEmail).mock.calls[0][0].html!;
     expect(html).toContain("font-size: 33px");
-    expect(html).toContain("Here's a link to reset your password. It will expire in 2 hours!");
+    expect(html).toContain("Here&#39;s a link to reset your password. It will expire in 2 hours!");
     expect(html).not.toContain("font-size: 22px");
   });
 });
@@ -334,7 +334,7 @@ describe("sendApplicationApproved", () => {
 
     const call = vi.mocked(sendEmail).mock.calls[0][0];
     const photoIndex = call.html!.indexOf("agent-welcome-photo.jpg");
-    const headingIndex = call.html!.indexOf("Hey Jane, We've Been Expecting You!");
+    const headingIndex = call.html!.indexOf("Hey Jane, We&#39;ve Been Expecting You!");
     expect(photoIndex).toBeGreaterThan(-1);
     expect(headingIndex).toBeGreaterThan(photoIndex);
   });
@@ -719,5 +719,10 @@ describe("buildHeadingBodyHtml", () => {
     expect(html).toContain(
       '<img src="http://localhost:3000/some-photo.jpg" alt="" width="100%" style="display: block; width: 100%; border-radius: 8px; border: 0;" />'
     );
+  });
+
+  it("escapes HTML in the heading, matching every other interpolation in this function", () => {
+    const html = buildHeadingBodyHtml({ heading: '<img src=x onerror=alert(1)>', bodyHtml: "<p>x</p>" });
+    expect(html).not.toContain("<img src=x onerror=alert(1)>");
   });
 });
