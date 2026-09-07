@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, checkOwnership } from "@/lib/api-auth";
-import { emailLayout, escapeHtml } from "@/lib/email";
+import { emailLayout, escapeHtml, buildHeadingBodyHtml } from "@/lib/email";
 import { sendEmail } from "@/lib/email/send";
 
 export const dynamic = "force-dynamic";
@@ -144,8 +144,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         if (trigger.actionType === "SEND_EMAIL" && trigger.emailSubject && trigger.emailBody) {
           try {
             if (process.env.POSTMARK_SERVER_TOKEN && lead.email) {
-              const bodyHtml = `<p style="color: #4b4b4b; font-size: 15px; line-height: 1.6;">${escapeHtml(trigger.emailBody).replace(/\n/g, "<br>")}</p>`;
-              const html = emailLayout({ heading: trigger.emailSubject, bodyHtml });
+              const bodyHtml = buildHeadingBodyHtml({
+                heading: trigger.emailSubject,
+                bodyHtml: `<p style="color: #4b4b4b; font-size: 15px; line-height: 1.6;">${escapeHtml(trigger.emailBody).replace(/\n/g, "<br>")}</p>`,
+              });
+              const html = emailLayout({ bodyHtml });
               await sendEmail({
                 to: lead.email,
                 subject: trigger.emailSubject,

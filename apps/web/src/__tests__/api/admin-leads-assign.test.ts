@@ -96,8 +96,8 @@ describe("PATCH /api/admin/leads/[id]/assign", () => {
     expect(logoIndex).toBeGreaterThan(-1);
     expect(photoIndex).toBeGreaterThan(logoIndex);
     expect(headingIndex).toBeGreaterThan(photoIndex);
-    expect(html).toContain(
-      '<h2 style="color: #1B1B1B; font-weight: 400; font-size: 33px; margin: 0 0 24px; text-align: center;">\n          Hi Jane, You Just Got A Lead!'
+    expect(html).toMatch(
+      /<h2 style="color: #1B1B1B; font-weight: 400; font-size: 33px; margin: 0 0 24px; text-align: center;">\s*Hi Jane, You Just Got A Lead!/
     );
     expect(html).not.toContain("Hi Jane Agent");
     expect(html).not.toContain("you have a new lead");

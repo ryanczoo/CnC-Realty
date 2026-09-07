@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/api-auth";
-import { emailLayout, escapeHtml } from "@/lib/email";
+import { emailLayout, escapeHtml, buildHeadingBodyHtml } from "@/lib/email";
 import { sendEmail } from "@/lib/email/send";
 
 export const dynamic = "force-dynamic";
@@ -67,22 +67,19 @@ export async function PATCH(
       const agentDisplayName = agent.displayName ?? "there";
       const firstName = agentDisplayName.trim().split(/\s+/)[0] || agentDisplayName;
       const safeFirstName = escapeHtml(firstName);
-      const bodyHtml = `
-        <div style="margin: 0 0 32px;">
-          <img src="${process.env.NEXTAUTH_URL}/lead-assignment-photo.jpg" alt="" width="100%" style="display: block; width: 100%; border-radius: 8px; border: 0;" />
-        </div>
-        <h2 style="color: #1B1B1B; font-weight: 400; font-size: 33px; margin: 0 0 24px; text-align: center;">
-          Hi ${safeFirstName}, You Just Got A Lead!
-        </h2>
-        <div style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; text-align: left;">
-          <p style="margin: 0 0 14px;"><strong style="font-weight: 700;">Name:</strong> ${escapeHtml(`${lead.firstName} ${lead.lastName}`)}</p>
-          <p style="margin: 0 0 14px;"><strong style="font-weight: 700;">Email:</strong> ${escapeHtml(lead.email)}</p>
-          <p style="margin: 0 0 14px;"><strong style="font-weight: 700;">Phone:</strong> ${lead.phone ? escapeHtml(lead.phone) : "Not provided"}</p>
-          <p style="margin: 0;"><strong style="font-weight: 700;">Status:</strong> ${escapeHtml(lead.status)}</p>
-        </div>
-      `;
+      const bodyHtml = buildHeadingBodyHtml({
+        heading: `Hi ${safeFirstName}, You Just Got A Lead!`,
+        photoUrl: `${process.env.NEXTAUTH_URL}/lead-assignment-photo.jpg`,
+        bodyHtml: `
+          <div style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; text-align: left;">
+            <p style="margin: 0 0 14px;"><strong style="font-weight: 700;">Name:</strong> ${escapeHtml(`${lead.firstName} ${lead.lastName}`)}</p>
+            <p style="margin: 0 0 14px;"><strong style="font-weight: 700;">Email:</strong> ${escapeHtml(lead.email)}</p>
+            <p style="margin: 0 0 14px;"><strong style="font-weight: 700;">Phone:</strong> ${lead.phone ? escapeHtml(lead.phone) : "Not provided"}</p>
+            <p style="margin: 0;"><strong style="font-weight: 700;">Status:</strong> ${escapeHtml(lead.status)}</p>
+          </div>
+        `,
+      });
       const html = emailLayout({
-        heading: "",
         bodyHtml,
         ctaLabel: "View Dashboard",
         ctaHref: `${process.env.NEXTAUTH_URL}/dashboard/leads`,

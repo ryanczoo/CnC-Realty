@@ -114,7 +114,6 @@ export async function POST(req: NextRequest) {
           ? paragraph(dripStep.body ?? "")
           : campaign.body ?? "";
         const html = emailLayout({
-          heading: "",
           bodyHtml:
             buildHeadingBodyHtml({ heading: escapeHtml(heading), bodyHtml: innerHtml }) +
             unsubscribeFooterHtml("lead", lead.id, "campaign"),

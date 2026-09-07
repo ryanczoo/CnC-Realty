@@ -119,7 +119,6 @@ export async function POST(
       // signed for a specific lead, so a shared body would opt the wrong
       // person out.
       const html = emailLayout({
-        heading: "",
         bodyHtml:
           buildHeadingBodyHtml({
             heading: campaign.heading || campaign.subject!,

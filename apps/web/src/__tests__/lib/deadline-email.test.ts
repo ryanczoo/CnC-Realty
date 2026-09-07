@@ -75,7 +75,7 @@ describe("sendDeadlineReminder", () => {
 
     const call = vi.mocked(sendEmail).mock.calls[0][0];
     expect(call.html).toContain(
-      '<h2 style="color: #1B1B1B; font-weight: 400; font-size: 33px; margin: 0 0 16px; text-align: center;">'
+      '<h2 style="color: #1B1B1B; font-weight: 400; font-size: 33px; margin: 0 0 24px; text-align: center;">'
     );
   });
 
@@ -96,8 +96,8 @@ describe("sendDeadlineReminder", () => {
     const html = call.html!;
 
     expect(html).toContain("Hi Jane, friendly reminder that your listing at:");
-    expect(html).toContain(
-      '<p style="color: #1B1B1B; font-size: 22.5px; line-height: 1.6; text-align: center; font-weight: 700; margin: 0 0 32px;">\n      123 Main St,<br />\n      Los Angeles, CA 90012\n    </p>'
+    expect(html).toMatch(
+      /<p style="color: #1B1B1B; font-size: 22\.5px; line-height: 1\.6; text-align: center; font-weight: 700; margin: 0 0 32px;">\s*123 Main St,<br \/>\s*Los Angeles, CA 90012\s*<\/p>/
     );
     expect(html).toContain('has an <strong style="color: #1B1B1B;">Inspection</strong> deadline on <strong style="color: #1B1B1B;">Sunday, August 9</strong>.');
   });

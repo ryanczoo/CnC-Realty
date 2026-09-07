@@ -108,11 +108,14 @@ describe("sendApprovalDocuments", () => {
     const html = call.html!;
 
     expect(html).not.toContain("font-size: 15px");
-    expect(html).toContain(
-      'style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; text-align: left; font-weight: 700; margin: 0 0 16px;">\n      Attached you will find the following:'
+    // Whitespace between the tag and its text is incidental to how the
+    // template literal is indented in source, not a rendering concern (HTML
+    // collapses it) -- matched loosely rather than to an exact column count.
+    expect(html).toMatch(
+      /style="color: #4b4b4b; font-size: 22\.5px; line-height: 1\.8; text-align: left; font-weight: 700; margin: 0 0 16px;">\s*Attached you will find the following:/
     );
-    expect(html).toContain(
-      'style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; text-align: left; font-weight: 700; margin: 0 0 16px;">\n      Please complete and provide the following for our records:'
+    expect(html).toMatch(
+      /style="color: #4b4b4b; font-size: 22\.5px; line-height: 1\.8; text-align: left; font-weight: 700; margin: 0 0 16px;">\s*Please complete and provide the following for our records:/
     );
   });
 
@@ -123,7 +126,7 @@ describe("sendApprovalDocuments", () => {
     const html = call.html!;
 
     expect(html).toContain(
-      '<h2 style="color: #1B1B1B; font-weight: 400; font-size: 33px; margin: 0 0 16px; text-align: center;">'
+      '<h2 style="color: #1B1B1B; font-weight: 400; font-size: 33px; margin: 0 0 24px; text-align: center;">'
     );
     expect(html).toContain('<ul style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; margin: 0 0 16px; padding-left: 40px;">');
     expect(html).toContain(
@@ -210,6 +213,15 @@ describe("sendPasswordReset", () => {
     expect(call.from).toBeUndefined();
     expect(call.html).toContain("http://localhost:3000/reset-password?token=abc123");
   });
+
+  it("renders the shared 33px heading style, not the generic 22px emailLayout heading", async () => {
+    await sendPasswordReset("jane@example.com", "http://localhost:3000/reset-password?token=abc123");
+
+    const html = vi.mocked(sendEmail).mock.calls[0][0].html!;
+    expect(html).toContain("font-size: 33px");
+    expect(html).toContain("Here's a link to reset your password. It will expire in 2 hours!");
+    expect(html).not.toContain("font-size: 22px");
+  });
 });
 
 describe("sendLeadNotification", () => {
@@ -231,6 +243,19 @@ describe("sendLeadNotification", () => {
     expect(call.html).toContain("jordan@example.com");
     expect(call.html).toContain("Interested in Pasadena listings");
   });
+
+  it("renders the shared 33px heading style, not the generic 22px emailLayout heading", async () => {
+    await sendLeadNotification({
+      firstName: "Jordan",
+      lastName: "Lee",
+      email: "jordan@example.com",
+    });
+
+    const html = vi.mocked(sendEmail).mock.calls[0][0].html!;
+    expect(html).toContain("font-size: 33px");
+    expect(html).toContain("New Lead Received");
+    expect(html).not.toContain("font-size: 22px");
+  });
 });
 
 describe("sendApplicationNotification", () => {
@@ -249,6 +274,20 @@ describe("sendApplicationNotification", () => {
     expect(call.stream).toBe("transactional");
     expect(call.html).toContain("Jane Agent");
     expect(call.html).toContain("jane@example.com");
+  });
+
+  it("renders the shared 33px heading style, not the generic 22px emailLayout heading", async () => {
+    await sendApplicationNotification({
+      id: "app-1",
+      firstName: "Jane",
+      lastName: "Agent",
+      email: "jane@example.com",
+    });
+
+    const html = vi.mocked(sendEmail).mock.calls[0][0].html!;
+    expect(html).toContain("font-size: 33px");
+    expect(html).toContain("New Agent Application Received");
+    expect(html).not.toContain("font-size: 22px");
   });
 });
 
@@ -522,8 +561,8 @@ describe("sendApplicationRejected", () => {
       '<h2 style="color: #1B1B1B; font-weight: 400; font-size: 33px; margin: 0 0 24px; text-align: center;">\n      Hi Jane, We Are So Sorry'
     );
     expect(html).not.toContain("Hi Jane Applicant");
-    expect(html).toContain(
-      '<p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.6; text-align: center; margin: 0 0 20px;">\n      After a thorough review, we are unable to move forward with your application at this time.'
+    expect(html).toMatch(
+      /<p style="color: #4b4b4b; font-size: 22\.5px; line-height: 1\.6; text-align: center; margin: 0 0 20px;">\s*After a thorough review, we are unable to move forward with your application at this time\./
     );
     expect(html).toContain('<strong style="font-weight: 700;">Reason:</strong> Not enough experience');
     expect(html).toContain(
@@ -536,7 +575,7 @@ describe("sendApplicationRejected", () => {
 });
 
 describe("emailLayout", () => {
-  const html = () => emailLayout({ heading: "Test Heading", bodyHtml: "<p>Body</p>" });
+  const html = () => emailLayout({ bodyHtml: "<p>Body</p>" });
 
   it("uses the site's off-white background instead of pure white", () => {
     expect(html()).toContain("#F2F0EF");
@@ -572,9 +611,8 @@ describe("emailLayout", () => {
     expect(result).not.toMatch(/background-color:\s*#ffffff/i);
   });
 
-  it("omits the heading element entirely when heading is empty, instead of an empty <h2>", () => {
-    const result = emailLayout({ heading: "", bodyHtml: "<p>Body</p>" });
-    expect(result).not.toContain("<h2");
+  it("never renders an <h2> -- heading is buildHeadingBodyHtml()'s job, not emailLayout()'s", () => {
+    expect(html()).not.toContain("<h2");
   });
 
   it("uses a plain hyphen in the footer signature, not an em dash", () => {
@@ -591,7 +629,7 @@ describe("emailLayout", () => {
   });
 
   it("still lets a caller override the default footer when explicitly given one", () => {
-    const result = emailLayout({ heading: "Test", bodyHtml: "<p>Body</p>", footer: "Custom footer text" });
+    const result = emailLayout({ bodyHtml: "<p>Body</p>", footer: "Custom footer text" });
     expect(result).toContain("Custom footer text");
     expect(result).not.toContain("icon-phone.png");
   });
@@ -660,5 +698,26 @@ describe("buildHeadingBodyHtml", () => {
   it("scopes paragraph spacing to its own content, not globally", () => {
     const html = buildHeadingBodyHtml({ heading: "H", bodyHtml: "<p>x</p>" });
     expect(html).toContain("#campaign-content p { margin: 0 0 20px; }");
+  });
+
+  it("renders no photo block when photoUrl is omitted", () => {
+    const html = buildHeadingBodyHtml({ heading: "H", bodyHtml: "<p>x</p>" });
+    expect(html).not.toContain("<img");
+  });
+
+  it("renders the photo above the heading when photoUrl is given", () => {
+    const html = buildHeadingBodyHtml({
+      heading: "My Heading",
+      bodyHtml: "<p>x</p>",
+      photoUrl: "http://localhost:3000/some-photo.jpg",
+    });
+
+    const photoIndex = html.indexOf("some-photo.jpg");
+    const headingIndex = html.indexOf("My Heading");
+    expect(photoIndex).toBeGreaterThan(-1);
+    expect(headingIndex).toBeGreaterThan(photoIndex);
+    expect(html).toContain(
+      '<img src="http://localhost:3000/some-photo.jpg" alt="" width="100%" style="display: block; width: 100%; border-radius: 8px; border: 0;" />'
+    );
   });
 });

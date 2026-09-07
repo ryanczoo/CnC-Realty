@@ -348,6 +348,26 @@ describe("Trigger execution — PATCH /api/leads/[id]", () => {
     expect(call.replyTo).toBeUndefined();
   });
 
+  it("renders the SEND_EMAIL trigger with the shared 33px heading style, not the generic 22px emailLayout heading", async () => {
+    process.env.POSTMARK_SERVER_TOKEN = "test-key";
+    vi.mocked(getServerSession).mockResolvedValue(LEAD_SESSION as any);
+    vi.mocked(prisma.lead.update).mockResolvedValue({ ...UPDATED_LEAD, status: "UNDER_CONTRACT" } as any);
+    vi.mocked(prisma.trigger.findMany).mockResolvedValue([TRIGGER_EMAIL] as any);
+    vi.mocked(prisma.triggerExecution.create).mockResolvedValue({ id: "e2" } as any);
+    vi.mocked(sendEmail).mockResolvedValue({ sent: true });
+
+    const req = new Request("http://localhost/api/leads/l1", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "UNDER_CONTRACT" }),
+    });
+    await PATCH_LEAD(req, LEAD_PARAMS);
+
+    const html = vi.mocked(sendEmail).mock.calls[0][0].html!;
+    expect(html).toContain("font-size: 33px");
+    expect(html).not.toContain("font-size: 22px");
+  });
+
   it("carries a plan step's heading into the new enrollment's LeadPlanStep rows", async () => {
     vi.mocked(getServerSession).mockResolvedValue(LEAD_SESSION as any);
     vi.mocked(prisma.lead.update).mockResolvedValue(UPDATED_LEAD as any);

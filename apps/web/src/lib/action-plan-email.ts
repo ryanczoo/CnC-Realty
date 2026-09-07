@@ -30,7 +30,7 @@ export async function sendActionPlanEmail(opts: {
   const bodyHtml =
     buildHeadingBodyHtml({ heading: opts.heading || opts.subject, bodyHtml: paragraph(opts.body) }) +
     unsubscribeFooterHtml("lead", opts.leadId, "action_plan");
-  const html = emailLayout({ heading: "", bodyHtml });
+  const html = emailLayout({ bodyHtml });
 
   return sendEmail({
     to: opts.to,
@@ -63,7 +63,7 @@ export async function sendLeadReplyNotification(opts: {
   await sendEmail({
     to: opts.to,
     subject: opts.subject,
-    html: emailLayout({ heading: "", bodyHtml: buildHeadingBodyHtml({ heading: opts.subject, bodyHtml: paragraph(opts.body) }) }),
+    html: emailLayout({ bodyHtml: buildHeadingBodyHtml({ heading: opts.subject, bodyHtml: paragraph(opts.body) }) }),
     replyTo: opts.leadEmail,
     stream: "transactional",
   });

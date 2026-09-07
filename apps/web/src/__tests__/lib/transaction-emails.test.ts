@@ -50,6 +50,20 @@ describe("transaction-emails — sender identity and links", () => {
     expect(call.text).toBeUndefined();
   });
 
+  it("sendSubmitForReview renders the shared 33px heading style, not the generic 22px emailLayout heading", async () => {
+    await sendSubmitForReview({
+      fileType: "Transaction",
+      address: "123 Main St",
+      agentName: "Jane Agent",
+      fileId: "f1",
+    });
+
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    expect(call.html).toContain("font-size: 33px");
+    expect(call.html).toContain("Transaction File Ready for Review");
+    expect(call.html).not.toContain("font-size: 22px");
+  });
+
   it("builds links from NEXTAUTH_URL, not a hardcoded production domain", async () => {
     await sendFileClosed({
       agentEmail: "jane@example.com",
@@ -144,7 +158,7 @@ describe("transaction-emails — referral files with no property address", () =>
       'Please re-upload the document with the necessary corrections or <a href="mailto:ryanchong@cncrealtygroup.com" style="color: #9E8C61;">reach out</a> for help!'
     );
     expect(html).toContain(
-      '<h2 style="color: #1B1B1B; font-weight: 400; font-size: 33px; margin: 0 0 16px; text-align: center;">'
+      '<h2 style="color: #1B1B1B; font-weight: 400; font-size: 33px; margin: 0 0 24px; text-align: center;">'
     );
     expect(html).toContain("Correction Needed");
     expect(html).not.toContain("Document Rejected");
@@ -248,11 +262,11 @@ describe("transaction-emails — referral files with no property address", () =>
 
     expect(call.subject).toBe("Documents Approved - 123 Main St");
     expect(html).toContain(
-      '<h2 style="color: #1B1B1B; font-weight: 400; font-size: 33px; margin: 0 0 16px; text-align: center;">'
+      '<h2 style="color: #1B1B1B; font-weight: 400; font-size: 33px; margin: 0 0 24px; text-align: center;">'
     );
     expect(html).toContain("Hi Jane Agent, all required documents have been approved for your listing at:");
-    expect(html).toContain(
-      '<p style="color: #1B1B1B; font-size: 22.5px; line-height: 1.6; text-align: center; font-weight: 700; margin: 0 0 32px;">\n      123 Main St,<br />\n      Los Angeles, CA 90012\n    </p>'
+    expect(html).toMatch(
+      /<p style="color: #1B1B1B; font-size: 22\.5px; line-height: 1\.6; text-align: center; font-weight: 700; margin: 0 0 32px;">\s*123 Main St,<br \/>\s*Los Angeles, CA 90012\s*<\/p>/
     );
     expect(html).toContain("The broker can now close this file.");
     expect(html).not.toContain("font-size: 15px");
@@ -297,12 +311,12 @@ describe("transaction-emails — referral files with no property address", () =>
     expect(photoIndex).toBeGreaterThan(logoIndex);
     expect(headingIndex).toBeGreaterThan(photoIndex);
     expect(html).toContain(
-      '<h2 style="color: #1B1B1B; font-weight: 400; font-size: 33px; margin: 0 0 16px; text-align: center;">'
+      '<h2 style="color: #1B1B1B; font-weight: 400; font-size: 33px; margin: 0 0 24px; text-align: center;">'
     );
     expect(html).toContain("Hi Jane, the following file has been marked CLOSED for:");
     expect(html).not.toContain("Hi Jane Agent");
-    expect(html).toContain(
-      '<p style="color: #1B1B1B; font-size: 22.5px; line-height: 1.6; text-align: center; font-weight: 700; margin: 0 0 32px;">\n      123 Main St,<br />\n      Los Angeles, CA 90012\n    </p>'
+    expect(html).toMatch(
+      /<p style="color: #1B1B1B; font-size: 22\.5px; line-height: 1\.6; text-align: center; font-weight: 700; margin: 0 0 32px;">\s*123 Main St,<br \/>\s*Los Angeles, CA 90012\s*<\/p>/
     );
     expect(html).toContain("Congratulations - it's time to celebrate!");
     expect(html).not.toContain("has been marked as");
@@ -363,12 +377,12 @@ describe("transaction-emails — sendFileExpirationWarning", () => {
     expect(photoIndex).toBeGreaterThan(logoIndex);
     expect(headingIndex).toBeGreaterThan(photoIndex);
     expect(html).toContain(
-      '<h2 style="color: #1B1B1B; font-weight: 400; font-size: 33px; margin: 0 0 16px; text-align: center;">'
+      '<h2 style="color: #1B1B1B; font-weight: 400; font-size: 33px; margin: 0 0 24px; text-align: center;">'
     );
     expect(html).toContain("Hi Jane, the following file expires in 3 days for:");
     expect(html).not.toContain("Hi Jane Agent");
-    expect(html).toContain(
-      '<p style="color: #1B1B1B; font-size: 22.5px; line-height: 1.6; text-align: center; font-weight: 700; margin: 0 0 32px;">\n      123 Main St,<br />\n      Los Angeles, CA 90012\n    </p>'
+    expect(html).toMatch(
+      /<p style="color: #1B1B1B; font-size: 22\.5px; line-height: 1\.6; text-align: center; font-weight: 700; margin: 0 0 32px;">\s*123 Main St,<br \/>\s*Los Angeles, CA 90012\s*<\/p>/
     );
     expect(html).toContain("Please review your file and take any necessary action!");
     expect(html).not.toContain("Please take action.");
