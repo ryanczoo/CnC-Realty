@@ -66,9 +66,8 @@ export async function PATCH(
     if (process.env.POSTMARK_SERVER_TOKEN && agent.user.email) {
       const agentDisplayName = agent.displayName ?? "there";
       const firstName = agentDisplayName.trim().split(/\s+/)[0] || agentDisplayName;
-      const safeFirstName = escapeHtml(firstName);
       const bodyHtml = buildHeadingBodyHtml({
-        heading: `Hi ${safeFirstName}, You Just Got A Lead!`,
+        heading: `Hi ${firstName}, You Just Got A Lead!`,
         photoUrl: `${process.env.NEXTAUTH_URL}/lead-assignment-photo.jpg`,
         bodyHtml: `
           <div style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; text-align: left;">

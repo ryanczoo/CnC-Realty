@@ -110,4 +110,32 @@ describe("PATCH /api/admin/leads/[id]/assign", () => {
     expect(html).toContain('<strong style="font-weight: 700;">Status:</strong>');
     expect(html).not.toContain("font-size: 15px");
   });
+
+  it("does not double-escape an apostrophe in the agent's first name in the heading", async () => {
+    vi.mocked(prisma.agent.findUnique).mockResolvedValue({
+      id: "agent-1",
+      displayName: "O'Brien",
+      user: { email: "obrien@example.com" },
+    } as any);
+    vi.mocked(prisma.lead.update).mockResolvedValue({
+      id: "lead-1",
+      firstName: "Jordan",
+      lastName: "Lee",
+      email: "jordan@example.com",
+      phone: "555-1234",
+      status: "NEW",
+      source: "WEBSITE",
+      createdAt: new Date("2026-08-01T00:00:00.000Z"),
+      agentId: "agent-1",
+      brokerageFed: true,
+    } as any);
+    vi.mocked(sendEmail).mockResolvedValue({ sent: true });
+
+    await PATCH(makeRequest("agent-1"), { params: { id: "lead-1" } });
+
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    const html = call.html!;
+    expect(html).toContain("Hi O&#39;Brien, You Just Got A Lead!");
+    expect(html).not.toContain("O&amp;#39;Brien");
+  });
 });

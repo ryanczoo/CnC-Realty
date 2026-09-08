@@ -136,6 +136,15 @@ describe("sendApprovalDocuments", () => {
       '<p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; text-align: left; margin: 0 0 16px; padding-left: 20px;">&#10003; Copy of California DRE license</p>'
     );
   });
+
+  it("does not double-escape an apostrophe in the agent's first name in the heading", async () => {
+    await sendApprovalDocuments("obrien@example.com", "O'Brien");
+
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    const html = call.html!;
+    expect(html).toContain("Let&#39;s get started, O&#39;Brien!");
+    expect(html).not.toContain("O&amp;#39;Brien");
+  });
 });
 
 describe("sendAnnouncement", () => {
@@ -195,6 +204,19 @@ describe("sendAnnouncement", () => {
     expect(html).toContain(
       '<img src="http://localhost:3000/announcement-photo.jpg" alt="" width="100%" style="display: block; width: 100%; border-radius: 8px; border: 0;" />'
     );
+  });
+
+  it("does not double-escape an apostrophe in the title, and does not HTML-escape the plain-text subject line", async () => {
+    await sendAnnouncement(["agent1@example.com"], "Owner's Update", "Some body copy.");
+
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    const html = call.html!;
+
+    expect(html).toContain("Owner&#39;s Update");
+    expect(html).not.toContain("Owner&amp;#39;s Update");
+
+    expect(call.subject).toBe("Announcement: Owner's Update");
+    expect(call.subject).not.toContain("&#39;");
   });
 });
 
@@ -524,6 +546,15 @@ describe("sendApplicationApproved", () => {
     expect(html).not.toContain("font-size: 15px");
     expect(html).toContain("font-size: 14px"); // button, unchanged
   });
+
+  it("does not double-escape an apostrophe in the agent's first name in the heading", async () => {
+    await sendApplicationApproved("obrien@example.com", "O'Brien", "http://localhost:3000/setup-account?token=abc", "obrien-a1b2c3");
+
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    const html = call.html!;
+    expect(html).toContain("Hey O&#39;Brien, We&#39;ve Been Expecting You!");
+    expect(html).not.toContain("O&amp;#39;Brien");
+  });
 });
 
 describe("sendApplicationRejected", () => {
@@ -571,6 +602,15 @@ describe("sendApplicationRejected", () => {
     expect(html).not.toContain("font-size: 15px");
     expect(html).not.toContain("Thank you for your interest in joining CnC Realty. After reviewing");
     expect(html).not.toContain("If you have questions, please reach out to");
+  });
+
+  it("does not double-escape an apostrophe in the applicant's first name in the heading", async () => {
+    await sendApplicationRejected("obrien@example.com", "O'Brien", "Not enough experience");
+
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    const html = call.html!;
+    expect(html).toContain("Hi O&#39;Brien, We Are So Sorry");
+    expect(html).not.toContain("O&amp;#39;Brien");
   });
 });
 

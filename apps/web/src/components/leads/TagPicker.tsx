@@ -26,7 +26,7 @@ export function TagPicker({ leadId, applied, onApplied, onRemoved }: Props) {
     fetch("/api/admin/tags", { signal: controller.signal })
       .then((r) => r.json())
       .then((data) => setAllTags(Array.isArray(data) ? data : []))
-      .catch((e: Error) => { if (e.name !== "AbortError") throw e; });
+      .catch((e: Error) => { if (e.name !== "AbortError") setAllTags([]); });
     return () => controller.abort();
   }, []);
 

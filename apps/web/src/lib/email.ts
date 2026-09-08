@@ -234,7 +234,6 @@ export async function sendApplicationApproved(
     );
     return;
   }
-  const safeName = escapeHtml(firstName);
   const safeUrl = escapeHtml(setupUrl);
   const safeProfileUrl = escapeHtml(`${process.env.NEXTAUTH_URL}/agents/${slug}`);
 
@@ -243,7 +242,7 @@ export async function sendApplicationApproved(
   const logoWhite = readFileSync(join(ATTACHMENTS_DIR, "cnc-logo-white.png"));
 
   const bodyHtml = buildHeadingBodyHtml({
-    heading: `Hey ${safeName}, We've Been Expecting You!`,
+    heading: `Hey ${firstName}, We've Been Expecting You!`,
     photoUrl: `${process.env.NEXTAUTH_URL}/agent-welcome-photo.jpg`,
     bodyHtml: `
       <p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.6; text-align: center; margin: 0 0 20px;">
@@ -313,11 +312,10 @@ export async function sendAnnouncement(recipients: string[], title: string, body
     console.warn("[sendAnnouncement] POSTMARK_SERVER_TOKEN is not set — skipping email send.");
     return;
   }
-  const safeTitle = escapeHtml(title);
   const safeBody = escapeHtml(body);
 
   const bodyHtml = buildHeadingBodyHtml({
-    heading: safeTitle,
+    heading: title,
     photoUrl: `${process.env.NEXTAUTH_URL}/announcement-photo.jpg`,
     bodyHtml: `
       <p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.6; text-align: left; margin: 0; white-space: pre-wrap;">
@@ -334,7 +332,7 @@ export async function sendAnnouncement(recipients: string[], title: string, body
     recipients.map((to) =>
       sendEmail({
         to,
-        subject: `Announcement: ${safeTitle}`,
+        subject: `Announcement: ${title}`,
         html,
         from: ANNOUNCEMENT_FROM,
         stream: "transactional",
@@ -388,10 +386,9 @@ export async function sendApplicationRejected(
     return;
   }
   const firstNameOnly = firstName.trim().split(/\s+/)[0] || firstName;
-  const safeName = escapeHtml(firstNameOnly);
   const safeReason = escapeHtml(reason);
   const bodyHtml = buildHeadingBodyHtml({
-    heading: `Hi ${safeName}, We Are So Sorry`,
+    heading: `Hi ${firstNameOnly}, We Are So Sorry`,
     photoUrl: `${process.env.NEXTAUTH_URL}/application-rejected-photo.jpg`,
     bodyHtml: `
       <p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.6; text-align: center; margin: 0 0 20px;">
@@ -423,13 +420,11 @@ export async function sendApprovalDocuments(to: string, firstName: string) {
     console.warn("[sendApprovalDocuments] POSTMARK_SERVER_TOKEN is not set — skipping email send.");
     return;
   }
-  const safeName = escapeHtml(firstName);
-
   const w9 = readFileSync(join(ATTACHMENTS_DIR, "w9-blank.pdf"));
   const opm = readFileSync(join(ATTACHMENTS_DIR, "cnc-office-policy-manual.pdf"));
 
   const bodyHtml = buildHeadingBodyHtml({
-    heading: `Let's get started, ${safeName}!`,
+    heading: `Let's get started, ${firstName}!`,
     photoUrl: `${process.env.NEXTAUTH_URL}/onboarding-photo.jpg`,
     bodyHtml: `
       <p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; text-align: center; margin: 0 0 32px;">
