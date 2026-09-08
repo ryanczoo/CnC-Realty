@@ -3,7 +3,6 @@ import { prisma } from "@/lib/prisma";
 import { substituteVars, sendActionPlanEmail } from "@/lib/action-plan-email";
 import { ensureQuotaReset, tryConsumeEmailQuota } from "@/lib/email-quota";
 import { isAuthorizedCronRequest } from "@/lib/cron-auth";
-import type { Prisma } from "@cnc/database";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -32,6 +31,7 @@ export async function POST(req: NextRequest) {
       },
     },
     orderBy: { dueAt: "asc" },
+    take: 500,
   });
 
   // One reset check per distinct agent represented in this batch, not once
@@ -130,27 +130,29 @@ export async function POST(req: NextRequest) {
     else skippedLimit++;
   }
 
-  // Check for newly-completed enrollments (always run, not just when steps were processed)
+  // Check for newly-completed enrollments — only ever possible for
+  // enrollments whose step was just processed this run. When dueSteps is
+  // empty (the common case on an hourly cron), nothing changed, so nothing
+  // could have just transitioned to complete, and this whole check is
+  // skipped rather than scanning every active enrollment brokerage-wide.
   const enrollmentIds = Array.from(new Set(dueSteps.map((s) => s.enrollmentId)));
-  const enrollmentWhere: Prisma.LeadPlanEnrollmentWhereInput =
-    enrollmentIds.length > 0
-      ? { id: { in: enrollmentIds }, status: "ACTIVE" }
-      : { status: "ACTIVE" };
-  const enrollments = await prisma.leadPlanEnrollment.findMany({
-    where: enrollmentWhere,
-    include: { steps: { select: { status: true } } },
-  });
-  const completedEnrollments = enrollments.filter(
-    (enr) => enr.steps.length > 0 && enr.steps.every((s) => s.status === "DONE" || s.status === "SKIPPED")
-  );
-  await Promise.all(
-    completedEnrollments.map((enr) =>
-      prisma.leadPlanEnrollment.update({
-        where: { id: enr.id },
-        data: { status: "COMPLETED", completedAt: now },
-      })
-    )
-  );
+  if (enrollmentIds.length > 0) {
+    const enrollments = await prisma.leadPlanEnrollment.findMany({
+      where: { id: { in: enrollmentIds }, status: "ACTIVE" },
+      include: { steps: { select: { status: true } } },
+    });
+    const completedEnrollments = enrollments.filter(
+      (enr) => enr.steps.length > 0 && enr.steps.every((s) => s.status === "DONE" || s.status === "SKIPPED")
+    );
+    await Promise.all(
+      completedEnrollments.map((enr) =>
+        prisma.leadPlanEnrollment.update({
+          where: { id: enr.id },
+          data: { status: "COMPLETED", completedAt: now },
+        })
+      )
+    );
+  }
 
   return NextResponse.json({ processed, errors, skippedLimit });
 }

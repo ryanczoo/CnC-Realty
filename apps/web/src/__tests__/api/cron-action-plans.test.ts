@@ -119,12 +119,15 @@ describe("POST /api/cron/action-plans", () => {
   });
 
   it("marks enrollment COMPLETED when all steps done", async () => {
-    // The route calls leadPlanStep.findMany exactly once (for due steps);
-    // enrollment completion is checked via leadPlanEnrollment.findMany below,
-    // not a second leadPlanStep.findMany call.
-    vi.mocked(prisma.leadPlanStep.findMany).mockResolvedValue([]); // no pending steps
+    // The enrollment-completion check only runs for enrollments whose step
+    // was processed this run, so a due step for e2 must be supplied — an
+    // enrollment can only just become "complete" if something changed this
+    // run.
+    vi.mocked(prisma.leadPlanStep.findMany).mockResolvedValue([TASK_STEP] as any);
+    vi.mocked(prisma.leadPlanStep.update).mockResolvedValue({ ...TASK_STEP, status: "DONE" } as any);
+    vi.mocked(prisma.leadTask.create).mockResolvedValue({} as any);
     vi.mocked(prisma.leadPlanEnrollment.findMany).mockResolvedValue([
-      { id: "e1", steps: [{ status: "DONE" }] },
+      { id: "e2", steps: [{ status: "DONE" }] },
     ] as any);
     vi.mocked(prisma.leadPlanEnrollment.update).mockResolvedValue({} as any);
 
@@ -231,6 +234,38 @@ describe("POST /api/cron/action-plans", () => {
 
     const call = vi.mocked(sendEmail).mock.calls[0][0];
     expect(call.html).toContain("Hi John, a warmer heading");
+  });
+
+  it("caps the due-steps query at 500", async () => {
+    vi.mocked(prisma.leadPlanStep.findMany).mockResolvedValue([]);
+    vi.mocked(prisma.leadPlanEnrollment.findMany).mockResolvedValue([]);
+
+    await POST(makeReq(CRON_SECRET));
+
+    expect(prisma.leadPlanStep.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ take: 500 })
+    );
+  });
+
+  it("does not query leadPlanEnrollment at all when no steps are due", async () => {
+    vi.mocked(prisma.leadPlanStep.findMany).mockResolvedValue([]);
+
+    await POST(makeReq(CRON_SECRET));
+
+    expect(prisma.leadPlanEnrollment.findMany).not.toHaveBeenCalled();
+  });
+
+  it("still checks for completed enrollments when steps WERE processed this run", async () => {
+    vi.mocked(prisma.leadPlanStep.findMany).mockResolvedValue([EMAIL_STEP] as any);
+    vi.mocked(prisma.leadPlanStep.update).mockResolvedValue({ ...EMAIL_STEP, status: "DONE" } as any);
+    vi.mocked(prisma.leadPlanEnrollment.findMany).mockResolvedValue([]);
+    vi.mocked(sendEmail).mockResolvedValue({ sent: true });
+
+    await POST(makeReq(CRON_SECRET));
+
+    expect(prisma.leadPlanEnrollment.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: { in: ["e1"] }, status: "ACTIVE" } })
+    );
   });
 
   it("currently authorizes when CRON_SECRET is unset and the header literally says 'Bearer undefined'", async () => {
