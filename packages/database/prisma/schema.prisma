@@ -572,6 +572,9 @@ model FileTask {
 
   listingFile     ListingFile?     @relation(fields: [listingFileId], references: [id], onDelete: Cascade)
   transactionFile TransactionFile? @relation(fields: [transactionFileId], references: [id], onDelete: Cascade)
+
+  @@index([listingFileId])
+  @@index([transactionFileId])
 }
 
 model FileCondition {
@@ -583,6 +586,8 @@ model FileCondition {
   createdAt         DateTime @default(now())
 
   transactionFile TransactionFile @relation(fields: [transactionFileId], references: [id], onDelete: Cascade)
+
+  @@index([transactionFileId])
 }
 
 model FileParty {
@@ -600,6 +605,9 @@ model FileParty {
 
   listingFile     ListingFile?     @relation(fields: [listingFileId], references: [id], onDelete: Cascade)
   transactionFile TransactionFile? @relation(fields: [transactionFileId], references: [id], onDelete: Cascade)
+
+  @@index([listingFileId])
+  @@index([transactionFileId])
 }
 
 model ChecklistTemplate {
@@ -640,6 +648,9 @@ model FileChecklistItem {
   listingFile     ListingFile?     @relation(fields: [listingFileId], references: [id], onDelete: Cascade)
   transactionFile TransactionFile? @relation(fields: [transactionFileId], references: [id], onDelete: Cascade)
   documents       FileDocument[]
+
+  @@index([listingFileId])
+  @@index([transactionFileId])
 }
 
 model FileDocument {
@@ -663,6 +674,9 @@ model FileDocument {
   checklistItem   FileChecklistItem? @relation(fields: [checklistItemId], references: [id])
   uploadedBy      User               @relation("DocumentUploader", fields: [uploadedByAgentId], references: [id])
   reviewedBy      User?              @relation("DocumentReviewer", fields: [reviewedByAdminId], references: [id])
+
+  @@index([listingFileId])
+  @@index([transactionFileId])
 }
 
 model FileActivity {
@@ -680,6 +694,9 @@ model FileActivity {
   listingFile     ListingFile?     @relation(fields: [listingFileId], references: [id], onDelete: Cascade)
   transactionFile TransactionFile? @relation(fields: [transactionFileId], references: [id], onDelete: Cascade)
   actor           User             @relation("FileActivityActor", fields: [actorId], references: [id])
+
+  @@index([listingFileId])
+  @@index([transactionFileId])
 }
 
 // ─── Campaign models (unchanged) ─────────────────────────────────────────────
@@ -948,6 +965,9 @@ model LeadTask {
 
   lead     Lead   @relation(fields: [leadId],     references: [id], onDelete: Cascade)
   assignee Agent? @relation("TaskAssignee", fields: [assigneeId], references: [id])
+
+  @@index([leadId])
+  @@index([done, dueDate])
 }
 
 model PropertyView {
