@@ -15,7 +15,7 @@ export async function POST(
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
-  const campaign = await prisma.campaign.findUnique({ where: { id: params.id } });
+  const campaign = await prisma.campaign.findUnique({ where: { id: params.id }, select: { id: true, agentId: true } });
   const { exists, forbidden } = checkOwnership(campaign, session.user.agentId, session.user.role);
   if (!exists) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (forbidden) return NextResponse.json({ error: "Forbidden" }, { status: 403 });

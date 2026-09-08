@@ -6,15 +6,12 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
-  const existingLead = await prisma.lead.findUnique({ where: { id: params.id }, select: { agentId: true } });
-  const { exists, forbidden } = checkOwnership(existingLead, session.user.agentId, session.user.role);
+  const lead = await prisma.lead.findUnique({ where: { id: params.id }, select: { agentId: true, email: true } });
+  const { exists, forbidden } = checkOwnership(lead, session.user.agentId, session.user.role);
   if (!exists || forbidden) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!lead!.email) return NextResponse.json({ saved: [], viewed: [] });
 
-  const lead = await prisma.lead.findUnique({ where: { id: params.id }, select: { email: true } });
-  if (!lead) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (!lead.email) return NextResponse.json({ saved: [], viewed: [] });
-
-  const user = await prisma.user.findFirst({ where: { email: lead.email, role: "BUYER" } });
+  const user = await prisma.user.findFirst({ where: { email: lead!.email, role: "BUYER" } });
   if (!user) return NextResponse.json({ saved: [], viewed: [] });
 
   const [saved, viewed] = await Promise.all([

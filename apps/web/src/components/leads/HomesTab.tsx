@@ -49,10 +49,14 @@ export function HomesTab({ leadId }: { leadId: string }) {
   const [data, setData] = useState<{ saved: SavedItem[]; viewed: ViewedItem[] } | null>(null);
 
   useEffect(() => {
-    fetch(`/api/leads/${leadId}/homes`)
+    const controller = new AbortController();
+    fetch(`/api/leads/${leadId}/homes`, { signal: controller.signal })
       .then((r) => r.json())
       .then(setData)
-      .catch(() => setData({ saved: [], viewed: [] }));
+      .catch((e: Error) => {
+        if (e.name !== "AbortError") setData({ saved: [], viewed: [] });
+      });
+    return () => controller.abort();
   }, [leadId]);
 
   if (!data) return <Loader2 className="h-6 w-6 animate-spin text-[#9E8C61]" />;
