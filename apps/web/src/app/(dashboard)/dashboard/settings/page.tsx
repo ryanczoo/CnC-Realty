@@ -44,9 +44,17 @@ export default function AgentSettingsPage() {
     if (session?.user?.name) setNameInput(session.user.name);
   }, [session?.user?.name]);
 
+  // A 5-minute staleTime means a background refetch (e.g. from window refocus, or
+  // revisiting this tab) won't re-fire within that window, and refetchOnWindowFocus:
+  // false removes the specific trigger most likely to interrupt an in-progress edit
+  // (switching tabs to check something, then coming back). The Save button remains
+  // the only way edits reach the server — this only changes when the read-side
+  // re-populates the form from a background fetch.
   const { data: accountProfile } = useQuery({
     queryKey: ["account", "profile"],
     queryFn: ({ signal }) => fetchAccountProfile(signal),
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   useEffect(() => {
@@ -56,9 +64,14 @@ export default function AgentSettingsPage() {
     if (accountProfile.language) setLanguageInput(accountProfile.language as string);
   }, [accountProfile]);
 
+  // Same rationale as the profile query above: a 5-minute staleTime plus
+  // refetchOnWindowFocus: false prevents a background refetch from silently
+  // overwriting unsaved edits when the user switches tabs and comes back.
   const { data: fetchedAgentProfile } = useQuery({
     queryKey: ["account", "agent-profile"],
     queryFn: ({ signal }) => fetchAgentProfile(signal),
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   useEffect(() => {
