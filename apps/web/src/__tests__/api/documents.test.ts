@@ -41,7 +41,32 @@ describe("POST /api/documents", () => {
     vi.mocked(prisma.fileDocument.create).mockResolvedValue({ id: "doc1" } as any);
     vi.mocked(prisma.fileActivity.create).mockResolvedValue({ id: "act1" } as any);
 
-    const res = await POST(req({ fileType: "LISTING", fileId: "f1", name: "real.pdf", r2Key: "k", r2Url: "u" }));
+    const res = await POST(
+      req({
+        fileType: "LISTING",
+        fileId: "f1",
+        name: "real.pdf",
+        r2Key: "transactions/listing/f1/doc123/real.pdf",
+        r2Url: "transactions/listing/f1/doc123/real.pdf",
+      })
+    );
     expect(res.status).toBe(201);
+  });
+
+  it("rejects an r2Key that doesn't match the verified file's own key prefix", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "f1", agentId: "a1" } as any);
+
+    const res = await POST(
+      req({
+        fileType: "LISTING",
+        fileId: "f1",
+        name: "sneaky.pdf",
+        r2Key: "transactions/listing/SOMEONE-ELSES-FILE-ID/doc123/sneaky.pdf",
+        r2Url: "transactions/listing/SOMEONE-ELSES-FILE-ID/doc123/sneaky.pdf",
+      })
+    );
+    expect(res.status).toBe(400);
+    expect(prisma.fileDocument.create).not.toHaveBeenCalled();
   });
 });

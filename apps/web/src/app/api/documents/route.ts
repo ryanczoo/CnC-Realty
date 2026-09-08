@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getFileAndVerifyAccess } from "@/lib/api-auth";
+import { buildR2Key } from "@/lib/r2";
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
@@ -23,6 +24,19 @@ export async function POST(req: Request) {
     session.user.role
   );
   if (!file) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  // r2Key/r2Url come from the client — verify the key actually belongs to
+  // THIS file (buildR2Key's format is deterministic: every key legitimately
+  // issued by /api/upload-url for this exact file starts with this prefix),
+  // so a caller can't register a document pointing at another file's real
+  // R2 object just because they own *some* file to attach it to. The prefix
+  // is derived from buildR2Key itself (rather than duplicating its template)
+  // so the two can never drift out of sync.
+  const placeholderKey = buildR2Key(isListing ? "listing" : "transaction", fileId, "__doc__", "__name__");
+  const expectedPrefix = placeholderKey.slice(0, placeholderKey.indexOf("__doc__"));
+  if (!r2Key.startsWith(expectedPrefix)) {
+    return NextResponse.json({ error: "Invalid document key" }, { status: 400 });
+  }
 
   const doc = await prisma.fileDocument.create({
     data: {
