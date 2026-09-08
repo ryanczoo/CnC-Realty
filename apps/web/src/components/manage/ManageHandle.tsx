@@ -4,7 +4,7 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import { RevealLine } from "@/components/ui/reveal-text";
 import { fadeUp, PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
-import { ManageContactModal } from "./ManageContactModal";
+import { ContactModal } from "@/components/ui/ContactModal";
 
 const CARDS = [
   {
@@ -139,9 +139,9 @@ export function ManageHandle() {
         <CardRow cards={ROW_3} rowClass="manage-handle-row-3 mt-3 md:mt-[20px]" onLearnMore={handleLearnMore} />
       </div>
 
-      <ManageContactModal
+      <ContactModal
         open={modalOpen}
-        cardTitle={activeCard}
+        source={"MANAGE_" + activeCard.toUpperCase().replace(/\s+/g, "_")}
         onClose={() => setModalOpen(false)}
       />
     </section>

@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import { NAV_PANEL_CLS, NAV_ITEM_CLS, PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
 
-const ROLE_OPTIONS = [
+export const ROLE_OPTIONS = [
   "Agent",
   "Buyer",
   "Seller",
