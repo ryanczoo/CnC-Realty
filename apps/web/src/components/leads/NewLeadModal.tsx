@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
+import { formatPhoneInput, isValidEmail } from "@/lib/form-validation";
 
 const SOURCE_OPTIONS = [
   { value: "OTHER", label: "Other" },
@@ -49,12 +50,7 @@ export function NewLeadModal({ open, onClose, onSaved }: Props) {
   }
 
   function handlePhoneChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
-    const formatted =
-      digits.length <= 3 ? digits :
-      digits.length <= 6 ? `${digits.slice(0, 3)}-${digits.slice(3)}` :
-      `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
-    setForm((f) => ({ ...f, phone: formatted }));
+    setForm((f) => ({ ...f, phone: formatPhoneInput(e.target.value) }));
   }
 
   function reset() {
@@ -72,7 +68,7 @@ export function NewLeadModal({ open, onClose, onSaved }: Props) {
     setError("");
 
     const email = form.email.trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!isValidEmail(email)) {
       setError("Please enter a valid email address.");
       return;
     }
