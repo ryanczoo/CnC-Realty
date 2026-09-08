@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
-import { SPRING_HOVER } from "@/lib/motion";
+import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
 
 type EnrollmentStep = {
   id: string;
@@ -128,8 +128,8 @@ export function LeadActionPlansSection({ leadId }: { leadId: string }) {
           <motion.button
             onClick={() => setShowPlanPicker(!showPlanPicker)}
             disabled={enrolling}
-            animate={{ scale: [1, 1.04, 1] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            animate={PULSE_ANIMATE}
+            transition={PULSE_TRANSITION}
             whileHover={{ scale: 1.05, transition: SPRING_HOVER }}
             className="rounded-lg border border-[#9E8C61] bg-[#9E8C61] px-3 py-1.5 text-xs font-medium text-white disabled:opacity-40"
           >
