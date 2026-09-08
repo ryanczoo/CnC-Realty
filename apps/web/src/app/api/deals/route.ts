@@ -56,6 +56,7 @@ export async function GET(req: Request) {
     where,
     include: { lead: { select: { firstName: true, lastName: true } } },
     orderBy: { createdAt: "asc" },
+    take: 500,
   });
 
   return NextResponse.json(deals.map(serializeDeal));

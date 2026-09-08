@@ -85,6 +85,17 @@ describe("GET /api/deals", () => {
       expect.objectContaining({ where: expect.objectContaining({ pipeline: "SELLERS" }) })
     );
   });
+
+  it("caps GET results at 500 even for ADMIN with no filters", async () => {
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u1", role: "ADMIN", agentId: null } } as any);
+    vi.mocked(prisma.deal.findMany).mockResolvedValue([]);
+
+    await GET(new Request("http://localhost/api/deals"));
+
+    expect(prisma.deal.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ take: 500 })
+    );
+  });
 });
 
 describe("POST /api/deals", () => {
