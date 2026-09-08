@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { publicFormRateLimit } from "@/lib/rate-limit";
 
 const schema = z.object({
   token:    z.string().min(1),
@@ -9,6 +10,19 @@ const schema = z.object({
 });
 
 export async function POST(req: Request) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  try {
+    const { success, reset } = await publicFormRateLimit.limit(ip);
+    if (!success) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        { status: 429, headers: { "Retry-After": String(Math.ceil((reset - Date.now()) / 1000)) } }
+      );
+    }
+  } catch (err) {
+    console.error("[POST /api/setup-account] rate limiter unavailable, proceeding:", err);
+  }
+
   try {
     const body = await req.json();
     const { token, password } = schema.parse(body);

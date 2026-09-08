@@ -10,17 +10,17 @@ vi.mock("@/lib/rate-limit", () => ({
 
 import { prisma } from "@/lib/prisma";
 import { publicFormRateLimit } from "@/lib/rate-limit";
-import { POST } from "../../app/api/reset-password/route";
+import { POST } from "../../app/api/setup-account/route";
 
 function makeRequest(body: object) {
-  return new NextRequest("http://localhost/api/reset-password", {
+  return new NextRequest("http://localhost/api/setup-account", {
     method: "POST",
     body: JSON.stringify(body),
     headers: { "Content-Type": "application/json" },
   });
 }
 
-describe("POST /api/reset-password", () => {
+describe("POST /api/setup-account", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -39,7 +39,7 @@ describe("POST /api/reset-password", () => {
   it("rejects when the token matches but has expired", async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       id: "user-1",
-      resetTokenExpiry: new Date(Date.now() - 1000),
+      setupTokenExpiry: new Date(Date.now() - 1000),
     } as any);
 
     const res = await POST(makeRequest({ token: "expired-token", password: "longenoughpassword" }));
@@ -59,10 +59,10 @@ describe("POST /api/reset-password", () => {
     expect(prisma.user.update).not.toHaveBeenCalled();
   });
 
-  it("sets the new password and clears the reset token on a valid, unexpired token", async () => {
+  it("sets the new password and clears the setup token on a valid, unexpired token", async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       id: "user-1",
-      resetTokenExpiry: new Date(Date.now() + 60_000),
+      setupTokenExpiry: new Date(Date.now() + 60_000),
     } as any);
     vi.mocked(prisma.user.update).mockResolvedValue({} as any);
 
@@ -75,8 +75,8 @@ describe("POST /api/reset-password", () => {
     expect(prisma.user.update).toHaveBeenCalledOnce();
     const call = vi.mocked(prisma.user.update).mock.calls[0][0] as any;
     expect(call.where).toEqual({ id: "user-1" });
-    expect(call.data.resetToken).toBeNull();
-    expect(call.data.resetTokenExpiry).toBeNull();
+    expect(call.data.setupToken).toBeNull();
+    expect(call.data.setupTokenExpiry).toBeNull();
     expect(typeof call.data.password).toBe("string");
     expect(call.data.password).not.toBe("longenoughpassword");
   });
