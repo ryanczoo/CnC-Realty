@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { canTransitionListing, canTransitionTransaction, isReadyToClose } from "@/lib/transaction-helpers";
+import { canTransitionListing, canTransitionTransaction, isReadyToClose, CHECKLIST_ITEMS_WITH_DOCS_INCLUDE } from "@/lib/transaction-helpers";
 
 export async function PATCH(req: Request, { params }: { params: { fileType: string; id: string } }) {
   const session = await getServerSession(authOptions);
@@ -18,7 +18,7 @@ export async function PATCH(req: Request, { params }: { params: { fileType: stri
   if (isListing) {
     const file = await prisma.listingFile.findUnique({
       where: { id: params.id },
-      include: { checklistItems: { include: { documents: true } } },
+      include: { checklistItems: CHECKLIST_ITEMS_WITH_DOCS_INCLUDE },
     });
     if (!file) return NextResponse.json({ error: "Not found" }, { status: 404 });
     if (!canTransitionListing(file.status, status, "ADMIN")) {
@@ -31,7 +31,7 @@ export async function PATCH(req: Request, { params }: { params: { fileType: stri
   } else {
     const file = await prisma.transactionFile.findUnique({
       where: { id: params.id },
-      include: { checklistItems: { include: { documents: true } } },
+      include: { checklistItems: CHECKLIST_ITEMS_WITH_DOCS_INCLUDE },
     });
     if (!file) return NextResponse.json({ error: "Not found" }, { status: 404 });
     if (!canTransitionTransaction(file.status, status, "ADMIN")) {

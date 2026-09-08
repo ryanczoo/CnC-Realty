@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { checkOwnership } from "@/lib/api-auth";
-import { getChecklistProgress } from "@/lib/transaction-helpers";
+import { getChecklistProgress, CHECKLIST_ITEMS_WITH_DOCS_INCLUDE } from "@/lib/transaction-helpers";
 import { sendSubmitForReview } from "@/lib/email/transaction-emails";
 
 export async function POST(_req: Request, { params }: { params: { id: string } }) {
@@ -12,7 +12,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
 
   const txRecord = await prisma.transactionFile.findUnique({
     where: { id: params.id },
-    include: { checklistItems: { include: { documents: true } }, agent: { include: { user: true } } },
+    include: { checklistItems: CHECKLIST_ITEMS_WITH_DOCS_INCLUDE, agent: { include: { user: true } } },
   });
   const { exists, forbidden, record: tx } = checkOwnership(txRecord, session.user.agentId, session.user.role);
   if (!exists || !tx) return NextResponse.json({ error: "Not found" }, { status: 404 });

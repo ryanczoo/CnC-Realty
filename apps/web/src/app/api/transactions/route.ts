@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { CHECKLIST_ITEMS_WITH_DOCS_INCLUDE } from "@/lib/transaction-helpers";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -13,7 +14,7 @@ export async function GET() {
   const transactions = await prisma.transactionFile.findMany({
     where: { agentId },
     orderBy: { createdAt: "desc" },
-    include: { checklistItems: { include: { documents: true } } },
+    include: { checklistItems: CHECKLIST_ITEMS_WITH_DOCS_INCLUDE },
   });
 
   return NextResponse.json({ transactions });

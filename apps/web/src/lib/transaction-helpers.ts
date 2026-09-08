@@ -22,6 +22,12 @@ export const FILE_DETAIL_INCLUDE = {
   tasks: { orderBy: { createdAt: "asc" as const } },
 } as const;
 
+// The lighter-weight sibling of FILE_DETAIL_INCLUDE.checklistItems, used by
+// routes that only need checklist completion status (not the full file
+// detail page's ordering) — independently written in 6 places before this,
+// now the single source of truth for that shape.
+export const CHECKLIST_ITEMS_WITH_DOCS_INCLUDE = { include: { documents: true } } as const;
+
 const AGENT_LISTING_TRANSITIONS: Record<ListingStatus, ListingStatus[]> = {
   INCOMPLETE:            ["COMING_SOON", "ACTIVE"],
   COMING_SOON:           ["ACTIVE", "WITHDRAWN", "CANCELED"],
