@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { emailLayout, escapeHtml, buildHeadingBodyHtml } from "@/lib/email";
+import { emailLayout, buildHeadingBodyHtml } from "@/lib/email";
 import { sendEmail } from "@/lib/email/send";
 import { unsubscribeFooterHtml } from "@/lib/email/unsubscribe";
 import { ensureQuotaReset, tryConsumeEmailQuota } from "@/lib/email-quota";
@@ -116,7 +116,7 @@ export async function POST(req: NextRequest) {
           : campaign.body ?? "";
         const html = emailLayout({
           bodyHtml:
-            buildHeadingBodyHtml({ heading: escapeHtml(heading), bodyHtml: innerHtml }) +
+            buildHeadingBodyHtml({ heading, bodyHtml: innerHtml }) +
             unsubscribeFooterHtml("lead", lead.id, "campaign"),
         });
 

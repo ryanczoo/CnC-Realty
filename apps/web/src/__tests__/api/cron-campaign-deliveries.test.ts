@@ -318,6 +318,35 @@ describe("POST /api/cron/campaign-deliveries", () => {
     expect(call.html).toContain("A Bigger Hello");
   });
 
+  it("escapes an apostrophe in the campaign heading exactly once, not double-escaped", async () => {
+    vi.mocked(prisma.campaignDelivery.findMany).mockResolvedValue([
+      plainEmailDelivery({
+        campaignContact: {
+          id: "cc1",
+          lead: LEAD,
+          campaign: {
+            id: "c1",
+            agentId: "a1",
+            agent: AGENT,
+            subject: "Hello",
+            heading: "Don't Miss Out!",
+            body: "<p>Hi there</p>",
+          },
+        },
+      }),
+    ] as any);
+
+    await POST(makeReq(CRON_SECRET));
+
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    // buildHeadingBodyHtml() escapes its own heading argument internally, so
+    // this call site must pass the raw heading — pre-escaping it here (as the
+    // old code did) double-escapes the apostrophe into a visibly garbled
+    // literal string in the delivered email.
+    expect(call.html).toContain("Don&#39;t Miss Out!");
+    expect(call.html).not.toContain("Don&amp;#39;t Miss Out!");
+  });
+
   it("uses a drip step's heading over its subject", async () => {
     vi.mocked(prisma.campaignDelivery.findMany).mockResolvedValue([
       dripStepDelivery({
