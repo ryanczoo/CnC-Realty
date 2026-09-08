@@ -41,3 +41,15 @@ export function updateDealInList<T extends { id: string }>(deals: T[] | undefine
 export function removeDealFromList<T extends { id: string }>(deals: T[] | undefined, dealId: string): T[] {
   return (deals ?? []).filter((d) => d.id !== dealId);
 }
+
+export async function fetchAccountProfile(signal?: AbortSignal): Promise<Record<string, unknown>> {
+  const res = await fetch("/api/account/profile", { signal });
+  if (!res.ok) return {};
+  return res.json();
+}
+
+export async function fetchAgentProfile(signal?: AbortSignal): Promise<Record<string, unknown>> {
+  const res = await fetch("/api/account/agent-profile", { signal });
+  if (!res.ok) return {};
+  return res.json();
+}

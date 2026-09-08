@@ -3,6 +3,9 @@
 import { useSession, signOut } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
+import { fetchAccountProfile, fetchAgentProfile } from "@/lib/dashboard-queries";
+import { digitsOnly } from "@/lib/form-validation";
 
 export default function AgentSettingsPage() {
   const { data: session, update } = useSession();
@@ -41,39 +44,39 @@ export default function AgentSettingsPage() {
     if (session?.user?.name) setNameInput(session.user.name);
   }, [session?.user?.name]);
 
-  // Load license number
-  useEffect(() => {
-    fetch("/api/account/profile")
-      .then((r) => r.ok ? r.json() : null)
-      .then((d) => {
-        if (d?.licenseNum) setLicenseInput(d.licenseNum);
-        if (d?.location) setLocationInput(d.location);
-        if (d?.language) setLanguageInput(d.language);
-      })
-      .catch(() => {});
-  }, []);
+  const { data: accountProfile } = useQuery({
+    queryKey: ["account", "profile"],
+    queryFn: ({ signal }) => fetchAccountProfile(signal),
+  });
 
-  // Load agent profile on mount
   useEffect(() => {
-    fetch("/api/account/agent-profile")
-      .then((r) => r.ok ? r.json() : null)
-      .then((d) => {
-        if (!d) return;
-        setAgentProfile({
-          bio: d.bio ?? "",
-          yearsExp: d.yearsExp?.toString() ?? "",
-          listingsClosed: d.listingsClosed > 0 ? d.listingsClosed.toString() : "",
-          volumeClosed: d.volumeClosed > 0 ? Math.round(d.volumeClosed).toLocaleString("en-US") : "",
-          propertiesRented: d.propertiesRented != null && d.propertiesRented > 0 ? d.propertiesRented.toString() : "",
-          instagram: d.instagram ?? "",
-          facebook: d.facebook ?? "",
-          headshot: d.headshot ?? null,
-        });
-        if (d.headshot) setHeadshotKey(Date.now().toString());
-        if (d.slug) setAgentSlug(d.slug);
-      })
-      .catch(() => {});
-  }, []);
+    if (!accountProfile) return;
+    if (accountProfile.licenseNum) setLicenseInput(accountProfile.licenseNum as string);
+    if (accountProfile.location) setLocationInput(accountProfile.location as string);
+    if (accountProfile.language) setLanguageInput(accountProfile.language as string);
+  }, [accountProfile]);
+
+  const { data: fetchedAgentProfile } = useQuery({
+    queryKey: ["account", "agent-profile"],
+    queryFn: ({ signal }) => fetchAgentProfile(signal),
+  });
+
+  useEffect(() => {
+    const d = fetchedAgentProfile as any;
+    if (!d) return;
+    setAgentProfile({
+      bio: d.bio ?? "",
+      yearsExp: d.yearsExp?.toString() ?? "",
+      listingsClosed: d.listingsClosed > 0 ? d.listingsClosed.toString() : "",
+      volumeClosed: d.volumeClosed > 0 ? Math.round(d.volumeClosed).toLocaleString("en-US") : "",
+      propertiesRented: d.propertiesRented != null && d.propertiesRented > 0 ? d.propertiesRented.toString() : "",
+      instagram: d.instagram ?? "",
+      facebook: d.facebook ?? "",
+      headshot: d.headshot ?? null,
+    });
+    if (d.headshot) setHeadshotKey(Date.now().toString());
+    if (d.slug) setAgentSlug(d.slug);
+  }, [fetchedAgentProfile]);
 
   async function handleSaveName(e: React.FormEvent) {
     e.preventDefault();
@@ -343,7 +346,7 @@ export default function AgentSettingsPage() {
                   min={0}
                   step={1}
                   value={agentProfile.yearsExp}
-                  onChange={(e) => setAgentProfile((prev) => ({ ...prev, yearsExp: e.target.value.replace(/\D/g, "") }))}
+                  onChange={(e) => setAgentProfile((prev) => ({ ...prev, yearsExp: digitsOnly(e.target.value, 3) }))}
                   className="w-full rounded-lg border border-[#1B1B1B]/10 bg-white px-3 py-2.5 text-sm text-[#1B1B1B] outline-none focus:border-[#9E8C61] transition-colors"
                 />
               </div>
@@ -359,7 +362,7 @@ export default function AgentSettingsPage() {
                   min={0}
                   step={1}
                   value={agentProfile.listingsClosed}
-                  onChange={(e) => setAgentProfile((prev) => ({ ...prev, listingsClosed: e.target.value.replace(/\D/g, "") }))}
+                  onChange={(e) => setAgentProfile((prev) => ({ ...prev, listingsClosed: digitsOnly(e.target.value, 5) }))}
                   className="w-full rounded-lg border border-[#1B1B1B]/10 bg-white px-3 py-2.5 text-sm text-[#1B1B1B] outline-none focus:border-[#9E8C61] transition-colors"
                 />
               </div>
@@ -375,7 +378,7 @@ export default function AgentSettingsPage() {
                   inputMode="numeric"
                   value={agentProfile.volumeClosed}
                   onChange={(e) => {
-                    const digits = e.target.value.replace(/\D/g, "");
+                    const digits = digitsOnly(e.target.value, 12);
                     const formatted = digits.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
                     setAgentProfile((prev) => ({ ...prev, volumeClosed: formatted }));
                   }}
@@ -394,7 +397,7 @@ export default function AgentSettingsPage() {
                   min={0}
                   step={1}
                   value={agentProfile.propertiesRented}
-                  onChange={(e) => setAgentProfile((prev) => ({ ...prev, propertiesRented: e.target.value.replace(/\D/g, "") }))}
+                  onChange={(e) => setAgentProfile((prev) => ({ ...prev, propertiesRented: digitsOnly(e.target.value, 5) }))}
                   className="w-full rounded-lg border border-[#1B1B1B]/10 bg-white px-3 py-2.5 text-sm text-[#1B1B1B] outline-none focus:border-[#9E8C61] transition-colors"
                 />
               </div>

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { fetchListings, fetchTransactions, fetchOpenTasks, fetchCompletedTasks, removeTaskById, updateDealInList, removeDealFromList, fetchDeals } from "@/lib/dashboard-queries";
+import { fetchListings, fetchTransactions, fetchOpenTasks, fetchCompletedTasks, removeTaskById, updateDealInList, removeDealFromList, fetchDeals, fetchAccountProfile, fetchAgentProfile } from "@/lib/dashboard-queries";
 
 describe("fetchListings", () => {
   beforeEach(() => {
@@ -162,5 +162,33 @@ describe("removeDealFromList", () => {
 
   it("returns an empty array when given undefined", () => {
     expect(removeDealFromList(undefined, "d1")).toEqual([]);
+  });
+});
+
+describe("fetchAccountProfile", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("fetches /api/account/profile and returns the parsed body", async () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ licenseNum: "123" }) });
+    const result = await fetchAccountProfile(new AbortController().signal);
+    expect(fetch).toHaveBeenCalledWith("/api/account/profile", expect.objectContaining({ signal: expect.anything() }));
+    expect(result).toEqual({ licenseNum: "123" });
+  });
+
+  it("returns an empty object when the response is not ok", async () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: false });
+    const result = await fetchAccountProfile();
+    expect(result).toEqual({});
+  });
+});
+
+describe("fetchAgentProfile", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("fetches /api/account/agent-profile and returns the parsed body", async () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ bio: "Hello" }) });
+    const result = await fetchAgentProfile(new AbortController().signal);
+    expect(fetch).toHaveBeenCalledWith("/api/account/agent-profile", expect.objectContaining({ signal: expect.anything() }));
+    expect(result).toEqual({ bio: "Hello" });
   });
 });
