@@ -64,3 +64,31 @@ describe("POST /api/leads — utmSource", () => {
     });
   });
 });
+
+describe("POST /api/leads — visitor role", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(requireAuth).mockResolvedValue({ session: null, error: null as any });
+  });
+
+  it("persists the visitor-selected role", async () => {
+    vi.mocked(prisma.lead.create).mockResolvedValue({ id: "lead1" } as any);
+
+    const res = await POST(new Request("http://localhost/api/leads", {
+      method: "POST",
+      body: JSON.stringify({
+        firstName: "Jane",
+        lastName: "Doe",
+        email: "jane@example.com",
+        role: "Owner",
+        notes: "Hi",
+        source: "WEBSITE",
+      }),
+    }));
+
+    expect(res.status).toBe(201);
+    expect(prisma.lead.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ visitorRole: "Owner" }),
+    });
+  });
+});

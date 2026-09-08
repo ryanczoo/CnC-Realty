@@ -401,6 +401,7 @@ model Lead {
   source      LeadSource @default(WEBSITE)
   score       Int        @default(0)
   notes       String?
+  visitorRole String?
   utmSource   String?
   utmMedium   String?
   utmCampaign String?

@@ -15,6 +15,7 @@ const createSchema = z.object({
   notes: z.string().optional(),
   source: z.enum(["WEBSITE", "REFERRAL", "SOCIAL", "OPEN_HOUSE", "COLD_CALL", "OTHER"]).default("WEBSITE"),
   utmSource: z.string().optional(),
+  role: z.string().optional(),
 });
 
 // Public — no auth required. Authenticated users skip rate limiting.
@@ -38,7 +39,10 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const data = createSchema.parse(body);
-    const lead = await prisma.lead.create({ data });
+    const { role, ...leadFields } = data;
+    const lead = await prisma.lead.create({
+      data: { ...leadFields, visitorRole: role },
+    });
     sendLeadNotification(lead).catch(console.error);
     if (data.source === "OPEN_HOUSE") {
       applyTag(lead.id, "Open House").catch(console.error);
