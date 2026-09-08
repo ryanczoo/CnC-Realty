@@ -22,7 +22,7 @@ interface ContactModalProps {
 }
 
 export function ContactModal({ open, source, onClose }: ContactModalProps) {
-  const [form, setForm] = useState({ firstName: "", email: "", role: "", notes: "" });
+  const [form, setForm] = useState({ firstName: "", lastName: "", email: "", role: "", notes: "" });
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [roleOpen, setRoleOpen] = useState(false);
   const [roleError, setRoleError] = useState(false);
@@ -40,7 +40,7 @@ export function ContactModal({ open, source, onClose }: ContactModalProps) {
 
   useEffect(() => {
     if (open) {
-      setForm({ firstName: "", email: "", role: "", notes: "" });
+      setForm({ firstName: "", lastName: "", email: "", role: "", notes: "" });
       setStatus("idle");
       setRoleError(false);
     }
@@ -60,7 +60,7 @@ export function ContactModal({ open, source, onClose }: ContactModalProps) {
       const res = await fetch("/api/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, source }),
+        body: JSON.stringify({ ...form, source: "WEBSITE", utmSource: source }),
       });
       if (!res.ok) throw new Error();
       setStatus("success");
@@ -120,6 +120,18 @@ export function ContactModal({ open, source, onClose }: ContactModalProps) {
                     autoFocus
                     value={form.firstName}
                     onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
+                    className="border-b border-[#1B1B1B]/20 bg-transparent py-2 font-sans text-base text-[#1B1B1B] outline-none transition-colors focus:border-[#1B1B1B]/60"
+                    placeholder=""
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="font-sans text-sm text-left text-[#1B1B1B]/60">Last Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={form.lastName}
+                    onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
                     className="border-b border-[#1B1B1B]/20 bg-transparent py-2 font-sans text-base text-[#1B1B1B] outline-none transition-colors focus:border-[#1B1B1B]/60"
                     placeholder=""
                   />

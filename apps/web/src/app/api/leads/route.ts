@@ -14,6 +14,7 @@ const createSchema = z.object({
   phone: z.string().optional(),
   notes: z.string().optional(),
   source: z.enum(["WEBSITE", "REFERRAL", "SOCIAL", "OPEN_HOUSE", "COLD_CALL", "OTHER"]).default("WEBSITE"),
+  utmSource: z.string().optional(),
 });
 
 // Public — no auth required. Authenticated users skip rate limiting.
