@@ -27,17 +27,16 @@ async function runSync(type: string) {
 
   const modifiedSince = type === "full" ? undefined : new Date(Date.now() - 30 * 60 * 1000);
 
-  // SyncProgress.nextLink holds a ModificationTimestamp cursor, not a URL — the
-  // crawl pages by keyset now (see lib/idx/client.ts). The column kept its old
-  // name to avoid a migration mid-resync; rename it once the crawl is done.
+  // SyncProgress.cursor holds a ModificationTimestamp cursor, not a URL — the
+  // crawl pages by keyset (see lib/idx/client.ts).
   const checkpoint = await prisma.syncProgress.findUnique({ where: { syncType: type } });
   // A checkpoint left by the old nextLink-based crawl isn't a timestamp, so the
   // client discards it and starts over. Say which happened rather than always
   // claiming a resume.
   if (checkpoint) {
     console.log(
-      isKeyCursor(checkpoint.nextLink)
-        ? `[idx-sync] resuming ${type} sync from cursor ${checkpoint.nextLink}`
+      isKeyCursor(checkpoint.cursor)
+        ? `[idx-sync] resuming ${type} sync from cursor ${checkpoint.cursor}`
         : `[idx-sync] discarding unusable ${type} checkpoint, starting from the beginning`
     );
   }
@@ -50,7 +49,7 @@ async function runSync(type: string) {
   // before the ~896k shortfall turned out to be exactly this exclusion.
   let skipped = 0;
 
-  for await (const { properties: batch, cursor } of fetchProperties(modifiedSince, checkpoint?.nextLink)) {
+  for await (const { properties: batch, cursor } of fetchProperties(modifiedSince, checkpoint?.cursor)) {
     const eligible = batch.filter(
       (property) => !(property.status === "Closed" && property.listingType === "FOR_RENT")
     );
@@ -83,8 +82,8 @@ async function runSync(type: string) {
 
     await prisma.syncProgress.upsert({
       where: { syncType: type },
-      create: { syncType: type, nextLink: cursor },
-      update: { nextLink: cursor },
+      create: { syncType: type, cursor },
+      update: { cursor },
     });
   }
 

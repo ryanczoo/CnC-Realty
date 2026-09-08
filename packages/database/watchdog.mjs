@@ -55,7 +55,7 @@ for (;;) {
     } else {
       const ageMs = Date.now() - cp.updatedAt.getTime();
       if (ageMs < STALE_MS) {
-        console.log(`[${stamp()}] alive - checkpoint ${Math.round(ageMs / 1000)}s old (cursor ${cp.nextLink.slice(0, 16)})`);
+        console.log(`[${stamp()}] alive - checkpoint ${Math.round(ageMs / 1000)}s old (cursor ${cp.cursor.slice(0, 16)})`);
       } else if (Date.now() - lastTrigger < COOLDOWN_MS) {
         console.log(`[${stamp()}] stale but within cooldown, waiting`);
       } else {

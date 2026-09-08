@@ -133,7 +133,7 @@ describe("GET /api/idx/sync", () => {
     vi.mocked(prisma.syncProgress.findUnique).mockResolvedValue({
       id: "sp1",
       syncType: "full",
-      nextLink: "421448857",
+      cursor: "421448857",
       updatedAt: new Date(),
     } as any);
     vi.mocked(fetchProperties).mockImplementation(async function* () {});
@@ -167,8 +167,8 @@ describe("GET /api/idx/sync", () => {
     expect(prisma.syncProgress.upsert).toHaveBeenCalledTimes(2);
     expect(prisma.syncProgress.upsert).toHaveBeenNthCalledWith(1, {
       where: { syncType: "delta" },
-      create: { syncType: "delta", nextLink: "2021-05-01T00:00:00.000Z" },
-      update: { nextLink: "2021-05-01T00:00:00.000Z" },
+      create: { syncType: "delta", cursor: "2021-05-01T00:00:00.000Z" },
+      update: { cursor: "2021-05-01T00:00:00.000Z" },
     });
     expect(prisma.syncProgress.deleteMany).toHaveBeenCalledWith({ where: { syncType: "delta" } });
   });

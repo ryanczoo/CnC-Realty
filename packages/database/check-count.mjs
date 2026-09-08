@@ -67,7 +67,7 @@ try {
 
   // The cursor is a ListingKeyNumeric (a bare integer). Anything else is a
   // checkpoint from an older pagination scheme and gets discarded by the crawl.
-  const raw = cp?.nextLink;
+  const raw = cp?.cursor;
   const cursorKey = raw && /^\d+$/.test(raw) ? Number(raw) : null;
   const prev = existsSync(STATE) ? JSON.parse(readFileSync(STATE, "utf8")) : null;
   const mins = prev ? (now - prev.at) / 60000 : 0;
