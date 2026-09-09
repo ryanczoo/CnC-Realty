@@ -42,9 +42,9 @@ export default function ApplicationSubmittedPage() {
               </a>
             </li>
             <li>
-              Select &quot;Add/Change main office address&quot; and enter{" "}
+              Select &quot;Add/Change main office address&quot; and enter:{" "}
               <span className="font-semibold text-[#1B1B1B]">
-                830 S Main Street, Santa Ana, CA 92701
+                830 S Main Street, STE 227, Santa Ana, CA 92701
               </span>
             </li>
             <li>Select &quot;Change Responsible Broker/Add Responsible Broker.&quot;</li>

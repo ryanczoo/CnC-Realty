@@ -258,7 +258,7 @@ export async function sendApplicationApproved(
           Once you finish setting up your account, please confirm your <a href="https://secure.dre.ca.gov/elicensing/" style="color: #9E8C61;">DRE eLicensing account</a> has been updated:
         </p>
         <p style="margin: 0 0 20px; font-weight: 700;">1. Select "Add/Change main office address"</p>
-        <p style="margin: 0 0 44px; padding-left: 20px; font-size: 18px;">&bull; Enter 830 S Main Street, Santa Ana, CA 92701</p>
+        <p style="margin: 0 0 44px; padding-left: 20px; font-size: 18px;">&bull; Enter 830 S Main Street, STE 227, Santa Ana, CA 92701</p>
         <p style="margin: 0 0 20px; font-weight: 700;">2. Select "Change Responsible Broker/Add Responsible Broker"</p>
         <p style="margin: 0 0 20px; padding-left: 20px; font-size: 18px;">&bull; Select No for "Is the broker available to certify your acceptance now?"</p>
         <p style="margin: 0 0 20px; padding-left: 20px; font-size: 18px;">&bull; Enter info@cncrealtygroup.com for Broker's email address</p>

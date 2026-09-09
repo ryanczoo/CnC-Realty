@@ -10,7 +10,7 @@
 
 ## ✅ Office address — COMPLETE (2026-09-08)
 
-Office secured: 830 S Main Street, Santa Ana, CA 92701. Added to both the agent welcome email (`sendApplicationApproved` in `apps/web/src/lib/email.ts`) and the application-submitted page (`/join/apply/submitted`), which also gained a missing "Add/Change main office address" step it never had before.
+Office secured: 830 S Main Street, STE 227, Santa Ana, CA 92701. Added to both the agent welcome email (`sendApplicationApproved` in `apps/web/src/lib/email.ts`) and the application-submitted page (`/join/apply/submitted`), which also gained a missing "Add/Change main office address" step it never had before.
 
 ## ✅ IDX full resync — COMPLETE (2026-08-09)
 

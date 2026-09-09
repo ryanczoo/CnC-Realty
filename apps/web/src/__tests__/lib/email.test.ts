@@ -466,7 +466,7 @@ describe("sendApplicationApproved", () => {
     expect(html).not.toMatch(/>a\.\s/);
     expect(html).not.toMatch(/>b\.\s/);
     expect(html).not.toMatch(/>c\.\s/);
-    expect(html).toContain('<p style="margin: 0 0 44px; padding-left: 20px; font-size: 18px;">&bull; Enter 830 S Main Street, Santa Ana, CA 92701</p>');
+    expect(html).toContain('<p style="margin: 0 0 44px; padding-left: 20px; font-size: 18px;">&bull; Enter 830 S Main Street, STE 227, Santa Ana, CA 92701</p>');
     expect(html).toContain('&bull; Select No for "Is the broker available to certify your acceptance now?"');
     expect(html).toContain("&bull; Enter info@cncrealtygroup.com for Broker's email address");
     expect(html).toContain("&bull; Enter 02439028 for Broker's license #");
