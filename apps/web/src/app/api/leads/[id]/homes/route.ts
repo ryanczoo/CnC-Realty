@@ -7,11 +7,11 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   if (error) return error;
 
   const lead = await prisma.lead.findUnique({ where: { id: params.id }, select: { agentId: true, email: true } });
-  const { exists, forbidden } = checkOwnership(lead, session.user.agentId, session.user.role);
-  if (!exists || forbidden) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (!lead!.email) return NextResponse.json({ saved: [], viewed: [] });
+  const { exists, forbidden, record } = checkOwnership(lead, session.user.agentId, session.user.role);
+  if (!exists || forbidden || !record) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!record.email) return NextResponse.json({ saved: [], viewed: [] });
 
-  const user = await prisma.user.findFirst({ where: { email: lead!.email, role: "BUYER" } });
+  const user = await prisma.user.findFirst({ where: { email: record.email, role: "BUYER" } });
   if (!user) return NextResponse.json({ saved: [], viewed: [] });
 
   const [saved, viewed] = await Promise.all([

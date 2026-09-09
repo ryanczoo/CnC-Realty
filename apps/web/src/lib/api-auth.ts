@@ -46,11 +46,6 @@ export function checkOwnership<T extends { agentId: string | null }>(
 // null if neither is set (shouldn't happen with real data, but callers must
 // still handle it — matches the existing 404 behavior at every call site
 // this replaces).
-// Resolves which file (listing or transaction) a record with both possible
-// FK columns belongs to, from whichever one is actually populated. Returns
-// null if neither is set (shouldn't happen with real data, but callers must
-// still handle it — matches the existing 404 behavior at every call site
-// this replaces).
 export function resolveFileRef(
   record: { listingFileId: string | null; transactionFileId: string | null }
 ): { fileId: string; fileType: "listing" | "transaction" } | null {

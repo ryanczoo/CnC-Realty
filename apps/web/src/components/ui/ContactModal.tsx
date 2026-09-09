@@ -4,16 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import { NAV_PANEL_CLS, NAV_ITEM_CLS, PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
+import { ROLE_OPTIONS } from "@/lib/role-options";
 
-export const ROLE_OPTIONS = [
-  "Agent",
-  "Buyer",
-  "Seller",
-  "Owner",
-  "Renter",
-  "Landlord",
-  "Property Manager",
-];
+export { ROLE_OPTIONS };
 
 interface ContactModalProps {
   open: boolean;

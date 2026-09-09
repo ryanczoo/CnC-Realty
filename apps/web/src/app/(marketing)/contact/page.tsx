@@ -5,7 +5,7 @@ import { motion } from "motion/react";
 import { RevealText } from "@/components/ui/reveal-text";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import { NAV_PANEL_CLS, NAV_ITEM_CLS, SPRING_HOVER, PULSE_ANIMATE, PULSE_TRANSITION } from "@/lib/motion";
-import { ROLE_OPTIONS } from "@/components/ui/ContactModal";
+import { ROLE_OPTIONS } from "@/lib/role-options";
 
 export default function ContactPage() {
   const [form, setForm] = useState({ firstName: "", lastName: "", email: "", phone: "", role: "", notes: "" });
