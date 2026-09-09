@@ -96,6 +96,33 @@ describe("GET /api/deals", () => {
       expect.objectContaining({ take: 500 })
     );
   });
+
+  it("logs a warning when the result is exactly capped at 500", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u1", role: "ADMIN", agentId: null } } as any);
+    vi.mocked(prisma.deal.findMany).mockResolvedValue(Array(500).fill({
+      id: "d1", agentId: "a1", leadId: "l1", pipeline: "BUYERS", stage: "TOURING",
+      propertyAddress: null, price: null, expectedCloseDate: null, notes: null,
+      transactionFileId: null, stageUpdatedAt: new Date(), createdAt: new Date(), updatedAt: new Date(),
+      lead: { firstName: "Jane", lastName: "Doe" },
+    }) as any);
+
+    await GET(new Request("http://localhost/api/deals"));
+
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("capped at 500"));
+    warnSpy.mockRestore();
+  });
+
+  it("does not log when the result is under 500", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u1", role: "ADMIN", agentId: null } } as any);
+    vi.mocked(prisma.deal.findMany).mockResolvedValue([] as any);
+
+    await GET(new Request("http://localhost/api/deals"));
+
+    expect(warnSpy).not.toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
 });
 
 describe("POST /api/deals", () => {

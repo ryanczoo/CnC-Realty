@@ -59,6 +59,10 @@ export async function GET(req: Request) {
     take: 500,
   });
 
+  if (deals.length === 500) {
+    console.warn("[GET /api/deals] result capped at 500 rows — some deals may not be shown");
+  }
+
   return NextResponse.json(deals.map(serializeDeal));
 }
 

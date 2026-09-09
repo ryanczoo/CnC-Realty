@@ -268,6 +268,17 @@ describe("POST /api/cron/action-plans", () => {
     );
   });
 
+  it("logs a warning when the due-steps result is exactly capped at 500", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.mocked(prisma.leadPlanStep.findMany).mockResolvedValue(Array(500).fill(EMAIL_STEP) as any);
+    vi.mocked(prisma.leadPlanEnrollment.findMany).mockResolvedValue([]);
+
+    await POST(makeReq(CRON_SECRET));
+
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("capped at 500"));
+    warnSpy.mockRestore();
+  });
+
   it("currently authorizes when CRON_SECRET is unset and the header literally says 'Bearer undefined'", async () => {
     const original = process.env.CRON_SECRET;
     delete process.env.CRON_SECRET;

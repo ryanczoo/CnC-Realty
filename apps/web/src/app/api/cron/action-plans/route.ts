@@ -34,6 +34,10 @@ export async function POST(req: NextRequest) {
     take: 500,
   });
 
+  if (dueSteps.length === 500) {
+    console.warn("[cron/action-plans] due-steps result capped at 500 — a backlog may exist");
+  }
+
   // One reset check per distinct agent represented in this batch, not once
   // per step — matches how ensureQuotaReset is meant to be called (see
   // lib/email-quota.ts). A step's own agentId lives at
