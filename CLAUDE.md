@@ -1,5 +1,9 @@
 # CnC Realty — Full Website & CRM Implementation Plan
 
+## ⚠️ Reference — SyncProgress migration constraint
+
+`packages/database/prisma/migrations/20260908090103_rename_sync_progress_next_link_to_cursor/migration.sql` adds `cursor TEXT NOT NULL` with no default. This is only safe because the `SyncProgress` table was confirmed empty when this migration was written and applied (2026-09-08). **Before ever running `prisma migrate deploy` against a fresh or different environment, confirm `SyncProgress` is empty first** (or that no crawl is in-flight) — a non-empty table with existing rows would fail this migration since there's no default value for the new column.
+
 ## ⚠️ Pending — office address (blocked on Ryan securing office space)
 
 Once Ryan secures an office space, add the address to:
