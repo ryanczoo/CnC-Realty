@@ -49,4 +49,11 @@ describe("GET /api/upload-url", () => {
     expect(res.status).toBe(200);
     expect(getPresignedPutUrl).toHaveBeenCalledOnce();
   });
+
+  it("rejects an unrecognized fileType with 400", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
+
+    const res = await GET(req("bogus", "f1"));
+    expect(res.status).toBe(400);
+  });
 });

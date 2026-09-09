@@ -15,6 +15,9 @@ export async function POST(req: Request) {
   if (!fileType || !fileId || !name || !r2Key || !r2Url) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
+  if (fileType !== "LISTING" && fileType !== "TRANSACTION") {
+    return NextResponse.json({ error: "fileType must be 'LISTING' or 'TRANSACTION'" }, { status: 400 });
+  }
 
   const isListing = fileType === "LISTING";
   const file = await getFileAndVerifyAccess(

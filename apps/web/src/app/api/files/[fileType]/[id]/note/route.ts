@@ -8,6 +8,9 @@ export async function POST(req: Request, { params }: { params: { fileType: strin
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  if (params.fileType !== "listing" && params.fileType !== "transaction") {
+    return NextResponse.json({ error: "fileType must be 'listing' or 'transaction'" }, { status: 400 });
+  }
   const isListing = params.fileType === "listing";
   const file = await getFileAndVerifyAccess(
     isListing ? "listing" : "transaction",

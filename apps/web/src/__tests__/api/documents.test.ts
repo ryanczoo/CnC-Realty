@@ -69,4 +69,10 @@ describe("POST /api/documents", () => {
     expect(res.status).toBe(400);
     expect(prisma.fileDocument.create).not.toHaveBeenCalled();
   });
+
+  it("rejects an unrecognized fileType with 400", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
+    const res = await POST(req({ fileType: "BOGUS", fileId: "f1", name: "x.pdf", r2Key: "k", r2Url: "u" }));
+    expect(res.status).toBe(400);
+  });
 });

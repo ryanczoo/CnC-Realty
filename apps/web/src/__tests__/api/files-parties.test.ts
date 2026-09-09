@@ -47,4 +47,11 @@ describe("POST /api/files/[fileType]/[id]/parties", () => {
     expect(res.status).toBe(201);
     expect(prisma.fileParty.create).toHaveBeenCalledOnce();
   });
+
+  it("rejects an unrecognized fileType with 400", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
+
+    const res = await POST(req({ role: "BUYER", name: "Jane" }), { params: { fileType: "bogus", id: "f1" } });
+    expect(res.status).toBe(400);
+  });
 });

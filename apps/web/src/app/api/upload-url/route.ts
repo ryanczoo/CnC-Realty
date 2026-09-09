@@ -18,15 +18,19 @@ export async function GET(req: Request) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
-  const fileType = searchParams.get("fileType") as "listing" | "transaction" | null;
+  const rawFileType = searchParams.get("fileType");
   const fileId = searchParams.get("fileId");
   const filename = searchParams.get("filename");
   const contentType = searchParams.get("contentType");
   const size = Number(searchParams.get("size") ?? 0);
 
-  if (!fileType || !fileId || !filename || !contentType) {
+  if (!rawFileType || !fileId || !filename || !contentType) {
     return NextResponse.json({ error: "fileType, fileId, filename, and contentType are required" }, { status: 400 });
   }
+  if (rawFileType !== "listing" && rawFileType !== "transaction") {
+    return NextResponse.json({ error: "fileType must be 'listing' or 'transaction'" }, { status: 400 });
+  }
+  const fileType = rawFileType;
   if (!ALLOWED_TYPES.includes(contentType)) {
     return NextResponse.json({ error: "File type not allowed. Use PDF, JPG, PNG, or DOCX." }, { status: 400 });
   }
