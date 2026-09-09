@@ -8,11 +8,9 @@
 
 ~190 files use raw hex color literals (`#9E8C61`, `#1B1B1B`, `#F2F0EF`, `#c9a84c`, etc.) instead of the existing CSS variable tokens (`cnc-gold`/`cnc-dark`/`cnc-bg`, used by only ~31 files today). Purely a maintainability investment, not a bug — nothing looks wrong today, and this doesn't affect load speed or behavior either way. The value is in making a future color change (e.g. adjusting the gold accent) a single edit instead of hunting down every scattered literal, and closing small drift like the two slightly different gold values already in use. Deliberately deferred to its own dedicated session — do not fold this into ordinary bug-fix or small-polish work.
 
-## ⚠️ Pending — office address (blocked on Ryan securing office space)
+## ✅ Office address — COMPLETE (2026-09-08)
 
-Once Ryan secures an office space, add the address to:
-1. **Agent welcome email** (`sendApplicationApproved` in `apps/web/src/lib/email.ts`)
-2. **Application-submitted page** (`/join/apply/submitted`)
+Office secured: 830 S Main Street, Santa Ana, CA 92701. Added to both the agent welcome email (`sendApplicationApproved` in `apps/web/src/lib/email.ts`) and the application-submitted page (`/join/apply/submitted`), which also gained a missing "Add/Change main office address" step it never had before.
 
 ## ✅ IDX full resync — COMPLETE (2026-08-09)
 

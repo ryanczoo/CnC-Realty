@@ -461,12 +461,12 @@ describe("sendApplicationApproved", () => {
 
     const call = vi.mocked(sendEmail).mock.calls[0][0];
     const html = call.html!;
-    // 4 bullets total: the blank address line under step 1, plus the 3 sub-steps under step 2
+    // 4 bullets total: the office address line under step 1, plus the 3 sub-steps under step 2
     expect(html.match(/&bull;/g)?.length).toBe(4);
     expect(html).not.toMatch(/>a\.\s/);
     expect(html).not.toMatch(/>b\.\s/);
     expect(html).not.toMatch(/>c\.\s/);
-    expect(html).toContain('<p style="margin: 0 0 44px; padding-left: 20px; font-size: 18px;">&bull; Enter&nbsp;</p>');
+    expect(html).toContain('<p style="margin: 0 0 44px; padding-left: 20px; font-size: 18px;">&bull; Enter 830 S Main Street, Santa Ana, CA 92701</p>');
     expect(html).toContain('&bull; Select No for "Is the broker available to certify your acceptance now?"');
     expect(html).toContain("&bull; Enter info@cncrealtygroup.com for Broker's email address");
     expect(html).toContain("&bull; Enter 02439028 for Broker's license #");
