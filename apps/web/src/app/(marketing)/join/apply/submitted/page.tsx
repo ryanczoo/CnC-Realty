@@ -42,24 +42,33 @@ export default function ApplicationSubmittedPage() {
               </a>
             </li>
             <li>
-              Select &quot;Add/Change main office address&quot; and enter:{" "}
-              <span className="font-semibold text-[#1B1B1B]">
-                830 S Main Street, STE 227, Santa Ana, CA 92701
-              </span>
-            </li>
-            <li>Select &quot;Change Responsible Broker/Add Responsible Broker.&quot;</li>
-            <li>
-              Select <span className="font-semibold text-[#1B1B1B]">No</span> for &quot;Is the
-              broker available to certify your acceptance now?&quot;
-            </li>
-            <li>
-              Enter{" "}
-              <span className="font-semibold text-[#1B1B1B]">info@cncrealtygroup.com</span>{" "}
-              for Broker&apos;s email address
+              Select &quot;Add/Change main office address&quot;
+              <ul className="ml-6 mt-3 list-outside list-disc space-y-3">
+                <li>
+                  Enter:{" "}
+                  <span className="font-semibold text-[#1B1B1B]">
+                    830 S Main Street, STE 227, Santa Ana, CA 92701
+                  </span>
+                </li>
+              </ul>
             </li>
             <li>
-              Enter <span className="font-semibold text-[#1B1B1B]">02439028</span> for
-              Broker&apos;s license #
+              Select &quot;Change Responsible Broker/Add Responsible Broker.&quot;
+              <ul className="ml-6 mt-3 list-outside list-disc space-y-3">
+                <li>
+                  Select <span className="font-semibold text-[#1B1B1B]">No</span> for &quot;Is
+                  the broker available to certify your acceptance now?&quot;
+                </li>
+                <li>
+                  Enter{" "}
+                  <span className="font-semibold text-[#1B1B1B]">info@cncrealtygroup.com</span>{" "}
+                  for Broker&apos;s email address
+                </li>
+                <li>
+                  Enter <span className="font-semibold text-[#1B1B1B]">02439028</span> for
+                  Broker&apos;s license #
+                </li>
+              </ul>
             </li>
           </ol>
 
