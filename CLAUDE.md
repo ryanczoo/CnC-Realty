@@ -4,6 +4,10 @@
 
 `packages/database/prisma/migrations/20260908090103_rename_sync_progress_next_link_to_cursor/migration.sql` adds `cursor TEXT NOT NULL` with no default. This is only safe because the `SyncProgress` table was confirmed empty when this migration was written and applied (2026-09-08). **Before ever running `prisma migrate deploy` against a fresh or different environment, confirm `SyncProgress` is empty first** (or that no crawl is in-flight) — a non-empty table with existing rows would fail this migration since there's no default value for the new column.
 
+## ⚠️ Pending — sitewide color-token cleanup (deferred, Ryan's own decision)
+
+~190 files use raw hex color literals (`#9E8C61`, `#1B1B1B`, `#F2F0EF`, `#c9a84c`, etc.) instead of the existing CSS variable tokens (`cnc-gold`/`cnc-dark`/`cnc-bg`, used by only ~31 files today). Purely a maintainability investment, not a bug — nothing looks wrong today, and this doesn't affect load speed or behavior either way. The value is in making a future color change (e.g. adjusting the gold accent) a single edit instead of hunting down every scattered literal, and closing small drift like the two slightly different gold values already in use. Deliberately deferred to its own dedicated session — do not fold this into ordinary bug-fix or small-polish work.
+
 ## ⚠️ Pending — office address (blocked on Ryan securing office space)
 
 Once Ryan secures an office space, add the address to:
