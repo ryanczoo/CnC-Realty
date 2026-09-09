@@ -2,17 +2,16 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getFileAndVerifyAccess } from "@/lib/api-auth";
+import { getFileAndVerifyAccess, resolveFileRef } from "@/lib/api-auth";
 
 async function assertTaskAccess(taskId: string, agentId: string | null, role: string) {
   const task = await prisma.fileTask.findUnique({ where: { id: taskId } });
   if (!task) return { error: "Not found", status: 404 } as const;
 
-  const fileId = task.listingFileId ?? task.transactionFileId;
-  const fileType: "listing" | "transaction" = task.fileType === "LISTING" ? "listing" : "transaction";
-  if (!fileId) return { error: "Not found", status: 404 } as const;
+  const ref = resolveFileRef(task);
+  if (!ref) return { error: "Not found", status: 404 } as const;
 
-  const file = await getFileAndVerifyAccess(fileType, fileId, agentId, role);
+  const file = await getFileAndVerifyAccess(ref.fileType, ref.fileId, agentId, role);
   if (!file) return { error: "Forbidden", status: 403 } as const;
 
   return { task };

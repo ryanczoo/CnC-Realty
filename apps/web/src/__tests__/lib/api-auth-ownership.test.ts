@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { checkOwnership } from "@/lib/api-auth";
+import { checkOwnership, resolveFileRef } from "@/lib/api-auth";
 
 describe("checkOwnership", () => {
   it("reports not-exists when the record is null, regardless of role", () => {
@@ -29,5 +29,17 @@ describe("checkOwnership", () => {
     // resource that also happens to have a null agentId.
     const record = { agentId: null };
     expect(checkOwnership(record, null, "AGENT")).toEqual({ exists: true, forbidden: true, record });
+  });
+});
+
+describe("resolveFileRef", () => {
+  it("resolves a listing record", () => {
+    expect(resolveFileRef({ listingFileId: "f1", transactionFileId: null })).toEqual({ fileId: "f1", fileType: "listing" });
+  });
+  it("resolves a transaction record", () => {
+    expect(resolveFileRef({ listingFileId: null, transactionFileId: "f2" })).toEqual({ fileId: "f2", fileType: "transaction" });
+  });
+  it("returns null when neither FK is set", () => {
+    expect(resolveFileRef({ listingFileId: null, transactionFileId: null })).toBeNull();
   });
 });

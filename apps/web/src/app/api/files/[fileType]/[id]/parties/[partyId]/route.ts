@@ -2,17 +2,16 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getFileAndVerifyAccess } from "@/lib/api-auth";
+import { getFileAndVerifyAccess, resolveFileRef } from "@/lib/api-auth";
 
 async function verifyPartyAccess(partyId: string, agentId: string | null, role: string) {
   const party = await prisma.fileParty.findUnique({ where: { id: partyId } });
   if (!party) return { error: "Not found", status: 404 } as const;
 
-  const fileId = party.listingFileId ?? party.transactionFileId;
-  const fileType: "listing" | "transaction" = party.listingFileId ? "listing" : "transaction";
-  if (!fileId) return { error: "Not found", status: 404 } as const;
+  const ref = resolveFileRef(party);
+  if (!ref) return { error: "Not found", status: 404 } as const;
 
-  const file = await getFileAndVerifyAccess(fileType, fileId, agentId, role);
+  const file = await getFileAndVerifyAccess(ref.fileType, ref.fileId, agentId, role);
   if (!file) return { error: "Forbidden", status: 403 } as const;
 
   return { party };
