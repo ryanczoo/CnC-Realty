@@ -6770,3 +6770,43 @@ the existing social-icon convention), and verified visually before wiring them i
    deployment has ever run); broader transaction-management click-through testing (Purchase/Listing/
    Lease types) is still the oldest open item; CnC ICA still not attorney-reviewed (same open-item
    class as tonight's DRE-disclosure question).
+
+---
+
+## Session Notes — 2026-09-07 / 2026-09-08 (whole-codebase audit + residual fixes + small polish)
+
+### What Was Completed This Session
+
+All changes committed to `main`. Three sequential plans executed via `superpowers:subagent-driven-development`, each with full task-scoped reviews plus a final whole-plan review where applicable.
+
+**Plan 1 — `docs/superpowers/plans/2026-09-07-whole-codebase-audit-fixes.md` (21 tasks).** The original 19-task whole-codebase audit (6 security, 5 performance, 5 duplication, 3 cleanup findings) from an earlier 5-agent audit pass, plus 2 tasks added mid-execution:
+- **Task 20** — `ContactModal` (popup used on `/manage`, `/join`, `/sell`, `/buy`, `/rent`, `/home-value`, `/join/apply/submitted`) had been silently failing to create a lead on every single submission since before this whole plan began — missing a required `lastName` field and sending an invalid `source` value against `/api/leads`'s schema. Fixed by adding the field and preserving the specific CTA-origin string in the `Lead` model's `utmSource` column instead. Verified end-to-end against the real database.
+- **Task 21, urgent, self-inflicted regression.** Task 2 (the stored-XSS sanitization fix, `isomorphic-dompurify`) broke the production build (`next build`) — undetected for 15 tasks because no task before this one ever ran an actual build, only `vitest`+`tsc`. Root-caused via two throwaway git worktrees (bisected to the exact commit), fixed with one line in `next.config.mjs` (`experimental.serverComponentsExternalPackages`), independently verified three separate times (implementer, controller, reviewer each ran their own clean `next build`). Reported to Ryan transparently the moment it was found, before the fix task even existed.
+- Final whole-plan review (opus) caught one more real bug across the whole diff: Task 6's earlier fix for double-escaped email headings only closed 1 of 6 affected call sites, because its verification grep could not match the "escape into a variable, then interpolate" shape used everywhere except one site. Fixed all 5 remaining sites plus an adjacent subject-line escaping bug in the same fix wave, using apostrophe-bearing test fixtures (a name like OBrien) specifically because the existing Jane fixtures had let the bug hide undetected through 21 prior reviews.
+
+**Plan 2 — `docs/superpowers/plans/2026-09-08-residual-fixes.md` (4 tasks).** Fixes for 4 items the final whole-plan review flagged but did not fix: rate limiting added to `reset-password`/`setup-account` (matching `forgot-password`'s pattern), the visitor-selected "I am a" role field now actually persists on `Lead` (was silently dropped the same way `lastName` was in Task 20), `r2Key` upload validation (an agent could otherwise register a document pointing at another file's real R2 storage object), and a Settings-page react-query `staleTime` fix so a background refetch cannot overwrite an unsaved edit.
+
+**Plan 3 — `docs/superpowers/plans/2026-09-08-small-polish-items.md` (5 tasks).** The remaining leftovers found by an explicit audit-of-the-audit (dispatched as a fork specifically to check both prior plans against real current code, not memory): logging when the two `take: 500` query caps are actually hit, consistent `fileType` validation across 4 routes that previously silently degraded on bad input, a shared `resolveFileRef()` helper deduplicating file-resolution logic across 3 ownership-check routes (required verifying a real safety invariant three independent times before proceeding, controller, implementer, and reviewer all separately confirmed a `FileTask`'s enum and FK always agree), two small code-polish items (a non-null-assertion cleanup, moving `ROLE_OPTIONS` to `lib/`), and a CLAUDE.md note about the `SyncProgress` migration's empty-table constraint. Also confirmed the sitewide color-token cleanup (~190 files) is the one item still genuinely deferred, not forgotten, Ryan's own explicit decision, now with its own standing note above.
+
+**Standing discipline established/reinforced this session, worth carrying forward:** after Task 21's build regression, every task in Plans 2 and 3 required a full `rm -rf apps/web/.next && pnpm --filter web build` in addition to `vitest`+`tsc`, no exceptions, even for changes that looked trivial. This caught nothing further, but the rule stays in force for future plans in this repo. Also: after a session-usage-limit interruption mid-Plan-3, Task 1's correctness was re-verified completely from scratch in an isolated git worktree (not trusting the pre-interruption report) before continuing, confirmed genuinely intact.
+
+### Office Address — Added (2026-09-08)
+
+Office secured: **830 S Main Street, STE 227, Santa Ana, CA 92701**. Added to `sendApplicationApproved` (the agent welcome email, `apps/web/src/lib/email.ts`) and to `/join/apply/submitted`, which also gained a missing "Add/Change main office address" step it never had before (the page previously jumped straight from DRE login to the Responsible Broker step, skipping the address step entirely, an omission independent of the office not being secured yet). Both locations verified via TDD (the email had an existing test with a literal blank placeholder, `&bull; Enter&nbsp;`, confirming this was always meant to be filled in later) and a live Puppeteer check.
+
+Ryan asked for two follow-up cosmetic passes on `/join/apply/submitted`, both done same session:
+1. Added a colon after "enter" and corrected the address to include the suite number (missed on the first pass, caught immediately, fixed everywhere it appeared: the email, the page, and CLAUDE.md's own record of it).
+2. Restructured the numbered list from 6 flat steps down to 3, with the office-address line nested as a bullet under step 2, and the 3 broker-detail lines (No/email/license#) nested as bullets under step 3, mirroring the numbered-step-with-bulleted-sub-items pattern already used in the welcome email's HTML.
+
+A live test send of the welcome email went to `ryanchong@cncrealtygroup.com` (via a temporary dev-only route calling the real `sendApplicationApproved`, deleted immediately after) to visually confirm the address change.
+
+### Investigated — Email images broken in Outlook but not Hostinger webmail
+
+Ryan noticed the CnC logo and footer social icons do not render in Outlook (desktop app and phone) but do render when viewing the same email through Hostinger's webmail in a browser. Root cause, confirmed by reading the code directly: `emailLayout()`'s header logo and `defaultFooter()`'s icon `<img>` tags are built from `${process.env.NEXTAUTH_URL}/...`, and `NEXTAUTH_URL` is currently `http://localhost:3000` in local dev. Viewing the email in a browser on the same PC where the dev server happens to be running causes those `localhost` image requests to coincidentally succeed (the browser's own loopback resolves to the running dev server), this is not Hostinger doing anything correctly, it is an artifact of testing locally. Any other client (Outlook desktop, and especially the phone app, which has no dev server at all) can never resolve `localhost:3000` to anything real, hence the broken-image icons. **Not a bug, will resolve itself automatically once the site is deployed and `NEXTAUTH_URL` is updated to the real production domain.** The 3 logo PNGs are already correctly attached as real email attachments regardless (visible in Outlook's attachment strip in Ryan's screenshot), only the inline header/footer `<img>` references are affected.
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. **Add a deploy-day checklist item**: after `NEXTAUTH_URL` is updated to the real production domain, send a fresh test welcome email and confirm the logo/footer icons render correctly in an external client (Outlook, Gmail, etc.), not just via a same-machine webmail view, which can mask this exact class of bug.
+3. Sitewide color-token cleanup remains explicitly deferred (see the standing note near the top of this file), bring it up only if Ryan raises it.
+4. Older backlog, unchanged: Vercel deploy is still the one outstanding Phase 6/7 item (no production deployment has ever run); broader transaction-management click-through testing (Purchase/Listing/Lease types) remains the oldest open item; CnC ICA still not attorney-reviewed.
