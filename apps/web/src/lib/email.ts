@@ -57,7 +57,8 @@ const EMAIL_FONT_STACK = "'Inter', -apple-system, 'Segoe UI', Roboto, Arial, san
 function defaultFooter(): string {
   const phoneIcon = `<img src="${process.env.NEXTAUTH_URL}/icon-phone.png" alt="Phone" width="14" height="14" style="display: inline-block; vertical-align: middle; margin-right: 6px; border: 0;" />`;
   const mailIcon = `<img src="${process.env.NEXTAUTH_URL}/icon-mail.png" alt="Email" width="14" height="14" style="display: inline-block; vertical-align: middle; margin-right: 6px; border: 0;" />`;
-  return `- CnC Realty Team<br><br>${phoneIcon} (562) 335-1759<br>${mailIcon} info@cncrealtygroup.com`;
+  const addressIcon = `<img src="${process.env.NEXTAUTH_URL}/icon-address.png" alt="Address" width="14" height="14" style="display: inline-block; vertical-align: middle; margin-right: 6px; border: 0;" />`;
+  return `- CnC Realty Team<br><br>${phoneIcon} (562) 335-1759<br>${mailIcon} info@cncrealtygroup.com<br>${addressIcon} 830 S Main Street, STE 227, Santa Ana, CA 92701`;
 }
 
 export function emailLayout(opts: {

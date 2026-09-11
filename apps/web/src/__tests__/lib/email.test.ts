@@ -668,6 +668,19 @@ describe("emailLayout", () => {
     expect(result).toContain("info@cncrealtygroup.com");
   });
 
+  it("includes the office address with a map-pin icon under the email row in the footer", () => {
+    const result = html();
+    expect(result).toContain('<img src="http://localhost:3000/icon-address.png"');
+    expect(result).toContain("830 S Main Street, STE 227, Santa Ana, CA 92701");
+
+    const mailIconIndex = result.indexOf("icon-mail.png");
+    const addressIconIndex = result.indexOf("icon-address.png");
+    const addressTextIndex = result.indexOf("830 S Main Street");
+    expect(mailIconIndex).toBeGreaterThan(-1);
+    expect(addressIconIndex).toBeGreaterThan(mailIconIndex);
+    expect(addressTextIndex).toBeGreaterThan(addressIconIndex);
+  });
+
   it("still lets a caller override the default footer when explicitly given one", () => {
     const result = emailLayout({ bodyHtml: "<p>Body</p>", footer: "Custom footer text" });
     expect(result).toContain("Custom footer text");
