@@ -69,19 +69,14 @@ export function AgentPlan() {
         <div className="mr-24 w-[420px] flex-shrink-0 rounded-2xl bg-white p-10 shadow-[0_4px_32px_rgba(0,0,0,0.07)]">
           {/* Plan name */}
           <h3 className="font-sans text-[3.2rem] font-bold leading-none text-[#1B1B1B]">
-            Professional
+            Pro
           </h3>
 
           <hr className="my-6 border-[#1B1B1B]/10" />
 
           {/* Price */}
           <p className="font-sans text-[1.4rem] font-medium text-[#1B1B1B]">
-            $0<span className="text-base font-normal text-[#1B1B1B]/45">/month</span>
-          </p>
-
-          {/* Best for */}
-          <p className="mt-2 font-sans text-sm leading-relaxed text-[#1B1B1B]/50">
-            Forever
+            $0<span className="text-base font-normal text-[#1B1B1B]/45">/month forever</span>
           </p>
 
           {/* CTA */}

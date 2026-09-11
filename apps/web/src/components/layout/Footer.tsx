@@ -190,7 +190,7 @@ export function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={label}
-                  className="flex items-center justify-center text-white/80 hover:text-white"
+                  className="flex items-center justify-center text-white/80 transition-colors hover:text-[#9E8C61]"
                   whileHover={{ scale: 1.2 }}
                   transition={SPRING_HOVER}
                 >
