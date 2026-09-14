@@ -89,8 +89,8 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
   const listing = await prisma.listingFile.findUnique({ where: { id: params.id } });
   if (!listing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  if (listing.status !== "INCOMPLETE") {
-    return NextResponse.json({ error: "Only INCOMPLETE files can be deleted" }, { status: 400 });
+  if (listing.status !== "INCOMPLETE" && listing.status !== "PENDING_TRANSFER") {
+    return NextResponse.json({ error: "Only INCOMPLETE or PENDING_TRANSFER files can be deleted" }, { status: 400 });
   }
 
   const { forbidden } = checkOwnership(listing, session.user.agentId, session.user.role);
