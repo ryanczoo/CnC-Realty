@@ -30,6 +30,7 @@ export const CHECKLIST_ITEMS_WITH_DOCS_INCLUDE = { include: { documents: true } 
 
 const AGENT_LISTING_TRANSITIONS: Record<ListingStatus, ListingStatus[]> = {
   INCOMPLETE:            ["COMING_SOON", "ACTIVE"],
+  PENDING_TRANSFER:      [],
   COMING_SOON:           ["ACTIVE", "WITHDRAWN", "CANCELED"],
   ACTIVE:                ["COMING_SOON", "ACTIVE_UNDER_CONTRACT", "EXPIRED", "WITHDRAWN", "CANCELED"],
   ACTIVE_UNDER_CONTRACT: ["ACTIVE", "WITHDRAWN", "CANCELED"],
@@ -41,6 +42,7 @@ const AGENT_LISTING_TRANSITIONS: Record<ListingStatus, ListingStatus[]> = {
 
 const ADMIN_LISTING_TRANSITIONS: Record<ListingStatus, ListingStatus[]> = {
   INCOMPLETE:            ["COMING_SOON", "ACTIVE", "CANCELED"],
+  PENDING_TRANSFER:      [],
   COMING_SOON:           ["ACTIVE", "WITHDRAWN", "CANCELED"],
   ACTIVE:                ["COMING_SOON", "ACTIVE_UNDER_CONTRACT", "EXPIRED", "WITHDRAWN", "CANCELED", "CLOSED"],
   ACTIVE_UNDER_CONTRACT: ["ACTIVE", "CLOSED", "WITHDRAWN", "CANCELED"],
@@ -52,6 +54,7 @@ const ADMIN_LISTING_TRANSITIONS: Record<ListingStatus, ListingStatus[]> = {
 
 const AGENT_TX_TRANSITIONS: Record<TransactionFileStatus, TransactionFileStatus[]> = {
   INCOMPLETE:              ["PRE_CONTRACT", "PENDING"],
+  PENDING_TRANSFER:        [],
   PRE_CONTRACT:            ["PENDING", "CANCELED_PENDING"],
   PENDING:                 ["CANCELED_PENDING", "REFERRAL_SUCCESSFUL", "REFERRAL_UNSUCCESSFUL"],
   EXPIRED:                 [],
@@ -66,6 +69,7 @@ const AGENT_TX_TRANSITIONS: Record<TransactionFileStatus, TransactionFileStatus[
 
 const ADMIN_TX_TRANSITIONS: Record<TransactionFileStatus, TransactionFileStatus[]> = {
   INCOMPLETE:              ["PRE_CONTRACT", "PENDING", "CANCELED_APPROVED"],
+  PENDING_TRANSFER:        [],
   PRE_CONTRACT:            ["PENDING", "CANCELED_PENDING", "CANCELED_APPROVED"],
   PENDING:                 ["CLOSED", "EXPIRED", "CANCELED_PENDING", "CANCELED_APPROVED"],
   EXPIRED:                 ["PENDING", "CLOSED", "CANCELED_APPROVED"],

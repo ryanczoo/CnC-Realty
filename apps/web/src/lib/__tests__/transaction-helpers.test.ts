@@ -31,6 +31,12 @@ describe("canTransitionTransaction", () => {
   it("allows PENDING → CLOSED by admin", () => {
     expect(canTransitionTransaction("PENDING", "CLOSED", "ADMIN")).toBe(true);
   });
+  it("never allows PENDING_TRANSFER -> INCOMPLETE manually, for either role", () => {
+    expect(canTransitionListing("PENDING_TRANSFER", "INCOMPLETE", "AGENT")).toBe(false);
+    expect(canTransitionListing("PENDING_TRANSFER", "INCOMPLETE", "ADMIN")).toBe(false);
+    expect(canTransitionTransaction("PENDING_TRANSFER", "INCOMPLETE", "AGENT")).toBe(false);
+    expect(canTransitionTransaction("PENDING_TRANSFER", "INCOMPLETE", "ADMIN")).toBe(false);
+  });
 });
 
 describe("getChecklistProgress", () => {

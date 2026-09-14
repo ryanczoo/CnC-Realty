@@ -4,6 +4,7 @@ type Status = ListingStatus | TransactionFileStatus;
 
 const COLORS: Record<string, string> = {
   INCOMPLETE:            "bg-zinc-100 text-zinc-500",
+  PENDING_TRANSFER:      "bg-purple-100 text-purple-700",
   COMING_SOON:           "bg-blue-100 text-blue-700",
   ACTIVE:                "bg-green-100 text-green-700",
   ACTIVE_UNDER_CONTRACT: "bg-yellow-100 text-yellow-700",
@@ -23,6 +24,7 @@ const COLORS: Record<string, string> = {
 
 const LABELS: Record<string, string> = {
   INCOMPLETE:            "Incomplete",
+  PENDING_TRANSFER:      "Pending Transfer",
   COMING_SOON:           "Coming Soon",
   ACTIVE:                "Active",
   ACTIVE_UNDER_CONTRACT: "Under Contract",
