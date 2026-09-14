@@ -61,7 +61,7 @@ export async function POST(
         },
       });
 
-      await tx.agent.create({
+      const agent = await tx.agent.create({
         data: {
           userId: user.id,
           slug,
@@ -77,6 +77,47 @@ export async function POST(
           signedIcaKey: app.signedIcaKey,
         },
       });
+
+      const TRANSFER_CHECKLIST_ITEM = {
+        name: "Upload Signed Transfer Authorization",
+        description: null,
+        order: 0,
+        isRequired: true,
+      } as const;
+
+      if (app.hasActiveListings && app.activeListingsCount) {
+        for (let i = 0; i < app.activeListingsCount; i++) {
+          await tx.listingFile.create({
+            data: {
+              agentId: agent.id,
+              status: "PENDING_TRANSFER",
+              propertyAddress: "Pending Transfer — Awaiting Signed Authorization",
+              city: "Pending",
+              zip: "00000",
+              listPrice: 0,
+              listingType: "RESIDENTIAL_SALE",
+              checklistItems: {
+                create: { fileType: "LISTING" as const, ...TRANSFER_CHECKLIST_ITEM },
+              },
+            },
+          });
+        }
+      }
+
+      if (app.hasActiveSales && app.activeSalesCount) {
+        for (let i = 0; i < app.activeSalesCount; i++) {
+          await tx.transactionFile.create({
+            data: {
+              agentId: agent.id,
+              status: "PENDING_TRANSFER",
+              transactionSide: "PURCHASE",
+              checklistItems: {
+                create: { fileType: "TRANSACTION" as const, ...TRANSFER_CHECKLIST_ITEM },
+              },
+            },
+          });
+        }
+      }
     });
   } catch (err) {
     if (err instanceof Error && err.message === "ALREADY_PROCESSED") {

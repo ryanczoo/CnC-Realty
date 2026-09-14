@@ -11,6 +11,8 @@ vi.mock("@/lib/prisma", () => {
     agentApplication: { findUnique: vi.fn(), updateMany: vi.fn() },
     user: { create: vi.fn() },
     agent: { create: vi.fn() },
+    listingFile: { create: vi.fn() },
+    transactionFile: { create: vi.fn() },
   };
   mockPrisma.$transaction = vi.fn(async (cb: any) => cb(mockPrisma));
   return { prisma: mockPrisma };
@@ -217,5 +219,69 @@ describe("POST /api/agent-applications/[id]/approve", () => {
 
     expect(res.status).toBe(200);
     expect(Sentry.captureException).toHaveBeenCalledWith(uploadError);
+  });
+
+  it("creates one locked ListingFile per activeListingsCount and one locked TransactionFile per activeSalesCount", async () => {
+    vi.mocked(requireAuth).mockResolvedValue({
+      session: { user: { email: "admin@cnc.com" } },
+      error: undefined,
+    } as any);
+    vi.mocked(prisma.agentApplication.findUnique).mockResolvedValue({
+      ...FULLY_SIGNED_APPLICATION,
+      id: "app-transfer",
+      hasActiveListings: true,
+      activeListingsCount: 2,
+      hasActiveSales: true,
+      activeSalesCount: 1,
+    } as any);
+    vi.mocked(prisma.agentApplication.updateMany).mockResolvedValue({ count: 1 } as any);
+    vi.mocked(prisma.user.create).mockResolvedValue({ id: "user-transfer" } as any);
+    vi.mocked(prisma.agent.create).mockResolvedValue({ id: "agent-transfer" } as any);
+    vi.mocked(prisma.listingFile.create).mockResolvedValue({ id: "listing-x" } as any);
+    vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "tx-x" } as any);
+
+    const req = new Request("http://localhost/api/agent-applications/app-transfer/approve", { method: "POST" });
+    const res = await POST(req, { params: { id: "app-transfer" } });
+
+    expect(res.status).toBe(200);
+    expect(prisma.listingFile.create).toHaveBeenCalledTimes(2);
+    expect(prisma.transactionFile.create).toHaveBeenCalledTimes(1);
+
+    const listingCall = vi.mocked(prisma.listingFile.create).mock.calls[0][0];
+    expect(listingCall.data.agentId).toBe("agent-transfer");
+    expect(listingCall.data.status).toBe("PENDING_TRANSFER");
+    expect(listingCall.data.checklistItems!.create).toEqual(
+      expect.objectContaining({ name: "Upload Signed Transfer Authorization", isRequired: true })
+    );
+
+    const txCall = vi.mocked(prisma.transactionFile.create).mock.calls[0][0];
+    expect(txCall.data.agentId).toBe("agent-transfer");
+    expect(txCall.data.status).toBe("PENDING_TRANSFER");
+    expect(txCall.data.transactionSide).toBe("PURCHASE");
+  });
+
+  it("creates no placeholder files when neither transfer boolean is true", async () => {
+    vi.mocked(requireAuth).mockResolvedValue({
+      session: { user: { email: "admin@cnc.com" } },
+      error: undefined,
+    } as any);
+    vi.mocked(prisma.agentApplication.findUnique).mockResolvedValue({
+      ...FULLY_SIGNED_APPLICATION,
+      id: "app-no-transfer",
+      hasActiveListings: false,
+      activeListingsCount: null,
+      hasActiveSales: false,
+      activeSalesCount: null,
+    } as any);
+    vi.mocked(prisma.agentApplication.updateMany).mockResolvedValue({ count: 1 } as any);
+    vi.mocked(prisma.user.create).mockResolvedValue({ id: "user-none" } as any);
+    vi.mocked(prisma.agent.create).mockResolvedValue({ id: "agent-none" } as any);
+
+    const req = new Request("http://localhost/api/agent-applications/app-no-transfer/approve", { method: "POST" });
+    const res = await POST(req, { params: { id: "app-no-transfer" } });
+
+    expect(res.status).toBe(200);
+    expect(prisma.listingFile.create).not.toHaveBeenCalled();
+    expect(prisma.transactionFile.create).not.toHaveBeenCalled();
   });
 });
