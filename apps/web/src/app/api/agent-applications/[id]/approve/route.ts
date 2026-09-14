@@ -148,7 +148,7 @@ export async function POST(
 
   const setupUrl = `${process.env.NEXTAUTH_URL}/setup-account?token=${setupToken}`;
   sendApplicationApproved(app.email, app.firstName, setupUrl, slug).catch(console.error);
-  sendApprovalDocuments(app.email, app.firstName).catch(console.error);
+  sendApprovalDocuments(app.email, app.firstName, app.hasActiveListings, app.hasActiveSales).catch(console.error);
 
   return NextResponse.json({ ok: true });
 }

@@ -137,6 +137,8 @@ describe("POST /api/agent-applications/[id]/approve", () => {
       instagramUrl: null,
       facebookUrl: null,
       signedIcaKey: null,
+      hasActiveListings: true,
+      hasActiveSales: false,
     } as any);
     vi.mocked(prisma.agentApplication.updateMany).mockResolvedValue({ count: 1 } as any);
     vi.mocked(prisma.user.create).mockResolvedValue({ id: "user-3" } as any);
@@ -146,7 +148,7 @@ describe("POST /api/agent-applications/[id]/approve", () => {
     const res = await POST(req, { params: { id: "app-3" } });
 
     expect(res.status).toBe(200);
-    expect(sendApprovalDocuments).toHaveBeenCalledWith("jane@example.com", "Jane");
+    expect(sendApprovalDocuments).toHaveBeenCalledWith("jane@example.com", "Jane", true, false);
   });
 
   it("regenerates the ICA PDF with a broker countersignature and re-uploads it to the same R2 key", async () => {

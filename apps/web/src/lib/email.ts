@@ -416,13 +416,40 @@ export async function sendApplicationRejected(
 
 const ATTACHMENTS_DIR = join(process.cwd(), "src", "lib", "email", "attachments");
 
-export async function sendApprovalDocuments(to: string, firstName: string) {
+export async function sendApprovalDocuments(
+  to: string,
+  firstName: string,
+  hasActiveListings: boolean,
+  hasActiveSales: boolean
+) {
   if (!process.env.POSTMARK_SERVER_TOKEN) {
     console.warn("[sendApprovalDocuments] POSTMARK_SERVER_TOKEN is not set — skipping email send.");
     return;
   }
   const w9 = readFileSync(join(ATTACHMENTS_DIR, "w9-blank.pdf"));
   const opm = readFileSync(join(ATTACHMENTS_DIR, "cnc-office-policy-manual.pdf"));
+
+  const transferAttachments = [];
+  if (hasActiveListings) {
+    transferAttachments.push({
+      filename: "CnC Realty - Listing Transfer Authorization.pdf",
+      content: readFileSync(join(ATTACHMENTS_DIR, "listing-transfer-authorization.pdf")).toString("base64"),
+      contentType: "application/pdf",
+    });
+  }
+  if (hasActiveSales) {
+    transferAttachments.push({
+      filename: "CnC Realty - Pending Sale Transfer Authorization.pdf",
+      content: readFileSync(join(ATTACHMENTS_DIR, "pending-sale-transfer-authorization.pdf")).toString("base64"),
+      contentType: "application/pdf",
+    });
+  }
+
+  const transferParagraph = (hasActiveListings || hasActiveSales)
+    ? `<p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; text-align: left; margin: 16px 0 0;">
+        You told us you have ${hasActiveListings && hasActiveSales ? "an active listing and a pending sale" : hasActiveListings ? "an active listing" : "a pending sale"} to transfer from your previous brokerage — the matching transfer authorization form is attached. Fill it in, get it signed by your previous broker, then upload the signed copy on the locked file waiting for it in your dashboard.
+      </p>`
+    : "";
 
   const bodyHtml = buildHeadingBodyHtml({
     heading: `Let's get started, ${firstName}!`,
@@ -443,6 +470,7 @@ export async function sendApprovalDocuments(to: string, firstName: string) {
       </p>
       <p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; text-align: left; margin: 0 0 8px; padding-left: 20px;">&#10003; IRS W-9 Form</p>
       <p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; text-align: left; margin: 0 0 16px; padding-left: 20px;">&#10003; Copy of California DRE license</p>
+      ${transferParagraph}
       <p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; text-align: center; margin: 32px 0 0;">
         Also, don't forget to join the <a href="https://www.car.org" style="color: #9E8C61;">Board of REALTORS&reg;</a> and a local MLS Association! This is required for access to the MLS, ZipForms, legal guidance, and more.
       </p>
@@ -469,6 +497,7 @@ export async function sendApprovalDocuments(to: string, firstName: string) {
         content: opm.toString("base64"),
         contentType: "application/pdf",
       },
+      ...transferAttachments,
     ],
     stream: "transactional",
   });

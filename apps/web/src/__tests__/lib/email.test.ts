@@ -22,7 +22,7 @@ describe("sendApprovalDocuments", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("sends one email to the agent with the W-9 and Office Policy Manual attached", async () => {
-    await sendApprovalDocuments("jane@example.com", "Jane");
+    await sendApprovalDocuments("jane@example.com", "Jane", false, false);
 
     expect(sendEmail).toHaveBeenCalledOnce();
     const call = vi.mocked(sendEmail).mock.calls[0][0];
@@ -44,14 +44,14 @@ describe("sendApprovalDocuments", () => {
   });
 
   it("subject is just 'Onboarding Documents'", async () => {
-    await sendApprovalDocuments("jane@example.com", "Jane");
+    await sendApprovalDocuments("jane@example.com", "Jane", false, false);
 
     const call = vi.mocked(sendEmail).mock.calls[0][0];
     expect(call.subject).toBe("Onboarding Documents");
   });
 
   it("puts the header photo right below the shared logo header, above the heading text", async () => {
-    await sendApprovalDocuments("jane@example.com", "Jane");
+    await sendApprovalDocuments("jane@example.com", "Jane", false, false);
 
     const call = vi.mocked(sendEmail).mock.calls[0][0];
     const html = call.html!;
@@ -65,7 +65,7 @@ describe("sendApprovalDocuments", () => {
   });
 
   it("uses the reworded copy and trimmed bullet lists", async () => {
-    await sendApprovalDocuments("jane@example.com", "Jane");
+    await sendApprovalDocuments("jane@example.com", "Jane", false, false);
 
     const call = vi.mocked(sendEmail).mock.calls[0][0];
     const html = call.html!;
@@ -90,7 +90,7 @@ describe("sendApprovalDocuments", () => {
   });
 
   it("links 'Board of REALTORS®' to car.org in the closing MLS-membership line", async () => {
-    await sendApprovalDocuments("jane@example.com", "Jane");
+    await sendApprovalDocuments("jane@example.com", "Jane", false, false);
 
     const call = vi.mocked(sendEmail).mock.calls[0][0];
     const html = call.html!;
@@ -102,7 +102,7 @@ describe("sendApprovalDocuments", () => {
   });
 
   it("matches the welcome email's body text size, and bolds the two 'attached/please provide' headers", async () => {
-    await sendApprovalDocuments("jane@example.com", "Jane");
+    await sendApprovalDocuments("jane@example.com", "Jane", false, false);
 
     const call = vi.mocked(sendEmail).mock.calls[0][0];
     const html = call.html!;
@@ -120,7 +120,7 @@ describe("sendApprovalDocuments", () => {
   });
 
   it("matches the welcome email's heading size, and indents both the bullet list and the checkmarks", async () => {
-    await sendApprovalDocuments("jane@example.com", "Jane");
+    await sendApprovalDocuments("jane@example.com", "Jane", false, false);
 
     const call = vi.mocked(sendEmail).mock.calls[0][0];
     const html = call.html!;
@@ -138,12 +138,37 @@ describe("sendApprovalDocuments", () => {
   });
 
   it("does not double-escape an apostrophe in the agent's first name in the heading", async () => {
-    await sendApprovalDocuments("obrien@example.com", "O'Brien");
+    await sendApprovalDocuments("obrien@example.com", "O'Brien", false, false);
 
     const call = vi.mocked(sendEmail).mock.calls[0][0];
     const html = call.html!;
     expect(html).toContain("Let&#39;s get started, O&#39;Brien!");
     expect(html).not.toContain("O&amp;#39;Brien");
+  });
+
+  it("attaches the listing transfer form only when hasActiveListings is true", async () => {
+    await sendApprovalDocuments("jane@example.com", "Jane", true, false);
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    expect(call.attachments).toHaveLength(3);
+    expect(call.attachments!.some((a) => a.filename.includes("Listing Transfer"))).toBe(true);
+    expect(call.attachments!.some((a) => a.filename.includes("Pending Sale"))).toBe(false);
+  });
+
+  it("attaches the pending-sale transfer form only when hasActiveSales is true", async () => {
+    await sendApprovalDocuments("jane@example.com", "Jane", false, true);
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    expect(call.attachments).toHaveLength(3);
+    expect(call.attachments!.some((a) => a.filename.includes("Pending Sale"))).toBe(true);
+    expect(call.attachments!.some((a) => a.filename.includes("Listing Transfer"))).toBe(false);
+  });
+
+  it("attaches both transfer forms when both are true, and neither when both are false", async () => {
+    await sendApprovalDocuments("jane@example.com", "Jane", true, true);
+    expect(vi.mocked(sendEmail).mock.calls[0][0].attachments).toHaveLength(4);
+
+    vi.clearAllMocks();
+    await sendApprovalDocuments("jane@example.com", "Jane", false, false);
+    expect(vi.mocked(sendEmail).mock.calls[0][0].attachments).toHaveLength(2);
   });
 });
 
