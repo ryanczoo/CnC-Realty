@@ -187,7 +187,7 @@ Previous Brokerage Information:
 Transferee Brokerage:
   CnC Realty
   830 S. Main St, STE 227, Santa Ana, CA 92701
-  Phone: [office phone]
+  Phone: (562) 335-1759
   Email: info@cncrealtygroup.com
   DRE License #: 02439028
 
@@ -260,7 +260,7 @@ Escrow Information (if escrow has been opened — leave blank if not applicable)
 Transferee Brokerage:
   CnC Realty
   830 S. Main St, STE 227, Santa Ana, CA 92701
-  Phone: [office phone]
+  Phone: (562) 335-1759
   Email: info@cncrealtygroup.com
   DRE License #: 02439028
 
@@ -285,9 +285,6 @@ brokerage.
 Date Brokerage/MLS Change Made: _______________________
 Change Confirmed by Agent (Initials): _______________________
 ```
-
-**[office phone] needs a real value before this goes anywhere** — not sure what CnC's
-listed office phone number is; flagging rather than guessing.
 
 ## Why these are static files, not generated PDFs
 
@@ -316,7 +313,6 @@ exported), and drop the resulting static files into
 
 ## Open items for the implementation plan
 
-- Real office phone number for the transferee-brokerage block on both forms
 - Exact wording Ryan wants to hand-edit once he reviews the drafted form text above
 - Whether the property-address field on the locked file page needs its own small API
   route or can reuse an existing PATCH endpoint on `ListingFile`/`TransactionFile`
