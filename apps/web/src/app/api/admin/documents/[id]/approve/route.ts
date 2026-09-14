@@ -31,6 +31,20 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     },
   });
 
+  if (doc.checklistItemId) {
+    if (doc.fileType === "LISTING") {
+      const parent = await prisma.listingFile.findUnique({ where: { id: doc.listingFileId! }, select: { status: true } });
+      if (parent?.status === "PENDING_TRANSFER") {
+        await prisma.listingFile.update({ where: { id: doc.listingFileId! }, data: { status: "INCOMPLETE" } });
+      }
+    } else {
+      const parent = await prisma.transactionFile.findUnique({ where: { id: doc.transactionFileId! }, select: { status: true } });
+      if (parent?.status === "PENDING_TRANSFER") {
+        await prisma.transactionFile.update({ where: { id: doc.transactionFileId! }, data: { status: "INCOMPLETE" } });
+      }
+    }
+  }
+
   const fileId = doc.listingFileId ?? doc.transactionFileId!;
   const isListing = doc.fileType === "LISTING";
 
