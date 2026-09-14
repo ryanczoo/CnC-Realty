@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
+import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/api-auth";
 import { sendApplicationApproved, sendApprovalDocuments } from "@/lib/email";
+import { generateSignedIcaPdf } from "@/lib/ica-pdf";
+import { uploadToR2 } from "@/lib/r2";
+import { ICA_VERSION } from "@/lib/ica-content";
 
 export async function POST(
   _req: Request,
@@ -29,6 +33,7 @@ export async function POST(
 
   // Temporary random password (agent will reset via setup link)
   const tempPassword = await bcrypt.hash(randomBytes(16).toString("hex"), 10);
+  const reviewedAt = new Date(); // also doubles as the broker countersignature timestamp below
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -38,7 +43,7 @@ export async function POST(
         data: {
           status: "APPROVED",
           reviewedBy: adminEmail,
-          reviewedAt: new Date(),
+          reviewedAt,
         },
       });
 
@@ -78,6 +83,26 @@ export async function POST(
       return NextResponse.json({ error: "Application already processed" }, { status: 409 });
     }
     throw err;
+  }
+
+  // Regenerate the executed ICA with a broker countersignature and overwrite the same R2
+  // object in place — one PDF per agent, never a duplicate. If this fails, the agent's own
+  // original signature is still on file and valid; we just log to Sentry rather than fail
+  // an approval that has already succeeded.
+  if (app.signedIcaKey) {
+    try {
+      const countersignedPdf = await generateSignedIcaPdf({
+        signerName: app.signedName ?? `${app.firstName} ${app.lastName}`,
+        signedAt: app.icaAgreedAt,
+        signerIp: app.submissionIp,
+        licenseNumber: app.licenseNumber,
+        icaVersion: app.icaVersion ?? ICA_VERSION,
+        brokerSignedAt: reviewedAt,
+      });
+      await uploadToR2(app.signedIcaKey, countersignedPdf, "application/pdf");
+    } catch (err) {
+      Sentry.captureException(err);
+    }
   }
 
   const setupUrl = `${process.env.NEXTAUTH_URL}/setup-account?token=${setupToken}`;

@@ -1,6 +1,6 @@
 // apps/web/src/lib/ica-pdf.ts
 import { PDFDocument, PDFFont, PDFPage, StandardFonts, rgb } from "pdf-lib";
-import { ICA_VERSION, ICA_INTRO, ICA_SECTIONS, SUMMARY_TABLE, type RichText } from "./ica-content";
+import { ICA_INTRO, ICA_SECTIONS, SUMMARY_TABLE, BROKER_NAME, type RichText } from "./ica-content";
 
 const PAGE_WIDTH = 612; // US Letter, points
 const PAGE_HEIGHT = 792;
@@ -184,6 +184,11 @@ export async function generateSignedIcaPdf(input: {
   signerName: string;
   signedAt: Date;
   signerIp: string;
+  licenseNumber: string;
+  /** The ICA_VERSION value in effect when the agent actually signed — never the live constant. */
+  icaVersion: string;
+  /** When set, the broker countersignature block is appended below the agent's own signature. */
+  brokerSignedAt?: Date;
 }): Promise<Buffer> {
   const doc = await PDFDocument.create();
   const font = await doc.embedFont(StandardFonts.Helvetica);
@@ -219,9 +224,16 @@ export async function generateSignedIcaPdf(input: {
   );
   w.y -= 8;
   drawParagraph(w, `Signed electronically by: ${input.signerName}`, { bold: true });
+  drawParagraph(w, `Associate-Licensee DRE License #: ${input.licenseNumber}`);
   drawParagraph(w, `Date/Time: ${input.signedAt.toISOString()}`);
   drawParagraph(w, `IP Address: ${input.signerIp}`);
-  drawParagraph(w, `ICA Version: ${ICA_VERSION}`);
+  drawParagraph(w, `ICA Version: ${input.icaVersion}`);
+
+  if (input.brokerSignedAt) {
+    w.y -= 10;
+    drawParagraph(w, `Countersigned electronically by: ${BROKER_NAME}, Designated Broker`, { bold: true });
+    drawParagraph(w, `Date/Time: ${input.brokerSignedAt.toISOString()}`);
+  }
 
   w.y -= 14;
   drawParagraph(w, "Fee Schedule Summary", { bold: true });

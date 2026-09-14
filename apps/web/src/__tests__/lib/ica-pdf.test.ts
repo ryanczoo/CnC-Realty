@@ -1,22 +1,56 @@
 // apps/web/src/__tests__/lib/ica-pdf.test.ts
 import { describe, it, expect } from "vitest";
 import { PDFDocument, StandardFonts } from "pdf-lib";
+// pdf-parse's package-root index.js has a debug-mode bug that runs unconditionally
+// on require; importing the internal module directly bypasses it.
+import pdfParse from "pdf-parse/lib/pdf-parse.js";
 import { generateSignedIcaPdf, tokenizeRichText, wrapText, CONTENT_WIDTH } from "@/lib/ica-pdf";
-import { SUMMARY_TABLE } from "@/lib/ica-content";
+import { SUMMARY_TABLE, BROKER_NAME } from "@/lib/ica-content";
+
+const BASE_INPUT = {
+  signerName: "Jane Smith",
+  signedAt: new Date("2026-07-06T12:00:00.000Z"),
+  signerIp: "1.2.3.4",
+  licenseNumber: "01234567",
+  icaVersion: "2026-07-06",
+};
 
 describe("generateSignedIcaPdf", () => {
   it("produces a valid multi-page PDF containing the signature block", async () => {
-    const buffer = await generateSignedIcaPdf({
-      signerName: "Jane Smith",
-      signedAt: new Date("2026-07-06T12:00:00.000Z"),
-      signerIp: "1.2.3.4",
-    });
+    const buffer = await generateSignedIcaPdf(BASE_INPUT);
 
     expect(Buffer.isBuffer(buffer)).toBe(true);
     expect(buffer.subarray(0, 5).toString()).toBe("%PDF-");
 
     const loaded = await PDFDocument.load(buffer);
     expect(loaded.getPageCount()).toBeGreaterThan(5);
+  });
+
+  it("includes the associate-licensee's DRE license number in the signature block", async () => {
+    const buffer = await generateSignedIcaPdf(BASE_INPUT);
+    const { text } = await pdfParse(buffer);
+    expect(text).toContain("01234567");
+  });
+
+  it("stamps the ICA version that was passed in, not whatever the live constant currently is", async () => {
+    const buffer = await generateSignedIcaPdf({ ...BASE_INPUT, icaVersion: "2025-01-01-old-version" });
+    const { text } = await pdfParse(buffer);
+    expect(text).toContain("2025-01-01-old-version");
+  });
+
+  it("omits the broker countersignature block when brokerSignedAt is not provided", async () => {
+    const buffer = await generateSignedIcaPdf(BASE_INPUT);
+    const { text } = await pdfParse(buffer);
+    expect(text).not.toContain("Countersigned");
+  });
+
+  it("renders the broker countersignature block when brokerSignedAt is provided", async () => {
+    const brokerSignedAt = new Date("2026-07-10T09:30:00.000Z");
+    const buffer = await generateSignedIcaPdf({ ...BASE_INPUT, brokerSignedAt });
+    const { text } = await pdfParse(buffer);
+    expect(text).toContain("Countersigned");
+    expect(text).toContain(BROKER_NAME);
+    expect(text).toContain(brokerSignedAt.toISOString());
   });
 });
 

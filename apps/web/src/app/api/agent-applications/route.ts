@@ -93,6 +93,8 @@ export async function POST(req: Request) {
       signerName: data.signatureName,
       signedAt,
       signerIp: ip,
+      licenseNumber: data.licenseNumber,
+      icaVersion: ICA_VERSION,
     });
     const signedIcaKey = `signed-ica/${applicationId}.pdf`;
     await uploadToR2(signedIcaKey, pdfBuffer, "application/pdf");

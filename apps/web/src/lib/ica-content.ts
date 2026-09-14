@@ -27,6 +27,9 @@ export type IcaSection = {
 /** Bump this (YYYY-MM-DD) any time the sections/tables below change. */
 export const ICA_VERSION = "2026-08-30";
 
+/** CnC Realty's sole Designated Broker — the countersigning party on every executed ICA. */
+export const BROKER_NAME = "Ryan Chong";
+
 export const ICA_INTRO: RichText = [
   "This Independent Contractor Agreement (“Agreement”) is made between ",
   { bold: "CnC Realty" },
