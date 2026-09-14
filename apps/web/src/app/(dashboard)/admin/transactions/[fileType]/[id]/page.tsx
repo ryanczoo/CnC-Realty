@@ -72,7 +72,9 @@ export default function AdminFileDetailPage() {
         <Link href="/admin/transactions" className="mb-2 inline-block text-sm text-[#1B1B1B]/40 hover:text-[#1B1B1B]">← All Files</Link>
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-xl font-light text-[#1B1B1B]">{file.propertyAddress}, {file.city}, {file.state} {file.zip}</h1>
+            <h1 className="text-xl font-light text-[#1B1B1B]">
+              {file.status === "PENDING_TRANSFER" ? "Locked — Pending Transfer" : `${file.propertyAddress}, ${file.city}, ${file.state} ${file.zip}`}
+            </h1>
             <div className="mt-1 flex items-center gap-3">
               <StatusBadge status={file.status} />
               {file.awaitingReview && (
@@ -85,16 +87,22 @@ export default function AdminFileDetailPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <select
-              disabled={statusLoading}
-              value={file.status}
-              onChange={(e) => changeStatus(e.target.value)}
-              className="rounded-lg border border-[#1B1B1B]/10 bg-white px-3 py-2 text-sm text-[#1B1B1B] disabled:opacity-50"
-            >
-              {statuses.map((s) => (
-                <option key={s} value={s}>{s.replace(/_/g, " ")}</option>
-              ))}
-            </select>
+            {file.status === "PENDING_TRANSFER" ? (
+              <span className="rounded-full bg-purple-100 px-3 py-1.5 text-xs font-medium text-purple-700">
+                Approve the uploaded document below to unlock
+              </span>
+            ) : (
+              <select
+                disabled={statusLoading}
+                value={file.status}
+                onChange={(e) => changeStatus(e.target.value)}
+                className="rounded-lg border border-[#1B1B1B]/10 bg-white px-3 py-2 text-sm text-[#1B1B1B] disabled:opacity-50"
+              >
+                {statuses.map((s) => (
+                  <option key={s} value={s}>{s.replace(/_/g, " ")}</option>
+                ))}
+              </select>
+            )}
           </div>
         </div>
       </div>

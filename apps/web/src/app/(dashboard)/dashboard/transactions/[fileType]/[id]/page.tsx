@@ -7,6 +7,7 @@ import { StatusBadge } from "@/components/transactions/StatusBadge";
 import { ChecklistPanel } from "@/components/transactions/ChecklistPanel";
 import { PartiesTable } from "@/components/transactions/PartiesTable";
 import { ActivityFeed } from "@/components/transactions/ActivityFeed";
+import { TransferPendingPanel } from "@/components/transactions/TransferPendingPanel";
 import { getChecklistProgress } from "@/lib/transaction-helpers";
 import { DateField } from "@/components/ui/DateField";
 import type {
@@ -106,22 +107,25 @@ export default function FileDetailPage() {
   const transaction = !isListing ? (file as TransactionFileDetail) : null;
 
   const isReferral = !isListing && transaction?.transactionSide === "REFERRAL";
+  const isLocked = file.status === "PENDING_TRANSFER";
   const viewerIsAdmin = session?.user?.role === "ADMIN";
   const viewerIsFileAgent =
     !!transaction && session?.user?.agentId != null && session.user.agentId === transaction.agentId;
 
-  const title = file.propertyAddress
-    ? `${file.propertyAddress}, ${file.city ?? ""}, ${file.state} ${file.zip ?? ""}`
-    : isReferral
-      ? "Referral File"
-      : `${file.city ?? ""} ${file.state} ${file.zip ?? ""}`.trim();
-  const price = isListing
+  const title = isLocked
+    ? "Locked — Pending Transfer"
+    : file.propertyAddress
+      ? `${file.propertyAddress}, ${file.city ?? ""}, ${file.state} ${file.zip ?? ""}`
+      : isReferral
+        ? "Referral File"
+        : `${file.city ?? ""} ${file.state} ${file.zip ?? ""}`.trim();
+  const price = isLocked ? null : (isListing
     ? (listing?.listPrice ? `$${Number(listing.listPrice).toLocaleString()}` : null)
     : (transaction?.salePrice
         ? `$${Number(transaction.salePrice).toLocaleString()}`
         : transaction?.leasePrice
           ? `$${Number(transaction.leasePrice).toLocaleString()}/mo`
-          : null);
+          : null));
 
   const { satisfied, required } = getChecklistProgress(file.checklistItems as FileChecklistItemWithDocs[]);
   const progressPct = required > 0 ? Math.round((satisfied / required) * 100) : 0;
@@ -161,7 +165,7 @@ export default function FileDetailPage() {
                 onDone={load}
               />
             )}
-            {!isReferral && !file.awaitingReview && (
+            {!isReferral && !isLocked && !file.awaitingReview && (
               <button onClick={submitForReview} className="rounded-full bg-[#9E8C61] px-4 py-2 text-sm text-white">
                 Submit for Review
               </button>
@@ -170,6 +174,17 @@ export default function FileDetailPage() {
         </div>
       </div>
 
+      {isLocked && (
+        <TransferPendingPanel
+          fileType={fileType as "listing" | "transaction"}
+          fileId={id}
+          checklistItems={file.checklistItems as FileChecklistItemWithDocs[]}
+          onUploaded={load}
+        />
+      )}
+
+      {!isLocked && (
+      <>
       <div className="mb-6 flex gap-1 overflow-x-auto rounded-xl bg-[#F2F0EF] p-1 w-fit max-w-full">
         {visibleTabs.map((t) => (
           <button
@@ -242,6 +257,8 @@ export default function FileDetailPage() {
           activities={file.activities ?? []}
           onNoteAdded={load}
         />
+      )}
+      </>
       )}
     </div>
   );

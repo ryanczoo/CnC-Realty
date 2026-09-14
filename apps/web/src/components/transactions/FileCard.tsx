@@ -27,7 +27,12 @@ export function FileCard({ id, fileType, address, city, status, closeDate, listP
     >
       <div className="flex items-start justify-between gap-2">
         <div>
-          {address ? (
+          {status === "PENDING_TRANSFER" ? (
+            <>
+              <p className="font-medium text-[#1B1B1B] line-clamp-1">Locked — Pending Transfer</p>
+              <p className="text-sm text-[#1B1B1B]/50">Upload the signed authorization to unlock</p>
+            </>
+          ) : address ? (
             <>
               <p className="font-medium text-[#1B1B1B] line-clamp-1">{address}</p>
               <p className="text-sm text-[#1B1B1B]/50">{city}, CA</p>
@@ -42,7 +47,7 @@ export function FileCard({ id, fileType, address, city, status, closeDate, listP
         <StatusBadge status={status} />
       </div>
 
-      {listPrice && (
+      {status !== "PENDING_TRANSFER" && listPrice && (
         <p className="text-sm font-medium text-[#1B1B1B]">${listPrice.toLocaleString()}</p>
       )}
 
