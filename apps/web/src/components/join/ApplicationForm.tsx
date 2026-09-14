@@ -51,7 +51,9 @@ interface FormState {
   desiredMembershipAssociation: string;
   mlsId: string;
   hasActiveListings: boolean | null;
+  activeListingsCount: number | "";
   hasActiveSales: boolean | null;
+  activeSalesCount: number | "";
   commissionEntity: CommissionEntity | "";
   hasDisciplinaryHistory: boolean | null;
   disciplinaryExplain: string;
@@ -67,7 +69,7 @@ const INITIAL: FormState = {
   address: "", city: "", state: "CA", zip: "", dateOfBirth: "",
   licenseNumber: "", licenseType: "", licenseExpDate: "", yearsLicensed: "",
   formerBrokerage: "", boardOfRealtors: "", desiredMembershipAssociation: "", mlsId: "",
-  hasActiveListings: null, hasActiveSales: null,
+  hasActiveListings: null, activeListingsCount: "", hasActiveSales: null, activeSalesCount: "",
   commissionEntity: "",
   hasDisciplinaryHistory: null, disciplinaryExplain: "",
   hasInvestigationHistory: null, investigationExplain: "",
@@ -140,6 +142,14 @@ function FormInner() {
       fail("Please answer both transfer questions.", ["hasActiveListings", "hasActiveSales"]);
       return;
     }
+    if (form.hasActiveListings && !form.activeListingsCount) {
+      fail("Please select how many listings you have to transfer.", ["activeListingsCount"]);
+      return;
+    }
+    if (form.hasActiveSales && !form.activeSalesCount) {
+      fail("Please select how many pending sales you have to transfer.", ["activeSalesCount"]);
+      return;
+    }
     if (!form.commissionEntity) {
       fail("Please select your commission deposit type.", ["commissionEntity"]);
       return;
@@ -181,6 +191,8 @@ function FormInner() {
         body: JSON.stringify({
           ...form,
           yearsLicensed: parseInt(form.yearsLicensed, 10) || 0,
+          activeListingsCount: form.activeListingsCount || undefined,
+          activeSalesCount: form.activeSalesCount || undefined,
           icaOpenedAt: icaOpenedAt!,
           icaAgreedAt,
           recaptchaToken,
@@ -409,10 +421,10 @@ function FormInner() {
         <p className={sectionHeadingClass}>Active Listings & Sales</p>
         {(
           [
-            { field: "hasActiveListings", label: "Do you have active listings to transfer? *" },
-            { field: "hasActiveSales", label: "Do you have pending sales to transfer? *" },
+            { field: "hasActiveListings", countField: "activeListingsCount", label: "Do you have active listings to transfer? *", countLabel: "How many listings do you have to transfer? *" },
+            { field: "hasActiveSales", countField: "activeSalesCount", label: "Do you have pending sales to transfer? *", countLabel: "How many pending sales do you have to transfer? *" },
           ] as const
-        ).map(({ field, label }) => (
+        ).map(({ field, countField, label, countLabel }) => (
           <div key={field} className="mb-4">
             <label className={labelClass}>{label}</label>
             <div className={`mt-2 flex gap-6 rounded-lg p-1 -m-1 ${ring(field)}`}>
@@ -430,9 +442,22 @@ function FormInner() {
               ))}
             </div>
             {form[field] === true && (
-              <p className="mt-2 font-sans text-sm text-[#1B1B1B]/50">
-                Please request your current brokerage to release active listings to CnC Realty after submission
-              </p>
+              <>
+                <p className="mt-2 font-sans text-sm text-[#1B1B1B]/50">
+                  Please request your current brokerage to release active listings to CnC Realty after submission
+                </p>
+                <label className={`${labelClass} mt-3`}>{countLabel}</label>
+                <select
+                  className={`${inputClass} ${ring(countField)}`}
+                  value={form[countField]}
+                  onChange={(e) => set(countField, e.target.value ? Number(e.target.value) : "")}
+                >
+                  <option value="">Select…</option>
+                  {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </select>
+              </>
             )}
           </div>
         ))}

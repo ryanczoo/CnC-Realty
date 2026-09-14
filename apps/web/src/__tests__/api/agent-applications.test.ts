@@ -186,4 +186,48 @@ describe('POST /api/agent-applications', () => {
     const res = await POST(makeValidRequest());
     expect(res.status).toBe(429);
   });
+
+  it('requires activeListingsCount when hasActiveListings is true', async () => {
+    const req = new Request('http://localhost/api/agent-applications', {
+      method: 'POST',
+      body: JSON.stringify({ ...VALID_BODY, hasActiveListings: true, activeListingsCount: undefined }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toMatch(/listing/i);
+  });
+
+  it('requires activeSalesCount when hasActiveSales is true', async () => {
+    const req = new Request('http://localhost/api/agent-applications', {
+      method: 'POST',
+      body: JSON.stringify({ ...VALID_BODY, hasActiveSales: true, activeSalesCount: undefined }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toMatch(/sale/i);
+  });
+
+  it('accepts and persists both counts when both booleans are true', async () => {
+    vi.mocked(prisma.agentApplication.create).mockResolvedValue({ id: 'app-1' } as any);
+    const req = new Request('http://localhost/api/agent-applications', {
+      method: 'POST',
+      body: JSON.stringify({
+        ...VALID_BODY,
+        hasActiveListings: true, activeListingsCount: 3,
+        hasActiveSales: true, activeSalesCount: 2,
+      }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(201);
+    expect(vi.mocked(prisma.agentApplication.create)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ activeListingsCount: 3, activeSalesCount: 2 }),
+      })
+    );
+  });
 });

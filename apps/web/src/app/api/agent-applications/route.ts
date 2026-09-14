@@ -28,7 +28,9 @@ const schema = z.object({
   desiredMembershipAssociation: z.string().optional().default(""),
   mlsId:          z.string().optional().default(""),
   hasActiveListings:       z.boolean(),
+  activeListingsCount:     z.number().int().min(1).max(10).optional(),
   hasActiveSales:          z.boolean(),
+  activeSalesCount:        z.number().int().min(1).max(10).optional(),
   commissionEntity:        z.enum(["PERSONAL", "LLC", "S_CORP", "C_CORP"]),
   hasDisciplinaryHistory:  z.boolean(),
   disciplinaryExplain:     z.string().optional().default(""),
@@ -43,6 +45,12 @@ const schema = z.object({
   icaAgreedAt:    z.string().datetime(),
   signatureName:  z.string().min(1, "Signature required"),
   recaptchaToken: z.string().min(1, "reCAPTCHA token required"),
+}).refine((d) => !d.hasActiveListings || d.activeListingsCount != null, {
+  message: "Please select how many listings you have to transfer.",
+  path: ["activeListingsCount"],
+}).refine((d) => !d.hasActiveSales || d.activeSalesCount != null, {
+  message: "Please select how many pending sales you have to transfer.",
+  path: ["activeSalesCount"],
 });
 
 async function verifyRecaptcha(token: string): Promise<boolean> {
@@ -122,7 +130,9 @@ export async function POST(req: Request) {
           desiredMembershipAssociation: data.desiredMembershipAssociation || null,
           mlsId:           data.mlsId || null,
           hasActiveListings:       data.hasActiveListings,
+          activeListingsCount:     data.hasActiveListings ? data.activeListingsCount : null,
           hasActiveSales:          data.hasActiveSales,
+          activeSalesCount:        data.hasActiveSales ? data.activeSalesCount : null,
           commissionEntity:        data.commissionEntity,
           hasDisciplinaryHistory:  data.hasDisciplinaryHistory,
           disciplinaryExplain:     data.disciplinaryExplain || null,
