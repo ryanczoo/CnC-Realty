@@ -82,6 +82,7 @@ enum DeliveryStatus {
 
 enum ListingStatus {
   INCOMPLETE
+  PENDING_TRANSFER
   COMING_SOON
   ACTIVE
   ACTIVE_UNDER_CONTRACT
@@ -93,6 +94,7 @@ enum ListingStatus {
 
 enum TransactionFileStatus {
   INCOMPLETE
+  PENDING_TRANSFER
   PRE_CONTRACT
   PENDING
   EXPIRED
@@ -1106,8 +1108,10 @@ model AgentApplication {
   mlsId           String?
 
   // Transfer
-  hasActiveListings Boolean
-  hasActiveSales    Boolean
+  hasActiveListings   Boolean
+  hasActiveSales      Boolean
+  activeListingsCount Int?
+  activeSalesCount    Int?
 
   // Business / Tax
   commissionEntity CommissionEntity
