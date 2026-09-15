@@ -162,6 +162,28 @@ describe("sendApprovalDocuments", () => {
     expect(call.attachments!.some((a) => a.filename.includes("Listing Transfer"))).toBe(false);
   });
 
+  it("renders the transfer-instructions paragraph when either transfer flag is true, and omits it when both are false", async () => {
+    await sendApprovalDocuments("jane@example.com", "Jane", true, false);
+    let html = vi.mocked(sendEmail).mock.calls[0][0].html!;
+    expect(html).toContain("an active listing to transfer from your previous brokerage");
+    expect(html).toContain("upload the signed copy on the locked file waiting for it in your dashboard");
+
+    vi.clearAllMocks();
+    await sendApprovalDocuments("jane@example.com", "Jane", false, true);
+    html = vi.mocked(sendEmail).mock.calls[0][0].html!;
+    expect(html).toContain("a pending sale to transfer from your previous brokerage");
+
+    vi.clearAllMocks();
+    await sendApprovalDocuments("jane@example.com", "Jane", true, true);
+    html = vi.mocked(sendEmail).mock.calls[0][0].html!;
+    expect(html).toContain("an active listing and a pending sale to transfer from your previous brokerage");
+
+    vi.clearAllMocks();
+    await sendApprovalDocuments("jane@example.com", "Jane", false, false);
+    html = vi.mocked(sendEmail).mock.calls[0][0].html!;
+    expect(html).not.toContain("to transfer from your previous brokerage");
+  });
+
   it("attaches both transfer forms when both are true, and neither when both are false", async () => {
     await sendApprovalDocuments("jane@example.com", "Jane", true, true);
     expect(vi.mocked(sendEmail).mock.calls[0][0].attachments).toHaveLength(4);

@@ -262,6 +262,9 @@ describe("POST /api/agent-applications/[id]/approve", () => {
     expect(txCall.data.agentId).toBe("agent-transfer");
     expect(txCall.data.status).toBe("PENDING_TRANSFER");
     expect(txCall.data.transactionSide).toBe("PURCHASE");
+    expect(txCall.data.checklistItems!.create).toEqual(
+      expect.objectContaining({ name: "Upload Signed Transfer Authorization", isRequired: true })
+    );
   });
 
   it("creates no placeholder files when neither transfer boolean is true", async () => {

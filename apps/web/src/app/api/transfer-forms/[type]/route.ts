@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
 import { readFileSync } from "fs";
 import { join } from "path";
-import { authOptions } from "@/lib/auth";
-
-const ATTACHMENTS_DIR = join(process.cwd(), "src", "lib", "email", "attachments");
+import { requireAuth } from "@/lib/api-auth";
+import { ATTACHMENTS_DIR } from "@/lib/email";
 
 const FILES: Record<string, { file: string; downloadName: string }> = {
   listing: { file: "listing-transfer-authorization.pdf", downloadName: "CnC Realty - Listing Transfer Authorization.pdf" },
@@ -12,8 +10,8 @@ const FILES: Record<string, { file: string; downloadName: string }> = {
 };
 
 export async function GET(_req: Request, { params }: { params: { type: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { error } = await requireAuth();
+  if (error) return error;
 
   const entry = FILES[params.type];
   if (!entry) return NextResponse.json({ error: "Not found" }, { status: 404 });

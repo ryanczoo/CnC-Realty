@@ -7,10 +7,10 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     fileDocument: { findUnique: vi.fn(), update: vi.fn() },
     fileActivity: { create: vi.fn() },
-    fileChecklistItem: { findMany: vi.fn() },
+    fileChecklistItem: { findMany: vi.fn(), createMany: vi.fn() },
     checklistTemplate: { findFirst: vi.fn() },
-    listingFile: { findUnique: vi.fn(), update: vi.fn() },
-    transactionFile: { findUnique: vi.fn(), update: vi.fn() },
+    listingFile: { findUnique: vi.fn(), updateMany: vi.fn() },
+    transactionFile: { findUnique: vi.fn(), updateMany: vi.fn() },
   },
 }));
 
@@ -34,16 +34,17 @@ describe("POST /api/admin/documents/[id]/approve — PENDING_TRANSFER unlock", (
     vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "listing-1", status: "PENDING_TRANSFER" } as any);
     vi.mocked(prisma.fileChecklistItem.findMany).mockResolvedValue([]);
     vi.mocked(prisma.checklistTemplate.findFirst).mockResolvedValue(null);
+    vi.mocked(prisma.listingFile.updateMany).mockResolvedValue({ count: 1 } as any);
 
     const req = new Request("http://localhost/api/admin/documents/doc-1/approve", { method: "POST" });
     await POST(req, { params: { id: "doc-1" } });
 
     // The unlock now also seeds a compliance checklist and clears the creation
-    // sentinels in the same update — see admin-documents-approve-unlock.test.ts.
+    // sentinels in the same guarded write — see admin-documents-approve-unlock.test.ts.
     // This test stays scoped to the status flip itself.
-    expect(prisma.listingFile.update).toHaveBeenCalledWith(
+    expect(prisma.listingFile.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: "listing-1" },
+        where: { id: "listing-1", status: "PENDING_TRANSFER" },
         data: expect.objectContaining({ status: "INCOMPLETE" }),
       })
     );
@@ -65,7 +66,7 @@ describe("POST /api/admin/documents/[id]/approve — PENDING_TRANSFER unlock", (
     const req = new Request("http://localhost/api/admin/documents/doc-2/approve", { method: "POST" });
     await POST(req, { params: { id: "doc-2" } });
 
-    expect(prisma.listingFile.update).not.toHaveBeenCalled();
+    expect(prisma.listingFile.updateMany).not.toHaveBeenCalled();
   });
 
   it("does not touch status for a file that is not PENDING_TRANSFER", async () => {
@@ -84,6 +85,6 @@ describe("POST /api/admin/documents/[id]/approve — PENDING_TRANSFER unlock", (
     const req = new Request("http://localhost/api/admin/documents/doc-3/approve", { method: "POST" });
     await POST(req, { params: { id: "doc-3" } });
 
-    expect(prisma.transactionFile.update).not.toHaveBeenCalled();
+    expect(prisma.transactionFile.updateMany).not.toHaveBeenCalled();
   });
 });

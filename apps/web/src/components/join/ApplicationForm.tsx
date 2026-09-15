@@ -434,7 +434,13 @@ function FormInner() {
                     type="radio"
                     name={field}
                     checked={form[field] === val}
-                    onChange={() => set(field, val)}
+                    onChange={() =>
+                      setForm((prev) => ({
+                        ...prev,
+                        [field]: val,
+                        ...(val === false ? { [countField]: "" } : {}),
+                      }))
+                    }
                     className="accent-[#9E8C61]"
                   />
                   {val ? "Yes" : "No"}

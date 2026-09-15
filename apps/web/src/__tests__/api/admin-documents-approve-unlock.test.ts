@@ -7,10 +7,10 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     fileDocument: { findUnique: vi.fn(), update: vi.fn() },
     fileActivity: { create: vi.fn() },
-    fileChecklistItem: { findMany: vi.fn() },
+    fileChecklistItem: { findMany: vi.fn(), createMany: vi.fn() },
     checklistTemplate: { findFirst: vi.fn() },
-    listingFile: { findUnique: vi.fn(), update: vi.fn() },
-    transactionFile: { findUnique: vi.fn(), update: vi.fn() },
+    listingFile: { findUnique: vi.fn(), updateMany: vi.fn() },
+    transactionFile: { findUnique: vi.fn(), updateMany: vi.fn() },
   },
 }));
 
@@ -72,6 +72,8 @@ describe("POST /api/admin/documents/[id]/approve — Critical 1: applies a check
     vi.clearAllMocks();
     vi.mocked(getServerSession).mockResolvedValue(ADMIN);
     vi.mocked(prisma.fileChecklistItem.findMany).mockResolvedValue([]);
+    vi.mocked(prisma.listingFile.updateMany).mockResolvedValue({ count: 1 } as any);
+    vi.mocked(prisma.transactionFile.updateMany).mockResolvedValue({ count: 1 } as any);
     vi.mocked(prisma.checklistTemplate.findFirst).mockResolvedValue({
       id: "tpl-1",
       items: TEMPLATE_ITEMS,
@@ -95,21 +97,25 @@ describe("POST /api/admin/documents/[id]/approve — Critical 1: applies a check
     );
   });
 
-  it("creates every template item on the listing file in the same update that unlocks it", async () => {
+  it("atomically unlocks the file via updateMany guarded on PENDING_TRANSFER, then creates every template item", async () => {
     vi.mocked(prisma.fileDocument.findUnique).mockResolvedValue(listingDoc());
     vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(placeholderListing());
 
     await approve("doc-1");
 
-    const call = vi.mocked(prisma.listingFile.update).mock.calls[0][0] as any;
-    expect(call.data.status).toBe("INCOMPLETE");
-    expect(call.data.checklistItems.create).toHaveLength(TEMPLATE_ITEMS.length);
-    expect(call.data.checklistItems.create[0]).toEqual({
+    const updateCall = vi.mocked(prisma.listingFile.updateMany).mock.calls[0][0] as any;
+    expect(updateCall.where).toEqual({ id: "listing-1", status: "PENDING_TRANSFER" });
+    expect(updateCall.data.status).toBe("INCOMPLETE");
+
+    const createCall = vi.mocked(prisma.fileChecklistItem.createMany).mock.calls[0][0] as any;
+    expect(createCall.data).toHaveLength(TEMPLATE_ITEMS.length);
+    expect(createCall.data[0]).toEqual({
       fileType: "LISTING",
       name: "Listing Agreement",
       description: "RLA",
       order: 0,
       isRequired: true,
+      listingFileId: "listing-1",
     });
   });
 
@@ -135,9 +141,12 @@ describe("POST /api/admin/documents/[id]/approve — Critical 1: applies a check
       })
     );
 
-    const call = vi.mocked(prisma.transactionFile.update).mock.calls[0][0] as any;
-    expect(call.data.status).toBe("INCOMPLETE");
-    expect(call.data.checklistItems.create).toHaveLength(TEMPLATE_ITEMS.length);
+    const updateCall = vi.mocked(prisma.transactionFile.updateMany).mock.calls[0][0] as any;
+    expect(updateCall.where).toEqual({ id: "tx-1", status: "PENDING_TRANSFER" });
+    expect(updateCall.data.status).toBe("INCOMPLETE");
+
+    const createCall = vi.mocked(prisma.fileChecklistItem.createMany).mock.calls[0][0] as any;
+    expect(createCall.data).toHaveLength(TEMPLATE_ITEMS.length);
   });
 
   it("still unlocks the file when no matching template exists", async () => {
@@ -147,9 +156,9 @@ describe("POST /api/admin/documents/[id]/approve — Critical 1: applies a check
 
     await approve("doc-1");
 
-    const call = vi.mocked(prisma.listingFile.update).mock.calls[0][0] as any;
-    expect(call.data.status).toBe("INCOMPLETE");
-    expect(call.data.checklistItems).toBeUndefined();
+    const updateCall = vi.mocked(prisma.listingFile.updateMany).mock.calls[0][0] as any;
+    expect(updateCall.data.status).toBe("INCOMPLETE");
+    expect(prisma.fileChecklistItem.createMany).not.toHaveBeenCalled();
   });
 
   it("does not apply a template to a file that is not PENDING_TRANSFER", async () => {
@@ -159,7 +168,33 @@ describe("POST /api/admin/documents/[id]/approve — Critical 1: applies a check
     await approve("doc-1");
 
     expect(prisma.checklistTemplate.findFirst).not.toHaveBeenCalled();
-    expect(prisma.listingFile.update).not.toHaveBeenCalled();
+    expect(prisma.listingFile.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("does not treat the file as unlocked when the guarded updateMany matches zero rows (lost the race)", async () => {
+    vi.mocked(prisma.fileDocument.findUnique).mockResolvedValue(listingDoc());
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(placeholderListing());
+    vi.mocked(prisma.listingFile.updateMany).mockResolvedValue({ count: 0 } as any);
+
+    await approve("doc-1");
+
+    expect(prisma.fileChecklistItem.createMany).not.toHaveBeenCalled();
+    const types = vi.mocked(prisma.fileActivity.create).mock.calls.map((c: any) => c[0].data.type);
+    expect(types).not.toContain("STATUS_CHANGED");
+  });
+
+  it("no-ops cleanly when the parent file no longer exists (dangling FK / already-deleted file)", async () => {
+    vi.mocked(prisma.fileDocument.findUnique).mockResolvedValue(listingDoc());
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(null);
+
+    const res = await approve("doc-1");
+
+    expect(res.status).toBe(200);
+    expect(prisma.checklistTemplate.findFirst).not.toHaveBeenCalled();
+    expect(prisma.listingFile.updateMany).not.toHaveBeenCalled();
+    expect(prisma.fileChecklistItem.createMany).not.toHaveBeenCalled();
+    const types = vi.mocked(prisma.fileActivity.create).mock.calls.map((c: any) => c[0].data.type);
+    expect(types).not.toContain("STATUS_CHANGED");
   });
 });
 
@@ -170,15 +205,16 @@ describe("POST /api/admin/documents/[id]/approve — Critical 2: clears placehol
     vi.mocked(prisma.fileChecklistItem.findMany).mockResolvedValue([]);
     vi.mocked(prisma.checklistTemplate.findFirst).mockResolvedValue({ id: "tpl-1", items: TEMPLATE_ITEMS } as any);
     vi.mocked(prisma.fileDocument.findUnique).mockResolvedValue(listingDoc());
+    vi.mocked(prisma.listingFile.updateMany).mockResolvedValue({ count: 1 } as any);
   });
 
-  it("blanks the sentinel address, city and zip in the same update as the unlock", async () => {
+  it("blanks the sentinel address, city and zip in the same updateMany as the unlock", async () => {
     vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(placeholderListing());
 
     await approve("doc-1");
 
-    expect(prisma.listingFile.update).toHaveBeenCalledTimes(1);
-    const call = vi.mocked(prisma.listingFile.update).mock.calls[0][0] as any;
+    expect(prisma.listingFile.updateMany).toHaveBeenCalledTimes(1);
+    const call = vi.mocked(prisma.listingFile.updateMany).mock.calls[0][0] as any;
     expect(call.data.propertyAddress).toBe("");
     expect(call.data.city).toBe("");
     expect(call.data.zip).toBe("");
@@ -191,7 +227,7 @@ describe("POST /api/admin/documents/[id]/approve — Critical 2: clears placehol
 
     await approve("doc-1");
 
-    const call = vi.mocked(prisma.listingFile.update).mock.calls[0][0] as any;
+    const call = vi.mocked(prisma.listingFile.updateMany).mock.calls[0][0] as any;
     expect(call.data.propertyAddress).toBeUndefined();
     expect(call.data.city).toBe("");
   });
@@ -203,6 +239,7 @@ describe("POST /api/admin/documents/[id]/approve — logs a STATUS_CHANGED activ
     vi.mocked(getServerSession).mockResolvedValue(ADMIN);
     vi.mocked(prisma.fileChecklistItem.findMany).mockResolvedValue([]);
     vi.mocked(prisma.checklistTemplate.findFirst).mockResolvedValue({ id: "tpl-1", items: TEMPLATE_ITEMS } as any);
+    vi.mocked(prisma.listingFile.updateMany).mockResolvedValue({ count: 1 } as any);
   });
 
   it("records the PENDING_TRANSFER → INCOMPLETE transition", async () => {
@@ -248,6 +285,7 @@ describe("POST /api/admin/documents/[id]/approve — integration: full post-unlo
     vi.mocked(prisma.fileDocument.findUnique).mockResolvedValue(listingDoc());
     vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(placeholderListing());
     vi.mocked(prisma.checklistTemplate.findFirst).mockResolvedValue({ id: "tpl-1", items: TEMPLATE_ITEMS } as any);
+    vi.mocked(prisma.listingFile.updateMany).mockResolvedValue({ count: 1 } as any);
 
     // Post-unlock the file carries the original transfer item plus the seeded template.
     vi.mocked(prisma.fileChecklistItem.findMany).mockResolvedValue([
@@ -257,19 +295,20 @@ describe("POST /api/admin/documents/[id]/approve — integration: full post-unlo
 
     await approve("doc-1");
 
-    const call = vi.mocked(prisma.listingFile.update).mock.calls[0][0] as any;
+    const updateCall = vi.mocked(prisma.listingFile.updateMany).mock.calls[0][0] as any;
 
     // 1. The file is unlocked.
-    expect(call.data.status).toBe("INCOMPLETE");
+    expect(updateCall.data.status).toBe("INCOMPLETE");
 
     // 2. It has more than one checklist item — the transfer item plus the template.
-    const created = call.data.checklistItems.create as { name: string }[];
+    const createCall = vi.mocked(prisma.fileChecklistItem.createMany).mock.calls[0] as any;
+    const created = createCall[0].data as { name: string }[];
     const finalItemCount = 1 + created.length;
     expect(finalItemCount).toBeGreaterThan(1);
     expect(created.map((i) => i.name)).toEqual(TEMPLATE_ITEMS.map((i) => i.name));
 
     // 3. No field is left holding a sentinel value.
-    const resulting = { ...placeholderListing(), ...call.data };
+    const resulting = { ...placeholderListing(), ...updateCall.data };
     expect(resulting.propertyAddress).not.toBe(LISTING_PLACEHOLDER.propertyAddress);
     expect(resulting.city).not.toBe(LISTING_PLACEHOLDER.city);
     expect(resulting.zip).not.toBe(LISTING_PLACEHOLDER.zip);

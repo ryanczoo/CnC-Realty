@@ -414,7 +414,7 @@ export async function sendApplicationRejected(
   });
 }
 
-const ATTACHMENTS_DIR = join(process.cwd(), "src", "lib", "email", "attachments");
+export const ATTACHMENTS_DIR = join(process.cwd(), "src", "lib", "email", "attachments");
 
 export async function sendApprovalDocuments(
   to: string,
