@@ -8,6 +8,7 @@ import { sendApplicationApproved, sendApprovalDocuments } from "@/lib/email";
 import { generateSignedIcaPdf } from "@/lib/ica-pdf";
 import { uploadToR2 } from "@/lib/r2";
 import { ICA_VERSION } from "@/lib/ica-content";
+import { LISTING_PLACEHOLDER, TRANSFER_CHECKLIST_ITEM } from "@/lib/transfer-placeholder";
 
 export async function POST(
   _req: Request,
@@ -34,6 +35,13 @@ export async function POST(
   // Temporary random password (agent will reset via setup link)
   const tempPassword = await bcrypt.hash(randomBytes(16).toString("hex"), 10);
   const reviewedAt = new Date(); // also doubles as the broker countersignature timestamp below
+
+  // The count columns are a nullable migration with no backfill, so an application
+  // predating them can have the boolean set with a null count. Placeholder creation
+  // and the transfer-form attachment must agree on exactly one condition, or an
+  // agent gets a form telling them to upload to a locked file that was never made.
+  const createsListingPlaceholders = Boolean(app.hasActiveListings && app.activeListingsCount);
+  const createsSalePlaceholders = Boolean(app.hasActiveSales && app.activeSalesCount);
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -78,24 +86,13 @@ export async function POST(
         },
       });
 
-      const TRANSFER_CHECKLIST_ITEM = {
-        name: "Upload Signed Transfer Authorization",
-        description: null,
-        order: 0,
-        isRequired: true,
-      } as const;
-
-      if (app.hasActiveListings && app.activeListingsCount) {
-        for (let i = 0; i < app.activeListingsCount; i++) {
+      if (createsListingPlaceholders) {
+        for (let i = 0; i < app.activeListingsCount!; i++) {
           await tx.listingFile.create({
             data: {
               agentId: agent.id,
               status: "PENDING_TRANSFER",
-              propertyAddress: "Pending Transfer — Awaiting Signed Authorization",
-              city: "Pending",
-              zip: "00000",
-              listPrice: 0,
-              listingType: "RESIDENTIAL_SALE",
+              ...LISTING_PLACEHOLDER,
               checklistItems: {
                 create: { fileType: "LISTING" as const, ...TRANSFER_CHECKLIST_ITEM },
               },
@@ -104,8 +101,8 @@ export async function POST(
         }
       }
 
-      if (app.hasActiveSales && app.activeSalesCount) {
-        for (let i = 0; i < app.activeSalesCount; i++) {
+      if (createsSalePlaceholders) {
+        for (let i = 0; i < app.activeSalesCount!; i++) {
           await tx.transactionFile.create({
             data: {
               agentId: agent.id,
@@ -118,6 +115,11 @@ export async function POST(
           });
         }
       }
+    }, {
+      // Up to 20 sequential creates (10 listings + 10 sales, the dropdown's max) run
+      // inside this transaction on top of the user/agent creates. Prisma's 5s default
+      // would intermittently roll back a whole approval under load or a cold compute.
+      timeout: 15000,
     });
   } catch (err) {
     if (err instanceof Error && err.message === "ALREADY_PROCESSED") {
@@ -148,7 +150,7 @@ export async function POST(
 
   const setupUrl = `${process.env.NEXTAUTH_URL}/setup-account?token=${setupToken}`;
   sendApplicationApproved(app.email, app.firstName, setupUrl, slug).catch(console.error);
-  sendApprovalDocuments(app.email, app.firstName, app.hasActiveListings, app.hasActiveSales).catch(console.error);
+  sendApprovalDocuments(app.email, app.firstName, createsListingPlaceholders, createsSalePlaceholders).catch(console.error);
 
   return NextResponse.json({ ok: true });
 }

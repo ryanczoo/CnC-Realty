@@ -8,6 +8,7 @@ vi.mock("@/lib/prisma", () => ({
     fileDocument: { findUnique: vi.fn(), update: vi.fn() },
     fileActivity: { create: vi.fn() },
     fileChecklistItem: { findMany: vi.fn() },
+    checklistTemplate: { findFirst: vi.fn() },
     listingFile: { findUnique: vi.fn(), update: vi.fn() },
     transactionFile: { findUnique: vi.fn(), update: vi.fn() },
   },
@@ -32,14 +33,20 @@ describe("POST /api/admin/documents/[id]/approve — PENDING_TRANSFER unlock", (
     } as any);
     vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "listing-1", status: "PENDING_TRANSFER" } as any);
     vi.mocked(prisma.fileChecklistItem.findMany).mockResolvedValue([]);
+    vi.mocked(prisma.checklistTemplate.findFirst).mockResolvedValue(null);
 
     const req = new Request("http://localhost/api/admin/documents/doc-1/approve", { method: "POST" });
     await POST(req, { params: { id: "doc-1" } });
 
-    expect(prisma.listingFile.update).toHaveBeenCalledWith({
-      where: { id: "listing-1" },
-      data: { status: "INCOMPLETE" },
-    });
+    // The unlock now also seeds a compliance checklist and clears the creation
+    // sentinels in the same update — see admin-documents-approve-unlock.test.ts.
+    // This test stays scoped to the status flip itself.
+    expect(prisma.listingFile.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "listing-1" },
+        data: expect.objectContaining({ status: "INCOMPLETE" }),
+      })
+    );
   });
 
   it("does not unlock a file when the approved document is unattached to any checklist item", async () => {

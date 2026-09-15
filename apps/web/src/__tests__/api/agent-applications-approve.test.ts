@@ -138,7 +138,9 @@ describe("POST /api/agent-applications/[id]/approve", () => {
       facebookUrl: null,
       signedIcaKey: null,
       hasActiveListings: true,
+      activeListingsCount: 1,
       hasActiveSales: false,
+      activeSalesCount: null,
     } as any);
     vi.mocked(prisma.agentApplication.updateMany).mockResolvedValue({ count: 1 } as any);
     vi.mocked(prisma.user.create).mockResolvedValue({ id: "user-3" } as any);
@@ -285,5 +287,88 @@ describe("POST /api/agent-applications/[id]/approve", () => {
     expect(res.status).toBe(200);
     expect(prisma.listingFile.create).not.toHaveBeenCalled();
     expect(prisma.transactionFile.create).not.toHaveBeenCalled();
+  });
+
+  // The count columns are a nullable migration with no backfill, so an application
+  // predating them has hasActiveListings: true but activeListingsCount: null. The
+  // attached transfer form tells the agent to "upload the signed copy on the locked
+  // file waiting for it in your dashboard" — so it must only be attached when a
+  // locked file was actually created.
+  it("does not attach a transfer form when the boolean is set but the count is missing", async () => {
+    vi.mocked(requireAuth).mockResolvedValue({
+      session: { user: { email: "admin@cnc.com" } },
+      error: undefined,
+    } as any);
+    vi.mocked(prisma.agentApplication.findUnique).mockResolvedValue({
+      ...FULLY_SIGNED_APPLICATION,
+      id: "app-legacy",
+      hasActiveListings: true,
+      activeListingsCount: null,
+      hasActiveSales: true,
+      activeSalesCount: null,
+    } as any);
+    vi.mocked(prisma.agentApplication.updateMany).mockResolvedValue({ count: 1 } as any);
+    vi.mocked(prisma.user.create).mockResolvedValue({ id: "user-legacy" } as any);
+    vi.mocked(prisma.agent.create).mockResolvedValue({ id: "agent-legacy" } as any);
+
+    const req = new Request("http://localhost/api/agent-applications/app-legacy/approve", { method: "POST" });
+    const res = await POST(req, { params: { id: "app-legacy" } });
+
+    expect(res.status).toBe(200);
+    expect(prisma.listingFile.create).not.toHaveBeenCalled();
+    expect(prisma.transactionFile.create).not.toHaveBeenCalled();
+    expect(sendApprovalDocuments).toHaveBeenCalledWith("jane@example.com", "Jane", false, false);
+  });
+
+  it("attaches a transfer form for each side that actually got a locked file", async () => {
+    vi.mocked(requireAuth).mockResolvedValue({
+      session: { user: { email: "admin@cnc.com" } },
+      error: undefined,
+    } as any);
+    vi.mocked(prisma.agentApplication.findUnique).mockResolvedValue({
+      ...FULLY_SIGNED_APPLICATION,
+      id: "app-mixed",
+      hasActiveListings: true,
+      activeListingsCount: 1,
+      hasActiveSales: true,
+      activeSalesCount: null,
+    } as any);
+    vi.mocked(prisma.agentApplication.updateMany).mockResolvedValue({ count: 1 } as any);
+    vi.mocked(prisma.user.create).mockResolvedValue({ id: "user-mixed" } as any);
+    vi.mocked(prisma.agent.create).mockResolvedValue({ id: "agent-mixed" } as any);
+
+    const req = new Request("http://localhost/api/agent-applications/app-mixed/approve", { method: "POST" });
+    await POST(req, { params: { id: "app-mixed" } });
+
+    expect(prisma.listingFile.create).toHaveBeenCalledTimes(1);
+    expect(prisma.transactionFile.create).not.toHaveBeenCalled();
+    expect(sendApprovalDocuments).toHaveBeenCalledWith("jane@example.com", "Jane", true, false);
+  });
+
+  // The placeholder loop can issue up to 20 sequential creates inside the same
+  // interactive transaction; Prisma's 5s default would intermittently roll back a
+  // full approval under load or on a cold compute.
+  it("gives the approval transaction a timeout longer than Prisma's 5s default", async () => {
+    vi.mocked(requireAuth).mockResolvedValue({
+      session: { user: { email: "admin@cnc.com" } },
+      error: undefined,
+    } as any);
+    vi.mocked(prisma.agentApplication.findUnique).mockResolvedValue({
+      ...FULLY_SIGNED_APPLICATION,
+      id: "app-timeout",
+      hasActiveListings: false,
+      activeListingsCount: null,
+      hasActiveSales: false,
+      activeSalesCount: null,
+    } as any);
+    vi.mocked(prisma.agentApplication.updateMany).mockResolvedValue({ count: 1 } as any);
+    vi.mocked(prisma.user.create).mockResolvedValue({ id: "user-timeout" } as any);
+    vi.mocked(prisma.agent.create).mockResolvedValue({ id: "agent-timeout" } as any);
+
+    const req = new Request("http://localhost/api/agent-applications/app-timeout/approve", { method: "POST" });
+    await POST(req, { params: { id: "app-timeout" } });
+
+    const opts = vi.mocked(prisma.$transaction).mock.calls[0][1] as { timeout?: number } | undefined;
+    expect(opts?.timeout).toBeGreaterThanOrEqual(15000);
   });
 });
