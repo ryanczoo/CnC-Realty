@@ -19,33 +19,42 @@ const STATUS_ICONS: Record<DocumentReviewStatus, React.ReactNode> = {
 
 export function ChecklistPanel({ fileType, fileId, items, onUploaded }: Props) {
   const [uploadingItemId, setUploadingItemId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleUpload(itemId: string | null, file: File) {
     setUploadingItemId(itemId ?? "additional");
+    setError(null);
 
-    const params = new URLSearchParams({
-      fileType: fileType === "LISTING" ? "listing" : "transaction",
-      fileId,
-      filename: file.name,
-      contentType: file.type,
-      size: String(file.size),
-    });
-    const { uploadUrl, key, documentId } = await fetch(`/api/upload-url?${params}`).then((r) => r.json());
+    try {
+      const params = new URLSearchParams({
+        fileType: fileType === "LISTING" ? "listing" : "transaction",
+        fileId,
+        filename: file.name,
+        contentType: file.type,
+        size: String(file.size),
+      });
+      const { uploadUrl, key, documentId } = await fetch(`/api/upload-url?${params}`).then((r) => r.json());
 
-    await fetch(uploadUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+      await fetch(uploadUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
 
-    await fetch("/api/documents", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fileType, fileId, checklistItemId: itemId, name: file.name, r2Key: key, r2Url: key, documentId }),
-    });
+      const res = await fetch("/api/documents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileType, fileId, checklistItemId: itemId, name: file.name, r2Key: key, r2Url: key, documentId }),
+      });
+      if (!res.ok) throw new Error("Upload failed");
 
-    setUploadingItemId(null);
-    onUploaded();
+      onUploaded();
+    } catch {
+      setError("Couldn't upload that file. Please try again.");
+    } finally {
+      setUploadingItemId(null);
+    }
   }
 
   return (
     <div className="space-y-2">
+      {error && <p className="text-xs text-red-600">{error}</p>}
       {items.map((item) => {
         const topDoc = item.documents[0];
         const status: DocumentReviewStatus = topDoc?.reviewStatus ?? "NOT_SUBMITTED";

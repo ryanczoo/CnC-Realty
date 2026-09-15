@@ -60,4 +60,14 @@ describe("POST /api/listings/[id]/submit-review — ownership", () => {
     const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "l1" } });
     expect(res.status).toBe(200);
   });
+
+  it("returns 400 when the listing is locked PENDING_TRANSFER", async () => {
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u1", role: "AGENT", agentId: "a1" } } as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ ...LISTING, status: "PENDING_TRANSFER" } as any);
+    const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "l1" } });
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toMatch(/locked pending transfer/i);
+    expect(prisma.listingFile.update).not.toHaveBeenCalled();
+  });
 });

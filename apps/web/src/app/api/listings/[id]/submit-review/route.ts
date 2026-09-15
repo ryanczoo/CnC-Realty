@@ -18,6 +18,10 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
   if (!exists || !listing) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (forbidden) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
+  if (listing.status === "PENDING_TRANSFER") {
+    return NextResponse.json({ error: "This file is locked pending transfer authorization" }, { status: 400 });
+  }
+
   const { satisfied, required } = getChecklistProgress(listing.checklistItems);
   if (satisfied < required) {
     return NextResponse.json({ error: `${required - satisfied} required checklist item(s) still need documents` }, { status: 400 });

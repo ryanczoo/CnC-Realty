@@ -22,7 +22,7 @@ export default function AdminTransactionsPage() {
       fetch("/api/listings").then((r) => r.json()),
       fetch("/api/transactions").then((r) => r.json()),
     ]).then(([audit, l, t]) => {
-      setAuditQueue(audit.files ?? []);
+      setAuditQueue([...(audit.listings ?? []), ...(audit.transactions ?? [])]);
       setAllFiles([...(l.listings ?? []), ...(t.transactions ?? [])]);
       setLoading(false);
     });
@@ -78,6 +78,7 @@ export default function AdminTransactionsPage() {
                 checklistItems={item.checklistItems ?? []}
                 awaitingReview={item.awaitingReview}
                 referredToAgentName={item.referredToAgentName}
+                transactionSide={item.transactionSide}
               />
             </Link>
           ))}

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { checkOwnership } from "@/lib/api-auth";
 import { canTransitionListing, FILE_DETAIL_INCLUDE } from "@/lib/transaction-helpers";
 import { sendFileClosed } from "@/lib/email/transaction-emails";
+import { deleteR2Object } from "@/lib/r2";
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
@@ -97,6 +98,16 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
   if (forbidden) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+
+  const documents = await prisma.fileDocument.findMany({
+    where: { listingFileId: params.id },
+    select: { r2Key: true },
+  });
+  await Promise.all(
+    documents.map((doc) =>
+      deleteR2Object(doc.r2Key).catch((err) => console.error(`Failed to delete R2 object ${doc.r2Key}:`, err))
+    )
+  );
 
   await prisma.listingFile.delete({ where: { id: params.id } });
   return NextResponse.json({ ok: true });

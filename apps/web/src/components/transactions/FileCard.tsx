@@ -14,9 +14,10 @@ interface Props {
   checklistItems: FileChecklistItemWithDocs[];
   awaitingReview: boolean;
   referredToAgentName?: string | null;
+  transactionSide?: string | null;
 }
 
-export function FileCard({ id, fileType, address, city, status, closeDate, listPrice, checklistItems, awaitingReview, referredToAgentName }: Props) {
+export function FileCard({ id, fileType, address, city, status, closeDate, listPrice, checklistItems, awaitingReview, referredToAgentName, transactionSide }: Props) {
   const { satisfied, required } = getChecklistProgress(checklistItems);
   const pct = required > 0 ? Math.round((satisfied / required) * 100) : 0;
 
@@ -37,10 +38,15 @@ export function FileCard({ id, fileType, address, city, status, closeDate, listP
               <p className="font-medium text-[#1B1B1B] line-clamp-1">{address}</p>
               <p className="text-sm text-[#1B1B1B]/50">{city}, CA</p>
             </>
-          ) : (
+          ) : fileType === "transaction" && transactionSide === "REFERRAL" ? (
             <>
               <p className="font-medium text-[#1B1B1B] line-clamp-1">Referral — {referredToAgentName ?? "Unnamed"}</p>
               <p className="text-sm text-[#1B1B1B]/50">Outbound referral</p>
+            </>
+          ) : (
+            <>
+              <p className="font-medium text-[#1B1B1B] line-clamp-1">New Transaction</p>
+              <p className="text-sm text-[#1B1B1B]/50">Address not yet set</p>
             </>
           )}
         </div>
