@@ -9,6 +9,7 @@ import { PartiesTable } from "@/components/transactions/PartiesTable";
 import { ActivityFeed } from "@/components/transactions/ActivityFeed";
 import { TransferPendingPanel } from "@/components/transactions/TransferPendingPanel";
 import { getChecklistProgress } from "@/lib/transaction-helpers";
+import { isPlaceholderAddress } from "@/lib/transfer-placeholder";
 import { DateField } from "@/components/ui/DateField";
 import type {
   ListingFileDetail,
@@ -180,6 +181,7 @@ export default function FileDetailPage() {
           fileId={id}
           checklistItems={file.checklistItems as FileChecklistItemWithDocs[]}
           onUploaded={load}
+          initialAddress={isPlaceholderAddress(file.propertyAddress) ? "" : file.propertyAddress ?? ""}
         />
       )}
 

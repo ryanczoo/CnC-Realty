@@ -9,25 +9,38 @@ interface Props {
   fileId: string;
   checklistItems: FileChecklistItemWithDocs[];
   onUploaded: () => void;
+  /** The address already saved on this file, so a reload shows it back rather than a blank box. */
+  initialAddress?: string;
 }
 
-export function TransferPendingPanel({ fileType, fileId, checklistItems, onUploaded }: Props) {
-  const [address, setAddress] = useState("");
+export function TransferPendingPanel({ fileType, fileId, checklistItems, onUploaded, initialAddress = "" }: Props) {
+  const [address, setAddress] = useState(initialAddress);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function saveAddress(e: React.FormEvent) {
     e.preventDefault();
     if (!address.trim()) return;
     setSaving(true);
+    setError(null);
     const endpoint = fileType === "listing" ? `/api/listings/${fileId}` : `/api/transactions/${fileId}`;
-    const res = await fetch(endpoint, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ propertyAddress: address }),
-    });
-    setSaving(false);
-    setSaved(res.ok);
+    try {
+      const res = await fetch(endpoint, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ propertyAddress: address }),
+      });
+      if (res.ok) {
+        setSaved(true);
+      } else {
+        setError("Couldn't save that address. Please try again.");
+      }
+    } catch {
+      setError("Couldn't save that address. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   const downloadHref = fileType === "listing" ? "/api/transfer-forms/listing" : "/api/transfer-forms/pending-sale";
@@ -55,7 +68,7 @@ export function TransferPendingPanel({ fileType, fileId, checklistItems, onUploa
           <input
             type="text"
             value={address}
-            onChange={(e) => { setAddress(e.target.value); setSaved(false); }}
+            onChange={(e) => { setAddress(e.target.value); setSaved(false); setError(null); }}
             placeholder="123 Main St, Anytown, CA"
             className="flex-1 rounded-lg border border-[#1B1B1B]/15 bg-[#F2F0EF] px-3 py-2 text-sm text-[#1B1B1B] outline-none focus:border-[#1B1B1B]/40"
           />
@@ -67,7 +80,8 @@ export function TransferPendingPanel({ fileType, fileId, checklistItems, onUploa
             {saving ? "Saving…" : "Save"}
           </button>
         </div>
-        {saved && <p className="text-xs text-green-600">Saved.</p>}
+        {saved && !error && <p className="text-xs text-green-600">Saved.</p>}
+        {error && <p className="text-xs text-red-600">{error}</p>}
       </form>
 
       <div className="rounded-xl border border-[#1B1B1B]/10 bg-white p-5 space-y-3">
