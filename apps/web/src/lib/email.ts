@@ -439,7 +439,7 @@ export async function sendApprovalDocuments(
   }
   if (hasActiveSales) {
     transferAttachments.push({
-      filename: "CnC Realty - Pending Sale Transfer Authorization.pdf",
+      filename: "CnC Realty - Pending Sale or Purchase Agreement Transfer Authorization.pdf",
       content: readFileSync(join(ATTACHMENTS_DIR, "pending-sale-transfer-authorization.pdf")).toString("base64"),
       contentType: "application/pdf",
     });
@@ -447,7 +447,7 @@ export async function sendApprovalDocuments(
 
   const transferItems: string[] = [];
   if (hasActiveListings) transferItems.push("Listing Transfer Authorization");
-  if (hasActiveSales) transferItems.push("Pending Sale Transfer Authorization");
+  if (hasActiveSales) transferItems.push("Pending Sale or Purchase Agreement Transfer Authorization");
 
   const transferListItemsHtml = transferItems.map((item) => `<li>${item}</li>`).join("\n        ");
 

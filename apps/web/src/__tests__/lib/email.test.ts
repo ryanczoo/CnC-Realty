@@ -203,25 +203,25 @@ describe("sendApprovalDocuments", () => {
     expect(html.indexOf("&#10003; Copy of California DRE license</p>")).toBeLessThan(
       html.indexOf("&#10003; Listing Transfer Authorization</p>")
     );
-    expect(html).not.toContain("Pending Sale Transfer Authorization");
+    expect(html).not.toContain("Pending Sale or Purchase Agreement Transfer Authorization");
 
     vi.clearAllMocks();
     await sendApprovalDocuments("jane@example.com", "Jane", false, true);
     html = vi.mocked(sendEmail).mock.calls[0][0].html!;
-    expect(html).toContain("<li>Pending Sale Transfer Authorization</li>");
-    expect(html).toContain("&#10003; Pending Sale Transfer Authorization</p>");
+    expect(html).toContain("<li>Pending Sale or Purchase Agreement Transfer Authorization</li>");
+    expect(html).toContain("&#10003; Pending Sale or Purchase Agreement Transfer Authorization</p>");
     expect(html).not.toContain("Listing Transfer Authorization");
 
     vi.clearAllMocks();
     await sendApprovalDocuments("jane@example.com", "Jane", true, true);
     html = vi.mocked(sendEmail).mock.calls[0][0].html!;
     expect(html).toContain("<li>Listing Transfer Authorization</li>");
-    expect(html).toContain("<li>Pending Sale Transfer Authorization</li>");
+    expect(html).toContain("<li>Pending Sale or Purchase Agreement Transfer Authorization</li>");
     expect(html.indexOf("<li>Listing Transfer Authorization</li>")).toBeLessThan(
-      html.indexOf("<li>Pending Sale Transfer Authorization</li>")
+      html.indexOf("<li>Pending Sale or Purchase Agreement Transfer Authorization</li>")
     );
     expect(html).toContain("&#10003; Listing Transfer Authorization</p>");
-    expect(html).toContain("&#10003; Pending Sale Transfer Authorization</p>");
+    expect(html).toContain("&#10003; Pending Sale or Purchase Agreement Transfer Authorization</p>");
 
     vi.clearAllMocks();
     await sendApprovalDocuments("jane@example.com", "Jane", false, false);

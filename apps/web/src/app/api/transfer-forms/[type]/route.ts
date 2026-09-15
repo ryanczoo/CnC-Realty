@@ -6,7 +6,7 @@ import { ATTACHMENTS_DIR } from "@/lib/email";
 
 const FILES: Record<string, { file: string; downloadName: string }> = {
   listing: { file: "listing-transfer-authorization.pdf", downloadName: "CnC Realty - Listing Transfer Authorization.pdf" },
-  "pending-sale": { file: "pending-sale-transfer-authorization.pdf", downloadName: "CnC Realty - Pending Sale Transfer Authorization.pdf" },
+  "pending-sale": { file: "pending-sale-transfer-authorization.pdf", downloadName: "CnC Realty - Pending Sale or Purchase Agreement Transfer Authorization.pdf" },
 };
 
 export async function GET(_req: Request, { params }: { params: { type: string } }) {
