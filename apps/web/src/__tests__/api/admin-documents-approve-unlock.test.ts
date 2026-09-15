@@ -3,16 +3,18 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("next-auth", () => ({ getServerSession: vi.fn() }));
 vi.mock("@/lib/auth", () => ({ authOptions: {} }));
 vi.mock("@/lib/email/transaction-emails", () => ({ sendAllDocsApproved: vi.fn().mockResolvedValue(undefined) }));
-vi.mock("@/lib/prisma", () => ({
-  prisma: {
+vi.mock("@/lib/prisma", () => {
+  const mockPrisma: any = {
     fileDocument: { findUnique: vi.fn(), update: vi.fn() },
     fileActivity: { create: vi.fn() },
     fileChecklistItem: { findMany: vi.fn(), createMany: vi.fn() },
     checklistTemplate: { findFirst: vi.fn() },
     listingFile: { findUnique: vi.fn(), updateMany: vi.fn() },
     transactionFile: { findUnique: vi.fn(), updateMany: vi.fn() },
-  },
-}));
+  };
+  mockPrisma.$transaction = vi.fn(async (cb: any) => cb(mockPrisma));
+  return { prisma: mockPrisma };
+});
 
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
@@ -269,6 +271,30 @@ describe("POST /api/admin/documents/[id]/approve — logs a STATUS_CHANGED activ
 
     const types = vi.mocked(prisma.fileActivity.create).mock.calls.map((c: any) => c[0].data.type);
     expect(types).not.toContain("STATUS_CHANGED");
+  });
+});
+
+describe("POST /api/admin/documents/[id]/approve — atomicity: unlock and template creation happen in one transaction", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getServerSession).mockResolvedValue(ADMIN);
+    vi.mocked(prisma.fileChecklistItem.findMany).mockResolvedValue([]);
+    vi.mocked(prisma.checklistTemplate.findFirst).mockResolvedValue({ id: "tpl-1", items: TEMPLATE_ITEMS } as any);
+    vi.mocked(prisma.fileDocument.findUnique).mockResolvedValue(listingDoc());
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(placeholderListing());
+    vi.mocked(prisma.listingFile.updateMany).mockResolvedValue({ count: 1 } as any);
+  });
+
+  it("runs the status flip and checklist-item creation through prisma.$transaction", async () => {
+    await approve("doc-1");
+
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+  });
+
+  it("propagates a checklist-item-creation failure instead of leaving the file unlocked with no checklist", async () => {
+    vi.mocked(prisma.fileChecklistItem.createMany).mockRejectedValueOnce(new Error("db exploded"));
+
+    await expect(approve("doc-1")).rejects.toThrow("db exploded");
   });
 });
 

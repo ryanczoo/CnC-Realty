@@ -3,16 +3,18 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("next-auth", () => ({ getServerSession: vi.fn() }));
 vi.mock("@/lib/auth", () => ({ authOptions: {} }));
 vi.mock("@/lib/email/transaction-emails", () => ({ sendAllDocsApproved: vi.fn().mockResolvedValue(undefined) }));
-vi.mock("@/lib/prisma", () => ({
-  prisma: {
+vi.mock("@/lib/prisma", () => {
+  const mockPrisma: any = {
     fileDocument: { findUnique: vi.fn(), update: vi.fn() },
     fileActivity: { create: vi.fn() },
     fileChecklistItem: { findMany: vi.fn(), createMany: vi.fn() },
     checklistTemplate: { findFirst: vi.fn() },
     listingFile: { findUnique: vi.fn(), updateMany: vi.fn() },
     transactionFile: { findUnique: vi.fn(), updateMany: vi.fn() },
-  },
-}));
+  };
+  mockPrisma.$transaction = vi.fn(async (cb: any) => cb(mockPrisma));
+  return { prisma: mockPrisma };
+});
 
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";

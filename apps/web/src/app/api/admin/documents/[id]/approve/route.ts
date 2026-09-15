@@ -78,26 +78,32 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
         // itself, so a concurrent change to this same file between the read
         // above and this write can't double-apply the template or double-log
         // the transition — .count is the source of truth for whether this
-        // request actually performed the unlock. Prisma's updateMany can't
-        // carry a nested relation write, so a matched template's items are
-        // created separately, gated on the same .count > 0 result below.
-        const result = await prisma.listingFile.updateMany({
-          where: { id: doc.listingFileId!, status: "PENDING_TRANSFER" },
-          data: {
-            status: "INCOMPLETE",
-            ...clearedListingSentinels(parent),
-          },
+        // request actually performed the unlock. The status flip and the
+        // template-item creation run inside one interactive transaction, so a
+        // failure creating the checklist items rolls back the status flip too
+        // — the file can never end up unlocked with zero compliance documents.
+        const result = await prisma.$transaction(async (tx) => {
+          const updateResult = await tx.listingFile.updateMany({
+            where: { id: doc.listingFileId!, status: "PENDING_TRANSFER" },
+            data: {
+              status: "INCOMPLETE",
+              ...clearedListingSentinels(parent),
+            },
+          });
+
+          if (updateResult.count > 0) {
+            const itemsCreate = templateItemsCreate("LISTING", template);
+            if (itemsCreate) {
+              await tx.fileChecklistItem.createMany({
+                data: itemsCreate.create.map((item) => ({ ...item, listingFileId: doc.listingFileId! })),
+              });
+            }
+          }
+
+          return updateResult;
         });
 
-        if (result.count > 0) {
-          unlocked = true;
-          const itemsCreate = templateItemsCreate("LISTING", template);
-          if (itemsCreate) {
-            await prisma.fileChecklistItem.createMany({
-              data: itemsCreate.create.map((item) => ({ ...item, listingFileId: doc.listingFileId! })),
-            });
-          }
-        }
+        if (result.count > 0) unlocked = true;
       }
     } else {
       const parent = await prisma.transactionFile.findUnique({
@@ -115,20 +121,25 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
           include: TEMPLATE_ITEMS_INCLUDE,
         });
 
-        const result = await prisma.transactionFile.updateMany({
-          where: { id: doc.transactionFileId!, status: "PENDING_TRANSFER" },
-          data: { status: "INCOMPLETE" },
+        const result = await prisma.$transaction(async (tx) => {
+          const updateResult = await tx.transactionFile.updateMany({
+            where: { id: doc.transactionFileId!, status: "PENDING_TRANSFER" },
+            data: { status: "INCOMPLETE" },
+          });
+
+          if (updateResult.count > 0) {
+            const itemsCreate = templateItemsCreate("TRANSACTION", template);
+            if (itemsCreate) {
+              await tx.fileChecklistItem.createMany({
+                data: itemsCreate.create.map((item) => ({ ...item, transactionFileId: doc.transactionFileId! })),
+              });
+            }
+          }
+
+          return updateResult;
         });
 
-        if (result.count > 0) {
-          unlocked = true;
-          const itemsCreate = templateItemsCreate("TRANSACTION", template);
-          if (itemsCreate) {
-            await prisma.fileChecklistItem.createMany({
-              data: itemsCreate.create.map((item) => ({ ...item, transactionFileId: doc.transactionFileId! })),
-            });
-          }
-        }
+        if (result.count > 0) unlocked = true;
       }
     }
   }

@@ -35,7 +35,8 @@ export function ChecklistPanel({ fileType, fileId, items, onUploaded }: Props) {
       });
       const { uploadUrl, key, documentId } = await fetch(`/api/upload-url?${params}`).then((r) => r.json());
 
-      await fetch(uploadUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+      const uploadRes = await fetch(uploadUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+      if (!uploadRes.ok) throw new Error("Upload failed");
 
       const res = await fetch("/api/documents", {
         method: "POST",
