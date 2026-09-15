@@ -445,9 +445,23 @@ export async function sendApprovalDocuments(
     });
   }
 
+  const transferItems: string[] = [];
+  if (hasActiveListings) transferItems.push("Listing Transfer Authorization");
+  if (hasActiveSales) transferItems.push("Pending Sale Transfer Authorization");
+
+  const transferListItemsHtml = transferItems.map((item) => `<li>${item}</li>`).join("\n        ");
+
+  const provideItems = ["IRS W-9 Form", "Copy of California DRE license", ...transferItems];
+  const provideChecksHtml = provideItems
+    .map((item, i) => {
+      const margin = i === provideItems.length - 1 ? "0 0 16px" : "0 0 8px";
+      return `<p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; text-align: left; margin: ${margin}; padding-left: 20px;">&#10003; ${item}</p>`;
+    })
+    .join("\n      ");
+
   const transferParagraph = (hasActiveListings || hasActiveSales)
-    ? `<p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; text-align: left; margin: 16px 0 0;">
-        You told us you have ${hasActiveListings && hasActiveSales ? "an active listing and a pending sale" : hasActiveListings ? "an active listing" : "a pending sale"} to transfer from your previous brokerage — the matching transfer authorization form is attached. Fill it in, get it signed by your previous broker, then upload the signed copy on the locked file waiting for it in your dashboard.
+    ? `<p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; text-align: left; margin: 32px 0 0;">
+        Since you have an active listing or sale, please have your previous brokerage complete the provided transfer form <em>promptly</em>.
       </p>`
     : "";
 
@@ -464,12 +478,12 @@ export async function sendApprovalDocuments(
       <ul style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; margin: 0 0 16px; padding-left: 40px;">
         <li>Blank IRS W-9 Form</li>
         <li>Office Policy</li>
+        ${transferListItemsHtml}
       </ul>
       <p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; text-align: left; font-weight: 700; margin: 0 0 16px;">
         Please complete and provide the following for our records:
       </p>
-      <p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; text-align: left; margin: 0 0 8px; padding-left: 20px;">&#10003; IRS W-9 Form</p>
-      <p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; text-align: left; margin: 0 0 16px; padding-left: 20px;">&#10003; Copy of California DRE license</p>
+      ${provideChecksHtml}
       ${transferParagraph}
       <p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; text-align: center; margin: 32px 0 0;">
         Also, don't forget to join the <a href="https://www.car.org" style="color: #9E8C61;">Board of REALTORS&reg;</a> and a local MLS Association! This is required for access to the MLS, ZipForms, legal guidance, and more.

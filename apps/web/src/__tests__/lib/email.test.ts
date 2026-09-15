@@ -162,26 +162,82 @@ describe("sendApprovalDocuments", () => {
     expect(call.attachments!.some((a) => a.filename.includes("Listing Transfer"))).toBe(false);
   });
 
-  it("renders the transfer-instructions paragraph when either transfer flag is true, and omits it when both are false", async () => {
+  it("gives the transfer-instructions paragraph a 32px top margin, matching the closing paragraph's spacing", async () => {
+    await sendApprovalDocuments("jane@example.com", "Jane", true, false);
+    const html = vi.mocked(sendEmail).mock.calls[0][0].html!;
+    expect(html).toContain(
+      '<p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; text-align: left; margin: 32px 0 0;">'
+    );
+  });
+
+  it("renders the transfer-instructions paragraph when either transfer flag is true, and omits it when both are false, with 'promptly' italicized", async () => {
+    const expected =
+      'Since you have an active listing or sale, please have your previous brokerage complete the provided transfer form <em>promptly</em>.';
+
     await sendApprovalDocuments("jane@example.com", "Jane", true, false);
     let html = vi.mocked(sendEmail).mock.calls[0][0].html!;
-    expect(html).toContain("an active listing to transfer from your previous brokerage");
-    expect(html).toContain("upload the signed copy on the locked file waiting for it in your dashboard");
+    expect(html).toContain(expected);
 
     vi.clearAllMocks();
     await sendApprovalDocuments("jane@example.com", "Jane", false, true);
     html = vi.mocked(sendEmail).mock.calls[0][0].html!;
-    expect(html).toContain("a pending sale to transfer from your previous brokerage");
+    expect(html).toContain(expected);
 
     vi.clearAllMocks();
     await sendApprovalDocuments("jane@example.com", "Jane", true, true);
     html = vi.mocked(sendEmail).mock.calls[0][0].html!;
-    expect(html).toContain("an active listing and a pending sale to transfer from your previous brokerage");
+    expect(html).toContain(expected);
 
     vi.clearAllMocks();
     await sendApprovalDocuments("jane@example.com", "Jane", false, false);
     html = vi.mocked(sendEmail).mock.calls[0][0].html!;
-    expect(html).not.toContain("to transfer from your previous brokerage");
+    expect(html).not.toContain("Since you have an active listing or sale");
+  });
+
+  it("lists the transfer document(s) as a bullet under Office Policy, and a checkmark under DRE license, only when applicable", async () => {
+    await sendApprovalDocuments("jane@example.com", "Jane", true, false);
+    let html = vi.mocked(sendEmail).mock.calls[0][0].html!;
+    expect(html).toContain("<li>Listing Transfer Authorization</li>");
+    expect(html.indexOf("<li>Office Policy</li>")).toBeLessThan(html.indexOf("<li>Listing Transfer Authorization</li>"));
+    expect(html).toContain("&#10003; Listing Transfer Authorization</p>");
+    expect(html.indexOf("&#10003; Copy of California DRE license</p>")).toBeLessThan(
+      html.indexOf("&#10003; Listing Transfer Authorization</p>")
+    );
+    expect(html).not.toContain("Pending Sale Transfer Authorization");
+
+    vi.clearAllMocks();
+    await sendApprovalDocuments("jane@example.com", "Jane", false, true);
+    html = vi.mocked(sendEmail).mock.calls[0][0].html!;
+    expect(html).toContain("<li>Pending Sale Transfer Authorization</li>");
+    expect(html).toContain("&#10003; Pending Sale Transfer Authorization</p>");
+    expect(html).not.toContain("Listing Transfer Authorization");
+
+    vi.clearAllMocks();
+    await sendApprovalDocuments("jane@example.com", "Jane", true, true);
+    html = vi.mocked(sendEmail).mock.calls[0][0].html!;
+    expect(html).toContain("<li>Listing Transfer Authorization</li>");
+    expect(html).toContain("<li>Pending Sale Transfer Authorization</li>");
+    expect(html.indexOf("<li>Listing Transfer Authorization</li>")).toBeLessThan(
+      html.indexOf("<li>Pending Sale Transfer Authorization</li>")
+    );
+    expect(html).toContain("&#10003; Listing Transfer Authorization</p>");
+    expect(html).toContain("&#10003; Pending Sale Transfer Authorization</p>");
+
+    vi.clearAllMocks();
+    await sendApprovalDocuments("jane@example.com", "Jane", false, false);
+    html = vi.mocked(sendEmail).mock.calls[0][0].html!;
+    expect(html).not.toContain("Transfer Authorization");
+  });
+
+  it("moves the margin-bottom-16px gap onto whichever checkmark item is actually last", async () => {
+    await sendApprovalDocuments("jane@example.com", "Jane", true, false);
+    const html = vi.mocked(sendEmail).mock.calls[0][0].html!;
+    expect(html).toContain(
+      '<p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; text-align: left; margin: 0 0 8px; padding-left: 20px;">&#10003; Copy of California DRE license</p>'
+    );
+    expect(html).toContain(
+      '<p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; text-align: left; margin: 0 0 16px; padding-left: 20px;">&#10003; Listing Transfer Authorization</p>'
+    );
   });
 
   it("attaches both transfer forms when both are true, and neither when both are false", async () => {
