@@ -1,14 +1,16 @@
 const GUIDES = [
   { title: "Independent Contractor Agreement", href: "/join/ica" },
-  { title: "W-9 Form", href: "/documents/w9-blank.pdf" },
+  { title: "Listing Transfer Authorization", href: "/api/transfer-forms/listing" },
+  { title: "Pending Sale or Purchase Agreement Transfer Authorization", href: "/api/transfer-forms/pending-sale" },
+  { title: "W-9 Form", href: "/api/documents/w9" },
 ];
 
-export const metadata = { title: "Helpful Guides | CnC Realty" };
+export const metadata = { title: "Documents | CnC Realty" };
 
 export default function HelpfulGuidesPage() {
   return (
     <div>
-      <h1 className="mb-6 font-sans text-2xl font-medium text-[#1B1B1B]">Helpful Guides</h1>
+      <h1 className="mb-6 font-sans text-2xl font-medium text-[#1B1B1B]">Documents</h1>
 
       <ul className="max-w-md divide-y divide-[#1B1B1B]/10 rounded-xl border border-[#1B1B1B]/10 bg-white">
         {GUIDES.map(({ title, href }) => (

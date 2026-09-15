@@ -21,6 +21,7 @@ describe("GET /api/transfer-forms/[type]", () => {
     const res = await GET(new Request("http://localhost/api/transfer-forms/listing"), { params: { type: "listing" } });
     expect(res.status).toBe(200);
     expect(res.headers.get("Content-Type")).toBe("application/pdf");
+    expect(res.headers.get("Content-Disposition")).toContain("inline");
     const buf = Buffer.from(await res.arrayBuffer());
     expect(buf.subarray(0, 5).toString()).toBe("%PDF-");
   });
@@ -29,6 +30,7 @@ describe("GET /api/transfer-forms/[type]", () => {
     vi.mocked(requireAuth).mockResolvedValue({ session: { user: { id: "agent-1" } }, error: null } as any);
     const res = await GET(new Request("http://localhost/api/transfer-forms/pending-sale"), { params: { type: "pending-sale" } });
     expect(res.status).toBe(200);
+    expect(res.headers.get("Content-Disposition")).toContain("inline");
     const buf = Buffer.from(await res.arrayBuffer());
     expect(buf.subarray(0, 5).toString()).toBe("%PDF-");
   });

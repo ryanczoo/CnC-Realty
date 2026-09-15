@@ -20,7 +20,7 @@ export async function GET(_req: Request, { params }: { params: { type: string } 
   return new NextResponse(bytes, {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${entry.downloadName}"`,
+      "Content-Disposition": `inline; filename="${entry.downloadName}"`,
     },
   });
 }

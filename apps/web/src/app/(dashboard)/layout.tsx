@@ -16,7 +16,7 @@ const SETTINGS_ITEM = { href: "/dashboard/settings", label: "Settings" };
 
 const ACADEMY_NAV = [
   { href: "/dashboard/academy/videos", label: "Training Videos" },
-  { href: "/dashboard/academy/guides", label: "Helpful Guides" },
+  { href: "/dashboard/academy/guides", label: "Documents" },
   { href: "/dashboard/academy/announcements", label: "Announcements" },
 ];
 
