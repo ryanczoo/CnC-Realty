@@ -1,5 +1,52 @@
 # CnC Realty — Full Website & CRM Implementation Plan
 
+## ⚠️ Pending — Deploy Checklist (compiled 2026-09-13)
+
+Besides the IDX resync, workers' comp, and E&O (tracked separately — see the relevant memory/session notes), this is what's left before/around deploying:
+
+**Postmark**
+- Upgrade to a paid plan — required for Inbound (lead replies) and the Broadcast/Bulk API
+- Confirm these 4 env vars are set in **Vercel's** environment settings (not just local `.env.local`): `POSTMARK_SERVER_TOKEN`, `POSTMARK_BROADCAST_STREAM`, `POSTMARK_WEBHOOK_USER`, `POSTMARK_WEBHOOK_PASSWORD`
+- Register the event webhook at `https://USER:PASS@cncrealtygroup.com/api/webhooks/postmark` — include `SubscriptionChange` in the trigger list alongside Open/Click/Bounce/SpamComplaint
+- Register the inbound webhook at `https://USER:PASS@cncrealtygroup.com/api/webhooks/postmark/inbound`
+- Add a new MX record at Hostinger pointing `reply.cncrealtygroup.com` at Postmark's inbound MX (adding fresh — the old SendGrid one was already fully removed, not repointed)
+- Send one live test through each stream once deployed
+- Cancel the SendGrid account once Postmark's clear (optional cleanup, not blocking)
+
+**Vercel**
+- Upgrade to **Pro** — `vercel.json` has 4 cron jobs including the 15-minute IDX delta sync; Hobby only allows 2 daily-only crons
+- Trigger the first deploy — try a direct `vercel --prod` CLI deploy rather than the GitHub auto-deploy trigger, which has never worked on this project
+- Add `cncrealtygroup.com` as a custom domain in the Vercel project after that first deploy, get the DNS values from Vercel, add them at Hostinger — leave the existing MX records alone
+- Double-check every env var is actually set in Vercel's dashboard, not just the local file
+
+**Two env var changes specific to going live**
+- `NEXTAUTH_URL` — change from `localhost:3000` to `https://cncrealtygroup.com` (also fixes broken logo/footer icons in real email clients, per the 2026-09-07/08 session notes below)
+- `NEXTAUTH_SECRET` — rotate at this moment, since it costs nothing today (nothing live yet) but invalidates sessions/unsubscribe links once it does go live
+
+**Google OAuth branding verification**
+- Google flagged this back on 7/31/2026 because the site wasn't live yet: domain ownership unverified, `/privacy` unresponsive, homepage purpose unclear
+- Once deployed: verify domain ownership of `cncrealtygroup.com` with Google, confirm `/privacy` resolves (automatic), confirm homepage links to it (already should via the footer), do a quick sanity check that the homepage explains the site's purpose
+- Then go to Google Cloud Console → Branding → select "I have fixed the issues" → Proceed, to request re-verification
+
+**Known, deliberately-accepted risks (not blockers, just don't forget they exist)**
+- CnC's ICA is fee-finalized but still not attorney-reviewed
+- DMARC is at `p=none` (monitoring only) — fine to launch this way, tighten to enforcement later
+
+## ✅ Neon scale-to-zero — decided 2026-09-13, ENABLE at 5-minute default
+
+Superseded the earlier "keep scale-to-zero disabled to avoid cold starts" call. Full cost/UX deep dive:
+
+- **Root cause of the ~$80/month bill:** invoices (Jul $47.27/18 days, Aug $86.57/31 days, Sep pace $32.86/13 days) normalize to a remarkably consistent ~11.4–12.2 CU-hours/day across all three months — including the month with the multi-day full IDX resync, which barely moved the daily rate. This means the cost is almost entirely the "always-on" floor, not activity-driven — scale-to-zero should eliminate the large majority of it (est. dropping to roughly $15–30/month, though the exact number needs a live month to confirm).
+- **Cold-start delay, verified against Neon's own docs:** "a few hundred milliseconds" (300–800ms), not multi-second. Hits only the first request after an idle gap; every other visitor in that session loads normally.
+- **Areas exposed to it, verified against the actual code:** the homepage listings query and `/properties` search (both uncached, live DB queries), plus the **entire dashboard/admin section** — `dashboard/layout.tsx` calls `getServerSession` on every request, making every page under `/dashboard` and `/admin` dynamic, not just the ones explicitly marked `force-dynamic`. Property detail pages, agent profiles, and press posts are NOT exposed — they're on ISR (5-min revalidate), so visitors get cached HTML instantly regardless.
+- **Idle timeout decision — kept at 5 minutes (the default), not shortened.** A 1-minute timeout was considered (saves ~$21/month more) and rejected: it risks the *same* actively-browsing visitor hitting repeated cold starts within one session, since normal listing-viewing dwell time (reading a description, looking at photos) commonly exceeds 1–2.5 minutes. Ryan's explicit priority is consistent perceived speed over the last ~$20/month — 5 minutes comfortably covers typical single-page dwell time, so an engaged visitor's own clicks keep the compute warm.
+- **The 15-minute IDX delta cron is a `vercel.json` config choice, not a CRMLS/Trestle requirement** — confirmed via the actual code, no comment or constraint ties it to MLS policy. Free to change to 30 min if ever wanted (would double worst-case listing staleness to ~30 min, still far tighter than typical MLS staleness policies, which are usually measured in hours) — but per the invoice data, cron frequency barely affects the bill compared to the always-on floor, so this wasn't changed.
+- **Action needed (Ryan, Neon dashboard only, no code/deploy involved):** Neon console → Compute settings → enable Scale to zero → leave suspend timeout at 5 minutes (default) → save.
+
+## ⚠️ Reference — parents' PC sleep setting resets between resyncs
+
+2026-09-13: mid-resync, the parents' PC's watchdog went silent for 55 minutes (no polling at all, not just failed queries), then self-recovered and resumed correctly from the last checkpoint. Root cause: Windows "Make my device sleep after" had reverted to 30 minutes (and screen-off to 15) — the same setting that was explicitly set to Never back in August for the first resync on this machine, but apparently got reset to energy-saving defaults at some point since. Windows' sleep timer tracks keyboard/mouse input only, not background CPU/network activity, so a resync running quietly in the background does not prevent the machine from sleeping on its own. **Before starting any future long-running job on this machine, verify Settings → System → Power → Screen, sleep, & hibernate timeouts are both set to Never (Plugged in)** — don't assume the August fix is still in effect. Confirmed NOT related to Neon's scale-to-zero setting — that was a red herring initially suspected; the evidence (watchdog itself stopped polling, not just the sync) pointed to the whole machine sleeping, unrelated to any Neon-side compute setting.
+
 ## ⚠️ Reference — SyncProgress migration constraint
 
 `packages/database/prisma/migrations/20260908090103_rename_sync_progress_next_link_to_cursor/migration.sql` adds `cursor TEXT NOT NULL` with no default. This is only safe because the `SyncProgress` table was confirmed empty when this migration was written and applied (2026-09-08). **Before ever running `prisma migrate deploy` against a fresh or different environment, confirm `SyncProgress` is empty first** (or that no crawl is in-flight) — a non-empty table with existing rows would fail this migration since there's no default value for the new column.
@@ -6848,3 +6895,155 @@ Picked up the "E&O Carrier Research — Deprioritized" thread from an earlier se
 4. Corporate/commercial lease tab: explicitly deferred, not forgotten — Ryan's own call, revisit only once E&O is settled and/or he's closed a commercial deal through some other channel first.
 5. Sitewide color-token cleanup remains explicitly deferred (see the standing note near the top of this file), bring it up only if Ryan raises it.
 6. Older backlog, unchanged: Vercel deploy is still the one outstanding Phase 6/7 item (no production deployment has ever run); broader transaction-management click-through testing (Purchase/Listing/Lease types) remains the oldest open item; CnC ICA still not attorney-reviewed.
+
+---
+
+## Session Notes — 2026-09-14
+
+### Session recovery — nothing was lost
+
+Ryan's PC slept unexpectedly overnight (2026-09-13→14) mid a "huge design process discussion,"
+worried the conversation was gone. It wasn't — Claude Code writes the full transcript to disk
+continuously, independent of the app window. Found the session (`7a375aa1-...`, 1,130+ messages,
+last message 12:46 AM Pacific), confirmed via a fork agent that **zero application code was
+touched all night** — the whole session was discussion/research (workers' comp research, EDD
+enrollment, the deploy checklist compiled into this file, enabling Neon scale-to-zero live, a
+Chase Ink Business Cash card application, and a REeBroker document-library review that seeded the
+agent-transfer-of-listings design below). Two threads were left open mid-sentence and picked up
+today: the ICA broker-countersignature gap, and the transfer-document design.
+
+### ICA broker countersignature — COMPLETE ✅
+
+At agent-application approval, the executed ICA PDF now regenerates with a broker countersignature
+block ("Countersigned electronically by: Ryan Chong, Designated Broker" + timestamp) and overwrites
+the same R2 object in place — one PDF per agent, never a duplicate. Two related gaps closed while
+in there: the agent's DRE license # (already collected on the application) was never actually
+rendered into the signature block, and — more importantly — regenerating the PDF later would have
+silently stamped whatever `ICA_VERSION` is live *today* instead of the version the agent actually
+signed under; `icaVersion` is now an explicit input, never an implicit global read. Failure path
+uses `Sentry.captureException()`, not a silent console log, so a real failure actually reaches
+Ryan — the approval still succeeds either way; the agent's original signature stays valid.
+12 new/updated tests using real `pdf-parse` text extraction, not just "does it throw." Commit
+`6bc6344`.
+
+### Agent transfer of active listings/sales — COMPLETE ✅
+
+Full cycle: brainstorming → architectural spec → implementation plan → subagent-driven-development
+(9 tasks, each with its own implementer + reviewer) → a final whole-branch review → one fix wave →
+a scoped re-review → a follow-up 14-item open-issues batch found during that review → one more
+fix round closing the two remaining Important findings. All of it landed directly on `main`, no
+worktree — this project's own established convention for SDD work, confirmed again this session.
+
+**What it does:** when an approved agent indicates on their application they have an active listing
+or pending sale to transfer from a previous brokerage (with a new 1–10 count follow-up per
+question), a locked (`PENDING_TRANSFER`-status) placeholder file gets created per item at approval
+— seeded with one checklist item ("Upload Signed Transfer Authorization"). The agent gets the
+matching blank form two ways (an email attachment on the existing onboarding email, and a
+download link on the locked file's own dashboard page), can optionally pre-fill just the property
+address, uploads the signed form through the same upload UI every other file already uses, and the
+moment Ryan approves that document through the existing review flow, the file unlocks to
+`INCOMPLETE` — now indistinguishable from a file the agent built from scratch via the wizard.
+
+**Two templates, not three** (down from an original three-template plan cut off by the crash) —
+Listing Authorization and a combined Pending Sale Transfer Authorization (merging what would have
+been separate Negotiation/Escrow versions, with the escrow-company section made conditional).
+Drafted by comparing three real REeBroker reference forms field-by-field so nothing was dropped;
+confirmed via the DRE's own Reference Book that no DRE-mandated form governs this at all — private
+CnC documents, same not-attorney-reviewed status as the ICA. The two blank PDFs are static files
+(same reasoning as the Office Policy Manual — no per-agent personalization needed, so no
+PDF-generation module belongs in the codebase for them), generated once via a throwaway script from
+the spec's own drafted text and committed as a first draft for Ryan to hand-review and replace.
+
+**`PENDING_TRANSFER` is deliberately unreachable through any manual path** — not just the four
+status-transition tables (which TypeScript's own exhaustive-`Record` typing forces to handle it),
+but the admin status-change route and both direct-PATCH routes too, all independently confirmed
+during the final review. The only way out of it is the document-approval route's own unlock
+trigger, gated on the approved document actually being attached to a checklist item on that file
+(not just any document landing on it unattached).
+
+**The final whole-branch review earned its keep** — found two Critical issues no single task's own
+review could have seen: the unlock never applied a real compliance checklist (so a transferred file
+could be closed with zero disclosures — the seeded item was already pre-approved, satisfying
+`isReadyToClose` immediately) and the placeholder's sentinel values (fake address, `$0` price) had
+no way to ever be corrected once the file left its locked state, since no edit page exists anywhere
+in the app for an existing file's property fields. Both fixed in one pass: the unlock now applies
+the matching `ChecklistTemplate` and clears the sentinels back to blank, both gated on the same
+guard. One residual, parked rather than fixed: `FileCard` still mislabels an unlocked, still-blank
+*pending-sale* (non-listing) placeholder as "Referral — Unnamed," since a `null` address was never
+a sentinel to clear — real but cosmetic, needs a `transactionSide` prop threaded through `FileCard`
+and its two callers, not attempted in that fix wave.
+
+**Follow-up 14-item batch** (all approved, all fixed same session): the `FileCard` mislabel above,
+`ChecklistPanel` upload error handling (was a pre-existing gap — a failed upload stuck the button on
+"Uploading…" forever with zero feedback), a missing `PENDING_TRANSFER` guard on submit-review, an
+orphaned-R2-object gap on placeholder delete, a pre-existing unrelated bug where the admin
+"Awaiting Review" badge read a field name (`audit.files`) that never existed in the API's real
+`{listings, transactions}` response shape, plus 9 smaller task-level cosmetic cleanups. A follow-up
+review of *that* batch caught two more real Important findings — an atomicity gap the fix-wave's
+own rework had introduced (the unlock's status-flip and checklist-template creation were two
+separate calls; a failure in the second could leave a file unlocked with no checklist after all —
+now wrapped in one `prisma.$transaction`) and an unchecked R2 upload response (`fetch()` doesn't
+throw on a non-2xx status, only on network failure, so an expired presigned URL would have silently
+been treated as a successful upload) — both fixed and tested (commit `a71f0c7`).
+
+**Performance, checked twice with direct evidence rather than assumed:** `lib/auth.ts` — where the
+session-cached `agentId` mechanism that actually fixed the original dashboard tab-switching lag
+lives — was last touched July 25th, untouched by anything this session. The one dashboard-tab file
+this whole session ever modified (`dashboard/transactions/page.tsx`) has exactly one line added:
+passing `transactionSide`, a field the page's existing query already fetches (`GET /api/transactions`
+has no `select` clause), into an existing prop — no new query, no new fetch, no measurable cost.
+
+Branch/commit hygiene: everything landed as small, real commits with genuine tests at every stage —
+`38d9a04`..`a71f0c7`, 20 commits total for this feature plus its two follow-up rounds.
+
+### IDX resync — finished, but will run once more before deploy
+
+The full historical resync (all ~4.86M records back to 2021, minus excluded closed rentals) that
+was running on the parents' PC when this session started **finished successfully** —
+`4,073,184` rows, confirmed twice live against Neon hours apart with zero drift in between
+(checkpoint cleared, which per how this was built only happens when the crawl runs to genuine
+completion). Confirmed safe to power off that PC.
+
+**Real finding while scoping the deploy timeline:** the delta-sync cron's lookback window is
+**hardcoded to 30 minutes** (`api/idx/sync/route.ts:28`), not "since the last successful sync" — it
+assumes the 15-minute cron is always running, so a 30-minute window always overlaps the prior run
+with margin. Since the site has never deployed, that cron has never actually run, and won't until
+deploy — meaning whatever changes on the MLS between today's resync and the eventual deploy moment
+would be **permanently invisible** to delta sync once it does start (it structurally cannot look back
+further than 30 minutes, no matter how large the real gap is). Discussed two fixes: making the
+lookback configurable via an optional `since` param (reusable, no code to revert, but not yet
+built — Ryan's own preference in the end) versus just re-running the full resync once more right
+before cutover. **Decision: re-run the full resync, not build the configurable window** — Ryan's
+call, since the full crawl is now proven to run smoothly end-to-end (~16h) and a second run is
+simpler than adding a new parameter to production sync code for what's expected to be a one-time
+situation.
+
+**Cost of re-running it, checked directly against Neon's own pricing page (not assumed from the
+old pre-scale-to-zero billing history, which no longer applies now that scale-to-zero is on):**
+Scale plan is $0.222/CU-hour, and compute charges genuinely stop at $0 while suspended. A
+continuous 16-hour resync never lets the compute suspend, so for that window it behaves like the
+old always-on billing — prorating the already-measured ~11.4–12.2 CU-hours/day baseline (which
+already includes an earlier resync month that barely moved the rate) to 16 hours gives
+**~$1.70–$1.80** for the whole resync. Confirmed no separate storage-cost concern either — refreshing
+an already-fully-populated dataset via upsert, not growing it.
+
+**Plan going forward:** Ryan's Chase Ink Business Cash card is expected Wednesday. Once it arrives:
+Postmark + Vercel upgrades (nothing time-sensitive about waiting until then — site isn't deployed
+yet, no charges accrue on the current free/Hobby tiers either way) → trigger the full IDX resync one
+more time (~16h) → deploy immediately once it finishes, to keep the gap between "resync done" and
+"go live" as small as possible.
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. **Wednesday, once the Chase card arrives:** upgrade Postmark to a paid plan and Vercel to Pro,
+   then trigger the full IDX resync one more time (expect ~16h, same command as documented earlier
+   in this file), then deploy immediately once it finishes — see the "⚠️ Pending — Deploy Checklist"
+   section near the top of this file for the full remaining sequence (env var rotation, custom
+   domain, Google OAuth re-verification).
+3. **Parked, not fixed:** `FileCard` still mislabels an unlocked, still-blank pending-sale
+   placeholder as a referral (needs a `transactionSide` prop threaded through `FileCard` and its two
+   callers) — low-severity cosmetic edge case, safe to leave until convenient.
+4. Older backlog, unchanged: broader transaction-management click-through testing (Purchase/Listing/
+   Lease types) remains the oldest open item; CnC ICA still not attorney-reviewed; the CRES E&O
+   follow-up from the prior session; checklist templates were confirmed done in an earlier session.
