@@ -7041,12 +7041,19 @@ more time (~16h) → deploy immediately once it finishes, to keep the gap betwee
    in this file), then deploy immediately once it finishes — see the "⚠️ Pending — Deploy Checklist"
    section near the top of this file for the full remaining sequence (env var rotation, custom
    domain, Google OAuth re-verification).
-3. **Parked, not fixed:** `FileCard` still mislabels an unlocked, still-blank pending-sale
-   placeholder as a referral (needs a `transactionSide` prop threaded through `FileCard` and its two
-   callers) — low-severity cosmetic edge case, safe to leave until convenient.
+3. ~~**Parked, not fixed:** `FileCard` still mislabels an unlocked, still-blank pending-sale
+   placeholder as a referral~~ — **this line was stale.** Verified 2026-09-16 against the actual
+   code: this was already fixed the same day it was flagged, in commit `da9fe87` ("fix: 5 real
+   cross-cutting fixes from open-issues audit") — `FileCard` gates the "Referral — X" label on
+   `transactionSide === "REFERRAL"`, both dashboard callers already pass `transactionSide`, and it's
+   present in every underlying Prisma query (no `select` clause strips it). The "Follow-up 14-item
+   batch" section of this same day's notes correctly listed it as fixed; only this one leftover
+   line never got updated. No code change was needed.
 4. Older backlog, unchanged: broader transaction-management click-through testing (Purchase/Listing/
-   Lease types) remains the oldest open item; CnC ICA still not attorney-reviewed; the CRES E&O
-   follow-up from the prior session; checklist templates were confirmed done in an earlier session.
+   Lease types) remains the oldest open item; the CRES E&O follow-up from the prior session;
+   checklist templates were confirmed done in an earlier session. (CnC ICA attorney review is a
+   closed decision, not a backlog item — see [[feedback_ica_docx_versioning]]-adjacent memory: Ryan
+   reconfirmed 2026-09-15 he will not be paying an attorney to review it.)
 
 ---
 
@@ -7098,6 +7105,8 @@ in or coming out — this session's only change is the one commit above. Not pus
    then trigger the full IDX resync one more time (expect ~16h), then deploy immediately once it
    finishes — see the "⚠️ Pending — Deploy Checklist" section near the top of this file for the
    full remaining sequence (env var rotation, custom domain, Google OAuth re-verification).
-4. Older backlog, unchanged: `FileCard` referral-mislabel parked fix; broader transaction-management
-   click-through testing (Purchase/Listing/Lease types); CnC ICA still not attorney-reviewed; the
-   CRES E&O follow-up.
+4. Older backlog: broader transaction-management click-through testing (Purchase/Listing/Lease
+   types); the CRES E&O follow-up. (Two items dropped as of 2026-09-16: the `FileCard`
+   referral-mislabel was already fixed 2026-09-14 — a stale note claimed otherwise, corrected above.
+   CnC ICA attorney review is a closed decision, not backlog — Ryan reconfirmed 2026-09-15 he's not
+   paying for one.)
