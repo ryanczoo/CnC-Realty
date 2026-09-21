@@ -5,7 +5,9 @@ import Link from "next/link";
 import { StatusBadge } from "@/components/transactions/StatusBadge";
 import { DocumentReviewCard } from "@/components/transactions/DocumentReviewCard";
 import { ActivityFeed } from "@/components/transactions/ActivityFeed";
-import type { FileDocumentRecord, ListingStatus, TransactionFileStatus } from "@/types/transaction";
+import type { FileDocumentRecord } from "@/types/transaction";
+import { allowedNextStatuses } from "@/lib/transaction-helpers";
+import { EMAIL_WARNING_TEXT } from "@/lib/file-messages";
 
 type Tab = "documents" | "activity";
 
@@ -14,15 +16,14 @@ const ADMIN_TABS: { key: Tab; label: string }[] = [
   { key: "activity", label: "Activity" },
 ];
 
-const LISTING_STATUSES: ListingStatus[] = ["INCOMPLETE", "COMING_SOON", "ACTIVE", "ACTIVE_UNDER_CONTRACT", "EXPIRED", "WITHDRAWN", "CANCELED", "CLOSED"];
-const TRANSACTION_STATUSES: TransactionFileStatus[] = ["INCOMPLETE", "PRE_CONTRACT", "PENDING", "EXPIRED", "CLOSED", "ARCHIVED", "CANCELED_PENDING", "CANCELED_APPROVED"];
-
 export default function AdminFileDetailPage() {
   const { fileType, id } = useParams<{ fileType: string; id: string }>();
   const [tab, setTab] = useState<Tab>("documents");
   const [file, setFile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [statusLoading, setStatusLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [emailWarning, setEmailWarning] = useState(false);
 
   async function load() {
     const endpoint = fileType === "listing" ? `/api/listings/${id}` : `/api/transactions/${id}`;
@@ -38,13 +39,24 @@ export default function AdminFileDetailPage() {
 
   async function changeStatus(newStatus: string) {
     setStatusLoading(true);
-    await fetch(`/api/admin/files/${fileType}/${id}/status`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: newStatus }),
-    });
-    setStatusLoading(false);
-    load();
+    setActionError(null);
+    setEmailWarning(false);
+    try {
+      const res = await fetch(`/api/admin/files/${fileType}/${id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok) {
+        setActionError(body?.error ?? "Couldn't change the status. Please try again.");
+        return;
+      }
+      if (body?.emailWarning) setEmailWarning(true);
+      await load();
+    } finally {
+      setStatusLoading(false);
+    }
   }
 
   if (loading) {
@@ -64,7 +76,15 @@ export default function AdminFileDetailPage() {
     (n: number, item: any) => n + (item.documents ?? []).filter((d: FileDocumentRecord) => d.reviewStatus === "PENDING_REVIEW").length,
     0
   );
-  const statuses = fileType === "listing" ? LISTING_STATUSES : TRANSACTION_STATUSES;
+  const kind = fileType === "listing" ? "listing" : "transaction";
+  const isReferralFile = file.transactionSide === "REFERRAL";
+  // Only offer moves the server will accept. The tables also hold the referral
+  // steps, which make no sense on an ordinary file, so hide those unless this
+  // really is a referral.
+  const statuses = [
+    file.status as string,
+    ...allowedNextStatuses(kind, file.status, "ADMIN").filter((s) => isReferralFile || !s.startsWith("REFERRAL_")),
+  ];
 
   return (
     <div>
@@ -105,6 +125,8 @@ export default function AdminFileDetailPage() {
             )}
           </div>
         </div>
+        {actionError && <p className="mt-2 text-xs text-red-600">{actionError}</p>}
+        {emailWarning && <p className="mt-2 text-xs text-amber-700">{EMAIL_WARNING_TEXT}</p>}
       </div>
 
       <div className="mb-6 flex gap-1 rounded-xl bg-[#F2F0EF] p-1 w-fit">

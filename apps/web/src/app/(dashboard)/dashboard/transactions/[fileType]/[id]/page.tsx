@@ -21,6 +21,7 @@ import type {
 import { TC_FEE, calcNetToAgent } from "@/lib/commission";
 import { formatDateOnly, isDateOnlyPast } from "@/lib/utils";
 import { Spinner } from "@/components/ui/Spinner";
+import { EMAIL_WARNING_TEXT } from "@/lib/file-messages";
 
 type Tab = "overview" | "checklist" | "parties" | "activity" | "commission" | "documents" | "tasks";
 
@@ -753,6 +754,7 @@ function ReferralActions({
   const [amount, setAmount] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState(false);
 
   async function patch(payload: Record<string, unknown>) {
     setSubmitting(true);
@@ -768,6 +770,8 @@ function ReferralActions({
         setError(body?.error ?? "Failed to update status. Please try again.");
         return;
       }
+      const okBody = await res.json().catch(() => null);
+      if (okBody?.emailWarning) setWarning(true);
       onDone();
     } finally {
       setSubmitting(false);
@@ -844,6 +848,7 @@ function ReferralActions({
     <div className="flex flex-col items-end gap-1.5">
       <div className="flex items-center gap-2">{content}</div>
       {error && <p className="text-xs text-red-600">{error}</p>}
+      {warning && <p className="mt-2 text-xs text-amber-700">{EMAIL_WARNING_TEXT}</p>}
     </div>
   );
 }

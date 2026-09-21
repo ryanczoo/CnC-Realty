@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { CheckCircle, XCircle, ExternalLink } from "lucide-react";
 import type { FileDocumentRecord } from "@/types/transaction";
+import { EMAIL_WARNING_TEXT } from "@/lib/file-messages";
 
 interface Props {
   document: FileDocumentRecord;
@@ -12,6 +13,8 @@ export function DocumentReviewCard({ document: doc, onReviewed }: Props) {
   const [rejectNote, setRejectNote] = useState("");
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState(false);
 
   async function getDownloadUrl() {
     const { url } = await fetch(`/api/documents/${doc.id}/download`).then((r) => r.json());
@@ -20,22 +23,44 @@ export function DocumentReviewCard({ document: doc, onReviewed }: Props) {
 
   async function approve() {
     setLoading(true);
-    await fetch(`/api/admin/documents/${doc.id}/approve`, { method: "POST" });
-    setLoading(false);
-    onReviewed();
+    setError(null);
+    setWarning(false);
+    try {
+      const res = await fetch(`/api/admin/documents/${doc.id}/approve`, { method: "POST" });
+      const body = await res.json().catch(() => null);
+      if (!res.ok) {
+        setError(body?.error ?? "Couldn't approve this document. Please try again.");
+        return;
+      }
+      if (body?.emailWarning) setWarning(true);
+      onReviewed();
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function reject() {
     if (!rejectNote.trim()) return;
     setLoading(true);
-    await fetch(`/api/admin/documents/${doc.id}/reject`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ note: rejectNote }),
-    });
-    setLoading(false);
-    setShowRejectForm(false);
-    onReviewed();
+    setError(null);
+    setWarning(false);
+    try {
+      const res = await fetch(`/api/admin/documents/${doc.id}/reject`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ note: rejectNote }),
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok) {
+        setError(body?.error ?? "Couldn't reject this document. Please try again.");
+        return;
+      }
+      if (body?.emailWarning) setWarning(true);
+      setShowRejectForm(false);
+      onReviewed();
+    } finally {
+      setLoading(false);
+    }
   }
 
   const statusColor = {
@@ -71,6 +96,8 @@ export function DocumentReviewCard({ document: doc, onReviewed }: Props) {
           </>
         )}
       </div>
+      {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
+      {warning && <p className="mt-2 text-xs text-amber-700">{EMAIL_WARNING_TEXT}</p>}
 
       {showRejectForm && (
         <div className="mt-3 space-y-2">
