@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getFileAndVerifyAccess, resolveFileRef } from "@/lib/api-auth";
+import { isFileReadOnlyFor } from "@/lib/file-lock";
+import { FILE_LOCKED_MESSAGE } from "@/lib/file-messages";
 
 async function assertTaskAccess(taskId: string, agentId: string | null, role: string) {
   const task = await prisma.fileTask.findUnique({ where: { id: taskId } });
@@ -13,6 +15,7 @@ async function assertTaskAccess(taskId: string, agentId: string | null, role: st
 
   const file = await getFileAndVerifyAccess(ref.fileType, ref.fileId, agentId, role);
   if (!file) return { error: "Forbidden", status: 403 } as const;
+  if (isFileReadOnlyFor(ref.fileType, file.status, role)) return { error: FILE_LOCKED_MESSAGE, status: 403 } as const;
 
   return { task };
 }

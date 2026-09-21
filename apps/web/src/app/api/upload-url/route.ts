@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getPresignedPutUrl, buildR2Key } from "@/lib/r2";
-import { getFileAndVerifyAccess } from "@/lib/api-auth";
+import { getFileAndVerifyAccess, assertFileEditable } from "@/lib/api-auth";
 import { createId } from "@paralleldrive/cuid2";
 
 const ALLOWED_TYPES = [
@@ -40,6 +40,8 @@ export async function GET(req: Request) {
 
   const file = await getFileAndVerifyAccess(fileType, fileId, session.user.agentId, session.user.role);
   if (!file) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const locked = assertFileEditable(fileType, file.status, session.user.role);
+  if (locked) return locked;
 
   const documentId = createId();
   const key = buildR2Key(fileType, fileId, documentId, filename);

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getFileAndVerifyAccess } from "@/lib/api-auth";
+import { getFileAndVerifyAccess, assertFileEditable } from "@/lib/api-auth";
 
 export async function POST(req: Request, { params }: { params: { fileType: string; id: string } }) {
   const session = await getServerSession(authOptions);
@@ -14,6 +14,8 @@ export async function POST(req: Request, { params }: { params: { fileType: strin
   const isListing = params.fileType === "listing";
   const file = await getFileAndVerifyAccess(isListing ? "listing" : "transaction", params.id, session.user.agentId, session.user.role);
   if (!file) return NextResponse.json({ error: "Not found or forbidden" }, { status: 404 });
+  const locked = assertFileEditable(isListing ? "listing" : "transaction", file.status, session.user.role);
+  if (locked) return locked;
 
   const body = await req.json();
   const { role, name, email, phone, company, licenseNumber } = body;

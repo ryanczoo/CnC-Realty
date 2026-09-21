@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getFileAndVerifyAccess } from "@/lib/api-auth";
+import { getFileAndVerifyAccess, assertFileEditable } from "@/lib/api-auth";
 import { buildR2Key } from "@/lib/r2";
 
 export async function POST(req: Request) {
@@ -27,6 +27,8 @@ export async function POST(req: Request) {
     session.user.role
   );
   if (!file) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const locked = assertFileEditable(isListing ? "listing" : "transaction", file.status, session.user.role);
+  if (locked) return locked;
 
   // r2Key/r2Url come from the client — verify the key actually belongs to
   // THIS file (buildR2Key's format is deterministic: every key legitimately

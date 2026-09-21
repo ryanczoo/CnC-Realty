@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getFileAndVerifyAccess } from "@/lib/api-auth";
+import { getFileAndVerifyAccess, assertFileEditable } from "@/lib/api-auth";
 
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
@@ -45,6 +45,8 @@ export async function POST(req: Request) {
 
   const file = await getFileAndVerifyAccess(fileType, fileId, session.user.agentId, session.user.role);
   if (!file) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const locked = assertFileEditable(fileType, file.status, session.user.role);
+  if (locked) return locked;
 
   const task = await prisma.fileTask.create({
     data: {
