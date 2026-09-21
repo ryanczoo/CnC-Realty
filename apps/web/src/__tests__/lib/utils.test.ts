@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatCompactCurrency } from "@/lib/utils";
+import { formatCompactCurrency, formatDateOnly, formatDate } from "@/lib/utils";
 
 describe("formatCompactCurrency", () => {
   it("strips a trailing .0 for whole millions", () => {
@@ -21,5 +21,38 @@ describe("formatCompactCurrency", () => {
 
   it("returns an em dash for null", () => {
     expect(formatCompactCurrency(null)).toBe("—");
+  });
+});
+
+// Reproduce the California bug: date-only fields are stored as UTC midnight and
+// were rendered in local time, which is the previous evening in Pacific time.
+process.env.TZ = "America/Los_Angeles";
+
+describe("formatDateOnly", () => {
+  it("environment check: plain local formatting shifts a UTC-midnight date back one day (the bug)", () => {
+    expect(new Date("2026-09-21T00:00:00.000Z").toLocaleDateString("en-US")).toBe("9/20/2026");
+  });
+
+  it("shows the stored calendar day, not the previous evening", () => {
+    expect(formatDateOnly("2026-09-21T00:00:00.000Z")).toBe("9/21/2026");
+  });
+
+  it("accepts a Date object", () => {
+    expect(formatDateOnly(new Date("2026-10-02T00:00:00.000Z"))).toBe("10/2/2026");
+  });
+
+  it("supports custom formatting options", () => {
+    expect(formatDateOnly("2026-10-22T00:00:00.000Z", { month: "short", year: "numeric" })).toBe("Oct 2026");
+    expect(formatDateOnly("2026-10-02T00:00:00.000Z", { weekday: "long", month: "long", day: "numeric" })).toBe("Friday, October 2");
+  });
+
+  it("does not slip a month boundary (Nov 1 stays November)", () => {
+    expect(formatDateOnly("2026-11-01T00:00:00.000Z", { month: "short", year: "numeric" })).toBe("Nov 2026");
+  });
+});
+
+describe("formatDate (unchanged behavior)", () => {
+  it("still formats real timestamps in local time", () => {
+    expect(formatDate("2026-09-21T02:00:00.000Z")).toBe("Sep 20, 2026");
   });
 });
