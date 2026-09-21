@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import type { FileActivityRecord, FileActivityType, FileContextProps } from "@/types/transaction";
+import { describeActivity } from "@/lib/activity-detail";
 
 const TYPE_LABELS: Record<FileActivityType, string> = {
   FILE_CREATED:             "File created",
@@ -39,23 +40,25 @@ export function ActivityFeed({ fileType, fileId, activities, onNoteAdded }: Prop
   return (
     <div className="space-y-4">
       <div className="space-y-3">
-        {activities.map((a) => (
-          <div key={a.id} className="flex gap-3">
-            <div className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[#9E8C61]" />
-            <div className="flex-1">
-              <p className="text-sm text-[#1B1B1B]">
-                <span className="font-medium">{a.actor.name ?? a.actor.email}</span>
-                {" "}
-                {TYPE_LABELS[a.type]}
-                {a.type === "STATUS_CHANGED" && a.payload && (
-                  <span className="text-[#1B1B1B]/50"> · {(a.payload as { from: string; to: string }).from} → {(a.payload as { from: string; to: string }).to}</span>
-                )}
-              </p>
-              {a.note && <p className="mt-0.5 text-sm text-[#1B1B1B]/60">{a.note}</p>}
-              <p className="text-xs text-[#1B1B1B]/40">{new Date(a.createdAt).toLocaleString()}</p>
+        {activities.map((a) => {
+          const { detail, reason } = describeActivity(a);
+          return (
+            <div key={a.id} className="flex gap-3">
+              <div className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[#9E8C61]" />
+              <div className="flex-1">
+                <p className="text-sm text-[#1B1B1B]">
+                  <span className="font-medium">{a.actor.name ?? a.actor.email}</span>
+                  {" "}
+                  {TYPE_LABELS[a.type]}
+                  {detail && <span className="text-[#1B1B1B]/50"> · {detail}</span>}
+                </p>
+                {reason && <p className="mt-0.5 text-sm text-red-500">Reason: {reason}</p>}
+                {a.note && <p className="mt-0.5 text-sm text-[#1B1B1B]/60">{a.note}</p>}
+                <p className="text-xs text-[#1B1B1B]/40">{new Date(a.createdAt).toLocaleString()}</p>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="border-t border-[#1B1B1B]/10 pt-4">
