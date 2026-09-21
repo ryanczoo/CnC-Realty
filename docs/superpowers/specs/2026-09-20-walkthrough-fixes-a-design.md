@@ -2,8 +2,9 @@
 
 **Date:** 2026-09-20
 **Origin:** Found during the live Purchase-transaction walkthrough (agent + admin, local dev against the shared Neon DB).
-**Scope:** 13 small, mostly independent fixes. Sub-projects B (review/status/email flow), C (input rules) and D (commission redesign) get their own specs.
+**Scope:** 12 small, mostly independent fixes. Sub-projects B (review/status/email flow), C (input rules) and D (commission redesign) get their own specs.
 **Explicitly out:** #5 New Listing type cards (deferred by Ryan until A–D are done), #16 global form-field text color (deferred).
+**Dropped after re-checking the code:** #19 ("View Checklists" opening the wrong tab). The file page already reads `?tab=` on load (`URLSearchParams(window.location.search).get("tab")` in `dashboard/transactions/[fileType]/[id]/page.tsx`); the earlier claim came from a case-sensitive search that missed it and was never tested in a browser.
 
 ## Reuse audit (done before designing)
 
@@ -28,7 +29,7 @@
 
 **#8 Dates one day early.** Date-only fields are stored as UTC midnight and currently rendered with local-time `toLocaleDateString()`, so California shows the previous day. Use `formatDateOnly` for date-only fields only: file page (list/expiration, date referred, offer/acceptance/inspection/appraisal/loan/COE/expiration/walkthrough/possession, condition due date, file-task due date), `FileCard` COE, admin overview deadline rows, deadline email date, public agent transaction month. **Not changed:** real timestamps (uploadedAt, createdAt, activity times) and lead-task due dates (stored as date+time, so local rendering is correct).
 
-**#9 Escrow company overwritten.** The wizard sends `company: <Title|Escrow|Attorney>`, discarding the typed company. Add `TITLE`, `ESCROW`, `ATTORNEY` to the `FilePartyRole` DB enum (additive migration; existing `TITLE_ESCROW` rows stay valid and keep the label "Title/Escrow"). The wizard sends the chosen type as the role and leaves `company` as typed. `PartiesTable` labels and the TS role type updated.
+**#9 Escrow company overwritten.** The wizard sends `company: <Title|Escrow|Attorney>`, discarding the typed company. Add `TITLE`, `ESCROW`, `ATTORNEY` to the `FilePartyRole` DB enum (additive migration; existing `TITLE_ESCROW` rows stay valid and keep the label "Title/Escrow"). The wizard sends the chosen type as the role and leaves `company` as typed. `PartiesTable` labels and the TS role type updated. While there, add `REFERRAL_AGENT` to the TS role type and labels: the DB enum and the wizard already use it, but the Parties table has no label for it, so a referral agent's Role cell renders blank.
 
 **#10 Pending Broker Review popup.** `Tooltip` wraps the **entire checklist row** and shows "Pending Broker Review" when the mouse is anywhere on it, for rows whose document is awaiting review. Popup is small, dark, appears just above the row's left end (over the status icon), no JavaScript. Other statuses show no popup.
 
@@ -38,9 +39,7 @@
 
 **#18 Email wording.** "Correction Needed" and "All Documents Approved" emails hardcode "your listing". Use the real file type.
 
-**#19 Tab from link.** The file page reads `?tab=` (checklist, commission, documents, tasks, parties, activity; default overview) so the "View Checklists" button opens the right tab.
-
-**#23 Activity detail.** Feed shows the document name for upload/approve/reject and the rejection note for rejects, and only shows "from → to" when `from` exists.
+**#23 Activity detail.** Feed shows the document name for upload/approve/reject and the rejection note for rejects. Status changes show "FROM → TO" when both exist and "→ TO" when only `to` exists (the admin status route does not record `from` until sub-project B).
 
 **#24 Parties columns.** Add Company and License # columns.
 
