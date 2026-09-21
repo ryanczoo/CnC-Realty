@@ -49,6 +49,7 @@ export default function FileDetailPage() {
   const [file, setFile] = useState<ListingFileDetail | TransactionFileDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [tasks, setTasks] = useState<FileTaskRecord[]>([]);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -81,8 +82,14 @@ export default function FileDetailPage() {
       ? `/api/listings/${id}/submit-review`
       : `/api/transactions/${id}/submit-review`;
     setSubmitting(true);
+    setActionError(null);
     try {
-      await fetch(endpoint, { method: "POST" });
+      const res = await fetch(endpoint, { method: "POST" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        setActionError(body?.error ?? "Couldn't submit this file. Please try again.");
+        return;
+      }
       load();
     } finally {
       setSubmitting(false);
@@ -90,7 +97,13 @@ export default function FileDetailPage() {
   }
 
   async function convertToTransaction() {
-    await fetch(`/api/listings/${id}/convert`, { method: "POST" });
+    setActionError(null);
+    const res = await fetch(`/api/listings/${id}/convert`, { method: "POST" });
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      setActionError(body?.error ?? "Couldn't convert this listing. Please try again.");
+      return;
+    }
     router.push("/dashboard/transactions");
   }
 
@@ -182,6 +195,7 @@ export default function FileDetailPage() {
             )}
           </div>
         </div>
+        {actionError && <p className="mt-2 text-xs text-red-600">{actionError}</p>}
       </div>
 
       {isLocked && (

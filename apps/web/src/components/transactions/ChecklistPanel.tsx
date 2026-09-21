@@ -77,7 +77,10 @@ export function ChecklistPanel({ fileType, fileId, items, onUploaded }: Props) {
                 {item.isRequired && <span className="ml-1 text-red-500">*</span>}
               </p>
               {status === "REJECTED" && (
-                <p className="text-xs text-red-500">Rejected — please re-upload</p>
+                <>
+                  <p className="text-xs text-red-500">Rejected — please re-upload</p>
+                  {topDoc?.rejectionNote && <p className="text-xs text-red-500">Reason: {topDoc.rejectionNote}</p>}
+                </>
               )}
             </div>
             <label className={`shrink-0 cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition-colors ${uploadingItemId === item.id ? "bg-zinc-100 text-zinc-400" : "bg-[#1B1B1B] text-white hover:bg-[#1B1B1B]/80"}`}>
