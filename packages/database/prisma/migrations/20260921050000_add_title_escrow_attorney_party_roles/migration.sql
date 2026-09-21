@@ -1,0 +1,4 @@
+-- AlterEnum
+ALTER TYPE "FilePartyRole" ADD VALUE 'TITLE';
+ALTER TYPE "FilePartyRole" ADD VALUE 'ESCROW';
+ALTER TYPE "FilePartyRole" ADD VALUE 'ATTORNEY';
