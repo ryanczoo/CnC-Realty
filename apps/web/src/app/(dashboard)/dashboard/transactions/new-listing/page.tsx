@@ -7,6 +7,7 @@ import { SPRING_HOVER } from "@/lib/motion";
 import { DateField } from "@/components/ui/DateField";
 import { FormField as Field } from "@/components/ui/FormField";
 import { stripDigits, digitsOnly } from "@/lib/form-validation";
+import { Spinner } from "@/components/ui/Spinner";
 
 const STEPS = ["Property Info", "Commission", "Review"] as const;
 
@@ -164,7 +165,7 @@ export default function NewListingPage() {
             transition={SPRING_HOVER}
             className="inline-flex items-center rounded-full bg-[#1B1B1B] px-7 py-3.5 text-sm font-medium text-white disabled:opacity-50"
           >
-            {saving ? "Creating…" : "Create Listing"}
+            {saving ? <><Spinner className="mr-2 h-4 w-4" />Creating…</> : "Create Listing"}
           </motion.button>
         )}
       </div>

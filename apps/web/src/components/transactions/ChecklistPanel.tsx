@@ -2,6 +2,7 @@
 import { useRef, useState } from "react";
 import { CheckCircle, XCircle, Clock, Upload, AlertCircle } from "lucide-react";
 import type { FileChecklistItemWithDocs, DocumentReviewStatus } from "@/types/transaction";
+import { Spinner } from "@/components/ui/Spinner";
 
 interface Props {
   fileType: "LISTING" | "TRANSACTION";
@@ -73,7 +74,7 @@ export function ChecklistPanel({ fileType, fileId, items, onUploaded }: Props) {
               )}
             </div>
             <label className={`shrink-0 cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition-colors ${uploadingItemId === item.id ? "bg-zinc-100 text-zinc-400" : "bg-[#1B1B1B] text-white hover:bg-[#1B1B1B]/80"}`}>
-              {uploadingItemId === item.id ? "Uploading…" : <><Upload className="mr-1 inline h-3 w-3" />Upload</>}
+              {uploadingItemId === item.id ? <><Spinner className="mr-1 inline h-3 w-3" />Uploading…</> : <><Upload className="mr-1 inline h-3 w-3" />Upload</>}
               <input
                 type="file"
                 className="sr-only"
@@ -89,8 +90,8 @@ export function ChecklistPanel({ fileType, fileId, items, onUploaded }: Props) {
       <div className="mt-4 border-t border-[#1B1B1B]/10 pt-4">
         <p className="mb-2 text-xs font-medium uppercase tracking-wider text-[#1B1B1B]/40">Additional Documents</p>
         <label className="cursor-pointer rounded-full border border-[#1B1B1B]/20 px-3 py-1.5 text-xs font-medium text-[#1B1B1B]/60 hover:border-[#1B1B1B]/40 hover:text-[#1B1B1B]">
-          <Upload className="mr-1 inline h-3 w-3" />Add Document
-          <input type="file" className="sr-only" accept=".pdf,.jpg,.jpeg,.png,.docx" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(null, f); }} />
+          {uploadingItemId === "additional" ? <><Spinner className="mr-1 inline h-3 w-3" />Uploading…</> : <><Upload className="mr-1 inline h-3 w-3" />Add Document</>}
+          <input type="file" className="sr-only" accept=".pdf,.jpg,.jpeg,.png,.docx" disabled={uploadingItemId !== null} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(null, f); }} />
         </label>
       </div>
     </div>

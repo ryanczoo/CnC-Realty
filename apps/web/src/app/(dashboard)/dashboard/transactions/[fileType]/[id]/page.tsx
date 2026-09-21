@@ -20,6 +20,7 @@ import type {
 } from "@/types/transaction";
 import { TC_FEE, calcNetToAgent } from "@/lib/commission";
 import { formatDateOnly } from "@/lib/utils";
+import { Spinner } from "@/components/ui/Spinner";
 
 type Tab = "overview" | "checklist" | "parties" | "activity" | "commission" | "documents" | "tasks";
 
@@ -46,6 +47,7 @@ export default function FileDetailPage() {
   });
   const [file, setFile] = useState<ListingFileDetail | TransactionFileDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [tasks, setTasks] = useState<FileTaskRecord[]>([]);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -77,8 +79,13 @@ export default function FileDetailPage() {
     const endpoint = fileType === "listing"
       ? `/api/listings/${id}/submit-review`
       : `/api/transactions/${id}/submit-review`;
-    await fetch(endpoint, { method: "POST" });
-    load();
+    setSubmitting(true);
+    try {
+      await fetch(endpoint, { method: "POST" });
+      load();
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   async function convertToTransaction() {
@@ -168,8 +175,8 @@ export default function FileDetailPage() {
               />
             )}
             {!isReferral && !isLocked && !file.awaitingReview && (
-              <button onClick={submitForReview} className="rounded-full bg-[#9E8C61] px-4 py-2 text-sm text-white">
-                Submit for Review
+              <button onClick={submitForReview} disabled={submitting} className="inline-flex items-center rounded-full bg-[#9E8C61] px-4 py-2 text-sm text-white disabled:opacity-70">
+                {submitting ? <><Spinner className="mr-1.5 h-3.5 w-3.5 text-white" />Submitting…</> : "Submit for Review"}
               </button>
             )}
           </div>

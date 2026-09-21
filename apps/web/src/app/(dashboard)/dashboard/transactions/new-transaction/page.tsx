@@ -11,6 +11,7 @@ import { DateField } from "@/components/ui/DateField";
 import { FormField as Field } from "@/components/ui/FormField";
 import { stripDigits, digitsOnly } from "@/lib/form-validation";
 import { SIDES } from "@/types/transaction";
+import { Spinner } from "@/components/ui/Spinner";
 
 const STAGES = [
   { value: "UNDER_CONTRACT", label: "Under Contract", desc: "You have a signed agreement" },
@@ -713,7 +714,7 @@ export default function NewTransactionPage() {
             transition={SPRING_HOVER}
             className="inline-flex items-center rounded-full bg-[#1B1B1B] px-7 py-3.5 text-sm font-medium text-white disabled:opacity-50"
           >
-            {saving ? "Creating…" : "Create Transaction"}
+            {saving ? <><Spinner className="mr-2 h-4 w-4" />Creating…</> : "Create Transaction"}
           </motion.button>
         )}
       </div>
