@@ -150,7 +150,7 @@ describe("transaction-emails — referral files with no property address", () =>
 
     expect(call.subject).toBe("Document Correction - 123 Main St");
     expect(html).toContain(
-      'Hi Jane Agent, the following document was rejected for your listing at <strong style="color: #1B1B1B;">123 Main St</strong>:'
+      'Hi Jane Agent, the following document was rejected for your transaction at <strong style="color: #1B1B1B;">123 Main St</strong>:'
     );
     expect(html).toContain('Document: <strong style="color: #1B1B1B;">RFA</strong><br />');
     expect(html).toContain('Reason: <strong style="color: #1B1B1B;">missing signature</strong>');
@@ -264,7 +264,7 @@ describe("transaction-emails — referral files with no property address", () =>
     expect(html).toContain(
       '<h2 style="color: #1B1B1B; font-weight: 400; font-size: 33px; margin: 0 0 24px; text-align: center;">'
     );
-    expect(html).toContain("Hi Jane Agent, all required documents have been approved for your listing at:");
+    expect(html).toContain("Hi Jane Agent, all required documents have been approved for your transaction at:");
     expect(html).toMatch(
       /<p style="color: #1B1B1B; font-size: 22\.5px; line-height: 1\.6; text-align: center; font-weight: 700; margin: 0 0 32px;">\s*123 Main St,<br \/>\s*Los Angeles, CA 90012\s*<\/p>/
     );
@@ -387,5 +387,48 @@ describe("transaction-emails — sendFileExpirationWarning", () => {
     expect(html).toContain("Please review your file and take any necessary action!");
     expect(html).not.toContain("Please take action.");
     expect(html).not.toContain("font-size: 15px");
+  });
+});
+
+describe("transaction-emails — wording follows the file type", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.NEXTAUTH_URL = "http://localhost:3000";
+  });
+
+  it("the rejection email says 'transaction' for a transaction file", async () => {
+    await sendDocumentRejected({
+      agentEmail: "a@example.com", agentName: "Jane", documentName: "TDS.pdf",
+      address: "1 Main St", rejectionNote: "Blurry scan", fileType: "transaction", fileId: "f1",
+    });
+    const html = vi.mocked(sendEmail).mock.calls[0][0].html;
+    expect(html).toContain("your transaction at");
+    expect(html).not.toContain("your listing at");
+  });
+
+  it("the rejection email still says 'listing' for a listing file", async () => {
+    await sendDocumentRejected({
+      agentEmail: "a@example.com", agentName: "Jane", documentName: "LL.pdf",
+      address: "1 Main St", rejectionNote: "Unsigned", fileType: "listing", fileId: "f1",
+    });
+    expect(vi.mocked(sendEmail).mock.calls[0][0].html).toContain("your listing at");
+  });
+
+  it("the all-approved email says 'transaction' for a transaction file", async () => {
+    await sendAllDocsApproved({
+      agentEmail: "a@example.com", agentName: "Jane", address: "1 Main St",
+      fileType: "transaction", fileId: "f1",
+    });
+    const html = vi.mocked(sendEmail).mock.calls[0][0].html;
+    expect(html).toContain("for your transaction at");
+    expect(html).not.toContain("for your listing at");
+  });
+
+  it("the all-approved email still says 'listing' for a listing file", async () => {
+    await sendAllDocsApproved({
+      agentEmail: "a@example.com", agentName: "Jane", address: "1 Main St",
+      fileType: "listing", fileId: "f1",
+    });
+    expect(vi.mocked(sendEmail).mock.calls[0][0].html).toContain("for your listing at");
   });
 });

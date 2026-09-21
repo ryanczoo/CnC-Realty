@@ -59,7 +59,7 @@ export async function sendDocumentRejected(opts: {
     photoUrl: `${process.env.NEXTAUTH_URL}/document-correction-photo.jpg`,
     bodyHtml: `
       <p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; text-align: center; margin: 0 0 32px;">
-        Hi ${safeAgentName}, the following document was rejected for your listing at <strong style="color: #1B1B1B;">${safeAddress}</strong>:
+        Hi ${safeAgentName}, the following document was rejected for your ${opts.fileType} at <strong style="color: #1B1B1B;">${safeAddress}</strong>:
       </p>
       <p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; text-align: center; font-weight: 700; margin: 0 0 32px;">
         Document: <strong style="color: #1B1B1B;">${safeDocumentName}</strong><br />
@@ -106,7 +106,7 @@ export async function sendAllDocsApproved(opts: {
     photoUrl: `${process.env.NEXTAUTH_URL}/document-rejected-photo.jpg`,
     bodyHtml: `
       <p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; text-align: center; margin: 0 0 32px;">
-        Hi ${safeAgentName}, all required documents have been approved for your listing at:
+        Hi ${safeAgentName}, all required documents have been approved for your ${opts.fileType} at:
       </p>
       <p style="color: #1B1B1B; font-size: 22.5px; line-height: 1.6; text-align: center; font-weight: 700; margin: 0 0 32px;">
         ${safeAddress}${safeCityStateZip ? `,<br />\n      ${safeCityStateZip}` : ""}
