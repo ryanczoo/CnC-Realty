@@ -2,6 +2,8 @@ import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isFileReadOnlyFor, type FileKind } from "@/lib/file-lock";
+import { FILE_LOCKED_MESSAGE } from "@/lib/file-messages";
 
 type Role = "BUYER" | "AGENT" | "ADMIN";
 
@@ -41,6 +43,17 @@ export function checkOwnership<T extends { agentId: string | null }>(
   return { exists: true, forbidden: !callerAgentId || record.agentId !== callerAgentId, record };
 }
 
+// Returns the 403 response to send when an agent tries to change a finished
+// file; returns null when the change is allowed (open file, or an admin).
+export function assertFileEditable(
+  kind: FileKind,
+  status: string | null | undefined,
+  role: string
+): NextResponse | null {
+  if (!isFileReadOnlyFor(kind, status, role)) return null;
+  return NextResponse.json({ error: FILE_LOCKED_MESSAGE }, { status: 403 });
+}
+
 // Resolves which file (listing or transaction) a record with both possible
 // FK columns belongs to, from whichever one is actually populated. Returns
 // null if neither is set (shouldn't happen with real data, but callers must
@@ -64,10 +77,10 @@ export async function getFileAndVerifyAccess(
   fileId: string,
   callerAgentId: string | null,
   role: string
-): Promise<{ id: string; agentId: string } | null> {
+): Promise<{ id: string; agentId: string; status: string } | null> {
   const file = fileType === "listing"
-    ? await prisma.listingFile.findUnique({ where: { id: fileId }, select: { id: true, agentId: true } })
-    : await prisma.transactionFile.findUnique({ where: { id: fileId }, select: { id: true, agentId: true } });
+    ? await prisma.listingFile.findUnique({ where: { id: fileId }, select: { id: true, agentId: true, status: true } })
+    : await prisma.transactionFile.findUnique({ where: { id: fileId }, select: { id: true, agentId: true, status: true } });
   const { exists, forbidden, record } = checkOwnership(file, callerAgentId, role);
   if (!exists || forbidden) return null;
   return record;
