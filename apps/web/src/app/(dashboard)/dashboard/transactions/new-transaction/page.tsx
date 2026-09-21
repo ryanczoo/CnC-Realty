@@ -237,22 +237,23 @@ export default function NewTransactionPage() {
         {step === 0 && (
           <div className="space-y-8">
             <div>
-              <SectionLabel>Transaction Type</SectionLabel>
+              <SectionLabel className="text-center">Transaction Type</SectionLabel>
               <div className="grid grid-cols-2 gap-4">
-                {SIDES.map((s) => (
+                {SIDES.map((s, i) => (
                   <OptionCard
                     key={s.value}
                     selected={form.transactionSide === s.value}
                     onClick={() => set("transactionSide", s.value)}
                     label={s.label}
                     desc={s.desc}
+                    className={i === SIDES.length - 1 && SIDES.length % 2 === 1 ? "col-span-2 w-[calc(50%-0.5rem)] justify-self-center" : ""}
                   />
                 ))}
               </div>
             </div>
             {form.transactionSide && (
               <div>
-                <SectionLabel>Transaction Stage</SectionLabel>
+                <SectionLabel className="text-center">Transaction Stage</SectionLabel>
                 <div className="grid grid-cols-2 gap-4">
                   {STAGES.map((s) => (
                     <OptionCard
@@ -268,7 +269,7 @@ export default function NewTransactionPage() {
             )}
             {form.transactionSide && !isReferral && (
               <div>
-                <SectionLabel>Select One</SectionLabel>
+                <SectionLabel className="text-center">Select One</SectionLabel>
                 <div className="grid grid-cols-2 gap-4">
                   {PROPERTY_CATEGORIES.map((c) => (
                     <OptionCard
@@ -721,21 +722,21 @@ export default function NewTransactionPage() {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
+function SectionLabel({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-[#1B1B1B]/40">{children}</p>
+    <p className={`mb-4 text-xs font-semibold uppercase tracking-widest text-[#1B1B1B]/40 ${className}`}>{children}</p>
   );
 }
 
 function OptionCard({
-  selected, onClick, label, desc,
+  selected, onClick, label, desc, className = "",
 }: {
-  selected: boolean; onClick: () => void; label: string; desc?: string;
+  selected: boolean; onClick: () => void; label: string; desc?: string; className?: string;
 }) {
   return (
     <button
       onClick={onClick}
-      className={`rounded-xl border p-6 text-left transition-colors ${selected ? "border-[#9E8C61] bg-[#9E8C61]/5" : "border-[#1B1B1B]/10 hover:border-[#1B1B1B]/25"}`}
+      className={`rounded-xl border p-6 text-center transition-colors ${selected ? "border-[#9E8C61] bg-[#9E8C61]/5" : "border-[#1B1B1B]/10 hover:border-[#1B1B1B]/25"} ${className}`}
     >
       <p className="font-semibold text-[#1B1B1B]">{label}</p>
       {desc && <p className="mt-1 text-xs text-[#1B1B1B]/40">{desc}</p>}
