@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isReadyToClose } from "@/lib/transaction-helpers";
 import { sendAllDocsApproved } from "@/lib/email/transaction-emails";
+import { sendSafely } from "@/lib/email/send-safely";
 import { clearedListingSentinels } from "@/lib/transfer-placeholder";
 
 const TEMPLATE_ITEMS_INCLUDE = { items: { orderBy: { order: "asc" as const } } };
@@ -166,24 +167,29 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     include: { documents: true },
   });
 
+  let emailFailed = false;
   if (isReadyToClose(checklistItems)) {
     const fileRecord = isListing
       ? await prisma.listingFile.findUnique({ where: { id: fileId }, select: { propertyAddress: true, city: true, state: true, zip: true, agent: { select: { user: { select: { email: true, name: true } } } } } })
       : await prisma.transactionFile.findUnique({ where: { id: fileId }, select: { propertyAddress: true, city: true, state: true, zip: true, agent: { select: { user: { select: { email: true, name: true } } } } } });
 
     if (fileRecord?.agent?.user) {
-      await sendAllDocsApproved({
-        agentEmail: fileRecord.agent.user.email,
-        agentName: fileRecord.agent.user.name ?? "Agent",
-        address: fileRecord.propertyAddress,
-        city: fileRecord.city,
-        state: fileRecord.state,
-        zip: fileRecord.zip,
-        fileType: isListing ? "listing" : "transaction",
-        fileId,
-      });
+      emailFailed = (
+        await sendSafely(() =>
+          sendAllDocsApproved({
+            agentEmail: fileRecord.agent.user.email,
+            agentName: fileRecord.agent.user.name ?? "Agent",
+            address: fileRecord.propertyAddress,
+            city: fileRecord.city,
+            state: fileRecord.state,
+            zip: fileRecord.zip,
+            fileType: isListing ? "listing" : "transaction",
+            fileId,
+          })
+        )
+      ).failed;
     }
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, ...(emailFailed && { emailWarning: true }) });
 }

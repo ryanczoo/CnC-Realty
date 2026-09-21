@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { checkOwnership, assertFileEditable } from "@/lib/api-auth";
 import { getChecklistProgress, CHECKLIST_ITEMS_WITH_DOCS_INCLUDE } from "@/lib/transaction-helpers";
 import { sendSubmitForReview } from "@/lib/email/transaction-emails";
+import { sendSafely } from "@/lib/email/send-safely";
 
 export async function POST(_req: Request, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
@@ -30,7 +31,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     data: { fileType: "TRANSACTION", transactionFileId: params.id, actorId: session.user.id, actorRole: "AGENT", type: "SUBMITTED_FOR_REVIEW" },
   });
 
-  await sendSubmitForReview({ fileType: "Transaction", address: tx.propertyAddress, agentName: tx.agent.user.name ?? "Agent", fileId: params.id });
+  await sendSafely(() => sendSubmitForReview({ fileType: "Transaction", address: tx.propertyAddress, agentName: tx.agent.user.name ?? "Agent", fileId: params.id }));
 
   return NextResponse.json({ ok: true });
 }

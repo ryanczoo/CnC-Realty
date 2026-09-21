@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendDocumentRejected } from "@/lib/email/transaction-emails";
+import { sendSafely } from "@/lib/email/send-safely";
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
@@ -39,17 +40,21 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     ? await prisma.listingFile.findUnique({ where: { id: fileId }, select: { propertyAddress: true, agent: { select: { user: { select: { email: true, name: true } } } } } })
     : await prisma.transactionFile.findUnique({ where: { id: fileId }, select: { propertyAddress: true, agent: { select: { user: { select: { email: true, name: true } } } } } });
 
+  let emailFailed = false;
   if (fileRecord?.agent?.user) {
-    await sendDocumentRejected({
-      agentEmail: fileRecord.agent.user.email,
-      agentName: fileRecord.agent.user.name ?? "Agent",
-      documentName: doc.name,
-      address: fileRecord.propertyAddress,
-      rejectionNote: note,
-      fileType: isListing ? "listing" : "transaction",
-      fileId,
-    });
+    const { failed } = await sendSafely(() =>
+      sendDocumentRejected({
+        agentEmail: fileRecord.agent.user.email,
+        agentName: fileRecord.agent.user.name ?? "Agent",
+        documentName: doc.name,
+        address: fileRecord.propertyAddress,
+        rejectionNote: note,
+        fileType: isListing ? "listing" : "transaction",
+        fileId,
+      })
+    );
+    emailFailed = failed;
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, ...(emailFailed && { emailWarning: true }) });
 }

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("next-auth", () => ({ getServerSession: vi.fn() }));
 vi.mock("@/lib/auth", () => ({ authOptions: {} }));
+vi.mock("@sentry/nextjs", () => ({ captureException: vi.fn() }));
 vi.mock("@/lib/email/transaction-emails", () => ({ sendAllDocsApproved: vi.fn().mockResolvedValue(undefined) }));
 vi.mock("@/lib/prisma", () => {
   const mockPrisma: any = {
@@ -18,6 +19,7 @@ vi.mock("@/lib/prisma", () => {
 
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
+import { sendAllDocsApproved } from "@/lib/email/transaction-emails";
 import { POST } from "../../app/api/admin/documents/[id]/approve/route";
 
 describe("POST /api/admin/documents/[id]/approve — PENDING_TRANSFER unlock", () => {
@@ -88,5 +90,28 @@ describe("POST /api/admin/documents/[id]/approve — PENDING_TRANSFER unlock", (
     await POST(req, { params: { id: "doc-3" } });
 
     expect(prisma.transactionFile.updateMany).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/admin/documents/[id]/approve — email failure", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("still approves and warns the admin when the all-approved email fails", async () => {
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "admin-1", role: "ADMIN" } } as any);
+    vi.mocked(prisma.fileDocument.findUnique).mockResolvedValue({
+      id: "doc-9", fileType: "TRANSACTION", listingFileId: null, transactionFileId: "tx-9", checklistItemId: "c-9", name: "signed.pdf",
+    } as any);
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({
+      id: "tx-9", status: "PENDING", propertyAddress: "1 A St", city: "Irvine", state: "CA", zip: "92603",
+      agent: { user: { email: "a@x.com", name: "Ann" } },
+    } as any);
+    vi.mocked(prisma.fileChecklistItem.findMany).mockResolvedValue([]); // no required items left, so the file is ready to close
+    vi.mocked(sendAllDocsApproved).mockRejectedValueOnce(new Error("Postmark 406"));
+
+    const res = await POST(new Request("http://localhost/api/admin/documents/doc-9/approve", { method: "POST" }), { params: { id: "doc-9" } });
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, emailWarning: true });
+    expect(prisma.fileDocument.update).toHaveBeenCalled();
   });
 });
