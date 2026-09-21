@@ -567,7 +567,7 @@ export default function NewTransactionPage() {
                 className={`relative h-6 w-11 rounded-full transition-colors ${tcFeeEnabled ? "bg-[#9E8C61]" : "bg-[#1B1B1B]/20"}`}
               >
                 <span
-                  className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                  className={`absolute left-0 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
                     tcFeeEnabled ? "translate-x-5" : "translate-x-0.5"
                   }`}
                 />
