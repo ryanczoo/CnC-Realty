@@ -18,9 +18,10 @@ const TYPE_LABELS: Record<FileActivityType, string> = {
 interface Props extends FileContextProps {
   activities: FileActivityRecord[];
   onNoteAdded: () => void;
+  readOnly?: boolean;
 }
 
-export function ActivityFeed({ fileType, fileId, activities, onNoteAdded }: Props) {
+export function ActivityFeed({ fileType, fileId, activities, onNoteAdded, readOnly = false }: Props) {
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -61,20 +62,22 @@ export function ActivityFeed({ fileType, fileId, activities, onNoteAdded }: Prop
         })}
       </div>
 
-      <div className="border-t border-[#1B1B1B]/10 pt-4">
-        <textarea
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder="Add a note…"
-          rows={3}
-          className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#9E8C61]/30"
-        />
-        <div className="mt-2 flex justify-end">
-          <button onClick={addNote} disabled={saving || !note.trim()} className="rounded-full bg-[#1B1B1B] px-4 py-1.5 text-sm text-white disabled:opacity-40">
-            {saving ? "Saving…" : "Add Note"}
-          </button>
+      {!readOnly && (
+        <div className="border-t border-[#1B1B1B]/10 pt-4">
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Add a note…"
+            rows={3}
+            className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#9E8C61]/30"
+          />
+          <div className="mt-2 flex justify-end">
+            <button onClick={addNote} disabled={saving || !note.trim()} className="rounded-full bg-[#1B1B1B] px-4 py-1.5 text-sm text-white disabled:opacity-40">
+              {saving ? "Saving…" : "Add Note"}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -9,6 +9,7 @@ import { PartiesTable } from "@/components/transactions/PartiesTable";
 import { ActivityFeed } from "@/components/transactions/ActivityFeed";
 import { TransferPendingPanel } from "@/components/transactions/TransferPendingPanel";
 import { getChecklistProgress } from "@/lib/transaction-helpers";
+import { isFileReadOnlyFor } from "@/lib/file-lock";
 import { isPlaceholderAddress } from "@/lib/transfer-placeholder";
 import { DateField } from "@/components/ui/DateField";
 import type {
@@ -132,6 +133,7 @@ export default function FileDetailPage() {
   const isReferral = !isListing && transaction?.transactionSide === "REFERRAL";
   const isLocked = file.status === "PENDING_TRANSFER";
   const viewerIsAdmin = session?.user?.role === "ADMIN";
+  const readOnly = isFileReadOnlyFor(isListing ? "listing" : "transaction", file.status, session?.user?.role ?? "AGENT");
   const viewerIsFileAgent =
     !!transaction && session?.user?.agentId != null && session.user.agentId === transaction.agentId;
 
@@ -175,7 +177,7 @@ export default function FileDetailPage() {
           </div>
 
           <div className="flex shrink-0 gap-2">
-            {isListing && listing?.status === "ACTIVE" && (
+            {isListing && listing?.status === "ACTIVE" && !readOnly && (
               <button onClick={convertToTransaction} className="rounded-full border border-[#1B1B1B]/20 px-4 py-2 text-sm text-[#1B1B1B]/70 hover:border-[#1B1B1B]/40">
                 Convert to Transaction
               </button>
@@ -188,7 +190,7 @@ export default function FileDetailPage() {
                 onDone={load}
               />
             )}
-            {!isReferral && !isLocked && !file.awaitingReview && (
+            {!isReferral && !isLocked && !file.awaitingReview && !readOnly && (
               <button onClick={submitForReview} disabled={submitting} className="inline-flex items-center rounded-full bg-[#9E8C61] px-4 py-2 text-sm text-white disabled:opacity-70">
                 {submitting ? <><Spinner className="mr-1.5 h-3.5 w-3.5 text-white" />Submitting…</> : "Submit for Review"}
               </button>
@@ -210,6 +212,9 @@ export default function FileDetailPage() {
 
       {!isLocked && (
       <>
+      {readOnly && (
+        <p className="mb-4 rounded-lg bg-[#F2F0EF] px-4 py-2 text-sm text-[#1B1B1B]/60">This file is closed.</p>
+      )}
       <div className="mb-6 flex gap-1 overflow-x-auto rounded-xl bg-[#F2F0EF] p-1 w-fit max-w-full">
         {visibleTabs.map((t) => (
           <button
@@ -254,6 +259,7 @@ export default function FileDetailPage() {
           fileId={id}
           tasks={tasks}
           onTasksChanged={setTasks}
+          readOnly={readOnly}
         />
       )}
 
@@ -263,6 +269,7 @@ export default function FileDetailPage() {
           fileId={id}
           items={file.checklistItems as FileChecklistItemWithDocs[]}
           onUploaded={load}
+          readOnly={readOnly}
         />
       )}
 
@@ -272,6 +279,7 @@ export default function FileDetailPage() {
           fileId={id}
           parties={file.parties ?? []}
           onChanged={load}
+          readOnly={readOnly}
         />
       )}
 
@@ -281,6 +289,7 @@ export default function FileDetailPage() {
           fileId={id}
           activities={file.activities ?? []}
           onNoteAdded={load}
+          readOnly={readOnly}
         />
       )}
       </>
@@ -558,11 +567,13 @@ function TasksTab({
   fileId,
   tasks,
   onTasksChanged,
+  readOnly,
 }: {
   fileType: string;
   fileId: string;
   tasks: FileTaskRecord[];
   onTasksChanged: (tasks: FileTaskRecord[]) => void;
+  readOnly: boolean;
 }) {
   const [form, setForm] = useState({ title: "", dueDate: "", assigneeName: "" });
   const [adding, setAdding] = useState(false);
@@ -615,15 +626,17 @@ function TasksTab({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-[#1B1B1B]/50">{pending.length} task{pending.length !== 1 ? "s" : ""} remaining</p>
-        <button
-          onClick={() => setShowForm((v) => !v)}
-          className="rounded-full bg-[#1B1B1B] px-4 py-2 text-sm text-white hover:bg-[#1B1B1B]/80 transition-colors"
-        >
-          + Add Task
-        </button>
+        {!readOnly && (
+          <button
+            onClick={() => setShowForm((v) => !v)}
+            className="rounded-full bg-[#1B1B1B] px-4 py-2 text-sm text-white hover:bg-[#1B1B1B]/80 transition-colors"
+          >
+            + Add Task
+          </button>
+        )}
       </div>
 
-      {showForm && (
+      {showForm && !readOnly && (
         <form onSubmit={addTask} className="rounded-xl border border-[#1B1B1B]/10 bg-white p-5 space-y-3">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">New Task</h3>
           <input
@@ -672,14 +685,14 @@ function TasksTab({
       {tasks.length === 0 && !showForm && (
         <div className="rounded-xl border border-dashed border-[#1B1B1B]/15 bg-white p-10 text-center">
           <p className="text-sm text-[#1B1B1B]/40">No tasks yet.</p>
-          <p className="mt-1 text-xs text-[#1B1B1B]/30">Click &quot;Add Task&quot; to create the first one.</p>
+          {!readOnly && <p className="mt-1 text-xs text-[#1B1B1B]/30">Click &quot;Add Task&quot; to create the first one.</p>}
         </div>
       )}
 
       {pending.length > 0 && (
         <div className="rounded-xl border border-[#1B1B1B]/10 bg-white overflow-hidden">
           {pending.map((task, i) => (
-            <TaskRow key={task.id} task={task} isLast={i === pending.length - 1} onToggle={toggleTask} onDelete={deleteTask} />
+            <TaskRow key={task.id} task={task} isLast={i === pending.length - 1} onToggle={toggleTask} onDelete={deleteTask} readOnly={readOnly} />
           ))}
         </div>
       )}
@@ -690,7 +703,7 @@ function TasksTab({
             <span className="text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/30">Completed ({done.length})</span>
           </div>
           {done.map((task, i) => (
-            <TaskRow key={task.id} task={task} isLast={i === done.length - 1} onToggle={toggleTask} onDelete={deleteTask} />
+            <TaskRow key={task.id} task={task} isLast={i === done.length - 1} onToggle={toggleTask} onDelete={deleteTask} readOnly={readOnly} />
           ))}
         </div>
       )}
@@ -703,11 +716,13 @@ function TaskRow({
   isLast,
   onToggle,
   onDelete,
+  readOnly,
 }: {
   task: FileTaskRecord;
   isLast: boolean;
   onToggle: (t: FileTaskRecord) => void;
   onDelete: (id: string) => void;
+  readOnly: boolean;
 }) {
   const isOverdue = task.dueDate && !task.done && isDateOnlyPast(task.dueDate);
 
@@ -715,7 +730,8 @@ function TaskRow({
     <div className={`flex items-center gap-3 px-5 py-3 ${!isLast ? "border-b border-[#1B1B1B]/5" : ""}`}>
       <button
         onClick={() => onToggle(task)}
-        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${task.done ? "border-[#9E8C61] bg-[#9E8C61]" : "border-[#1B1B1B]/20 hover:border-[#9E8C61]"}`}
+        disabled={readOnly}
+        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors disabled:cursor-default ${task.done ? "border-[#9E8C61] bg-[#9E8C61]" : "border-[#1B1B1B]/20 hover:border-[#9E8C61]"}`}
       >
         {task.done && (
           <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
@@ -739,15 +755,17 @@ function TaskRow({
         </div>
       </div>
 
-      <button
-        onClick={() => onDelete(task.id)}
-        className="shrink-0 text-[#1B1B1B]/20 hover:text-red-400 transition-colors"
-        aria-label="Delete task"
-      >
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-        </svg>
-      </button>
+      {!readOnly && (
+        <button
+          onClick={() => onDelete(task.id)}
+          className="shrink-0 text-[#1B1B1B]/20 hover:text-red-400 transition-colors"
+          aria-label="Delete task"
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+        </button>
+      )}
     </div>
   );
 }

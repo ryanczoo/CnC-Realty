@@ -13,9 +13,10 @@ const ROLE_LABELS: Record<FilePartyRole, string> = {
 interface Props extends FileContextProps {
   parties: FilePartyRecord[];
   onChanged: () => void;
+  readOnly?: boolean;
 }
 
-export function PartiesTable({ fileType, fileId, parties, onChanged }: Props) {
+export function PartiesTable({ fileType, fileId, parties, onChanged, readOnly = false }: Props) {
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ role: "BUYER" as FilePartyRole, name: "", email: "", phone: "", company: "", licenseNumber: "" });
 
@@ -53,16 +54,18 @@ export function PartiesTable({ fileType, fileId, parties, onChanged }: Props) {
               <td className="py-2 text-[#1B1B1B]/60">{p.company ?? "—"}</td>
               <td className="py-2 text-[#1B1B1B]/60">{p.licenseNumber ?? "—"}</td>
               <td className="py-2 text-right">
-                <button onClick={() => removeParty(p.id)} className="text-[#1B1B1B]/30 hover:text-red-500">
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                {!readOnly && (
+                  <button onClick={() => removeParty(p.id)} className="text-[#1B1B1B]/30 hover:text-red-500">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
               </td>
             </tr>
           ))}
         </tbody>
       </table>
 
-      {adding ? (
+      {!readOnly && (adding ? (
         <div className="mt-4 grid grid-cols-2 gap-2 rounded-lg border border-[#1B1B1B]/10 p-4">
           <select value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value as FilePartyRole }))} className="col-span-2 rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2 text-sm text-[#1B1B1B]">
             {Object.entries(ROLE_LABELS).filter(([v]) => v !== "TITLE_ESCROW").map(([v, l]) => <option key={v} value={v}>{l}</option>)}
@@ -79,7 +82,7 @@ export function PartiesTable({ fileType, fileId, parties, onChanged }: Props) {
         <button onClick={() => setAdding(true)} className="mt-3 flex items-center gap-1.5 text-sm text-[#1B1B1B]/50 hover:text-[#1B1B1B]">
           <Plus className="h-4 w-4" /> Add Party
         </button>
-      )}
+      ))}
     </div>
   );
 }

@@ -11,6 +11,7 @@ interface Props {
   fileId: string;
   items: FileChecklistItemWithDocs[];
   onUploaded: () => void;
+  readOnly?: boolean;
 }
 
 const STATUS_ICONS: Record<DocumentReviewStatus, React.ReactNode> = {
@@ -20,7 +21,7 @@ const STATUS_ICONS: Record<DocumentReviewStatus, React.ReactNode> = {
   NOT_SUBMITTED:  <AlertCircle className="h-4 w-4 text-zinc-400" />,
 };
 
-export function ChecklistPanel({ fileType, fileId, items, onUploaded }: Props) {
+export function ChecklistPanel({ fileType, fileId, items, onUploaded, readOnly = false }: Props) {
   const [uploadingItemId, setUploadingItemId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -83,13 +84,13 @@ export function ChecklistPanel({ fileType, fileId, items, onUploaded }: Props) {
                 </>
               )}
             </div>
-            <label className={`shrink-0 cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition-colors ${uploadingItemId === item.id ? "bg-zinc-100 text-zinc-400" : "bg-[#1B1B1B] text-white hover:bg-[#1B1B1B]/80"}`}>
+            <label className={`${readOnly ? "pointer-events-none opacity-40 " : ""}shrink-0 cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition-colors ${uploadingItemId === item.id ? "bg-zinc-100 text-zinc-400" : "bg-[#1B1B1B] text-white hover:bg-[#1B1B1B]/80"}`}>
               {uploadingItemId === item.id ? <><Spinner className="mr-1 inline h-3 w-3" />Uploading…</> : <><Upload className="mr-1 inline h-3 w-3" />Upload</>}
               <input
                 type="file"
                 className="sr-only"
                 accept=".pdf,.jpg,.jpeg,.png,.docx"
-                disabled={uploadingItemId !== null}
+                disabled={uploadingItemId !== null || readOnly}
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(item.id, f); }}
               />
             </label>
@@ -99,9 +100,9 @@ export function ChecklistPanel({ fileType, fileId, items, onUploaded }: Props) {
 
       <div className="mt-4 border-t border-[#1B1B1B]/10 pt-4">
         <p className="mb-2 text-xs font-medium uppercase tracking-wider text-[#1B1B1B]/40">Additional Documents</p>
-        <label className={`cursor-pointer rounded-full border border-[#1B1B1B]/20 px-3 py-1.5 text-xs font-medium text-[#1B1B1B]/60 hover:border-[#1B1B1B]/40 hover:text-[#1B1B1B] ${uploadingItemId !== null ? "opacity-50" : ""}`}>
+        <label className={`cursor-pointer rounded-full border border-[#1B1B1B]/20 px-3 py-1.5 text-xs font-medium text-[#1B1B1B]/60 hover:border-[#1B1B1B]/40 hover:text-[#1B1B1B] ${uploadingItemId !== null ? "opacity-50" : ""} ${readOnly ? "pointer-events-none opacity-40" : ""}`}>
           {uploadingItemId === "additional" ? <><Spinner className="mr-1 inline h-3 w-3" />Uploading…</> : <><Upload className="mr-1 inline h-3 w-3" />Add Document</>}
-          <input type="file" className="sr-only" accept=".pdf,.jpg,.jpeg,.png,.docx" disabled={uploadingItemId !== null} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(null, f); }} />
+          <input type="file" className="sr-only" accept=".pdf,.jpg,.jpeg,.png,.docx" disabled={uploadingItemId !== null || readOnly} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(null, f); }} />
         </label>
       </div>
     </div>
