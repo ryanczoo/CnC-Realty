@@ -6,6 +6,7 @@ import { motion } from "motion/react";
 import { Plus, Trash2 } from "lucide-react";
 import { SPRING_HOVER } from "@/lib/motion";
 import { TC_FEE, calcNetToAgent } from "@/lib/commission";
+import { escrowTypeToRole } from "@/lib/transaction-helpers";
 import { DateField } from "@/components/ui/DateField";
 import { FormField as Field } from "@/components/ui/FormField";
 import { stripDigits, digitsOnly } from "@/lib/form-validation";
@@ -156,7 +157,7 @@ export default function NewTransactionPage() {
       ...sellers.filter((s) => s.name).map((s) => ({ role: "SELLER", ...s })),
       ...(listingAgent.name ? [{ role: "LISTING_AGENT", ...listingAgent }] : []),
       ...(titleEscrow.name
-        ? [{ role: "TITLE_ESCROW", ...titleEscrow, company: titleEscrow.contactType }]
+        ? [{ role: escrowTypeToRole(titleEscrow.contactType), ...titleEscrow }]
         : []),
       ...(showLoanOfficer && loanOfficer.name ? [{ role: "LENDER", ...loanOfficer }] : []),
       ...(showTc && tc.name ? [{ role: "TRANSACTION_COORDINATOR", ...tc }] : []),
