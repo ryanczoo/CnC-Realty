@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { FileCard } from "@/components/transactions/FileCard";
 
 type Tab = "all" | "review";
@@ -9,6 +8,10 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "review", label: "Awaiting Review" },
   { key: "all", label: "All Files" },
 ];
+
+type FileKind = "listing" | "transaction";
+// The two API lists are merged, so tag each row with where it came from.
+const withKind = (kind: FileKind) => (file: any) => ({ ...file, kind });
 
 export default function AdminTransactionsPage() {
   const [tab, setTab] = useState<Tab>("review");
@@ -19,11 +22,16 @@ export default function AdminTransactionsPage() {
   useEffect(() => {
     Promise.all([
       fetch("/api/admin/audit-queue").then((r) => r.json()),
-      fetch("/api/listings").then((r) => r.json()),
-      fetch("/api/transactions").then((r) => r.json()),
-    ]).then(([audit, l, t]) => {
-      setAuditQueue([...(audit.listings ?? []), ...(audit.transactions ?? [])]);
-      setAllFiles([...(l.listings ?? []), ...(t.transactions ?? [])]);
+      fetch("/api/admin/files").then((r) => r.json()),
+    ]).then(([audit, all]) => {
+      setAuditQueue([
+        ...(audit.listings ?? []).map(withKind("listing")),
+        ...(audit.transactions ?? []).map(withKind("transaction")),
+      ]);
+      setAllFiles([
+        ...(all.listings ?? []).map(withKind("listing")),
+        ...(all.transactions ?? []).map(withKind("transaction")),
+      ]);
       setLoading(false);
     });
   }, []);
@@ -62,25 +70,21 @@ export default function AdminTransactionsPage() {
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {items.map((item) => (
-            <Link
-              key={item.id}
-              href={`/admin/transactions/${item.fileType?.toLowerCase() ?? "listing"}/${item.id}`}
-              className="block"
-            >
-              <FileCard
-                id={item.id}
-                fileType={item.fileType?.toLowerCase() === "transaction" ? "transaction" : "listing"}
-                address={item.propertyAddress}
-                city={item.city}
-                status={item.status}
-                closeDate={item.closeOfEscrow ?? item.expirationDate}
-                listPrice={item.listPrice ?? item.salePrice}
-                checklistItems={item.checklistItems ?? []}
-                awaitingReview={item.awaitingReview}
-                referredToAgentName={item.referredToAgentName}
-                transactionSide={item.transactionSide}
-              />
-            </Link>
+            <FileCard
+              key={`${item.kind}-${item.id}`}
+              id={item.id}
+              fileType={item.kind}
+              href={`/admin/transactions/${item.kind}/${item.id}`}
+              address={item.propertyAddress}
+              city={item.city}
+              status={item.status}
+              closeDate={item.closeOfEscrow ?? item.expirationDate}
+              listPrice={item.listPrice ?? item.salePrice}
+              checklistItems={item.checklistItems ?? []}
+              awaitingReview={item.awaitingReview}
+              referredToAgentName={item.referredToAgentName}
+              transactionSide={item.transactionSide}
+            />
           ))}
         </div>
       )}

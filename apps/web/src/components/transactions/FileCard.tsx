@@ -16,15 +16,16 @@ interface Props {
   awaitingReview: boolean;
   referredToAgentName?: string | null;
   transactionSide?: string | null;
+  href?: string;
 }
 
-export function FileCard({ id, fileType, address, city, status, closeDate, listPrice, checklistItems, awaitingReview, referredToAgentName, transactionSide }: Props) {
+export function FileCard({ id, fileType, address, city, status, closeDate, listPrice, checklistItems, awaitingReview, referredToAgentName, transactionSide, href }: Props) {
   const { satisfied, required } = getChecklistProgress(checklistItems);
   const pct = required > 0 ? Math.round((satisfied / required) * 100) : 0;
 
   return (
     <Link
-      href={`/dashboard/transactions/${fileType}/${id}`}
+      href={href ?? `/dashboard/transactions/${fileType}/${id}`}
       className="flex flex-col gap-3 rounded-xl border border-[#1B1B1B]/10 bg-white p-4 transition-shadow hover:shadow-md"
     >
       <div className="flex items-start justify-between gap-2">
