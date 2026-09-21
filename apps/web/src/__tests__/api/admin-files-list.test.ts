@@ -46,5 +46,13 @@ describe("GET /api/admin/files", () => {
     expect(txArgs).not.toHaveProperty("where");
     expect(listingArgs).not.toHaveProperty("where");
     expect(txArgs.include.agent.include.user.select).toEqual({ name: true, email: true });
+    expect(txArgs.take).toBe(200);
+    expect(listingArgs.take).toBe(200);
+    expect(txArgs.orderBy).toEqual({ createdAt: "desc" });
+    expect(listingArgs.orderBy).toEqual({ createdAt: "desc" });
+    expect(listingArgs.include).toEqual(txArgs.include);
+    expect(txArgs.include.checklistItems).toEqual({
+      select: { isRequired: true, documents: { select: { reviewStatus: true } } },
+    });
   });
 });
