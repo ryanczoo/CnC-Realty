@@ -121,6 +121,13 @@ describe("changeFileStatus: the Closed email", () => {
     }));
   });
 
+  it("returns no warning when an admin closes a file and the email is sent", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx() as any);
+    const r = await changeFileStatus({ kind: "transaction", fileId: "f1", toStatus: "CLOSED", actor: ADMIN });
+    expect(r.ok).toBe(true);
+    expect("emailWarning" in r).toBe(false);
+  });
+
   it("does not send it for any other status", async () => {
     vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx() as any);
     await changeFileStatus({ kind: "transaction", fileId: "f1", toStatus: "EXPIRED", actor: ADMIN });
