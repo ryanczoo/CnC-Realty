@@ -4,6 +4,7 @@ import { useState } from "react";
 import { RevealLine } from "@/components/ui/reveal-text";
 import type { TransactionSide } from "@/types/transaction";
 import { ROLE_LABELS } from "@/types/transaction";
+import { formatDateOnly } from "@/lib/utils";
 
 export type AgentTransaction = {
   id: string;
@@ -28,7 +29,7 @@ type DisplayItem = {
 
 function realToDisplay(tx: AgentTransaction): DisplayItem {
   const dateStr = tx.closeOfEscrow
-    ? new Date(tx.closeOfEscrow).toLocaleDateString("en-US", { month: "short", year: "numeric" })
+    ? formatDateOnly(tx.closeOfEscrow, { month: "short", year: "numeric" })
     : null;
   return {
     id: tx.id,

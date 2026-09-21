@@ -19,6 +19,7 @@ import type {
   FileTaskRecord,
 } from "@/types/transaction";
 import { TC_FEE, calcNetToAgent } from "@/lib/commission";
+import { formatDateOnly } from "@/lib/utils";
 
 type Tab = "overview" | "checklist" | "parties" | "activity" | "commission" | "documents" | "tasks";
 
@@ -294,8 +295,8 @@ function OverviewTab({
             <>
               <InfoRow label="List Price" value={listing.listPrice ? `$${Number(listing.listPrice).toLocaleString()}` : "—"} />
               <InfoRow label="Type" value={listing.listingType ?? "—"} />
-              {listing.listDate && <InfoRow label="List Date" value={new Date(listing.listDate).toLocaleDateString()} />}
-              {listing.expirationDate && <InfoRow label="Expiration" value={new Date(listing.expirationDate).toLocaleDateString()} />}
+              {listing.listDate && <InfoRow label="List Date" value={formatDateOnly(listing.listDate)} />}
+              {listing.expirationDate && <InfoRow label="Expiration" value={formatDateOnly(listing.expirationDate)} />}
               {listing.commissionPercent && <InfoRow label="Commission" value={`${listing.commissionPercent}%`} />}
             </>
           )}
@@ -326,7 +327,7 @@ function OverviewTab({
             <InfoRow label="Referred-To Brokerage" value={transaction.referredToBrokerageName ?? "—"} />
             <InfoRow label="Contact Email" value={transaction.referredToContactEmail ?? "—"} />
             <InfoRow label="Contact Phone" value={transaction.referredToContactPhone ?? "—"} />
-            <InfoRow label="Date Referred" value={transaction.dateReferred ? new Date(transaction.dateReferred).toLocaleDateString() : "—"} />
+            <InfoRow label="Date Referred" value={transaction.dateReferred ? formatDateOnly(transaction.dateReferred) : "—"} />
             {transaction.referralAmountReceived != null && (
               <>
                 <InfoRow label="Referral Amount Received" value={`$${Number(transaction.referralAmountReceived).toLocaleString()}`} />
@@ -348,15 +349,15 @@ function OverviewTab({
         {!isListing && transaction && !isReferral && (
           <div className="rounded-xl border border-[#1B1B1B]/10 bg-white p-5 space-y-3">
             <h2 className="text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Key Dates</h2>
-            <InfoRow label="Offer Date" value={transaction.offerDate ? new Date(transaction.offerDate).toLocaleDateString() : "—"} />
-            <InfoRow label="Acceptance Date" value={transaction.acceptanceDate ? new Date(transaction.acceptanceDate).toLocaleDateString() : "—"} />
-            <InfoRow label="Inspection Deadline" value={transaction.inspectionDeadline ? new Date(transaction.inspectionDeadline).toLocaleDateString() : "—"} />
-            <InfoRow label="Appraisal Deadline" value={transaction.appraisalDeadline ? new Date(transaction.appraisalDeadline).toLocaleDateString() : "—"} />
-            <InfoRow label="Loan Approval" value={transaction.loanApprovalDeadline ? new Date(transaction.loanApprovalDeadline).toLocaleDateString() : "—"} />
-            <InfoRow label="Close of Escrow" value={transaction.closeOfEscrow ? new Date(transaction.closeOfEscrow).toLocaleDateString() : "—"} />
-            {transaction.offerExpirationDate && <InfoRow label="Offer Expiration" value={new Date(transaction.offerExpirationDate).toLocaleDateString()} />}
-            {transaction.finalWalkthroughDate && <InfoRow label="Final Walkthrough" value={new Date(transaction.finalWalkthroughDate).toLocaleDateString()} />}
-            {transaction.possessionDate && <InfoRow label="Possession Date" value={new Date(transaction.possessionDate).toLocaleDateString()} />}
+            <InfoRow label="Offer Date" value={transaction.offerDate ? formatDateOnly(transaction.offerDate) : "—"} />
+            <InfoRow label="Acceptance Date" value={transaction.acceptanceDate ? formatDateOnly(transaction.acceptanceDate) : "—"} />
+            <InfoRow label="Inspection Deadline" value={transaction.inspectionDeadline ? formatDateOnly(transaction.inspectionDeadline) : "—"} />
+            <InfoRow label="Appraisal Deadline" value={transaction.appraisalDeadline ? formatDateOnly(transaction.appraisalDeadline) : "—"} />
+            <InfoRow label="Loan Approval" value={transaction.loanApprovalDeadline ? formatDateOnly(transaction.loanApprovalDeadline) : "—"} />
+            <InfoRow label="Close of Escrow" value={transaction.closeOfEscrow ? formatDateOnly(transaction.closeOfEscrow) : "—"} />
+            {transaction.offerExpirationDate && <InfoRow label="Offer Expiration" value={formatDateOnly(transaction.offerExpirationDate)} />}
+            {transaction.finalWalkthroughDate && <InfoRow label="Final Walkthrough" value={formatDateOnly(transaction.finalWalkthroughDate)} />}
+            {transaction.possessionDate && <InfoRow label="Possession Date" value={formatDateOnly(transaction.possessionDate)} />}
           </div>
         )}
 
@@ -367,7 +368,7 @@ function OverviewTab({
               <div key={c.id} className="border-b border-[#1B1B1B]/5 pb-2 last:border-0 last:pb-0">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-[#1B1B1B]">{c.name}</span>
-                  {c.dueDate && <span className="text-xs text-[#1B1B1B]/50">{new Date(c.dueDate).toLocaleDateString()}</span>}
+                  {c.dueDate && <span className="text-xs text-[#1B1B1B]/50">{formatDateOnly(c.dueDate)}</span>}
                 </div>
                 {c.notes && <p className="text-xs text-[#1B1B1B]/40">{c.notes}</p>}
               </div>
@@ -706,7 +707,7 @@ function TaskRow({
         <div className="mt-0.5 flex items-center gap-2">
           {task.dueDate && (
             <span className={`text-xs ${isOverdue ? "text-red-500 font-medium" : "text-[#1B1B1B]/40"}`}>
-              Due {new Date(task.dueDate).toLocaleDateString()}
+              Due {formatDateOnly(task.dueDate)}
               {isOverdue && " — overdue"}
             </span>
           )}

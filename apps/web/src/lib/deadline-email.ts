@@ -1,5 +1,6 @@
 import { emailLayout, buildHeadingBodyHtml } from "@/lib/email";
 import { sendEmail } from "@/lib/email/send";
+import { formatDateOnly } from "@/lib/utils";
 
 export interface DeadlineReminder {
   agentEmail: string;
@@ -32,7 +33,7 @@ export async function sendDeadlineReminder(reminder: DeadlineReminder): Promise<
       .join(", ")
   );
   const safeLabel = escapeHtml(reminder.label);
-  const formattedDate = reminder.date.toLocaleDateString("en-US", {
+  const formattedDate = formatDateOnly(reminder.date, {
     weekday: "long",
     month: "long",
     day: "numeric",

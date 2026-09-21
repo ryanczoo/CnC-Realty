@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { TransactionFileStatus } from "@cnc/database";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { requireAdminPage } from "@/lib/server-utils";
+import { formatDateOnly } from "@/lib/utils";
 
 export const metadata = { title: "Broker Overview | CnC Realty" };
 
@@ -172,7 +173,7 @@ export default async function AdminOverviewPage() {
                           {row.agentName ?? "—"}
                         </td>
                         <td className="px-4 py-3 text-[#1B1B1B]/70">
-                          {row.date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                          {formatDateOnly(row.date, { month: "short", day: "numeric", year: "numeric" })}
                         </td>
                         <td className="px-4 py-3 text-[#1B1B1B]/70">{row.label}</td>
                         <td className="px-4 py-3">

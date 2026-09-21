@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { StatusBadge } from "./StatusBadge";
 import { getChecklistProgress } from "@/lib/transaction-helpers";
+import { formatDateOnly } from "@/lib/utils";
 import type { FileChecklistItemWithDocs, ListingStatus, TransactionFileStatus } from "@/types/transaction";
 
 interface Props {
@@ -58,7 +59,7 @@ export function FileCard({ id, fileType, address, city, status, closeDate, listP
       )}
 
       {closeDate && (
-        <p className="text-xs text-[#1B1B1B]/50">COE: {new Date(closeDate).toLocaleDateString()}</p>
+        <p className="text-xs text-[#1B1B1B]/50">COE: {formatDateOnly(closeDate)}</p>
       )}
 
       {required > 0 && (

@@ -99,7 +99,7 @@ describe("sendDeadlineReminder", () => {
     expect(html).toMatch(
       /<p style="color: #1B1B1B; font-size: 22\.5px; line-height: 1\.6; text-align: center; font-weight: 700; margin: 0 0 32px;">\s*123 Main St,<br \/>\s*Los Angeles, CA 90012\s*<\/p>/
     );
-    expect(html).toContain('has an <strong style="color: #1B1B1B;">Inspection</strong> deadline on <strong style="color: #1B1B1B;">Sunday, August 9</strong>.');
+    expect(html).toContain('has an <strong style="color: #1B1B1B;">Inspection</strong> deadline on <strong style="color: #1B1B1B;">Monday, August 10</strong>.');
   });
 
   it("picks 'a' vs 'an' based on the deadline label", async () => {
