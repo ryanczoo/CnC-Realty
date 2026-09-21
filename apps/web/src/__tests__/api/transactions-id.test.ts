@@ -7,6 +7,7 @@ vi.mock("@/lib/prisma", () => ({
     transactionFile: { findUnique: vi.fn(), update: vi.fn() },
     fileActivity: { create: vi.fn() },
     agent: { findUnique: vi.fn() },
+    $transaction: vi.fn(async (ops: Promise<unknown>[]) => Promise.all(ops)),
   },
 }));
 vi.mock("@/lib/email/transaction-emails", () => ({ sendFileClosed: vi.fn() }));
@@ -302,5 +303,24 @@ describe("PATCH /api/transactions/[id] — shared status rules", () => {
     await PATCH(okReq({ commissionNotes: "note" }), { params: { id: "tf1" } });
     expect(prisma.transactionFile.update).toHaveBeenCalledWith({ where: { id: "tf1" }, data: { commissionNotes: "note" } });
     expect(prisma.fileActivity.create).not.toHaveBeenCalled();
+  });
+
+  it("ignores awaitingReview in an agent PATCH body", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(AGENT_SESSION as any);
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({ id: "tf1", agentId: "a1", status: "PENDING", checklistItems: READY_ITEMS } as any);
+    vi.mocked(prisma.transactionFile.update).mockResolvedValue({ id: "tf1" } as any);
+    await PATCH(okReq({ commissionNotes: "x", awaitingReview: false }), { params: { id: "tf1" } });
+    expect(prisma.transactionFile.update).toHaveBeenCalledWith({ where: { id: "tf1" }, data: { commissionNotes: "x" } });
+  });
+
+  it("does not let an agent clear awaitingReview while changing status", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(AGENT_SESSION as any);
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({ id: "tf1", agentId: "a1", status: "PENDING", checklistItems: READY_ITEMS } as any);
+    vi.mocked(prisma.transactionFile.update).mockResolvedValue({ id: "tf1", status: "CANCELED_PENDING" } as any);
+    const res = await PATCH(okReq({ status: "CANCELED_PENDING", awaitingReview: false }), { params: { id: "tf1" } });
+    expect(res.status).toBe(200);
+    const data = vi.mocked(prisma.transactionFile.update).mock.calls[0][0].data as Record<string, unknown>;
+    expect(data.status).toBe("CANCELED_PENDING");
+    expect("awaitingReview" in data).toBe(false);
   });
 });

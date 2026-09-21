@@ -50,10 +50,10 @@ describe("PATCH /api/admin/files/[fileType]/[id]/status", () => {
 
   it("returns the function's error and status code", async () => {
     vi.mocked(getServerSession).mockResolvedValue(ADMIN as any);
-    vi.mocked(changeFileStatus).mockResolvedValue({ ok: false, status: 400, error: "Cannot close: not all required documents are approved" });
+    vi.mocked(changeFileStatus).mockResolvedValue({ ok: false, status: 404, error: "Not found" });
     const res = await call("transaction", { status: "CLOSED" });
-    expect(res.status).toBe(400);
-    expect(await res.json()).toEqual({ error: "Cannot close: not all required documents are approved" });
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ error: "Not found" });
   });
 
   it("passes the email warning through to the admin", async () => {

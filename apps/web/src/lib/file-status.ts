@@ -48,26 +48,31 @@ export async function changeFileStatus({
     return { ok: false, status: 400, error: "Cannot close: not all required documents are approved" };
   }
 
+  // extraData may never set the status or Awaiting Review: only the target status and
+  // the actor decide those.
+  const { awaitingReview: _ignoredAwaitingReview, status: _ignoredStatus, ...safeExtra } = extraData;
   const data = {
-    ...extraData,
+    ...safeExtra,
     status: toStatus,
     ...(actor.role === "ADMIN" && { awaitingReview: false }),
   };
-  const updated = isListing
-    ? await prisma.listingFile.update({ where: { id: fileId }, data: data as any })
-    : await prisma.transactionFile.update({ where: { id: fileId }, data: data as any });
+  const activityData = {
+    fileType: isListing ? ("LISTING" as const) : ("TRANSACTION" as const),
+    listingFileId: isListing ? fileId : null,
+    transactionFileId: isListing ? null : fileId,
+    actorId: actor.userId,
+    actorRole: actor.role,
+    type: "STATUS_CHANGED" as const,
+    payload: { from: file.status, to: toStatus },
+  };
 
-  await prisma.fileActivity.create({
-    data: {
-      fileType: isListing ? "LISTING" : "TRANSACTION",
-      listingFileId: isListing ? fileId : null,
-      transactionFileId: isListing ? null : fileId,
-      actorId: actor.userId,
-      actorRole: actor.role,
-      type: "STATUS_CHANGED",
-      payload: { from: file.status, to: toStatus },
-    },
-  });
+  // One transaction: the status change and its audit row succeed or fail together, so a
+  // failed log write can never leave a file changed with no record (and a retry stuck on
+  // "Cannot transition from CLOSED to CLOSED").
+  const updateOp: any = isListing
+    ? prisma.listingFile.update({ where: { id: fileId }, data: data as any })
+    : prisma.transactionFile.update({ where: { id: fileId }, data: data as any });
+  const [updated] = await prisma.$transaction([updateOp, prisma.fileActivity.create({ data: activityData })]);
 
   let emailFailed = false;
   if (toStatus === "CLOSED") {

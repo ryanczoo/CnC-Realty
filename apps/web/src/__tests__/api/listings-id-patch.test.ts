@@ -10,6 +10,7 @@ vi.mock("@/lib/prisma", () => ({
     listingFile: { findUnique: vi.fn(), update: vi.fn() },
     fileActivity: { create: vi.fn() },
     agent: { findUnique: vi.fn() },
+    $transaction: vi.fn(async (ops: Promise<unknown>[]) => Promise.all(ops)),
   },
 }));
 
@@ -65,5 +66,24 @@ describe("PATCH /api/listings/[id]", () => {
       where: { id: "lf1" },
       data: { listPrice: 500000, status: "EXPIRED", awaitingReview: false },
     });
+  });
+
+  it("ignores awaitingReview in an agent PATCH body", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(AGENT as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "lf1", agentId: "a1", status: "ACTIVE", checklistItems: READY } as any);
+    vi.mocked(prisma.listingFile.update).mockResolvedValue({ id: "lf1" } as any);
+    await patch({ commissionNotes: "x", awaitingReview: false });
+    expect(prisma.listingFile.update).toHaveBeenCalledWith({ where: { id: "lf1" }, data: { commissionNotes: "x" } });
+  });
+
+  it("does not let an agent clear awaitingReview while changing status", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(AGENT as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "lf1", agentId: "a1", status: "ACTIVE", checklistItems: READY } as any);
+    vi.mocked(prisma.listingFile.update).mockResolvedValue({ id: "lf1", status: "WITHDRAWN" } as any);
+    const res = await patch({ status: "WITHDRAWN", awaitingReview: false });
+    expect(res.status).toBe(200);
+    const data = vi.mocked(prisma.listingFile.update).mock.calls[0][0].data as Record<string, unknown>;
+    expect(data.status).toBe("WITHDRAWN");
+    expect("awaitingReview" in data).toBe(false);
   });
 });

@@ -8,6 +8,7 @@ vi.mock("@/lib/prisma", () => ({
     transactionFile: { findUnique: vi.fn(), update: vi.fn() },
     fileActivity: { create: vi.fn() },
     agent: { findUnique: vi.fn() },
+    $transaction: vi.fn(),
   },
 }));
 
@@ -31,6 +32,8 @@ beforeEach(() => {
   vi.mocked(prisma.listingFile.update).mockResolvedValue({ id: "f1", status: "CLOSED" } as any);
   vi.mocked(prisma.fileActivity.create).mockResolvedValue({} as any);
   vi.mocked(prisma.agent.findUnique).mockResolvedValue({ user: { email: "a@x.com", name: "Ann Lee" } } as any);
+  // Runs the operations like the real thing does; set AFTER the reset above, which clears implementations.
+  vi.mocked(prisma.$transaction).mockImplementation((async (ops: Promise<unknown>[]) => Promise.all(ops)) as any);
 });
 
 describe("changeFileStatus: validation happens before any write", () => {
@@ -109,6 +112,65 @@ describe("changeFileStatus: a successful change", () => {
     expect(prisma.fileActivity.create).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({ fileType: "LISTING", listingFileId: "f1", transactionFileId: null }),
     }));
+  });
+});
+
+describe("changeFileStatus: atomicity", () => {
+  it("runs the status update and the activity row in one transaction", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx() as any);
+    await changeFileStatus({ kind: "transaction", fileId: "f1", toStatus: "CLOSED", actor: ADMIN });
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    const ops = vi.mocked(prisma.$transaction).mock.calls[0][0] as unknown as unknown[];
+    expect(ops).toHaveLength(2);
+    expect(prisma.transactionFile.update).toHaveBeenCalledTimes(1);
+    expect(prisma.fileActivity.create).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects and sends no Closed email when the transaction fails", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx() as any);
+    vi.mocked(prisma.$transaction).mockRejectedValue(new Error("db down"));
+    await expect(
+      changeFileStatus({ kind: "transaction", fileId: "f1", toStatus: "CLOSED", actor: ADMIN })
+    ).rejects.toThrow("db down");
+    expect(sendFileClosed).not.toHaveBeenCalled();
+  });
+});
+
+describe("changeFileStatus: extraData cannot set awaitingReview or status", () => {
+  it("drops awaitingReview from extraData for an agent", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx() as any);
+    await changeFileStatus({
+      kind: "transaction", fileId: "f1", toStatus: "CANCELED_PENDING", actor: AGENT,
+      extraData: { awaitingReview: false, commissionNotes: "x" },
+    });
+    expect(prisma.transactionFile.update).toHaveBeenCalledWith({
+      where: { id: "f1" },
+      data: { commissionNotes: "x", status: "CANCELED_PENDING" },
+    });
+  });
+
+  it("still clears awaitingReview for an admin even if extraData says true", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx() as any);
+    await changeFileStatus({
+      kind: "transaction", fileId: "f1", toStatus: "CLOSED", actor: ADMIN,
+      extraData: { awaitingReview: true },
+    });
+    expect(prisma.transactionFile.update).toHaveBeenCalledWith({
+      where: { id: "f1" },
+      data: { status: "CLOSED", awaitingReview: false },
+    });
+  });
+
+  it("does not let extraData override the target status", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx() as any);
+    await changeFileStatus({
+      kind: "transaction", fileId: "f1", toStatus: "CANCELED_PENDING", actor: AGENT,
+      extraData: { status: "CLOSED" },
+    });
+    expect(prisma.transactionFile.update).toHaveBeenCalledWith({
+      where: { id: "f1" },
+      data: { status: "CANCELED_PENDING" },
+    });
   });
 });
 
