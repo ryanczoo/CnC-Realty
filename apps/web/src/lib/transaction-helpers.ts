@@ -130,7 +130,7 @@ export function allowedNextStatuses(
   const tables = role === "ADMIN" ? [adminTable, agentTable] : [agentTable];
   const next = new Set<string>();
   for (const table of tables) for (const status of table[from] ?? []) next.add(status);
-  return [...next];
+  return Array.from(next);
 }
 
 export function isItemSatisfied(item: FileChecklistItemWithDocs): boolean {
