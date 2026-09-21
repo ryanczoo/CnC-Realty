@@ -19,7 +19,7 @@ import type {
   FileTaskRecord,
 } from "@/types/transaction";
 import { TC_FEE, calcNetToAgent } from "@/lib/commission";
-import { formatDateOnly } from "@/lib/utils";
+import { formatDateOnly, isDateOnlyPast } from "@/lib/utils";
 import { Spinner } from "@/components/ui/Spinner";
 
 type Tab = "overview" | "checklist" | "parties" | "activity" | "commission" | "documents" | "tasks";
@@ -694,7 +694,7 @@ function TaskRow({
   onToggle: (t: FileTaskRecord) => void;
   onDelete: (id: string) => void;
 }) {
-  const isOverdue = task.dueDate && !task.done && new Date(task.dueDate) < new Date();
+  const isOverdue = task.dueDate && !task.done && isDateOnlyPast(task.dueDate);
 
   return (
     <div className={`flex items-center gap-3 px-5 py-3 ${!isLast ? "border-b border-[#1B1B1B]/5" : ""}`}>

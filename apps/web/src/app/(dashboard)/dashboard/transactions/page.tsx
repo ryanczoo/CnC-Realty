@@ -23,6 +23,7 @@ export default function TransactionsPage() {
 
   const loading = listingsLoading || transactionsLoading;
   const items = tab === "listings" ? listings : transactions;
+  const fileKind = tab === "listings" ? "listing" : "transaction";
 
   return (
     <div>
@@ -60,8 +61,8 @@ export default function TransactionsPage() {
       ) : items.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-[#1B1B1B]/20 py-16 text-center">
           <p className="text-[#1B1B1B]/40">No {tab} yet</p>
-          <Link href={`/dashboard/transactions/new-${tab === "listings" ? "listing" : "transaction"}`} className="mt-3 rounded-full bg-[#1B1B1B] px-4 py-2 text-sm text-white">
-            Create your first {tab === "listings" ? "listing" : "transaction"}
+          <Link href={`/dashboard/transactions/new-${fileKind}`} className="mt-3 rounded-full bg-[#1B1B1B] px-4 py-2 text-sm text-white">
+            Create your first {fileKind}
           </Link>
         </div>
       ) : (
@@ -70,12 +71,12 @@ export default function TransactionsPage() {
             <FileCard
               key={item.id}
               id={item.id}
-              fileType={tab === "listings" ? "listing" : "transaction"}
+              fileType={fileKind}
               address={item.propertyAddress}
               city={item.city}
               status={item.status}
               closeDate={item.closeOfEscrow ?? item.expirationDate}
-              price={pickDisplayPrice(tab === "listings" ? "listing" : "transaction", item)}
+              price={pickDisplayPrice(fileKind, item)}
               checklistItems={item.checklistItems ?? []}
               awaitingReview={item.awaitingReview}
               referredToAgentName={item.referredToAgentName}

@@ -32,4 +32,9 @@ describe("describeActivity", () => {
     expect(describeActivity({ type: "DOCUMENT_APPROVED", payload: null })).toEqual({ detail: null, reason: null });
     expect(describeActivity({ type: "FILE_CREATED", payload: { anything: 1 } })).toEqual({ detail: null, reason: null });
   });
+
+  it("trims stray padding around a document name", () => {
+    expect(describeActivity({ type: "DOCUMENT_UPLOADED", payload: { name: "  TDS.pdf  " } }))
+      .toEqual({ detail: "TDS.pdf", reason: null });
+  });
 });

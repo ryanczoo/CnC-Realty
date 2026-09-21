@@ -1,6 +1,6 @@
 type Payload = { name?: unknown; note?: unknown; from?: unknown; to?: unknown };
 
-const asText = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v : null);
+const asText = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
 
 // Extra detail for one activity row, read from the payload the API already saves.
 export function describeActivity(a: { type: string; payload: unknown }): { detail: string | null; reason: string | null } {

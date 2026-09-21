@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatCompactCurrency, formatDateOnly, formatDate } from "@/lib/utils";
+import { formatCompactCurrency, formatDateOnly, formatDate, isDateOnlyPast } from "@/lib/utils";
 
 describe("formatCompactCurrency", () => {
   it("strips a trailing .0 for whole millions", () => {
@@ -54,5 +54,21 @@ describe("formatDateOnly", () => {
 describe("formatDate (unchanged behavior)", () => {
   it("still formats real timestamps in local time", () => {
     expect(formatDate("2026-09-21T02:00:00.000Z")).toBe("Sep 20, 2026");
+  });
+});
+
+describe("isDateOnlyPast", () => {
+  const due = "2026-09-20T00:00:00.000Z"; // the calendar day Sep 20, stored as UTC midnight
+
+  it("is not overdue the evening before the due day (Pacific time)", () => {
+    expect(isDateOnlyPast(due, new Date("2026-09-20T02:00:00.000Z"))).toBe(false); // Sep 19, 7 PM Pacific
+  });
+
+  it("is not overdue during the due day itself", () => {
+    expect(isDateOnlyPast(due, new Date("2026-09-20T17:00:00.000Z"))).toBe(false); // Sep 20, 10 AM Pacific
+  });
+
+  it("is overdue the day after the due day", () => {
+    expect(isDateOnlyPast(due, new Date("2026-09-21T17:00:00.000Z"))).toBe(true); // Sep 21, 10 AM Pacific
   });
 });

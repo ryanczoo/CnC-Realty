@@ -55,7 +55,7 @@ export function FileCard({ id, fileType, address, city, status, closeDate, price
         <StatusBadge status={status} />
       </div>
 
-      {status !== "PENDING_TRANSFER" && price && (
+      {status !== "PENDING_TRANSFER" && price != null && price > 0 && (
         <p className="text-sm font-medium text-[#1B1B1B]">${price.toLocaleString()}</p>
       )}
 

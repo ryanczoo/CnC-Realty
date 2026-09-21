@@ -23,6 +23,15 @@ export function formatDateOnly(
   return new Date(d).toLocaleDateString("en-US", { ...options, timeZone: "UTC" });
 }
 
+// True when a date-only field (stored as UTC midnight) is on a calendar day before
+// today's LOCAL calendar day. Due today is not past due.
+export function isDateOnlyPast(d: Date | string, now: Date = new Date()): boolean {
+  const t = new Date(d);
+  const dueDay = Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), t.getUTCDate());
+  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  return dueDay < today;
+}
+
 export function formatCompactCurrency(n: number | null): string {
   if (n === null) return "—";
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
