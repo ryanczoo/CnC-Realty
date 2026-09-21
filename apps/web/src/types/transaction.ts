@@ -33,7 +33,8 @@ export const SIDES = [
 ] as const;
 export type FilePartyRole =
   | "BUYER" | "SELLER" | "LISTING_AGENT" | "BUYERS_AGENT" | "CO_AGENT"
-  | "TITLE_ESCROW" | "LENDER" | "TRANSACTION_COORDINATOR" | "OTHER";
+  | "TITLE_ESCROW" | "TITLE" | "ESCROW" | "ATTORNEY" | "LENDER"
+  | "TRANSACTION_COORDINATOR" | "REFERRAL_AGENT" | "OTHER";
 export type DocumentReviewStatus = "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "NOT_SUBMITTED";
 export type FileActivityType =
   | "FILE_CREATED" | "STATUS_CHANGED" | "DOCUMENT_UPLOADED" | "DOCUMENT_APPROVED"

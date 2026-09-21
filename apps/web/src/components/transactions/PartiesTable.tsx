@@ -6,8 +6,8 @@ import type { FilePartyRecord, FilePartyRole, FileContextProps } from "@/types/t
 const ROLE_LABELS: Record<FilePartyRole, string> = {
   BUYER: "Buyer", SELLER: "Seller", LISTING_AGENT: "Listing Agent",
   BUYERS_AGENT: "Buyer's Agent", CO_AGENT: "Co-Agent",
-  TITLE_ESCROW: "Title/Escrow", LENDER: "Lender",
-  TRANSACTION_COORDINATOR: "TC", OTHER: "Other",
+  TITLE_ESCROW: "Title/Escrow", TITLE: "Title", ESCROW: "Escrow", ATTORNEY: "Attorney",
+  LENDER: "Lender", TRANSACTION_COORDINATOR: "TC", REFERRAL_AGENT: "Referral Agent", OTHER: "Other",
 };
 
 interface Props extends FileContextProps {
@@ -40,7 +40,7 @@ export function PartiesTable({ fileType, fileId, parties, onChanged }: Props) {
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-[#1B1B1B]/10 text-left text-xs font-medium uppercase tracking-wider text-[#1B1B1B]/40">
-            <th className="pb-2">Role</th><th className="pb-2">Name</th><th className="pb-2">Email</th><th className="pb-2">Phone</th><th className="pb-2"></th>
+            <th className="pb-2">Role</th><th className="pb-2">Name</th><th className="pb-2">Email</th><th className="pb-2">Phone</th><th className="pb-2">Company</th><th className="pb-2">License #</th><th className="pb-2"></th>
           </tr>
         </thead>
         <tbody>
@@ -50,6 +50,8 @@ export function PartiesTable({ fileType, fileId, parties, onChanged }: Props) {
               <td className="py-2 font-medium text-[#1B1B1B]">{p.name}</td>
               <td className="py-2 text-[#1B1B1B]/60">{p.email ?? "—"}</td>
               <td className="py-2 text-[#1B1B1B]/60">{p.phone ?? "—"}</td>
+              <td className="py-2 text-[#1B1B1B]/60">{p.company ?? "—"}</td>
+              <td className="py-2 text-[#1B1B1B]/60">{p.licenseNumber ?? "—"}</td>
               <td className="py-2 text-right">
                 <button onClick={() => removeParty(p.id)} className="text-[#1B1B1B]/30 hover:text-red-500">
                   <Trash2 className="h-4 w-4" />

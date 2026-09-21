@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calcReferralFee, canTransitionTransaction, pickDisplayPrice } from "@/lib/transaction-helpers";
+import { calcReferralFee, canTransitionTransaction, pickDisplayPrice, escrowTypeToRole } from "@/lib/transaction-helpers";
 
 describe("calcReferralFee", () => {
   it("takes 10% when 10% of the amount exceeds $200", () => {
@@ -76,5 +76,13 @@ describe("pickDisplayPrice", () => {
   it("returns null when there is no price at all", () => {
     expect(pickDisplayPrice("transaction", {})).toBeNull();
     expect(pickDisplayPrice("listing", { listPrice: null })).toBeNull();
+  });
+});
+
+describe("escrowTypeToRole", () => {
+  it("maps each Title/Escrow/Attorney choice to its own party role", () => {
+    expect(escrowTypeToRole("Title")).toBe("TITLE");
+    expect(escrowTypeToRole("Escrow")).toBe("ESCROW");
+    expect(escrowTypeToRole("Attorney")).toBe("ATTORNEY");
   });
 });

@@ -143,3 +143,13 @@ export function pickDisplayPrice(
   if (fileType === "transaction") return prices.salePrice ?? prices.listPrice ?? null;
   return prices.listPrice ?? null;
 }
+
+export type EscrowContactType = "Title" | "Escrow" | "Attorney";
+
+const ESCROW_ROLE_BY_TYPE = { Title: "TITLE", Escrow: "ESCROW", Attorney: "ATTORNEY" } as const;
+
+// The wizard's Title / Escrow / Attorney choice is the party's role, so the
+// Company field stays free for the company name the agent typed.
+export function escrowTypeToRole(type: EscrowContactType): "TITLE" | "ESCROW" | "ATTORNEY" {
+  return ESCROW_ROLE_BY_TYPE[type];
+}
