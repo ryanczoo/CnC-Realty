@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calcReferralFee, canTransitionTransaction, pickDisplayPrice, escrowTypeToRole } from "@/lib/transaction-helpers";
+import { calcReferralFee, canTransitionTransaction, pickDisplayPrice, escrowTypeToRole, latestDocument } from "@/lib/transaction-helpers";
 
 describe("calcReferralFee", () => {
   it("takes 10% when 10% of the amount exceeds $200", () => {
@@ -84,5 +84,35 @@ describe("escrowTypeToRole", () => {
     expect(escrowTypeToRole("Title")).toBe("TITLE");
     expect(escrowTypeToRole("Escrow")).toBe("ESCROW");
     expect(escrowTypeToRole("Attorney")).toBe("ATTORNEY");
+  });
+});
+
+describe("latestDocument", () => {
+  const doc = (id: string, uploadedAt: string, reviewStatus: "APPROVED" | "REJECTED" | "PENDING_REVIEW") => ({ id, uploadedAt, reviewStatus });
+
+  it("returns undefined when a checklist row has no documents", () => {
+    expect(latestDocument([])).toBeUndefined();
+  });
+
+  it("returns the most recently uploaded document even when it is not first in the list", () => {
+    const docs = [
+      doc("old-approved", "2026-09-21T01:16:35.279Z", "APPROVED"),
+      doc("new-pending", "2026-09-21T14:37:57.349Z", "PENDING_REVIEW"),
+    ];
+    expect(latestDocument(docs)?.id).toBe("new-pending");
+  });
+
+  it("returns the newest document when the list is newest-first, too", () => {
+    const docs = [
+      doc("newest-approved", "2026-09-21T02:09:31.657Z", "APPROVED"),
+      doc("older-rejected", "2026-09-21T02:03:27.552Z", "REJECTED"),
+    ];
+    expect(latestDocument(docs)?.id).toBe("newest-approved");
+  });
+
+  it("does not reorder the array it was given", () => {
+    const docs = [doc("a", "2026-01-01T00:00:00Z", "APPROVED"), doc("b", "2026-02-01T00:00:00Z", "APPROVED")];
+    latestDocument(docs);
+    expect(docs.map((d) => d.id)).toEqual(["a", "b"]);
   });
 });

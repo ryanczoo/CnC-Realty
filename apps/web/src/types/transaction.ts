@@ -49,7 +49,7 @@ export interface FileChecklistItemWithDocs {
   description?: string | null;
   order?: number;
   isRequired: boolean;
-  documents: { reviewStatus: DocumentReviewStatus }[];
+  documents: { reviewStatus: DocumentReviewStatus; uploadedAt?: string | Date }[];
 }
 
 export interface ChecklistProgress {

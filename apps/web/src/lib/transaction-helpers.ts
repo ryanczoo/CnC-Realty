@@ -28,6 +28,13 @@ export const FILE_DETAIL_INCLUDE = {
 // now the single source of truth for that shape.
 export const CHECKLIST_ITEMS_WITH_DOCS_INCLUDE = { include: { documents: true } } as const;
 
+// A checklist row's documents come back in no guaranteed order; the row's
+// status must follow the most recently uploaded one.
+export function latestDocument<T extends { uploadedAt?: string | Date }>(docs: readonly T[]): T | undefined {
+  const time = (d: T) => (d.uploadedAt ? new Date(d.uploadedAt).getTime() : 0);
+  return docs.reduce<T | undefined>((latest, d) => (!latest || time(d) > time(latest) ? d : latest), undefined);
+}
+
 const AGENT_LISTING_TRANSITIONS: Record<ListingStatus, ListingStatus[]> = {
   INCOMPLETE:            ["COMING_SOON", "ACTIVE"],
   PENDING_TRANSFER:      [],

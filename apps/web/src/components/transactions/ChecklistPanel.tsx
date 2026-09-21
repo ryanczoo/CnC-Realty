@@ -4,6 +4,7 @@ import { CheckCircle, XCircle, Clock, Upload, AlertCircle } from "lucide-react";
 import type { FileChecklistItemWithDocs, DocumentReviewStatus } from "@/types/transaction";
 import { Spinner } from "@/components/ui/Spinner";
 import { Tooltip } from "@/components/ui/Tooltip";
+import { latestDocument } from "@/lib/transaction-helpers";
 
 interface Props {
   fileType: "LISTING" | "TRANSACTION";
@@ -59,7 +60,7 @@ export function ChecklistPanel({ fileType, fileId, items, onUploaded }: Props) {
     <div className="space-y-2">
       {error && <p className="text-xs text-red-600">{error}</p>}
       {items.map((item) => {
-        const topDoc = item.documents[0];
+        const topDoc = latestDocument(item.documents);
         const status: DocumentReviewStatus = topDoc?.reviewStatus ?? "NOT_SUBMITTED";
 
         return (
