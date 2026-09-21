@@ -10,6 +10,7 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 vi.mock("@/lib/email/transaction-emails", () => ({ sendFileClosed: vi.fn() }));
+vi.mock("@sentry/nextjs", () => ({ captureException: vi.fn() }));
 
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
@@ -72,7 +73,7 @@ describe("GET /api/transactions/[id]", () => {
 });
 
 const ADMIN_SESSION = { user: { id: "admin1", role: "ADMIN", agentId: null } };
-const REFERRAL_TX = { id: "tf1", agentId: "a1", transactionSide: "REFERRAL", status: "REFERRAL_SUCCESSFUL", propertyAddress: null };
+const REFERRAL_TX = { id: "tf1", agentId: "a1", transactionSide: "REFERRAL", status: "REFERRAL_SUCCESSFUL", propertyAddress: null, checklistItems: [] };
 
 describe("PATCH /api/transactions/[id] — referral amount entry", () => {
   beforeEach(() => {
@@ -142,10 +143,11 @@ describe("PATCH /api/transactions/[id] — full referral lifecycle", () => {
   it("walks a referral file through the entire lifecycle: agent marks successful -> admin enters amount -> admin closes", async () => {
     // Step 1: agent moves PENDING -> REFERRAL_SUCCESSFUL
     vi.mocked(getServerSession).mockResolvedValue(AGENT_SESSION as any);
-    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValueOnce({
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({
       id: "tf1",
       agentId: "a1",
       status: "PENDING",
+      checklistItems: [],
     } as any);
     vi.mocked(prisma.transactionFile.update).mockResolvedValueOnce({
       id: "tf1",
@@ -161,10 +163,11 @@ describe("PATCH /api/transactions/[id] — full referral lifecycle", () => {
 
     // Step 2: admin enters the referral amount -> REFERRAL_BROKER_REVIEW, fee computed server-side
     vi.mocked(getServerSession).mockResolvedValue(ADMIN_SESSION as any);
-    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValueOnce({
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({
       id: "tf1",
       agentId: "a1",
       status: "REFERRAL_SUCCESSFUL",
+      checklistItems: [],
     } as any);
     vi.mocked(prisma.transactionFile.update).mockResolvedValueOnce({
       id: "tf1",
@@ -189,10 +192,11 @@ describe("PATCH /api/transactions/[id] — full referral lifecycle", () => {
 
     // Step 3: admin closes the file -> CLOSED, close-notification email sent
     vi.mocked(getServerSession).mockResolvedValue(ADMIN_SESSION as any);
-    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValueOnce({
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({
       id: "tf1",
       agentId: "a1",
       status: "REFERRAL_BROKER_REVIEW",
+      checklistItems: [],
       propertyAddress: null,
     } as any);
     vi.mocked(prisma.transactionFile.update).mockResolvedValueOnce({
@@ -222,10 +226,11 @@ describe("PATCH /api/transactions/[id] — full referral lifecycle", () => {
 
   it("rejects an agent attempting an admin-only transition (REFERRAL_SUCCESSFUL -> REFERRAL_BROKER_REVIEW)", async () => {
     vi.mocked(getServerSession).mockResolvedValue(AGENT_SESSION as any);
-    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValueOnce({
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({
       id: "tf1",
       agentId: "a1",
       status: "REFERRAL_SUCCESSFUL",
+      checklistItems: [],
     } as any);
 
     const res = await PATCH(
@@ -235,5 +240,67 @@ describe("PATCH /api/transactions/[id] — full referral lifecycle", () => {
 
     expect(res.status).toBe(400);
     expect(prisma.transactionFile.update).not.toHaveBeenCalled();
+  });
+});
+
+const AGENT_SESSION = { user: { id: "u1", role: "AGENT", agentId: "a1" } };
+const okReq = (body: unknown) =>
+  new Request("http://localhost", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+const READY_ITEMS = [{ isRequired: true, documents: [{ reviewStatus: "APPROVED" }] }];
+const NOT_READY_ITEMS = [{ isRequired: true, documents: [{ reviewStatus: "PENDING_REVIEW" }] }];
+
+describe("PATCH /api/transactions/[id] — closed-file lock", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it.each(["CLOSED", "ARCHIVED", "CANCELED_APPROVED"])("returns 403 for an agent editing a transaction that is %s", async (status) => {
+    vi.mocked(getServerSession).mockResolvedValue(AGENT_SESSION as any);
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({ id: "tf1", agentId: "a1", status } as any);
+    const res = await PATCH(okReq({ salePrice: "999" }), { params: { id: "tf1" } });
+    expect(res.status).toBe(403);
+    expect((await res.json()).error).toBe("This file is closed and can't be changed");
+    expect(prisma.transactionFile.update).not.toHaveBeenCalled();
+  });
+
+  it("lets an admin edit a closed transaction", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(ADMIN_SESSION as any);
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({ id: "tf1", agentId: "a1", status: "CLOSED" } as any);
+    vi.mocked(prisma.transactionFile.update).mockResolvedValue({ id: "tf1" } as any);
+    const res = await PATCH(okReq({ commissionNotes: "fixed" }), { params: { id: "tf1" } });
+    expect(res.status).toBe(200);
+  });
+});
+
+describe("PATCH /api/transactions/[id] — shared status rules", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(prisma.fileActivity.create).mockResolvedValue({} as any);
+  });
+
+  it("refuses to close without every required document approved, and writes nothing", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(ADMIN_SESSION as any);
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({ id: "tf1", agentId: "a1", status: "PENDING", checklistItems: NOT_READY_ITEMS } as any);
+    const res = await PATCH(okReq({ status: "CLOSED", salePrice: "900000" }), { params: { id: "tf1" } });
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("Cannot close: not all required documents are approved");
+    expect(prisma.transactionFile.update).not.toHaveBeenCalled();
+  });
+
+  it("clears Awaiting Review when an admin changes the status through PATCH", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(ADMIN_SESSION as any);
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({ id: "tf1", agentId: "a1", status: "PENDING", checklistItems: READY_ITEMS } as any);
+    vi.mocked(prisma.transactionFile.update).mockResolvedValue({ id: "tf1", status: "EXPIRED" } as any);
+    await PATCH(okReq({ status: "EXPIRED" }), { params: { id: "tf1" } });
+    expect(prisma.transactionFile.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ status: "EXPIRED", awaitingReview: false }),
+    }));
+  });
+
+  it("does a plain field update when the status is unchanged", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(AGENT_SESSION as any);
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({ id: "tf1", agentId: "a1", status: "PENDING", checklistItems: READY_ITEMS } as any);
+    vi.mocked(prisma.transactionFile.update).mockResolvedValue({ id: "tf1" } as any);
+    await PATCH(okReq({ commissionNotes: "note" }), { params: { id: "tf1" } });
+    expect(prisma.transactionFile.update).toHaveBeenCalledWith({ where: { id: "tf1" }, data: { commissionNotes: "note" } });
+    expect(prisma.fileActivity.create).not.toHaveBeenCalled();
   });
 });
