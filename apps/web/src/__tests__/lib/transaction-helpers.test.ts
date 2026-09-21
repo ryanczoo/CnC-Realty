@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calcReferralFee, canTransitionTransaction, pickDisplayPrice, escrowTypeToRole, latestDocument } from "@/lib/transaction-helpers";
+import { calcReferralFee, canTransitionTransaction, pickDisplayPrice, escrowTypeToRole, latestDocument, allowedNextStatuses, canTransitionListing } from "@/lib/transaction-helpers";
 
 describe("calcReferralFee", () => {
   it("takes 10% when 10% of the amount exceeds $200", () => {
@@ -114,5 +114,42 @@ describe("latestDocument", () => {
     const docs = [doc("a", "2026-01-01T00:00:00Z", "APPROVED"), doc("b", "2026-02-01T00:00:00Z", "APPROVED")];
     latestDocument(docs);
     expect(docs.map((d) => d.id)).toEqual(["a", "b"]);
+  });
+});
+
+describe("allowedNextStatuses", () => {
+  const LISTING_STATUSES = ["INCOMPLETE", "PENDING_TRANSFER", "COMING_SOON", "ACTIVE", "ACTIVE_UNDER_CONTRACT", "EXPIRED", "WITHDRAWN", "CANCELED", "CLOSED"];
+  const TX_STATUSES = ["INCOMPLETE", "PENDING_TRANSFER", "PRE_CONTRACT", "PENDING", "EXPIRED", "CLOSED", "ARCHIVED", "CANCELED_PENDING", "CANCELED_APPROVED", "REFERRAL_SUCCESSFUL", "REFERRAL_UNSUCCESSFUL", "REFERRAL_BROKER_REVIEW"];
+
+  it.each(["ADMIN", "AGENT"] as const)("matches canTransitionTransaction exactly for every %s move", (role) => {
+    for (const from of TX_STATUSES) {
+      const allowed = allowedNextStatuses("transaction", from, role);
+      for (const to of TX_STATUSES) {
+        expect(allowed.includes(to), `${from} -> ${to} as ${role}`).toBe(canTransitionTransaction(from as any, to as any, role));
+      }
+    }
+  });
+
+  it.each(["ADMIN", "AGENT"] as const)("matches canTransitionListing exactly for every %s move", (role) => {
+    for (const from of LISTING_STATUSES) {
+      const allowed = allowedNextStatuses("listing", from, role);
+      for (const to of LISTING_STATUSES) {
+        expect(allowed.includes(to), `${from} -> ${to} as ${role}`).toBe(canTransitionListing(from as any, to as any, role));
+      }
+    }
+  });
+
+  it("offers an admin the move from PENDING to CLOSED", () => {
+    expect(allowedNextStatuses("transaction", "PENDING", "ADMIN")).toContain("CLOSED");
+  });
+
+  it("does not offer an agent the move from PENDING to CLOSED", () => {
+    expect(allowedNextStatuses("transaction", "PENDING", "AGENT")).not.toContain("CLOSED");
+  });
+
+  it("offers nothing for an unknown status and never repeats a status", () => {
+    expect(allowedNextStatuses("transaction", "NOPE", "ADMIN")).toEqual([]);
+    const list = allowedNextStatuses("transaction", "PENDING", "ADMIN");
+    expect(new Set(list).size).toBe(list.length);
   });
 });

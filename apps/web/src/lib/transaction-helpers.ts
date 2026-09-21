@@ -117,6 +117,22 @@ export function canTransitionTransaction(
   return AGENT_TX_TRANSITIONS[from]?.includes(to) ?? false;
 }
 
+// The moves the server will accept from a status, read from the same tables
+// as canTransition*, so a dropdown built from this can never offer a move the
+// server rejects.
+export function allowedNextStatuses(
+  kind: "listing" | "transaction",
+  from: string,
+  role: ActorRole
+): string[] {
+  const agentTable = (kind === "listing" ? AGENT_LISTING_TRANSITIONS : AGENT_TX_TRANSITIONS) as Record<string, string[]>;
+  const adminTable = (kind === "listing" ? ADMIN_LISTING_TRANSITIONS : ADMIN_TX_TRANSITIONS) as Record<string, string[]>;
+  const tables = role === "ADMIN" ? [adminTable, agentTable] : [agentTable];
+  const next = new Set<string>();
+  for (const table of tables) for (const status of table[from] ?? []) next.add(status);
+  return [...next];
+}
+
 export function isItemSatisfied(item: FileChecklistItemWithDocs): boolean {
   return item.documents.some(
     (d) => d.reviewStatus === "APPROVED" || d.reviewStatus === "PENDING_REVIEW"
