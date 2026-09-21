@@ -44,7 +44,7 @@ export async function sendDeadlineReminder(reminder: DeadlineReminder): Promise<
     photoUrl: `${process.env.NEXTAUTH_URL}/deadline-reminder-photo.jpg`,
     bodyHtml: `
       <p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; text-align: center; margin: 0 0 32px;">
-        Hi ${safeName}, friendly reminder that your listing at:
+        Hi ${safeName}, friendly reminder that your transaction at:
       </p>
       <p style="color: #1B1B1B; font-size: 22.5px; line-height: 1.6; text-align: center; font-weight: 700; margin: 0 0 32px;">
         ${safeAddress},<br />
