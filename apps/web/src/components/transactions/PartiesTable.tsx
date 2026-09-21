@@ -64,11 +64,11 @@ export function PartiesTable({ fileType, fileId, parties, onChanged }: Props) {
 
       {adding ? (
         <div className="mt-4 grid grid-cols-2 gap-2 rounded-lg border border-[#1B1B1B]/10 p-4">
-          <select value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value as FilePartyRole }))} className="col-span-2 rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2 text-sm">
+          <select value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value as FilePartyRole }))} className="col-span-2 rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2 text-sm text-[#1B1B1B]">
             {Object.entries(ROLE_LABELS).filter(([v]) => v !== "TITLE_ESCROW").map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
           {(["name", "email", "phone", "company", "licenseNumber"] as const).map((field) => (
-            <input key={field} placeholder={field.charAt(0).toUpperCase() + field.slice(1)} value={form[field]} onChange={(e) => setForm((f) => ({ ...f, [field]: e.target.value }))} className="rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2 text-sm" />
+            <input key={field} placeholder={field.charAt(0).toUpperCase() + field.slice(1)} value={form[field]} onChange={(e) => setForm((f) => ({ ...f, [field]: e.target.value }))} className="rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2 text-sm text-[#1B1B1B] placeholder:text-[#1B1B1B]/25" />
           ))}
           <div className="col-span-2 flex justify-end gap-2">
             <button onClick={() => setAdding(false)} className="rounded-lg px-4 py-2 text-sm text-[#1B1B1B]/50 hover:text-[#1B1B1B]">Cancel</button>
