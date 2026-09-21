@@ -759,6 +759,7 @@ function ReferralActions({
   async function patch(payload: Record<string, unknown>) {
     setSubmitting(true);
     setError(null);
+    setWarning(false);
     try {
       const res = await fetch(`/api/transactions/${transaction.id}`, {
         method: "PATCH",
@@ -842,11 +843,11 @@ function ReferralActions({
     );
   }
 
-  if (!content) return null;
+  if (!content && !warning) return null;
 
   return (
     <div className="flex flex-col items-end gap-1.5">
-      <div className="flex items-center gap-2">{content}</div>
+      {content && <div className="flex items-center gap-2">{content}</div>}
       {error && <p className="text-xs text-red-600">{error}</p>}
       {warning && <p className="mt-2 text-xs text-amber-700">{EMAIL_WARNING_TEXT}</p>}
     </div>
