@@ -132,3 +132,14 @@ export function calcReferralFee(amountReceived: number): { cncFee: number; agent
   const cncFee = Math.max(amountReceived * 0.10, 200);
   return { cncFee, agentNet: amountReceived - cncFee };
 }
+
+// The price a file card should show. A transaction's sale price is the price it
+// went under contract for, so it wins over the list price. Listing files only
+// ever have a list price.
+export function pickDisplayPrice(
+  fileType: "listing" | "transaction",
+  prices: { listPrice?: number | null; salePrice?: number | null }
+): number | null {
+  if (fileType === "transaction") return prices.salePrice ?? prices.listPrice ?? null;
+  return prices.listPrice ?? null;
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calcReferralFee, canTransitionTransaction } from "@/lib/transaction-helpers";
+import { calcReferralFee, canTransitionTransaction, pickDisplayPrice } from "@/lib/transaction-helpers";
 
 describe("calcReferralFee", () => {
   it("takes 10% when 10% of the amount exceeds $200", () => {
@@ -57,5 +57,24 @@ describe("referral status transitions", () => {
   it("agent still cannot do admin-only transitions after this change (union is one-directional)", () => {
     expect(canTransitionTransaction("PENDING", "CLOSED", "AGENT")).toBe(false);
     expect(canTransitionTransaction("REFERRAL_SUCCESSFUL", "REFERRAL_BROKER_REVIEW", "AGENT")).toBe(false);
+  });
+});
+
+describe("pickDisplayPrice", () => {
+  it("transactions show the sale price, the price it went into contract for", () => {
+    expect(pickDisplayPrice("transaction", { listPrice: 850000, salePrice: 800000 })).toBe(800000);
+  });
+
+  it("transactions fall back to the list price when there is no sale price yet", () => {
+    expect(pickDisplayPrice("transaction", { listPrice: 850000, salePrice: null })).toBe(850000);
+  });
+
+  it("listings always show the list price (they have no sale price)", () => {
+    expect(pickDisplayPrice("listing", { listPrice: 2500000, salePrice: 2400000 })).toBe(2500000);
+  });
+
+  it("returns null when there is no price at all", () => {
+    expect(pickDisplayPrice("transaction", {})).toBeNull();
+    expect(pickDisplayPrice("listing", { listPrice: null })).toBeNull();
   });
 });

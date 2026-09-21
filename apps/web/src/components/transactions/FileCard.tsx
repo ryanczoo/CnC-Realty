@@ -11,7 +11,7 @@ interface Props {
   city: string | null;
   status: ListingStatus | TransactionFileStatus;
   closeDate?: string | null;
-  listPrice?: number | null;
+  price?: number | null;
   checklistItems: FileChecklistItemWithDocs[];
   awaitingReview: boolean;
   referredToAgentName?: string | null;
@@ -19,7 +19,7 @@ interface Props {
   href?: string;
 }
 
-export function FileCard({ id, fileType, address, city, status, closeDate, listPrice, checklistItems, awaitingReview, referredToAgentName, transactionSide, href }: Props) {
+export function FileCard({ id, fileType, address, city, status, closeDate, price, checklistItems, awaitingReview, referredToAgentName, transactionSide, href }: Props) {
   const { satisfied, required } = getChecklistProgress(checklistItems);
   const pct = required > 0 ? Math.round((satisfied / required) * 100) : 0;
 
@@ -55,8 +55,8 @@ export function FileCard({ id, fileType, address, city, status, closeDate, listP
         <StatusBadge status={status} />
       </div>
 
-      {status !== "PENDING_TRANSFER" && listPrice && (
-        <p className="text-sm font-medium text-[#1B1B1B]">${listPrice.toLocaleString()}</p>
+      {status !== "PENDING_TRANSFER" && price && (
+        <p className="text-sm font-medium text-[#1B1B1B]">${price.toLocaleString()}</p>
       )}
 
       {closeDate && (
