@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, checkOwnership } from "@/lib/api-auth";
+import { requireAuth, checkOwnership, assertFileEditable } from "@/lib/api-auth";
 
 type Params = { params: { id: string } };
 
@@ -25,9 +25,11 @@ export async function POST(req: Request, { params }: Params) {
   if (error) return error;
 
   const txFile = await prisma.transactionFile.findUnique({ where: { id: params.id } });
-  const { exists, forbidden } = checkOwnership(txFile, session.user.agentId, session.user.role);
-  if (!exists) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const { exists, forbidden, record } = checkOwnership(txFile, session.user.agentId, session.user.role);
+  if (!exists || !record) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (forbidden) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const locked = assertFileEditable("transaction", record.status, session.user.role);
+  if (locked) return locked;
 
   const body = await req.json().catch(() => null);
   if (!body?.name) return NextResponse.json({ error: "name is required" }, { status: 400 });

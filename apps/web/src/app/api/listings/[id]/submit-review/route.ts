@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { checkOwnership } from "@/lib/api-auth";
+import { checkOwnership, assertFileEditable } from "@/lib/api-auth";
 import { getChecklistProgress, CHECKLIST_ITEMS_WITH_DOCS_INCLUDE } from "@/lib/transaction-helpers";
 import { sendSubmitForReview } from "@/lib/email/transaction-emails";
 
@@ -17,6 +17,8 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
   const { exists, forbidden, record: listing } = checkOwnership(listingRecord, session.user.agentId, session.user.role);
   if (!exists || !listing) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (forbidden) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const locked = assertFileEditable("listing", listing.status, session.user.role);
+  if (locked) return locked;
 
   if (listing.status === "PENDING_TRANSFER") {
     return NextResponse.json({ error: "This file is locked pending transfer authorization" }, { status: 400 });
