@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getFileAndVerifyAccess, resolveFileRef } from "@/lib/api-auth";
 import { isFileReadOnlyFor } from "@/lib/file-lock";
 import { FILE_LOCKED_MESSAGE } from "@/lib/file-messages";
+import { trimStrings } from "@/lib/form-validation";
 
 async function assertTaskAccess(taskId: string, agentId: string | null, role: string) {
   const task = await prisma.fileTask.findUnique({ where: { id: taskId } });
@@ -25,7 +26,7 @@ export async function PATCH(req: Request, { params }: { params: { taskId: string
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   let body: { done?: boolean; title?: string; dueDate?: string | null; assigneeName?: string | null };
-  try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
+  try { body = trimStrings(await req.json()); } catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
 
   if (body.title !== undefined && !body.title.trim()) {
     return NextResponse.json({ error: "title cannot be empty" }, { status: 400 });

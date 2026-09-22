@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getFileAndVerifyAccess, assertFileEditable } from "@/lib/api-auth";
+import { trimStrings } from "@/lib/form-validation";
 
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
@@ -33,7 +34,7 @@ export async function POST(req: Request) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   let body: { fileType: string; fileId: string; title: string; dueDate?: string; assigneeName?: string };
-  try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
+  try { body = trimStrings(await req.json()); } catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
 
   const { fileType, fileId, title, dueDate, assigneeName } = body;
   if (!fileId || !title?.trim()) {

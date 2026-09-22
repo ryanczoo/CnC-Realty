@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, checkOwnership, assertFileEditable } from "@/lib/api-auth";
+import { trimStrings } from "@/lib/form-validation";
 
 type Params = { params: { id: string } };
 
@@ -31,7 +32,7 @@ export async function POST(req: Request, { params }: Params) {
   const locked = assertFileEditable("transaction", record.status, session.user.role);
   if (locked) return locked;
 
-  const body = await req.json().catch(() => null);
+  const body = trimStrings(await req.json().catch(() => null));
   if (!body?.name) return NextResponse.json({ error: "name is required" }, { status: 400 });
 
   const condition = await prisma.fileCondition.create({

@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getFileAndVerifyAccess, assertFileEditable } from "@/lib/api-auth";
+import { trimStrings } from "@/lib/form-validation";
 
 export async function POST(req: Request, { params }: { params: { fileType: string; id: string } }) {
   const session = await getServerSession(authOptions);
@@ -22,7 +23,7 @@ export async function POST(req: Request, { params }: { params: { fileType: strin
   const locked = assertFileEditable(isListing ? "listing" : "transaction", file.status, session.user.role);
   if (locked) return locked;
 
-  const { note } = await req.json();
+  const { note } = trimStrings(await req.json());
   if (!note?.trim()) return NextResponse.json({ error: "note is required" }, { status: 400 });
 
   await prisma.fileActivity.create({
