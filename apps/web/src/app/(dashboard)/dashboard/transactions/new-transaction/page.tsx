@@ -115,8 +115,8 @@ export default function NewTransactionPage() {
   // Which party section gates Next on Step 3, mirroring how the agent
   // always knows the side they represent when the file is created.
   const partiesReady = useMemo(() => {
-    const hasBuyer = buyers.some((b) => b.name);
-    const hasSeller = sellers.some((s) => s.name);
+    const hasBuyer = buyers.some((b) => b.name.trim());
+    const hasSeller = sellers.some((s) => s.name.trim());
     switch (form.transactionSide) {
       case "PURCHASE":
       case "LEASE_TENANT":
@@ -131,6 +131,14 @@ export default function NewTransactionPage() {
         return true;
     }
   }, [form.transactionSide, buyers, sellers]);
+
+  const buyerSectionRequired = useMemo(() => {
+    return ["PURCHASE", "LEASE_TENANT", "DUAL", "LEASE_DUAL"].includes(form.transactionSide);
+  }, [form.transactionSide]);
+
+  const sellerSectionRequired = useMemo(() => {
+    return ["LISTING", "LEASE_LANDLORD", "DUAL", "LEASE_DUAL"].includes(form.transactionSide);
+  }, [form.transactionSide]);
 
   const canAdvance = useMemo(() => {
     if (step === 0) return isReferral ? !!form.transactionSide : (!!form.transactionSide && !!form.propertyCategory);
@@ -460,8 +468,8 @@ export default function NewTransactionPage() {
         {/* ── Step 3: Parties ── */}
         {step === 3 && (
           <div className="space-y-8">
-            <PartySection label={isLeaseSide ? "Tenants" : "Buyers"} parties={buyers} onUpdate={setBuyers} />
-            <PartySection label={isLeaseSide ? "Landlords" : "Sellers"} parties={sellers} onUpdate={setSellers} />
+            <PartySection label={isLeaseSide ? "Tenants" : "Buyers"} parties={buyers} onUpdate={setBuyers} required={buyerSectionRequired} />
+            <PartySection label={isLeaseSide ? "Landlords" : "Sellers"} parties={sellers} onUpdate={setSellers} required={sellerSectionRequired} />
 
             {/* Listing Agent */}
             <div>
@@ -688,10 +696,10 @@ export default function NewTransactionPage() {
             )}
             <ReviewSection title="Parties">
               {buyers.filter((b) => b.name).map((b, i) => (
-                <ReviewRow key={i} label={`Buyer ${buyers.length > 1 ? i + 1 : ""}`} value={b.name} />
+                <ReviewRow key={i} label={`${isLeaseSide ? "Tenant" : "Buyer"} ${buyers.length > 1 ? i + 1 : ""}`} value={b.name} />
               ))}
               {sellers.filter((s) => s.name).map((s, i) => (
-                <ReviewRow key={i} label={`Seller ${sellers.length > 1 ? i + 1 : ""}`} value={s.name} />
+                <ReviewRow key={i} label={`${isLeaseSide ? "Landlord" : "Seller"} ${sellers.length > 1 ? i + 1 : ""}`} value={s.name} />
               ))}
               {listingAgent.name && <ReviewRow label="Listing Agent" value={listingAgent.name} />}
               {(["Title", "Escrow", "Attorney"] as const)
@@ -803,9 +811,9 @@ function TextareaField({
 }
 
 function PartySection({
-  label, parties, onUpdate,
+  label, parties, onUpdate, required = false,
 }: {
-  label: string; parties: Party[]; onUpdate: (p: Party[]) => void;
+  label: string; parties: Party[]; onUpdate: (p: Party[]) => void; required?: boolean;
 }) {
   function update(i: number, field: keyof Party, value: string) {
     onUpdate(parties.map((p, idx) => (idx === i ? { ...p, [field]: value } : p)));
@@ -834,7 +842,7 @@ function PartySection({
               </button>
             )}
             <div className="grid grid-cols-2 gap-3">
-              <Field label={`${singular} Name *`} value={p.name} onChange={(v) => update(i, "name", v)} />
+              <Field label={`${singular} Name${required ? " *" : ""}`} value={p.name} onChange={(v) => update(i, "name", v)} />
               <Field label="Email" type="email" value={p.email} onChange={(v) => update(i, "email", v)} />
               <Field label="Phone" type="tel" value={p.phone} onChange={(v) => update(i, "phone", v)} />
             </div>
