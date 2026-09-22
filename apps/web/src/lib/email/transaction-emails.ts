@@ -129,6 +129,11 @@ export async function sendAllDocsApproved(opts: {
   });
 }
 
+// Closing from these two statuses is not a success — the file is being closed
+// out administratively (an expired listing/transaction, or a referral that
+// didn't pan out), not because a deal went through.
+const NON_CELEBRATORY_PREVIOUS_STATUSES = new Set(["EXPIRED", "REFERRAL_UNSUCCESSFUL"]);
+
 export async function sendFileClosed(opts: {
   agentEmail: string;
   agentName: string;
@@ -138,6 +143,7 @@ export async function sendFileClosed(opts: {
   zip?: string | null;
   fileType: "listing" | "transaction";
   fileId: string;
+  previousStatus?: string;
 }): Promise<void> {
   const address = opts.address ?? NO_ADDRESS_LABEL;
   const firstName = opts.agentName.trim().split(/\s+/)[0] || opts.agentName;
@@ -148,6 +154,9 @@ export async function sendFileClosed(opts: {
       .filter(Boolean)
       .join(", ")
   );
+  const closingLine = opts.previousStatus && NON_CELEBRATORY_PREVIOUS_STATUSES.has(opts.previousStatus)
+    ? "So close! We wish you the best of luck on your next transaction."
+    : "Congratulations - it's time to celebrate!";
   const bodyHtml = buildHeadingBodyHtml({
     heading: "File Closed",
     photoUrl: `${process.env.NEXTAUTH_URL}/file-closed-photo.jpg`,
@@ -159,7 +168,7 @@ export async function sendFileClosed(opts: {
         ${safeAddress}${safeCityStateZip ? `,<br />\n      ${safeCityStateZip}` : ""}
       </p>
       <p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.8; text-align: center; margin: 0;">
-        Congratulations - it's time to celebrate!
+        ${closingLine}
       </p>
     `,
   });

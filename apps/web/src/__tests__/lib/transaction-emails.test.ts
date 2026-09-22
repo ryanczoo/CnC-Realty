@@ -431,4 +431,58 @@ describe("transaction-emails — wording follows the file type", () => {
     });
     expect(vi.mocked(sendEmail).mock.calls[0][0].html).toContain("for your listing at");
   });
+
+  it("sendFileClosed says congratulations for a real close, with no previousStatus given", async () => {
+    await sendFileClosed({
+      agentEmail: "jane@example.com",
+      agentName: "Jane Agent",
+      address: "123 Main St",
+      fileType: "transaction",
+      fileId: "f1",
+    });
+    const html = vi.mocked(sendEmail).mock.calls[0][0].html!;
+    expect(html).toContain("Congratulations - it's time to celebrate!");
+    expect(html).not.toContain("So close!");
+  });
+
+  it("sendFileClosed says congratulations when the file closed from PENDING", async () => {
+    await sendFileClosed({
+      agentEmail: "jane@example.com",
+      agentName: "Jane Agent",
+      address: "123 Main St",
+      fileType: "transaction",
+      fileId: "f1",
+      previousStatus: "PENDING",
+    });
+    const html = vi.mocked(sendEmail).mock.calls[0][0].html!;
+    expect(html).toContain("Congratulations - it's time to celebrate!");
+  });
+
+  it("sendFileClosed wishes good luck instead when the file closed from EXPIRED", async () => {
+    await sendFileClosed({
+      agentEmail: "jane@example.com",
+      agentName: "Jane Agent",
+      address: "123 Main St",
+      fileType: "listing",
+      fileId: "f1",
+      previousStatus: "EXPIRED",
+    });
+    const html = vi.mocked(sendEmail).mock.calls[0][0].html!;
+    expect(html).toContain("So close! We wish you the best of luck on your next transaction.");
+    expect(html).not.toContain("Congratulations - it's time to celebrate!");
+  });
+
+  it("sendFileClosed wishes good luck instead when the file closed from REFERRAL_UNSUCCESSFUL", async () => {
+    await sendFileClosed({
+      agentEmail: "jane@example.com",
+      agentName: "Jane Agent",
+      address: null,
+      fileType: "transaction",
+      fileId: "f1",
+      previousStatus: "REFERRAL_UNSUCCESSFUL",
+    });
+    const html = vi.mocked(sendEmail).mock.calls[0][0].html!;
+    expect(html).toContain("So close! We wish you the best of luck on your next transaction.");
+    expect(html).not.toContain("Congratulations - it's time to celebrate!");
+  });
 });

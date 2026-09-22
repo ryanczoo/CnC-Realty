@@ -183,6 +183,12 @@ describe("changeFileStatus: the Closed email", () => {
     }));
   });
 
+  it("tells the email which status the file closed from, so it can pick the right closing line", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx({ status: "REFERRAL_UNSUCCESSFUL" }) as any);
+    await changeFileStatus({ kind: "transaction", fileId: "f1", toStatus: "CLOSED", actor: ADMIN });
+    expect(sendFileClosed).toHaveBeenCalledWith(expect.objectContaining({ previousStatus: "REFERRAL_UNSUCCESSFUL" }));
+  });
+
   it("returns no warning when an admin closes a file and the email is sent", async () => {
     vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx() as any);
     const r = await changeFileStatus({ kind: "transaction", fileId: "f1", toStatus: "CLOSED", actor: ADMIN });

@@ -88,6 +88,7 @@ export async function changeFileStatus({
           zip: file.zip,
           fileType: kind,
           fileId,
+          previousStatus: file.status,
         })
       );
       emailFailed = failed;
