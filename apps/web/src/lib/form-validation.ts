@@ -29,3 +29,18 @@ export function limitDigits(value: string, maxDigits: number): string {
   }
   return result;
 }
+
+// Trims every string in a JSON-shaped value, recursing into plain objects and
+// arrays; leaves numbers, booleans, null and Dates untouched. Applied once per
+// route, right after parsing the request body, so no caller has to remember
+// to trim any individual field.
+export function trimStrings<T>(value: T): T {
+  if (typeof value === "string") return value.trim() as unknown as T;
+  if (Array.isArray(value)) return value.map(trimStrings) as unknown as T;
+  if (value !== null && typeof value === "object" && !(value instanceof Date)) {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) out[k] = trimStrings(v);
+    return out as T;
+  }
+  return value;
+}

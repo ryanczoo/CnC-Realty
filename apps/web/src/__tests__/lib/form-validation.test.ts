@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatPhoneInput, isValidEmail, limitDigits, stripDigits, digitsOnly } from "@/lib/form-validation";
+import { formatPhoneInput, isValidEmail, limitDigits, stripDigits, digitsOnly, trimStrings } from "@/lib/form-validation";
 
 describe("formatPhoneInput", () => {
   it("returns digits as-is when 3 or fewer", () => {
@@ -114,5 +114,40 @@ describe("digitsOnly", () => {
 
   it("returns an empty string unchanged", () => {
     expect(digitsOnly("", 5)).toBe("");
+  });
+});
+
+describe("trimStrings", () => {
+  it("trims a plain string", () => {
+    expect(trimStrings("  hi  ")).toBe("hi");
+  });
+
+  it("trims every string value in a flat object", () => {
+    expect(trimStrings({ name: "  Jane  ", city: "Irvine " })).toEqual({ name: "Jane", city: "Irvine" });
+  });
+
+  it("trims strings inside a nested object", () => {
+    expect(trimStrings({ party: { name: " Jane " } })).toEqual({ party: { name: "Jane" } });
+  });
+
+  it("trims strings inside an array of objects, matching the parties payload shape", () => {
+    const input = { parties: [{ role: "BUYER", name: " Jane " }, { role: "SELLER", name: "Bob  " }] };
+    expect(trimStrings(input)).toEqual({ parties: [{ role: "BUYER", name: "Jane" }, { role: "SELLER", name: "Bob" }] });
+  });
+
+  it("leaves numbers, booleans, and null untouched", () => {
+    expect(trimStrings({ n: 5, b: true, x: null })).toEqual({ n: 5, b: true, x: null });
+  });
+
+  it("leaves a Date instance untouched rather than trying to recurse into it", () => {
+    const d = new Date("2026-09-22T00:00:00.000Z");
+    const result = trimStrings({ when: d });
+    expect(result.when).toBe(d);
+  });
+
+  it("does not mutate the object it was given", () => {
+    const input = { name: "  Jane  " };
+    trimStrings(input);
+    expect(input.name).toBe("  Jane  ");
   });
 });
