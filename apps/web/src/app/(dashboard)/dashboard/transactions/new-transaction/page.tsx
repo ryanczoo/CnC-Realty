@@ -6,7 +6,7 @@ import { motion } from "motion/react";
 import { Plus, Trash2 } from "lucide-react";
 import { SPRING_HOVER } from "@/lib/motion";
 import { TC_FEE, calcNetToAgent } from "@/lib/commission";
-import { escrowTypeToRole } from "@/lib/transaction-helpers";
+import { escrowTypeToRole, type EscrowContactType } from "@/lib/transaction-helpers";
 import { DateField } from "@/components/ui/DateField";
 import { FormField as Field } from "@/components/ui/FormField";
 import { stripDigits, digitsOnly } from "@/lib/form-validation";
@@ -27,8 +27,6 @@ const PROPERTY_TYPES = ["Single Family", "Condo", "Townhouse", "Multi-Family", "
 
 type Party = { name: string; email: string; phone: string; company: string; licenseNumber: string };
 const emptyParty = (): Party => ({ name: "", email: "", phone: "", company: "", licenseNumber: "" });
-
-type TitleEscrowParty = Party & { contactType: "Title" | "Escrow" | "Attorney" };
 
 export default function NewTransactionPage() {
   const router = useRouter();
@@ -71,7 +69,13 @@ export default function NewTransactionPage() {
   const [buyers, setBuyers] = useState<Party[]>([emptyParty()]);
   const [sellers, setSellers] = useState<Party[]>([emptyParty()]);
   const [listingAgent, setListingAgent] = useState<Party>(emptyParty());
-  const [titleEscrow, setTitleEscrow] = useState<TitleEscrowParty>({ ...emptyParty(), contactType: "Escrow" });
+  // One set of fields per contact type, so switching the toggle never loses what
+  // was typed for the other types. Any of the three with a name becomes its own
+  // party at Create.
+  const [escrowContacts, setEscrowContacts] = useState<Record<EscrowContactType, Party>>({
+    Title: emptyParty(), Escrow: emptyParty(), Attorney: emptyParty(),
+  });
+  const [activeEscrowType, setActiveEscrowType] = useState<EscrowContactType>("Escrow");
   const [loanOfficer, setLoanOfficer] = useState<Party>(emptyParty());
   const [tc, setTc] = useState<Party>(emptyParty());
   const [referralAgent, setReferralAgent] = useState<Party>(emptyParty());
@@ -178,9 +182,9 @@ export default function NewTransactionPage() {
       ...buyers.filter((b) => b.name).map((b) => ({ role: "BUYER", ...b })),
       ...sellers.filter((s) => s.name).map((s) => ({ role: "SELLER", ...s })),
       ...(listingAgent.name ? [{ role: "LISTING_AGENT", ...listingAgent }] : []),
-      ...(titleEscrow.name
-        ? [{ role: escrowTypeToRole(titleEscrow.contactType), ...titleEscrow }]
-        : []),
+      ...(["Title", "Escrow", "Attorney"] as const)
+        .filter((t) => escrowContacts[t].name)
+        .map((t) => ({ role: escrowTypeToRole(t), ...escrowContacts[t] })),
       ...(showLoanOfficer && loanOfficer.name ? [{ role: "LENDER", ...loanOfficer }] : []),
       ...(showTc && tc.name ? [{ role: "TRANSACTION_COORDINATOR", ...tc }] : []),
       ...(showReferralAgent && referralAgent.name ? [{ role: "REFERRAL_AGENT", ...referralAgent }] : []),
@@ -473,25 +477,26 @@ export default function NewTransactionPage() {
               </div>
             </div>
 
-            {/* Title / Escrow / Attorney */}
+            {/* Title / Escrow / Attorney — the toggle only changes which type's fields
+                are on screen; each type keeps its own values underneath. */}
             <div>
               <p className="mb-3 text-sm font-semibold text-[#1B1B1B]/60">Title / Escrow / Attorney</p>
               <div className="mb-4 flex gap-2">
                 {(["Title", "Escrow", "Attorney"] as const).map((type) => (
                   <button
                     key={type}
-                    onClick={() => setTitleEscrow((a) => ({ ...a, contactType: type }))}
-                    className={`rounded-full px-4 py-1.5 text-xs font-medium transition-colors ${titleEscrow.contactType === type ? "bg-[#1B1B1B] text-white" : "bg-[#F2F0EF] text-[#1B1B1B]/60 hover:text-[#1B1B1B]"}`}
+                    onClick={() => setActiveEscrowType(type)}
+                    className={`rounded-full px-4 py-1.5 text-xs font-medium transition-colors ${activeEscrowType === type ? "bg-[#1B1B1B] text-white" : "bg-[#F2F0EF] text-[#1B1B1B]/60 hover:text-[#1B1B1B]"}`}
                   >
                     {type}
                   </button>
                 ))}
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Name" value={titleEscrow.name} onChange={(v) => setTitleEscrow((a) => ({ ...a, name: v }))} />
-                <Field label="Email" type="email" value={titleEscrow.email} onChange={(v) => setTitleEscrow((a) => ({ ...a, email: v }))} />
-                <Field label="Phone" type="tel" value={titleEscrow.phone} onChange={(v) => setTitleEscrow((a) => ({ ...a, phone: v }))} />
-                <Field label="Company" value={titleEscrow.company} onChange={(v) => setTitleEscrow((a) => ({ ...a, company: v }))} />
+                <Field label="Name" value={escrowContacts[activeEscrowType].name} onChange={(v) => setEscrowContacts((c) => ({ ...c, [activeEscrowType]: { ...c[activeEscrowType], name: v } }))} />
+                <Field label="Email" type="email" value={escrowContacts[activeEscrowType].email} onChange={(v) => setEscrowContacts((c) => ({ ...c, [activeEscrowType]: { ...c[activeEscrowType], email: v } }))} />
+                <Field label="Phone" type="tel" value={escrowContacts[activeEscrowType].phone} onChange={(v) => setEscrowContacts((c) => ({ ...c, [activeEscrowType]: { ...c[activeEscrowType], phone: v } }))} />
+                <Field label="Company" value={escrowContacts[activeEscrowType].company} onChange={(v) => setEscrowContacts((c) => ({ ...c, [activeEscrowType]: { ...c[activeEscrowType], company: v } }))} />
               </div>
             </div>
 
@@ -689,7 +694,9 @@ export default function NewTransactionPage() {
                 <ReviewRow key={i} label={`Seller ${sellers.length > 1 ? i + 1 : ""}`} value={s.name} />
               ))}
               {listingAgent.name && <ReviewRow label="Listing Agent" value={listingAgent.name} />}
-              {titleEscrow.name && <ReviewRow label={titleEscrow.contactType} value={titleEscrow.name} />}
+              {(["Title", "Escrow", "Attorney"] as const)
+                .filter((t) => escrowContacts[t].name)
+                .map((t) => <ReviewRow key={t} label={t} value={escrowContacts[t].name} />)}
               {showLoanOfficer && loanOfficer.name && <ReviewRow label="Loan Officer" value={loanOfficer.name} />}
               {showTc && tc.name && <ReviewRow label="Transaction Coordinator" value={tc.name} />}
               {showReferralAgent && referralAgent.name && <ReviewRow label="Referral Agent" value={referralAgent.name} />}
