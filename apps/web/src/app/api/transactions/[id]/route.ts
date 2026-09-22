@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { checkOwnership, assertFileEditable } from "@/lib/api-auth";
 import { changeFileStatus } from "@/lib/file-status";
 import { calcReferralFee, FILE_DETAIL_INCLUDE } from "@/lib/transaction-helpers";
+import { trimStrings } from "@/lib/form-validation";
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
@@ -38,7 +39,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const locked = assertFileEditable("transaction", tx.status, session.user.role);
   if (locked) return locked;
 
-  const body = await req.json();
+  const body = trimStrings(await req.json());
   const role = isAdmin ? "ADMIN" : "AGENT";
 
   const referralFeeUpdate =
