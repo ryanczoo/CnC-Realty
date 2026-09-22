@@ -108,12 +108,33 @@ export default function NewTransactionPage() {
   const totalGci = saleCommissionAmt + listingCommissionAmt;
   const netToAgent = calcNetToAgent(totalGci, otherDeductionsAmt, tcFeeEnabled);
 
+  // Which party section gates Next on Step 3, mirroring how the agent
+  // always knows the side they represent when the file is created.
+  const partiesReady = useMemo(() => {
+    const hasBuyer = buyers.some((b) => b.name);
+    const hasSeller = sellers.some((s) => s.name);
+    switch (form.transactionSide) {
+      case "PURCHASE":
+      case "LEASE_TENANT":
+        return hasBuyer;
+      case "LISTING":
+      case "LEASE_LANDLORD":
+        return hasSeller;
+      case "DUAL":
+      case "LEASE_DUAL":
+        return hasBuyer && hasSeller;
+      default:
+        return true;
+    }
+  }, [form.transactionSide, buyers, sellers]);
+
   const canAdvance = useMemo(() => {
     if (step === 0) return isReferral ? !!form.transactionSide : (!!form.transactionSide && !!form.propertyCategory);
     if (step === 1) return isReferral ? !!form.referredToAgentName : (!!form.propertyAddress && !!form.city && !!form.zip && !!form.propertyType && !!form.mlsNumber);
     if (step === 2) return isLeaseSide ? !!form.leasePrice : !!form.salePrice;
+    if (step === 3) return partiesReady;
     return true;
-  }, [step, isReferral, form.transactionSide, form.propertyCategory, form.referredToAgentName, form.propertyAddress, form.city, form.zip, form.propertyType, form.mlsNumber, form.salePrice, form.leasePrice]);
+  }, [step, isReferral, form.transactionSide, form.propertyCategory, form.referredToAgentName, form.propertyAddress, form.city, form.zip, form.propertyType, form.mlsNumber, form.salePrice, form.leasePrice, partiesReady]);
 
   function goNext() {
     setStep((s) => {
@@ -435,8 +456,8 @@ export default function NewTransactionPage() {
         {/* ── Step 3: Parties ── */}
         {step === 3 && (
           <div className="space-y-8">
-            <PartySection label="Buyers" parties={buyers} onUpdate={setBuyers} />
-            <PartySection label="Sellers" parties={sellers} onUpdate={setSellers} />
+            <PartySection label={isLeaseSide ? "Tenants" : "Buyers"} parties={buyers} onUpdate={setBuyers} />
+            <PartySection label={isLeaseSide ? "Landlords" : "Sellers"} parties={sellers} onUpdate={setSellers} />
 
             {/* Listing Agent */}
             <div>
