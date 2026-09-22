@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { CHECKLIST_ITEMS_WITH_DOCS_INCLUDE } from "@/lib/transaction-helpers";
+import { trimStrings } from "@/lib/form-validation";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -27,7 +28,7 @@ export async function POST(req: Request) {
   const agentId = session.user.agentId;
   if (!agentId) return NextResponse.json({ error: "Agent not found" }, { status: 404 });
 
-  const body = await req.json();
+  const body = trimStrings(await req.json());
   const { propertyAddress, city, state, zip, mlsNumber, listPrice, listingType, expirationDate, listDate, commissionPercent, commissionNotes } = body;
 
   if (!propertyAddress || !city || !zip || !listPrice || !listingType) {

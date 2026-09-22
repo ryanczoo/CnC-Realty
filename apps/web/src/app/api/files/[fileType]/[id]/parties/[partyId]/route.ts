@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getFileAndVerifyAccess, resolveFileRef } from "@/lib/api-auth";
 import { isFileReadOnlyFor } from "@/lib/file-lock";
 import { FILE_LOCKED_MESSAGE } from "@/lib/file-messages";
+import { trimStrings } from "@/lib/form-validation";
 
 async function verifyPartyAccess(partyId: string, agentId: string | null, role: string) {
   const party = await prisma.fileParty.findUnique({ where: { id: partyId } });
@@ -27,7 +28,7 @@ export async function PATCH(req: Request, { params }: { params: { fileType: stri
   const check = await verifyPartyAccess(params.partyId, session.user.agentId, session.user.role);
   if ("error" in check) return NextResponse.json({ error: check.error }, { status: check.status });
 
-  const body = await req.json();
+  const body = trimStrings(await req.json());
   const updated = await prisma.fileParty.update({
     where: { id: params.partyId },
     data: {
