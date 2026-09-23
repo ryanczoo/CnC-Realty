@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { fetchAccountProfile, fetchAgentProfile } from "@/lib/dashboard-queries";
-import { digitsOnly } from "@/lib/form-validation";
+import { digitsOnly, sanitizeCurrencyInput, formatCurrencyDisplay } from "@/lib/form-validation";
 
 export default function AgentSettingsPage() {
   const { data: session, update } = useSession();
@@ -81,7 +81,9 @@ export default function AgentSettingsPage() {
       bio: d.bio ?? "",
       yearsExp: d.yearsExp?.toString() ?? "",
       listingsClosed: d.listingsClosed > 0 ? d.listingsClosed.toString() : "",
-      volumeClosed: d.volumeClosed > 0 ? Math.round(d.volumeClosed).toLocaleString("en-US") : "",
+      volumeClosed: d.volumeClosed > 0
+        ? formatCurrencyDisplay(Number.isInteger(d.volumeClosed) ? String(d.volumeClosed) : d.volumeClosed.toFixed(2))
+        : "",
       propertiesRented: d.propertiesRented != null && d.propertiesRented > 0 ? d.propertiesRented.toString() : "",
       instagram: d.instagram ?? "",
       facebook: d.facebook ?? "",
@@ -388,12 +390,11 @@ export default function AgentSettingsPage() {
                 <input
                   id="volumeClosed"
                   type="text"
-                  inputMode="numeric"
+                  inputMode="decimal"
                   value={agentProfile.volumeClosed}
                   onChange={(e) => {
-                    const digits = digitsOnly(e.target.value, 12);
-                    const formatted = digits.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-                    setAgentProfile((prev) => ({ ...prev, volumeClosed: formatted }));
+                    const sanitized = sanitizeCurrencyInput(e.target.value, 12);
+                    setAgentProfile((prev) => ({ ...prev, volumeClosed: formatCurrencyDisplay(sanitized) }));
                   }}
                   className="w-full rounded-lg border border-[#1B1B1B]/10 bg-white px-3 py-2.5 text-sm text-[#1B1B1B] outline-none focus:border-[#9E8C61] transition-colors"
                 />

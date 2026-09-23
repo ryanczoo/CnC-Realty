@@ -9,7 +9,7 @@ import { TC_FEE, calcNetToAgent, calcTransactionFee } from "@/lib/commission";
 import { escrowTypeToRole, type EscrowContactType } from "@/lib/transaction-helpers";
 import { DateField } from "@/components/ui/DateField";
 import { FormField as Field } from "@/components/ui/FormField";
-import { stripDigits, digitsOnly, formatWithCommas } from "@/lib/form-validation";
+import { stripDigits, digitsOnly, sanitizeCurrencyInput, formatCurrencyDisplay } from "@/lib/form-validation";
 import { SIDES, type TransactionSide } from "@/types/transaction";
 import { Spinner } from "@/components/ui/Spinner";
 
@@ -1020,9 +1020,9 @@ function CommissionField({
       {mode === "flat" ? (
         <input
           type="text"
-          inputMode="numeric"
-          value={formatWithCommas(value)}
-          onChange={(e) => onChange(digitsOnly(e.target.value, 12))}
+          inputMode="decimal"
+          value={formatCurrencyDisplay(value)}
+          onChange={(e) => onChange(sanitizeCurrencyInput(e.target.value, 12))}
           placeholder="e.g. 15,000"
           className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2.5 text-sm text-[#1B1B1B] placeholder:text-[#1B1B1B]/25 focus:outline-none focus:ring-2 focus:ring-[#9E8C61]/30"
         />

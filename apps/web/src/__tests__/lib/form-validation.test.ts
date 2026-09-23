@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatPhoneInput, isValidEmail, limitDigits, stripDigits, digitsOnly, formatWithCommas, trimStrings } from "@/lib/form-validation";
+import { formatPhoneInput, isValidEmail, limitDigits, stripDigits, digitsOnly, formatWithCommas, sanitizeCurrencyInput, formatCurrencyDisplay, trimStrings } from "@/lib/form-validation";
 
 describe("formatPhoneInput", () => {
   it("returns digits as-is when 3 or fewer", () => {
@@ -133,6 +133,59 @@ describe("formatWithCommas", () => {
 
   it("returns an empty string unchanged", () => {
     expect(formatWithCommas("")).toBe("");
+  });
+});
+
+describe("sanitizeCurrencyInput", () => {
+  it("strips non-digit, non-decimal-point characters", () => {
+    expect(sanitizeCurrencyInput("$800,000")).toBe("800000");
+  });
+
+  it("keeps a single decimal point", () => {
+    expect(sanitizeCurrencyInput("800000.5")).toBe("800000.5");
+  });
+
+  it("drops a second decimal point, treating what follows as more decimal digits (still capped at 2)", () => {
+    expect(sanitizeCurrencyInput("800.00.00")).toBe("800.00");
+  });
+
+  it("caps the decimal portion at 2 digits", () => {
+    expect(sanitizeCurrencyInput("800.12345")).toBe("800.12");
+  });
+
+  it("caps the integer portion at maxIntDigits, independent of the decimal cap", () => {
+    expect(sanitizeCurrencyInput("1234567890123.45", 12)).toBe("123456789012.45");
+  });
+
+  it("keeps a bare trailing decimal point while the user is still typing", () => {
+    expect(sanitizeCurrencyInput("800000.")).toBe("800000.");
+  });
+
+  it("returns an empty string unchanged", () => {
+    expect(sanitizeCurrencyInput("")).toBe("");
+  });
+});
+
+describe("formatCurrencyDisplay", () => {
+  it("comma-formats a whole-number value with no decimal point", () => {
+    expect(formatCurrencyDisplay("800000")).toBe("800,000");
+  });
+
+  it("comma-formats the integer part and keeps the decimal part as-is", () => {
+    expect(formatCurrencyDisplay("800000.5")).toBe("800,000.5");
+    expect(formatCurrencyDisplay("1234567.89")).toBe("1,234,567.89");
+  });
+
+  it("keeps a bare trailing decimal point visible while typing", () => {
+    expect(formatCurrencyDisplay("800000.")).toBe("800,000.");
+  });
+
+  it("shows a leading 0 when the integer part is empty but a decimal point exists", () => {
+    expect(formatCurrencyDisplay(".5")).toBe("0.5");
+  });
+
+  it("returns an empty string unchanged", () => {
+    expect(formatCurrencyDisplay("")).toBe("");
   });
 });
 

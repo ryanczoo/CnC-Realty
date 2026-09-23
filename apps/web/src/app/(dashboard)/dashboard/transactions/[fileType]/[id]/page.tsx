@@ -20,6 +20,7 @@ import type {
   FileTaskRecord,
 } from "@/types/transaction";
 import { TC_FEE, calcNetToAgent, calcTransactionFee } from "@/lib/commission";
+import { sanitizeCurrencyInput, formatCurrencyDisplay } from "@/lib/form-validation";
 import { formatDateOnly, isDateOnlyPast } from "@/lib/utils";
 import { Spinner } from "@/components/ui/Spinner";
 import { EMAIL_WARNING_TEXT } from "@/lib/file-messages";
@@ -907,13 +908,12 @@ function ReferralActions({
         className="flex items-center gap-2"
       >
         <input
-          type="number"
-          min="0"
-          step="0.01"
+          type="text"
+          inputMode="decimal"
           required
           placeholder="Amount received"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
+          value={formatCurrencyDisplay(amount)}
+          onChange={(e) => setAmount(sanitizeCurrencyInput(e.target.value, 12))}
           className="w-40 rounded-lg border border-[#1B1B1B]/15 bg-[#F2F0EF] px-3 py-2 text-sm text-[#1B1B1B] outline-none focus:border-[#1B1B1B]/40"
         />
         <button
