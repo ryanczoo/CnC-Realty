@@ -423,7 +423,6 @@ function OverviewTab({
           <div className="h-2 w-full overflow-hidden rounded-full bg-[#F2F0EF]">
             <div className="h-full rounded-full bg-[#9E8C61] transition-all" style={{ width: `${progressPct}%` }} />
           </div>
-          <p className="text-xs text-[#1B1B1B]/40">Go to the Checklist tab to upload documents.</p>
         </div>
 
         {!isListing && transaction && !isReferral && (
