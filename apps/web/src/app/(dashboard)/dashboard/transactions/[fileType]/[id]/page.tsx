@@ -186,9 +186,9 @@ export default function FileDetailPage() {
       <div className="mb-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-xl font-light text-[#1B1B1B]">{title}</h1>
+            <h1 className="text-xl font-bold text-[#1B1B1B]">{title}</h1>
+            {price && <p className="mt-1 text-sm text-[#1B1B1B]/60">{price}</p>}
             <div className="mt-1 flex items-center gap-3">
-              {price && <span className="text-sm text-[#1B1B1B]/60">{price}</span>}
               <StatusBadge status={file.status} />
               {file.awaitingReview && (
                 <span className="rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-700">Awaiting Review</span>
