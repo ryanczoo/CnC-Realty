@@ -110,6 +110,36 @@ describe("POST /api/transactions", () => {
     expect(capturedArgs.data.numberOfParcels).toBeNull();
   });
 
+  it("persists agentRelativeSale and brokerProvidedLead as true when provided, false by default", async () => {
+    let capturedArgs: any;
+    vi.mocked(prisma.transactionFile.create).mockImplementation(
+      (async (args: any) => {
+        capturedArgs = args;
+        return { id: "t1", ...args.data };
+      }) as any
+    );
+
+    const withBooleans = await POST(makeRequest({
+      transactionSide: "PURCHASE",
+      propertyAddress: "1 Test St", city: "Test", zip: "00000",
+      propertyType: "Single Family", mlsNumber: "1234567890",
+      agentRelativeSale: true,
+      brokerProvidedLead: true,
+    }));
+    expect(withBooleans.status).toBe(201);
+    expect(capturedArgs.data.agentRelativeSale).toBe(true);
+    expect(capturedArgs.data.brokerProvidedLead).toBe(true);
+
+    const withoutBooleans = await POST(makeRequest({
+      transactionSide: "PURCHASE",
+      propertyAddress: "1 Test St", city: "Test", zip: "00000",
+      propertyType: "Single Family", mlsNumber: "1234567890",
+    }));
+    expect(withoutBooleans.status).toBe(201);
+    expect(capturedArgs.data.agentRelativeSale).toBe(false);
+    expect(capturedArgs.data.brokerProvidedLead).toBe(false);
+  });
+
   it("creates a REFERRAL_AGENT party when provided", async () => {
     let capturedArgs: any;
     vi.mocked(prisma.transactionFile.create).mockImplementation(

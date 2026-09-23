@@ -5,7 +5,7 @@ import Link from "next/link";
 import { motion } from "motion/react";
 import { Plus, Trash2 } from "lucide-react";
 import { SPRING_HOVER } from "@/lib/motion";
-import { TC_FEE, calcNetToAgent } from "@/lib/commission";
+import { TC_FEE, calcNetToAgent, calcTransactionFee } from "@/lib/commission";
 import { escrowTypeToRole, type EscrowContactType } from "@/lib/transaction-helpers";
 import { DateField } from "@/components/ui/DateField";
 import { FormField as Field } from "@/components/ui/FormField";
@@ -39,6 +39,8 @@ export default function NewTransactionPage() {
   });
 
   const [tcFeeEnabled, setTcFeeEnabled] = useState(false);
+  const [agentRelativeSale, setAgentRelativeSale] = useState(false);
+  const [brokerProvidedLead, setBrokerProvidedLead] = useState(false);
   const [photoUploading, setPhotoUploading] = useState(false);
   const [photoTempId] = useState(() => crypto.randomUUID());
 
@@ -111,7 +113,15 @@ export default function NewTransactionPage() {
       : parseFloat(form.listingCommission) || 0;
   const otherDeductionsAmt = parseFloat(form.otherDeductions) || 0;
   const totalGci = saleCommissionAmt + listingCommissionAmt;
-  const netToAgent = calcNetToAgent(totalGci, otherDeductionsAmt, tcFeeEnabled);
+  const transactionFee = calcTransactionFee({
+    side: form.transactionSide,
+    salePrice,
+    grossCommission: totalGci,
+    agentRelativeSale,
+    brokerProvidedLead,
+    numberOfParcels: form.numberOfParcels ? parseInt(form.numberOfParcels, 10) : null,
+  });
+  const netToAgent = calcNetToAgent(totalGci, transactionFee.fee, otherDeductionsAmt, tcFeeEnabled);
 
   // Which party section gates Next on Step 3, mirroring how the agent
   // always knows the side they represent when the file is created.
@@ -204,6 +214,8 @@ export default function NewTransactionPage() {
       body: JSON.stringify({
         ...form,
         tcFeeEnabled,
+        agentRelativeSale,
+        brokerProvidedLead,
         commissionGCI: totalGci || null,
         saleCommissionPct: commissionMode.sale === "pct" ? parseFloat(form.saleCommission) || null : null,
         listingCommissionPct: commissionMode.listing === "pct" ? parseFloat(form.listingCommission) || null : null,
@@ -604,24 +616,28 @@ export default function NewTransactionPage() {
               onChange={(v) => set("otherDeductions", v)}
               placeholder="TC fees, referral, other deductions…"
             />
-            {/* TC Fee toggle */}
-            <div className="flex items-center justify-between rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-4 py-3">
-              <div>
-                <p className="text-sm font-medium text-[#1B1B1B]">CnC TC Service</p>
-                <p className="text-xs text-[#1B1B1B]/40">In-house transaction coordinator — ${TC_FEE}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setTcFeeEnabled((v) => !v)}
-                className={`relative h-6 w-11 rounded-full transition-colors ${tcFeeEnabled ? "bg-[#9E8C61]" : "bg-[#1B1B1B]/20"}`}
-              >
-                <span
-                  className={`absolute left-0 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-                    tcFeeEnabled ? "translate-x-5" : "translate-x-0.5"
-                  }`}
+            <ToggleRow
+              label="CnC TC Service"
+              sublabel={`In-house transaction coordinator — $${TC_FEE}`}
+              checked={tcFeeEnabled}
+              onChange={() => setTcFeeEnabled((v) => !v)}
+            />
+            {!isLeaseSide && (
+              <>
+                <ToggleRow
+                  label="Agent-Relative Sale"
+                  sublabel="Buyer or seller is a relative of the representing agent"
+                  checked={agentRelativeSale}
+                  onChange={() => setAgentRelativeSale((v) => !v)}
                 />
-              </button>
-            </div>
+                <ToggleRow
+                  label="Broker-Provided Lead"
+                  sublabel="This transaction originated from a CnC-provided lead"
+                  checked={brokerProvidedLead}
+                  onChange={() => setBrokerProvidedLead((v) => !v)}
+                />
+              </>
+            )}
             <div>
               <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">Commission Notes</label>
               <textarea
@@ -632,7 +648,7 @@ export default function NewTransactionPage() {
               />
             </div>
             {/* Auto-calculated breakdown */}
-            {salePrice > 0 && (
+            {(salePrice > 0 || totalGci > 0) && (
               <div className="rounded-xl border border-[#1B1B1B]/8 bg-[#F2F0EF] p-5 space-y-2 text-sm">
                 <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#1B1B1B]/40">
                   Commission Breakdown
@@ -646,6 +662,9 @@ export default function NewTransactionPage() {
                   label="Listing Commission"
                   value={listingCommissionAmt > 0 ? `$${Math.round(listingCommissionAmt).toLocaleString()}` : "—"}
                 />
+                {transactionFee.fee > 0 && (
+                  <BdRow label={transactionFee.label} value={`−$${Math.round(transactionFee.fee).toLocaleString()}`} muted />
+                )}
                 {otherDeductionsAmt > 0 && (
                   <BdRow label="Other Deductions" value={`−$${otherDeductionsAmt.toLocaleString()}`} muted />
                 )}
@@ -724,6 +743,7 @@ export default function NewTransactionPage() {
             </ReviewSection>
             <ReviewSection title="Commission">
               {totalGci > 0 && <ReviewRow label="Total GCI" value={`$${Math.round(totalGci).toLocaleString()}`} />}
+              {transactionFee.fee > 0 && <ReviewRow label={transactionFee.label} value={`$${Math.round(transactionFee.fee).toLocaleString()}`} />}
               {otherDeductionsAmt > 0 && <ReviewRow label="Deductions" value={`$${otherDeductionsAmt.toLocaleString()}`} />}
               {tcFeeEnabled && <ReviewRow label="CnC TC Service" value={`$${TC_FEE}`} />}
               {netToAgent > 0 && <ReviewRow label="Net to Agent" value={`$${Math.round(netToAgent).toLocaleString()}`} />}
@@ -940,6 +960,32 @@ function CommissionField({
         placeholder={mode === "pct" ? "e.g. 2.5" : "e.g. 15000"}
         className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2.5 text-sm text-[#1B1B1B] placeholder:text-[#1B1B1B]/25 focus:outline-none focus:ring-2 focus:ring-[#9E8C61]/30"
       />
+    </div>
+  );
+}
+
+function ToggleRow({
+  label, sublabel, checked, onChange,
+}: {
+  label: string; sublabel: string; checked: boolean; onChange: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-4 py-3">
+      <div>
+        <p className="text-sm font-medium text-[#1B1B1B]">{label}</p>
+        <p className="text-xs text-[#1B1B1B]/40">{sublabel}</p>
+      </div>
+      <button
+        type="button"
+        onClick={onChange}
+        className={`relative h-6 w-11 rounded-full transition-colors ${checked ? "bg-[#9E8C61]" : "bg-[#1B1B1B]/20"}`}
+      >
+        <span
+          className={`absolute left-0 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+            checked ? "translate-x-5" : "translate-x-0.5"
+          }`}
+        />
+      </button>
     </div>
   );
 }
