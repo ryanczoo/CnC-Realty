@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "motion/react";
@@ -10,7 +10,7 @@ import { escrowTypeToRole, type EscrowContactType } from "@/lib/transaction-help
 import { DateField } from "@/components/ui/DateField";
 import { FormField as Field } from "@/components/ui/FormField";
 import { stripDigits, digitsOnly } from "@/lib/form-validation";
-import { SIDES } from "@/types/transaction";
+import { SIDES, type TransactionSide } from "@/types/transaction";
 import { Spinner } from "@/components/ui/Spinner";
 
 const STAGES = [
@@ -93,6 +93,19 @@ export default function NewTransactionPage() {
   const isLeaseSide = ["LEASE_TENANT", "LEASE_LANDLORD", "LEASE_DUAL"].includes(form.transactionSide);
   const isReferral = form.transactionSide === "REFERRAL";
 
+  // Lease files have no salePrice to multiply a % against (leases populate
+  // leasePrice instead), so a "%" commission mode silently produces a $0 gross
+  // commission. Force flat-dollar mode the moment the side becomes a lease side —
+  // covers both picking a lease type directly and switching to one after Step 4
+  // was already visited with "%" selected.
+  useEffect(() => {
+    if (isLeaseSide) {
+      setCommissionMode((prev) =>
+        prev.sale === "flat" && prev.listing === "flat" ? prev : { sale: "flat", listing: "flat" }
+      );
+    }
+  }, [isLeaseSide]);
+
   const STEPS = isReferral
     ? ["File Type", "Referral Details", "Review"]
     : ["File Type", "Property", "Details", "Parties", "Commission", "Review"];
@@ -114,7 +127,7 @@ export default function NewTransactionPage() {
   const otherDeductionsAmt = parseFloat(form.otherDeductions) || 0;
   const totalGci = saleCommissionAmt + listingCommissionAmt;
   const transactionFee = calcTransactionFee({
-    side: form.transactionSide,
+    side: form.transactionSide as TransactionSide,
     salePrice,
     grossCommission: totalGci,
     agentRelativeSale,
@@ -214,8 +227,8 @@ export default function NewTransactionPage() {
       body: JSON.stringify({
         ...form,
         tcFeeEnabled,
-        agentRelativeSale,
-        brokerProvidedLead,
+        agentRelativeSale: isLeaseSide ? false : agentRelativeSale,
+        brokerProvidedLead: isLeaseSide ? false : brokerProvidedLead,
         commissionGCI: totalGci || null,
         saleCommissionPct: commissionMode.sale === "pct" ? parseFloat(form.saleCommission) || null : null,
         listingCommissionPct: commissionMode.listing === "pct" ? parseFloat(form.listingCommission) || null : null,
@@ -601,6 +614,7 @@ export default function NewTransactionPage() {
               onChange={(v) => set("saleCommission", v)}
               mode={commissionMode.sale}
               onModeChange={(m) => setCommissionMode((prev) => ({ ...prev, sale: m }))}
+              hideModeToggle={isLeaseSide}
             />
             <CommissionField
               label="Listing Commission"
@@ -608,6 +622,7 @@ export default function NewTransactionPage() {
               onChange={(v) => set("listingCommission", v)}
               mode={commissionMode.listing}
               onModeChange={(m) => setCommissionMode((prev) => ({ ...prev, listing: m }))}
+              hideModeToggle={isLeaseSide}
             />
             <Field
               label="Other Deductions ($)"
@@ -932,26 +947,29 @@ function ConditionsSection({
 }
 
 function CommissionField({
-  label, value, onChange, mode, onModeChange,
+  label, value, onChange, mode, onModeChange, hideModeToggle = false,
 }: {
   label: string; value: string; onChange: (v: string) => void;
   mode: "pct" | "flat"; onModeChange: (m: "pct" | "flat") => void;
+  hideModeToggle?: boolean;
 }) {
   return (
     <div>
       <div className="mb-1.5 flex items-center justify-between">
         <label className="text-xs font-medium text-[#1B1B1B]/50">{label}</label>
-        <div className="flex overflow-hidden rounded-lg border border-[#1B1B1B]/10">
-          {(["pct", "flat"] as const).map((m) => (
-            <button
-              key={m}
-              onClick={() => onModeChange(m)}
-              className={`px-3 py-1 text-xs font-medium transition-colors ${mode === m ? "bg-[#1B1B1B] text-white" : "bg-[#F2F0EF] text-[#1B1B1B]/50 hover:text-[#1B1B1B]"}`}
-            >
-              {m === "pct" ? "%" : "$"}
-            </button>
-          ))}
-        </div>
+        {!hideModeToggle && (
+          <div className="flex overflow-hidden rounded-lg border border-[#1B1B1B]/10">
+            {(["pct", "flat"] as const).map((m) => (
+              <button
+                key={m}
+                onClick={() => onModeChange(m)}
+                className={`px-3 py-1 text-xs font-medium transition-colors ${mode === m ? "bg-[#1B1B1B] text-white" : "bg-[#F2F0EF] text-[#1B1B1B]/50 hover:text-[#1B1B1B]"}`}
+              >
+                {m === "pct" ? "%" : "$"}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       <input
         type="number"
