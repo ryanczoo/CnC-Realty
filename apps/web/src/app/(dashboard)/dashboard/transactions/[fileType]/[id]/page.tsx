@@ -504,8 +504,8 @@ function CommissionTab({ transaction }: { transaction: TransactionFileDetail }) 
           </>
         )}
         <InfoRow label={transactionFee.label} value={transactionFee.baseFee > 0 ? `-${fmt(transactionFee.baseFee)}` : "—"} />
-        {transactionFee.eoSupplement > 0 && (
-          <InfoRow label="E&O Insurance" value={`-${fmt(transactionFee.eoSupplement)}`} />
+        {transactionFee.hasEoInsurance && (
+          <InfoRow label="E&O Insurance" value={transactionFee.eoSupplement > 0 ? `-${fmt(transactionFee.eoSupplement)}` : "FREE"} />
         )}
         <InfoRow label="Other Deductions" value={deductions > 0 ? `-${fmt(deductions)}` : "—"} />
         {transaction.tcFeeEnabled && (

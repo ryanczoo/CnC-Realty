@@ -31,6 +31,12 @@ export interface TransactionFeeResult {
   // just check `eoSupplement > 0` to decide whether a second line applies.
   baseFee: number;
   eoSupplement: number;
+  // True only for the base sale-side fee formula (dual/multi-parcel eligible),
+  // regardless of whether eoSupplement happens to be 0 (sale price under $1M —
+  // E&O is included at no extra cost, not absent). False for lease and
+  // broker-provided-lead, which have no E&O concept in their formula at all —
+  // eoSupplement is 0 there too, but for a structurally different reason.
+  hasEoInsurance: boolean;
 }
 
 const LEASE_SIDES = new Set(["LEASE_TENANT", "LEASE_LANDLORD", "LEASE_DUAL"]);
@@ -40,12 +46,12 @@ export function calcTransactionFee(input: TransactionFeeInput): TransactionFeeRe
 
   if (LEASE_SIDES.has(side)) {
     const fee = Math.max(grossCommission * 0.1, 200);
-    return { fee, label: "CnC Lease Fee", baseFee: fee, eoSupplement: 0 };
+    return { fee, label: "CnC Lease Fee", baseFee: fee, eoSupplement: 0, hasEoInsurance: false };
   }
 
   if (brokerProvidedLead) {
     const fee = grossCommission * 0.3;
-    return { fee, label: "Broker-Provided Lead Fee (30%)", baseFee: fee, eoSupplement: 0 };
+    return { fee, label: "Broker-Provided Lead Fee (30%)", baseFee: fee, eoSupplement: 0, hasEoInsurance: false };
   }
 
   const supplement = calcEoSupplement(salePrice);
@@ -61,7 +67,7 @@ export function calcTransactionFee(input: TransactionFeeInput): TransactionFeeRe
   if (parcels > 1) labelParts.push(`${parcels} Parcels`);
   const label = labelParts.length > 0 ? `CnC Transaction Fee (${labelParts.join(", ")})` : "CnC Transaction Fee";
 
-  return { fee, label, baseFee, eoSupplement };
+  return { fee, label, baseFee, eoSupplement, hasEoInsurance: true };
 }
 
 export function calcNetToAgent(

@@ -37,12 +37,13 @@ describe("calcTransactionFee", () => {
     numberOfParcels: null,
   };
 
-  it("is the flat $990 base fee on a plain sale under $1M", () => {
+  it("is the flat $990 base fee on a plain sale under $1M — still marked as having E&O insurance, just free", () => {
     const result = calcTransactionFee(base);
     expect(result.fee).toBe(990);
     expect(result.label).toBe("CnC Transaction Fee");
     expect(result.baseFee).toBe(990);
     expect(result.eoSupplement).toBe(0);
+    expect(result.hasEoInsurance).toBe(true);
   });
 
   it("adds the E&O supplement above $1M, exposed as its own field", () => {
@@ -118,6 +119,10 @@ describe("calcTransactionFee", () => {
     // "E&O Insurance" line for a broker-provided-lead file.
     expect(result.baseFee).toBe(result.fee);
     expect(result.eoSupplement).toBe(0);
+    // No E&O concept exists in this formula at all — unlike a plain sale
+    // under $1M (which has $0 supplement but E&O IS included, free), this
+    // is a structurally different case: there's nothing to be free.
+    expect(result.hasEoInsurance).toBe(false);
   });
 
   it("uses the 10%-or-$200 lease formula for lease sides, ignoring toggles and parcels", () => {
@@ -135,6 +140,7 @@ describe("calcTransactionFee", () => {
     // broker-provided-lead above.
     expect(result.baseFee).toBe(300);
     expect(result.eoSupplement).toBe(0);
+    expect(result.hasEoInsurance).toBe(false);
   });
 
   it("floors the lease formula at $200", () => {

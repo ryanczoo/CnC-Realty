@@ -723,10 +723,10 @@ export default function NewTransactionPage() {
                   value={transactionFee.baseFee > 0 ? `−$${Math.round(transactionFee.baseFee).toLocaleString()}` : "—"}
                   muted
                 />
-                {transactionFee.eoSupplement > 0 && (
+                {transactionFee.hasEoInsurance && (
                   <BdRow
                     label="E&O Insurance"
-                    value={`−$${Math.round(transactionFee.eoSupplement).toLocaleString()}`}
+                    value={transactionFee.eoSupplement > 0 ? `−$${Math.round(transactionFee.eoSupplement).toLocaleString()}` : "FREE"}
                     muted
                   />
                 )}
