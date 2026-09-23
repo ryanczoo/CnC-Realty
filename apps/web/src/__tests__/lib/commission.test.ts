@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { TC_FEE, calcEoSupplement, calcTransactionFee, calcNetToAgent } from "@/lib/commission";
+import { TC_FEE, calcEoSupplement, calcTransactionFee, calcNetToAgent, type TransactionFeeInput } from "@/lib/commission";
 
 describe("calcEoSupplement", () => {
   it("is 0 at or under the $1M threshold", () => {
@@ -28,7 +28,7 @@ describe("calcEoSupplement", () => {
 });
 
 describe("calcTransactionFee", () => {
-  const base = {
+  const base: TransactionFeeInput = {
     side: "PURCHASE",
     salePrice: 500_000,
     grossCommission: 15_000,
@@ -75,6 +75,21 @@ describe("calcTransactionFee", () => {
     const result = calcTransactionFee({ ...base, side: "DUAL", numberOfParcels: 3 });
     expect(result.fee).toBe(990 * 2 * 3);
     expect(result.label).toBe("CnC Transaction Fee (Dual ×2, 3 Parcels)");
+  });
+
+  it("compounds dual, multi-parcel, AND the E&O supplement together", () => {
+    // salePrice of $1.2M puts the E&O supplement at $400 (see calcEoSupplement tests
+    // above), unlike the compounding test right above this one, which uses a
+    // sub-$1M price where the supplement is $0 and never actually participates in
+    // the multiplication.
+    const result = calcTransactionFee({
+      ...base,
+      side: "DUAL",
+      salePrice: 1_200_000,
+      numberOfParcels: 3,
+    });
+    expect(result.fee).toBe((990 + 400) * 2 * 3);
+    expect(result.fee).toBe(8340);
   });
 
   it("overrides everything to 30% of gross when brokerProvidedLead is on", () => {
@@ -126,6 +141,19 @@ describe("calcTransactionFee", () => {
       numberOfParcels: null,
     });
     expect(result.fee).toBe(300);
+  });
+
+  it("pins the lease formula as still authoritative even when brokerProvidedLead is true — this is the exact combination an earlier controller ruling assumed was unreachable in the UI", () => {
+    const result = calcTransactionFee({
+      side: "LEASE_TENANT",
+      salePrice: 0,
+      grossCommission: 3_000,
+      agentRelativeSale: false,
+      brokerProvidedLead: true,
+      numberOfParcels: null,
+    });
+    expect(result.fee).toBe(300);
+    expect(result.label).toBe("CnC Lease Fee");
   });
 });
 

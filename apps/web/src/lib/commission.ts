@@ -1,3 +1,5 @@
+import type { TransactionSide } from "@/types/transaction";
+
 export const TC_FEE = 350;
 
 const BASE_FEE = 990;
@@ -11,7 +13,7 @@ export function calcEoSupplement(salePrice: number): number {
 }
 
 export interface TransactionFeeInput {
-  side: string; // TransactionSide, kept as string here so this module has zero Prisma-generated imports
+  side: TransactionSide;
   salePrice: number;
   grossCommission: number;
   agentRelativeSale: boolean;
