@@ -471,7 +471,7 @@ export default function NewTransactionPage() {
           <div className="space-y-5">
             <div className="grid grid-cols-2 gap-4">
               {isLeaseSide ? (
-                <Field label="Total Lease Amount *" type="number" value={form.leasePrice} onChange={(v) => set("leasePrice", v)} placeholder="$" />
+                <Field label="Total Lease Amount *" value={form.leasePrice} onChange={(v) => set("leasePrice", v)} placeholder="$" formatCommas />
               ) : (
                 <>
                   <Field label="List Price" value={form.listPrice} onChange={(v) => set("listPrice", v)} placeholder="$" formatCommas />

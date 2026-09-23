@@ -85,7 +85,7 @@ export default function NewListingPage() {
               <Field label="ZIP *" value={form.zip} onChange={(v) => set("zip", v)} restrict={(v) => digitsOnly(v, 5)} />
             </div>
             <Field label="MLS Number" value={form.mlsNumber} onChange={(v) => set("mlsNumber", v)} placeholder="Optional" restrict={(v) => digitsOnly(v, 10)} />
-            <Field label="List Price *" type="number" value={form.listPrice} onChange={(v) => set("listPrice", v)} placeholder="$" />
+            <Field label="List Price *" value={form.listPrice} onChange={(v) => set("listPrice", v)} placeholder="$" formatCommas />
             <div>
               <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">Listing Type *</label>
               <select
