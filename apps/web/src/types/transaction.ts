@@ -105,7 +105,7 @@ export interface TransactionFileDetail {
   propertyIncludes: string | null;
   propertyExcludes: string | null;
   taxId: string | null;
-  annualTaxes: number | null;
+  numberOfParcels: number | null;
   schoolDistrict: string | null;
   zoningClass: string | null;
   photoKey: string | null;
@@ -127,6 +127,8 @@ export interface TransactionFileDetail {
   commissionSplit: number | null;
   commissionNotes: string | null;
   tcFeeEnabled: boolean;
+  agentRelativeSale: boolean;
+  brokerProvidedLead: boolean;
   referredToAgentName: string | null;
   referredToBrokerageName: string | null;
   referredToContactEmail: string | null;

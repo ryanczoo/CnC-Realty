@@ -19,7 +19,7 @@ import type {
   FileDocumentRecord,
   FileTaskRecord,
 } from "@/types/transaction";
-import { TC_FEE, calcNetToAgent } from "@/lib/commission";
+import { TC_FEE, calcNetToAgent, calcTransactionFee } from "@/lib/commission";
 import { formatDateOnly, isDateOnlyPast } from "@/lib/utils";
 import { Spinner } from "@/components/ui/Spinner";
 import { EMAIL_WARNING_TEXT } from "@/lib/file-messages";
@@ -344,7 +344,7 @@ function OverviewTab({
               {transaction.propertyIncludes && <InfoRow label="Property Includes" value={transaction.propertyIncludes} />}
               {transaction.propertyExcludes && <InfoRow label="Property Excludes" value={transaction.propertyExcludes} />}
               {transaction.taxId && <InfoRow label="Tax ID / APN" value={transaction.taxId} />}
-              {transaction.annualTaxes && <InfoRow label="Annual Taxes" value={`$${Number(transaction.annualTaxes).toLocaleString()}`} />}
+              {transaction.numberOfParcels && <InfoRow label="Multi-Parcel" value={`${transaction.numberOfParcels} parcels`} />}
               {transaction.schoolDistrict && <InfoRow label="School District" value={transaction.schoolDistrict} />}
               {transaction.zoningClass && <InfoRow label="Zoning Class" value={transaction.zoningClass} />}
             </>
@@ -433,8 +433,21 @@ function CommissionTab({ transaction }: { transaction: TransactionFileDetail }) 
 
   const saleCommissionDollar = salePrice * (salePct / 100);
   const listingCommissionDollar = salePrice * (listingPct / 100);
-  const totalGross = saleCommissionDollar + listingCommissionDollar;
-  const netToAgent = calcNetToAgent(totalGross, deductions, transaction.tcFeeEnabled);
+  // commissionGCI is the single source of truth for gross commission — it's set
+  // at creation from whichever commission-entry mode (% or flat $) the agent
+  // used, whereas saleCommissionDollar/listingCommissionDollar above are $0 on
+  // any file where flat-dollar mode was used (saleCommissionPct is null then),
+  // including every lease file (leases have no salePrice to multiply a % against).
+  const totalGross = Number(transaction.commissionGCI ?? 0);
+  const transactionFee = calcTransactionFee({
+    side: transaction.transactionSide,
+    salePrice,
+    grossCommission: totalGross,
+    agentRelativeSale: transaction.agentRelativeSale,
+    brokerProvidedLead: transaction.brokerProvidedLead,
+    numberOfParcels: transaction.numberOfParcels,
+  });
+  const netToAgent = calcNetToAgent(totalGross, transactionFee.fee, deductions, transaction.tcFeeEnabled);
 
   const fmt = (n: number) => n !== 0 ? `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—";
   const fmtPct = (n: number) => n !== 0 ? `${n}%` : "—";
@@ -449,6 +462,9 @@ function CommissionTab({ transaction }: { transaction: TransactionFileDetail }) 
         <InfoRow label="Sale Commission $" value={fmt(saleCommissionDollar)} />
         <InfoRow label="Listing Commission" value={fmtPct(listingPct)} />
         <InfoRow label="Listing Commission $" value={fmt(listingCommissionDollar)} />
+        {transactionFee.fee > 0 && (
+          <InfoRow label={transactionFee.label} value={`-${fmt(transactionFee.fee)}`} />
+        )}
         <InfoRow label="Other Deductions" value={deductions > 0 ? `-${fmt(deductions)}` : "—"} />
         {transaction.tcFeeEnabled && (
           <InfoRow label="CnC TC Service" value={`-${fmt(TC_FEE)}`} />
@@ -461,6 +477,12 @@ function CommissionTab({ transaction }: { transaction: TransactionFileDetail }) 
           <span className="text-sm text-[#1B1B1B]/50">Gross Commission</span>
           <span className="font-medium text-[#1B1B1B]">{fmt(totalGross)}</span>
         </div>
+        {transactionFee.fee > 0 && (
+          <div className="flex items-center justify-between border-b border-[#1B1B1B]/5 pb-3">
+            <span className="text-sm text-[#1B1B1B]/50">{transactionFee.label}</span>
+            <span className="font-medium text-red-500">-{fmt(transactionFee.fee)}</span>
+          </div>
+        )}
         <div className="flex items-center justify-between border-b border-[#1B1B1B]/5 pb-3">
           <span className="text-sm text-[#1B1B1B]/50">Deductions</span>
           <span className="font-medium text-red-500">{deductions > 0 ? `-${fmt(deductions)}` : "—"}</span>
