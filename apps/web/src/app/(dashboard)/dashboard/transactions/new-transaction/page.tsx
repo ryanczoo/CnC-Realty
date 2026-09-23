@@ -655,7 +655,6 @@ export default function NewTransactionPage() {
               type="number"
               value={form.otherDeductions}
               onChange={(v) => set("otherDeductions", v)}
-              placeholder="TC fees, referral, other deductions…"
             />
             <ToggleRow
               label="CnC TC Service"
