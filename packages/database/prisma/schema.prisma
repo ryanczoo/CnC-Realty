@@ -515,7 +515,7 @@ model TransactionFile {
   propertyIncludes     String?
   propertyExcludes     String?
   taxId                String?
-  annualTaxes          Float?
+  numberOfParcels      Int?
   schoolDistrict       String?
   zoningClass          String?
   photoKey             String?
@@ -537,6 +537,8 @@ model TransactionFile {
   commissionNotes      String?
   awaitingReview       Boolean               @default(false)
   tcFeeEnabled         Boolean               @default(false)
+  agentRelativeSale    Boolean               @default(false)
+  brokerProvidedLead   Boolean               @default(false)
   referredToAgentName     String?
   referredToBrokerageName String?
   referredToContactEmail  String?
