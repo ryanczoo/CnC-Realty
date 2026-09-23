@@ -116,6 +116,7 @@ export default function NewTransactionPage() {
   const displayStep = isReferral ? (step === 5 ? 2 : step) : step;
 
   const salePrice = parseFloat(form.salePrice) || 0;
+  const leasePrice = parseFloat(form.leasePrice) || 0;
   const saleCommissionAmt =
     commissionMode.sale === "pct"
       ? (salePrice * (parseFloat(form.saleCommission) || 0)) / 100
@@ -412,7 +413,7 @@ export default function NewTransactionPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">Multi-Parcel</label>
+                  <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">Multi-Parcels</label>
                   <select
                     value={form.numberOfParcels}
                     onChange={(e) => set("numberOfParcels", e.target.value)}
@@ -460,7 +461,7 @@ export default function NewTransactionPage() {
           <div className="space-y-5">
             <div className="grid grid-cols-2 gap-4">
               {isLeaseSide ? (
-                <Field label="Lease Price (Monthly Rent) *" type="number" value={form.leasePrice} onChange={(v) => set("leasePrice", v)} placeholder="$" />
+                <Field label="Total Lease Amount *" type="number" value={form.leasePrice} onChange={(v) => set("leasePrice", v)} placeholder="$" />
               ) : (
                 <>
                   <Field label="List Price" type="number" value={form.listPrice} onChange={(v) => set("listPrice", v)} placeholder="$" />
@@ -608,22 +609,33 @@ export default function NewTransactionPage() {
         {/* ── Step 4: Commission ── */}
         {step === 4 && (
           <div className="space-y-5">
-            <CommissionField
-              label="Sale Commission"
-              value={form.saleCommission}
-              onChange={(v) => set("saleCommission", v)}
-              mode={commissionMode.sale}
-              onModeChange={(m) => setCommissionMode((prev) => ({ ...prev, sale: m }))}
-              hideModeToggle={isLeaseSide}
-            />
-            <CommissionField
-              label="Listing Commission"
-              value={form.listingCommission}
-              onChange={(v) => set("listingCommission", v)}
-              mode={commissionMode.listing}
-              onModeChange={(m) => setCommissionMode((prev) => ({ ...prev, listing: m }))}
-              hideModeToggle={isLeaseSide}
-            />
+            {isLeaseSide ? (
+              <CommissionField
+                label="Lease Commission"
+                value={form.saleCommission}
+                onChange={(v) => set("saleCommission", v)}
+                mode={commissionMode.sale}
+                onModeChange={(m) => setCommissionMode((prev) => ({ ...prev, sale: m }))}
+                hideModeToggle
+              />
+            ) : (
+              <>
+                <CommissionField
+                  label="Sale Commission"
+                  value={form.saleCommission}
+                  onChange={(v) => set("saleCommission", v)}
+                  mode={commissionMode.sale}
+                  onModeChange={(m) => setCommissionMode((prev) => ({ ...prev, sale: m }))}
+                />
+                <CommissionField
+                  label="Listing Commission"
+                  value={form.listingCommission}
+                  onChange={(v) => set("listingCommission", v)}
+                  mode={commissionMode.listing}
+                  onModeChange={(m) => setCommissionMode((prev) => ({ ...prev, listing: m }))}
+                />
+              </>
+            )}
             <Field
               label="Other Deductions ($)"
               type="number"
@@ -663,23 +675,37 @@ export default function NewTransactionPage() {
               />
             </div>
             {/* Auto-calculated breakdown */}
-            {(salePrice > 0 || totalGci > 0) && (
+            {(salePrice > 0 || leasePrice > 0 || totalGci > 0) && (
               <div className="rounded-xl border border-[#1B1B1B]/8 bg-[#F2F0EF] p-5 space-y-2 text-sm">
                 <p className="mb-3 text-center text-xs font-semibold uppercase tracking-widest text-[#1B1B1B]/40">
                   Commission Breakdown
                 </p>
-                <BdRow label="Purchase Price" value={`$${salePrice.toLocaleString()}`} />
                 <BdRow
-                  label="Sale Commission"
-                  value={saleCommissionAmt > 0 ? `$${Math.round(saleCommissionAmt).toLocaleString()}` : "—"}
+                  label={isLeaseSide ? "Total Lease Amount" : "Purchase Price"}
+                  value={`$${(isLeaseSide ? leasePrice : salePrice).toLocaleString()}`}
                 />
-                <BdRow
-                  label="Listing Commission"
-                  value={listingCommissionAmt > 0 ? `$${Math.round(listingCommissionAmt).toLocaleString()}` : "—"}
-                />
-                {transactionFee.fee > 0 && (
-                  <BdRow label={transactionFee.label} value={`−$${Math.round(transactionFee.fee).toLocaleString()}`} muted />
+                {isLeaseSide ? (
+                  <BdRow
+                    label="Lease Commission"
+                    value={saleCommissionAmt > 0 ? `$${Math.round(saleCommissionAmt).toLocaleString()}` : "—"}
+                  />
+                ) : (
+                  <>
+                    <BdRow
+                      label="Sale Commission"
+                      value={saleCommissionAmt > 0 ? `$${Math.round(saleCommissionAmt).toLocaleString()}` : "—"}
+                    />
+                    <BdRow
+                      label="Listing Commission"
+                      value={listingCommissionAmt > 0 ? `$${Math.round(listingCommissionAmt).toLocaleString()}` : "—"}
+                    />
+                  </>
                 )}
+                <BdRow
+                  label={transactionFee.label}
+                  value={transactionFee.fee > 0 ? `−$${Math.round(transactionFee.fee).toLocaleString()}` : "—"}
+                  muted
+                />
                 {otherDeductionsAmt > 0 && (
                   <BdRow label="Other Deductions" value={`−$${otherDeductionsAmt.toLocaleString()}`} muted />
                 )}
@@ -717,14 +743,14 @@ export default function NewTransactionPage() {
               {form.propertyType && <ReviewRow label="Type" value={form.propertyType} />}
               {form.mlsNumber && <ReviewRow label="MLS #" value={form.mlsNumber} />}
               {form.yearBuilt && <ReviewRow label="Year Built" value={form.yearBuilt} />}
-              {form.numberOfParcels && <ReviewRow label="Multi-Parcel" value={`${form.numberOfParcels} parcels`} />}
+              {form.numberOfParcels && <ReviewRow label="Multi-Parcels" value={`${form.numberOfParcels} parcels`} />}
               {form.taxId && <ReviewRow label="Tax ID / APN" value={form.taxId} />}
               {form.schoolDistrict && <ReviewRow label="School District" value={form.schoolDistrict} />}
               {form.zoningClass && <ReviewRow label="Zoning Class" value={form.zoningClass} />}
             </ReviewSection>
             <ReviewSection title="Transaction Details">
               {form.salePrice && <ReviewRow label="Sale Price" value={`$${Number(form.salePrice).toLocaleString()}`} />}
-              {form.leasePrice && <ReviewRow label="Lease Price" value={`$${Number(form.leasePrice).toLocaleString()}`} />}
+              {form.leasePrice && <ReviewRow label="Total Lease Amount" value={`$${Number(form.leasePrice).toLocaleString()}`} />}
               {form.deposit && <ReviewRow label="Deposit" value={`$${Number(form.deposit).toLocaleString()}`} />}
               {form.closeOfEscrow && <ReviewRow label="Close of Escrow" value={form.closeOfEscrow} />}
               {form.offerDate && <ReviewRow label="Offer Date" value={form.offerDate} />}
@@ -758,7 +784,7 @@ export default function NewTransactionPage() {
             </ReviewSection>
             <ReviewSection title="Commission">
               {totalGci > 0 && <ReviewRow label="Total GCI" value={`$${Math.round(totalGci).toLocaleString()}`} />}
-              {transactionFee.fee > 0 && <ReviewRow label={transactionFee.label} value={`$${Math.round(transactionFee.fee).toLocaleString()}`} />}
+              <ReviewRow label={transactionFee.label} value={transactionFee.fee > 0 ? `$${Math.round(transactionFee.fee).toLocaleString()}` : "—"} />
               {otherDeductionsAmt > 0 && <ReviewRow label="Deductions" value={`$${otherDeductionsAmt.toLocaleString()}`} />}
               {tcFeeEnabled && <ReviewRow label="CnC TC Service" value={`$${TC_FEE}`} />}
               {netToAgent > 0 && <ReviewRow label="Net to Agent" value={`$${Math.round(netToAgent).toLocaleString()}`} />}

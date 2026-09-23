@@ -359,12 +359,12 @@ function OverviewTab({
               <InfoRow label="Transaction Side" value={transaction.transactionSide ?? "—"} />
               <InfoRow label="List Price" value={transaction.listPrice ? `$${Number(transaction.listPrice).toLocaleString()}` : "—"} />
               <InfoRow label="Sale Price" value={transaction.salePrice ? `$${Number(transaction.salePrice).toLocaleString()}` : "—"} />
-              {transaction.leasePrice && <InfoRow label="Lease Price" value={`$${Number(transaction.leasePrice).toLocaleString()}/mo`} />}
+              {transaction.leasePrice && <InfoRow label="Total Lease Amount" value={`$${Number(transaction.leasePrice).toLocaleString()}`} />}
               {transaction.legalDescription && <InfoRow label="Legal Description" value={transaction.legalDescription} />}
               {transaction.propertyIncludes && <InfoRow label="Property Includes" value={transaction.propertyIncludes} />}
               {transaction.propertyExcludes && <InfoRow label="Property Excludes" value={transaction.propertyExcludes} />}
               {transaction.taxId && <InfoRow label="Tax ID / APN" value={transaction.taxId} />}
-              {transaction.numberOfParcels && <InfoRow label="Multi-Parcel" value={`${transaction.numberOfParcels} parcels`} />}
+              {transaction.numberOfParcels && <InfoRow label="Multi-Parcels" value={`${transaction.numberOfParcels} parcels`} />}
               {transaction.schoolDistrict && <InfoRow label="School District" value={transaction.schoolDistrict} />}
               {transaction.zoningClass && <InfoRow label="Zoning Class" value={transaction.zoningClass} />}
             </>
@@ -445,8 +445,12 @@ function OverviewTab({
 
 // ─── Commission Tab ───────────────────────────────────────────────────────────
 
+const LEASE_SIDES = ["LEASE_TENANT", "LEASE_LANDLORD", "LEASE_DUAL"];
+
 function CommissionTab({ transaction }: { transaction: TransactionFileDetail }) {
+  const isLeaseSide = LEASE_SIDES.includes(transaction.transactionSide);
   const salePrice = Number(transaction.salePrice ?? 0);
+  const leasePrice = Number(transaction.leasePrice ?? 0);
   const salePct = Number(transaction.saleCommissionPct ?? 0);
   const listingPct = Number(transaction.listingCommissionPct ?? 0);
   const deductions = Number(transaction.otherDeductions ?? 0);
@@ -476,15 +480,22 @@ function CommissionTab({ transaction }: { transaction: TransactionFileDetail }) 
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       <div className="rounded-xl border border-[#1B1B1B]/10 bg-white p-5 space-y-3">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Commission Breakdown</h2>
-        <InfoRow label="Sale Price" value={salePrice > 0 ? `$${salePrice.toLocaleString()}` : "—"} />
+        <InfoRow
+          label={isLeaseSide ? "Total Lease Amount" : "Sale Price"}
+          value={(isLeaseSide ? leasePrice : salePrice) > 0 ? `$${(isLeaseSide ? leasePrice : salePrice).toLocaleString()}` : "—"}
+        />
         {transaction.deposit && <InfoRow label="Deposit" value={`$${Number(transaction.deposit).toLocaleString()}`} />}
-        <InfoRow label="Sale Commission" value={fmtPct(salePct)} />
-        <InfoRow label="Sale Commission $" value={fmt(saleCommissionDollar)} />
-        <InfoRow label="Listing Commission" value={fmtPct(listingPct)} />
-        <InfoRow label="Listing Commission $" value={fmt(listingCommissionDollar)} />
-        {transactionFee.fee > 0 && (
-          <InfoRow label={transactionFee.label} value={`-${fmt(transactionFee.fee)}`} />
+        {isLeaseSide ? (
+          <InfoRow label="Lease Commission $" value={fmt(totalGross)} />
+        ) : (
+          <>
+            <InfoRow label="Sale Commission" value={fmtPct(salePct)} />
+            <InfoRow label="Sale Commission $" value={fmt(saleCommissionDollar)} />
+            <InfoRow label="Listing Commission" value={fmtPct(listingPct)} />
+            <InfoRow label="Listing Commission $" value={fmt(listingCommissionDollar)} />
+          </>
         )}
+        <InfoRow label={transactionFee.label} value={transactionFee.fee > 0 ? `-${fmt(transactionFee.fee)}` : "—"} />
         <InfoRow label="Other Deductions" value={deductions > 0 ? `-${fmt(deductions)}` : "—"} />
         {transaction.tcFeeEnabled && (
           <InfoRow label="CnC TC Service" value={`-${fmt(TC_FEE)}`} />
@@ -497,12 +508,10 @@ function CommissionTab({ transaction }: { transaction: TransactionFileDetail }) 
           <span className="text-sm text-[#1B1B1B]/50">Gross Commission</span>
           <span className="font-medium text-[#1B1B1B]">{fmt(totalGross)}</span>
         </div>
-        {transactionFee.fee > 0 && (
-          <div className="flex items-center justify-between border-b border-[#1B1B1B]/5 pb-3">
-            <span className="text-sm text-[#1B1B1B]/50">{transactionFee.label}</span>
-            <span className="font-medium text-red-500">-{fmt(transactionFee.fee)}</span>
-          </div>
-        )}
+        <div className="flex items-center justify-between border-b border-[#1B1B1B]/5 pb-3">
+          <span className="text-sm text-[#1B1B1B]/50">{transactionFee.label}</span>
+          <span className="font-medium text-red-500">{transactionFee.fee > 0 ? `-${fmt(transactionFee.fee)}` : "—"}</span>
+        </div>
         <div className="flex items-center justify-between border-b border-[#1B1B1B]/5 pb-3">
           <span className="text-sm text-[#1B1B1B]/50">Deductions</span>
           <span className="font-medium text-red-500">{deductions > 0 ? `-${fmt(deductions)}` : "—"}</span>
