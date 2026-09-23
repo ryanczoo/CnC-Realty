@@ -161,7 +161,7 @@ export function DateField({ value, onChange, minYear, maxYear, withTime }: DateF
   };
 
   return (
-    <div className="flex w-full items-center gap-1 rounded-lg border border-[#1B1B1B]/10 bg-white px-4 py-3 focus-within:ring-2 focus-within:ring-[#9E8C61]/40">
+    <div className="flex w-full items-center gap-1 rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-4 py-3 focus-within:ring-2 focus-within:ring-[#9E8C61]/40">
       <input
         ref={monthRef}
         value={month}
