@@ -126,7 +126,17 @@ export default function NewTransactionPage() {
       ? (salePrice * (parseFloat(form.listingCommission) || 0)) / 100
       : parseFloat(form.listingCommission) || 0;
   const otherDeductionsAmt = parseFloat(form.otherDeductions) || 0;
-  const totalGci = saleCommissionAmt + listingCommissionAmt;
+  // An agent only ever gets paid according to their own side's commission
+  // agreement — a Purchase-side (buyer's) agent's Net to Agent is unaffected
+  // by whatever the seller's agent negotiated, and vice versa on Listing side.
+  // Only Dual agency sums both, since the agent has separate agreements with
+  // both parties. Lease sides fall through to the sum too, but that's safe:
+  // listingCommissionAmt is always 0 there (the field is hidden on lease
+  // sides — see the isLeaseSide branch below), so it adds nothing.
+  const totalGci =
+    form.transactionSide === "PURCHASE" ? saleCommissionAmt :
+    form.transactionSide === "LISTING" ? listingCommissionAmt :
+    saleCommissionAmt + listingCommissionAmt;
   const transactionFee = calcTransactionFee({
     side: form.transactionSide as TransactionSide,
     salePrice,
@@ -620,20 +630,24 @@ export default function NewTransactionPage() {
               />
             ) : (
               <>
-                <CommissionField
-                  label="Sale Commission"
-                  value={form.saleCommission}
-                  onChange={(v) => set("saleCommission", v)}
-                  mode={commissionMode.sale}
-                  onModeChange={(m) => setCommissionMode((prev) => ({ ...prev, sale: m }))}
-                />
-                <CommissionField
-                  label="Listing Commission"
-                  value={form.listingCommission}
-                  onChange={(v) => set("listingCommission", v)}
-                  mode={commissionMode.listing}
-                  onModeChange={(m) => setCommissionMode((prev) => ({ ...prev, listing: m }))}
-                />
+                {form.transactionSide !== "LISTING" && (
+                  <CommissionField
+                    label="Selling Agent Commission"
+                    value={form.saleCommission}
+                    onChange={(v) => set("saleCommission", v)}
+                    mode={commissionMode.sale}
+                    onModeChange={(m) => setCommissionMode((prev) => ({ ...prev, sale: m }))}
+                  />
+                )}
+                {form.transactionSide !== "PURCHASE" && (
+                  <CommissionField
+                    label="Listing Agent Commission"
+                    value={form.listingCommission}
+                    onChange={(v) => set("listingCommission", v)}
+                    mode={commissionMode.listing}
+                    onModeChange={(m) => setCommissionMode((prev) => ({ ...prev, listing: m }))}
+                  />
+                )}
               </>
             )}
             <Field
@@ -691,14 +705,18 @@ export default function NewTransactionPage() {
                   />
                 ) : (
                   <>
-                    <BdRow
-                      label="Sale Commission"
-                      value={saleCommissionAmt > 0 ? `$${Math.round(saleCommissionAmt).toLocaleString()}` : "—"}
-                    />
-                    <BdRow
-                      label="Listing Commission"
-                      value={listingCommissionAmt > 0 ? `$${Math.round(listingCommissionAmt).toLocaleString()}` : "—"}
-                    />
+                    {form.transactionSide !== "LISTING" && (
+                      <BdRow
+                        label="Selling Agent Commission"
+                        value={saleCommissionAmt > 0 ? `$${Math.round(saleCommissionAmt).toLocaleString()}` : "—"}
+                      />
+                    )}
+                    {form.transactionSide !== "PURCHASE" && (
+                      <BdRow
+                        label="Listing Agent Commission"
+                        value={listingCommissionAmt > 0 ? `$${Math.round(listingCommissionAmt).toLocaleString()}` : "—"}
+                      />
+                    )}
                   </>
                 )}
                 <BdRow

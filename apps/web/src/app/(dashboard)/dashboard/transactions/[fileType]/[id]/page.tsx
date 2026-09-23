@@ -489,10 +489,18 @@ function CommissionTab({ transaction }: { transaction: TransactionFileDetail }) 
           <InfoRow label="Lease Commission $" value={fmt(totalGross)} />
         ) : (
           <>
-            <InfoRow label="Sale Commission" value={fmtPct(salePct)} />
-            <InfoRow label="Sale Commission $" value={fmt(saleCommissionDollar)} />
-            <InfoRow label="Listing Commission" value={fmtPct(listingPct)} />
-            <InfoRow label="Listing Commission $" value={fmt(listingCommissionDollar)} />
+            {transaction.transactionSide !== "LISTING" && (
+              <>
+                <InfoRow label="Selling Agent Commission" value={fmtPct(salePct)} />
+                <InfoRow label="Selling Agent Commission $" value={fmt(saleCommissionDollar)} />
+              </>
+            )}
+            {transaction.transactionSide !== "PURCHASE" && (
+              <>
+                <InfoRow label="Listing Agent Commission" value={fmtPct(listingPct)} />
+                <InfoRow label="Listing Agent Commission $" value={fmt(listingCommissionDollar)} />
+              </>
+            )}
           </>
         )}
         <InfoRow label={transactionFee.label} value={transactionFee.fee > 0 ? `-${fmt(transactionFee.fee)}` : "—"} />
