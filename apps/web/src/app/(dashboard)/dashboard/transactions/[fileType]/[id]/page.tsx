@@ -186,11 +186,10 @@ export default function FileDetailPage() {
       <div className="mb-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <Link href="/dashboard/transactions" className="mb-2 inline-block text-sm text-[#1B1B1B]/40 hover:text-[#1B1B1B]">← Transactions</Link>
             <h1 className="text-xl font-light text-[#1B1B1B]">{title}</h1>
             <div className="mt-1 flex items-center gap-3">
-              <StatusBadge status={file.status} />
               {price && <span className="text-sm text-[#1B1B1B]/60">{price}</span>}
+              <StatusBadge status={file.status} />
               {file.awaitingReview && (
                 <span className="rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-700">Awaiting Review</span>
               )}
