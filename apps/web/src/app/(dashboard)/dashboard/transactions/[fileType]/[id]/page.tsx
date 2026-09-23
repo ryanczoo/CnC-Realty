@@ -167,14 +167,6 @@ export default function FileDetailPage() {
       : isReferral
         ? "Referral File"
         : `${file.city ?? ""} ${file.state} ${file.zip ?? ""}`.trim();
-  const price = isLocked ? null : (isListing
-    ? (listing?.listPrice ? `$${Number(listing.listPrice).toLocaleString()}` : null)
-    : (transaction?.salePrice
-        ? `$${Number(transaction.salePrice).toLocaleString()}`
-        : transaction?.leasePrice
-          ? `$${Number(transaction.leasePrice).toLocaleString()}/mo`
-          : null));
-
   const { satisfied, required } = getChecklistProgress(file.checklistItems as FileChecklistItemWithDocs[]);
   const progressPct = required > 0 ? Math.round((satisfied / required) * 100) : 0;
 
@@ -187,7 +179,6 @@ export default function FileDetailPage() {
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-xl font-bold text-[#1B1B1B]">{title}</h1>
-            {price && <p className="mt-1 text-sm text-[#1B1B1B]/60">{price}</p>}
             <div className="mt-1 flex items-center gap-3">
               <StatusBadge status={file.status} />
               {file.awaitingReview && (
