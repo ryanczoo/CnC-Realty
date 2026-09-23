@@ -790,7 +790,7 @@ export default function NewTransactionPage() {
               {form.escrowNumber && <ReviewRow label="Escrow #" value={form.escrowNumber} />}
             </ReviewSection>
             {conditions.filter((c) => c.name).length > 0 && (
-              <ReviewSection title="Conditions / Contingencies">
+              <ReviewSection title="Contingencies">
                 {conditions.filter((c) => c.name).map((c, i) => (
                   <ReviewRow key={i} label={c.name} value={c.dueDate || "—"} />
                 ))}
@@ -980,12 +980,12 @@ function ConditionsSection({
   }
   return (
     <div>
-      <SectionLabel className="text-center">Conditions / Contingencies</SectionLabel>
+      <SectionLabel className="text-center">Contingencies</SectionLabel>
       <button
         onClick={() => onUpdate([...conditions, emptyCondition()])}
         className="mb-4 flex items-center gap-1.5 text-sm font-medium text-[#9E8C61] hover:text-[#7a6d4a]"
       >
-        <Plus size={15} /> Add Condition
+        <Plus size={15} /> Add Contingency
       </button>
       <div className="space-y-3">
         {conditions.map((c, i) => (

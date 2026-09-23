@@ -415,7 +415,7 @@ function OverviewTab({
 
         {!isListing && transaction && !isReferral && transaction.conditions.length > 0 && (
           <div className="rounded-xl border border-[#1B1B1B]/10 bg-white p-5 space-y-3">
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Conditions / Contingencies</h2>
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Contingencies</h2>
             {transaction.conditions.map((c) => (
               <div key={c.id} className="border-b border-[#1B1B1B]/5 pb-2 last:border-0 last:pb-0">
                 <div className="flex items-center justify-between">
