@@ -503,7 +503,10 @@ function CommissionTab({ transaction }: { transaction: TransactionFileDetail }) 
             )}
           </>
         )}
-        <InfoRow label={transactionFee.label} value={transactionFee.fee > 0 ? `-${fmt(transactionFee.fee)}` : "—"} />
+        <InfoRow label={transactionFee.label} value={transactionFee.baseFee > 0 ? `-${fmt(transactionFee.baseFee)}` : "—"} />
+        {transactionFee.eoSupplement > 0 && (
+          <InfoRow label="E&O Insurance" value={`-${fmt(transactionFee.eoSupplement)}`} />
+        )}
         <InfoRow label="Other Deductions" value={deductions > 0 ? `-${fmt(deductions)}` : "—"} />
         {transaction.tcFeeEnabled && (
           <InfoRow label="CnC TC Service" value={`-${fmt(TC_FEE)}`} />

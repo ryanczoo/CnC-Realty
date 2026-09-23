@@ -720,9 +720,16 @@ export default function NewTransactionPage() {
                 )}
                 <BdRow
                   label={transactionFee.label}
-                  value={transactionFee.fee > 0 ? `−$${Math.round(transactionFee.fee).toLocaleString()}` : "—"}
+                  value={transactionFee.baseFee > 0 ? `−$${Math.round(transactionFee.baseFee).toLocaleString()}` : "—"}
                   muted
                 />
+                {transactionFee.eoSupplement > 0 && (
+                  <BdRow
+                    label="E&O Insurance"
+                    value={`−$${Math.round(transactionFee.eoSupplement).toLocaleString()}`}
+                    muted
+                  />
+                )}
                 {otherDeductionsAmt > 0 && (
                   <BdRow label="Other Deductions" value={`−$${otherDeductionsAmt.toLocaleString()}`} muted />
                 )}

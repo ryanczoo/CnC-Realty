@@ -41,11 +41,15 @@ describe("calcTransactionFee", () => {
     const result = calcTransactionFee(base);
     expect(result.fee).toBe(990);
     expect(result.label).toBe("CnC Transaction Fee");
+    expect(result.baseFee).toBe(990);
+    expect(result.eoSupplement).toBe(0);
   });
 
-  it("adds the E&O supplement above $1M", () => {
+  it("adds the E&O supplement above $1M, exposed as its own field", () => {
     const result = calcTransactionFee({ ...base, salePrice: 1_200_000 });
     expect(result.fee).toBe(990 + 400);
+    expect(result.baseFee).toBe(990);
+    expect(result.eoSupplement).toBe(400);
   });
 
   it("doubles the fee for a DUAL-side transaction", () => {
@@ -90,6 +94,11 @@ describe("calcTransactionFee", () => {
     });
     expect(result.fee).toBe((990 + 400) * 2 * 3);
     expect(result.fee).toBe(8340);
+    // baseFee and eoSupplement each independently carry the same ×2×3
+    // multiplier, and still sum to the combined fee.
+    expect(result.baseFee).toBe(990 * 2 * 3);
+    expect(result.eoSupplement).toBe(400 * 2 * 3);
+    expect(result.baseFee + result.eoSupplement).toBe(result.fee);
   });
 
   it("overrides everything to 30% of gross when brokerProvidedLead is on", () => {
@@ -104,6 +113,11 @@ describe("calcTransactionFee", () => {
     });
     expect(result.fee).toBe(20_000 * 0.3);
     expect(result.label).toBe("Broker-Provided Lead Fee (30%)");
+    // No base-fee/E&O split exists for this formula — the whole amount is
+    // the "base", and eoSupplement is 0 so a caller never renders a second
+    // "E&O Insurance" line for a broker-provided-lead file.
+    expect(result.baseFee).toBe(result.fee);
+    expect(result.eoSupplement).toBe(0);
   });
 
   it("uses the 10%-or-$200 lease formula for lease sides, ignoring toggles and parcels", () => {
@@ -117,6 +131,10 @@ describe("calcTransactionFee", () => {
     });
     expect(result.fee).toBe(300);
     expect(result.label).toBe("CnC Lease Fee");
+    // No base-fee/E&O split on lease files either — same reasoning as
+    // broker-provided-lead above.
+    expect(result.baseFee).toBe(300);
+    expect(result.eoSupplement).toBe(0);
   });
 
   it("floors the lease formula at $200", () => {
