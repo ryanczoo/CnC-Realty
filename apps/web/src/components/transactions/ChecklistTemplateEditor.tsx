@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
-import { Plus, Trash2, GripVertical } from "lucide-react";
+import { Plus, GripVertical } from "lucide-react";
+import { TrashIcon } from "@/components/ui/TrashIcon";
 
 interface TemplateItem {
   id: string;
@@ -60,7 +61,7 @@ export function ChecklistTemplateEditor({ templateId, items, onChanged }: Props)
             Required
           </label>
           <button onClick={() => deleteItem(item.id)} className="text-[#1B1B1B]/30 hover:text-red-500">
-            <Trash2 className="h-4 w-4" />
+            <TrashIcon className="h-4 w-4" />
           </button>
         </div>
       ))}

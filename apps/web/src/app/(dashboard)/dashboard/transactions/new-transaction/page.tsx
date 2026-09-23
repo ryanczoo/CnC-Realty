@@ -3,7 +3,8 @@ import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "motion/react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus } from "lucide-react";
+import { TrashIcon } from "@/components/ui/TrashIcon";
 import { SPRING_HOVER } from "@/lib/motion";
 import { TC_FEE, calcNetToAgent, calcTransactionFee } from "@/lib/commission";
 import { escrowTypeToRole, type EscrowContactType } from "@/lib/transaction-helpers";
@@ -911,7 +912,7 @@ function PartySection({
                 onClick={() => onUpdate(parties.filter((_, idx) => idx !== i))}
                 className="absolute right-3 top-3 text-[#1B1B1B]/25 hover:text-red-400"
               >
-                <Trash2 size={14} />
+                <TrashIcon size={14} />
               </button>
             )}
             <div className="grid grid-cols-2 gap-3">
@@ -958,7 +959,7 @@ function OptionalPartySection({
         onClick={onToggle}
         className="absolute right-3 top-3 text-[#1B1B1B]/25 hover:text-red-400"
       >
-        <Trash2 size={14} />
+        <TrashIcon size={14} />
       </button>
       <p className="mb-3 text-sm font-semibold text-[#1B1B1B]/60">{label}</p>
       <div className="grid grid-cols-2 gap-3">
@@ -998,7 +999,7 @@ function ConditionsSection({
               onClick={() => onUpdate(conditions.filter((_, idx) => idx !== i))}
               className="absolute right-3 top-3 text-[#1B1B1B]/25 hover:text-red-400"
             >
-              <Trash2 size={14} />
+              <TrashIcon size={14} />
             </button>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Condition Name" value={c.name} onChange={(v) => update(i, "name", v)} placeholder="e.g. Inspection Contingency" />
