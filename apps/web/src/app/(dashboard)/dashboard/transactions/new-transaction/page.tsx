@@ -387,7 +387,7 @@ export default function NewTransactionPage() {
               <Field label="Year Built" type="number" value={form.yearBuilt} onChange={(v) => set("yearBuilt", v)} placeholder="e.g. 2005" restrict={(v) => digitsOnly(v, 4)} />
             </div>
             <div className="border-t border-[#1B1B1B]/5 pt-5 space-y-4">
-              <SectionLabel>Optional Property Info</SectionLabel>
+              <SectionLabel className="text-center">Optional Property Info</SectionLabel>
               <TextareaField
                 label="Legal Description"
                 value={form.legalDescription}
@@ -430,7 +430,7 @@ export default function NewTransactionPage() {
                 <Field label="School District" value={form.schoolDistrict} onChange={(v) => set("schoolDistrict", v)} placeholder="Optional" />
                 <Field label="Zoning Class" value={form.zoningClass} onChange={(v) => set("zoningClass", v)} placeholder="e.g. R-1" />
               </div>
-              <div>
+              <div className="text-center">
                 <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">Property Photo</label>
                 <label
                   className={`inline-flex cursor-pointer items-center rounded-full px-4 py-2 text-xs font-medium transition-colors ${
@@ -473,7 +473,7 @@ export default function NewTransactionPage() {
               <Field label="Escrow Number" value={form.escrowNumber} onChange={(v) => set("escrowNumber", v)} placeholder="Optional" />
             </div>
             <div className="border-t border-[#1B1B1B]/5 pt-5">
-              <SectionLabel>Offer</SectionLabel>
+              <SectionLabel className="text-center">Offer</SectionLabel>
               <div className="grid grid-cols-2 gap-4">
                 <DateFieldRow label="Offer Date" value={form.offerDate} onChange={(v) => set("offerDate", v)} />
                 <DateFieldRow label="Offer Expiration Date" value={form.offerExpirationDate} onChange={(v) => set("offerExpirationDate", v)} />
@@ -484,7 +484,7 @@ export default function NewTransactionPage() {
               </div>
             </div>
             <div className="border-t border-[#1B1B1B]/5 pt-5">
-              <SectionLabel>Key Deadlines</SectionLabel>
+              <SectionLabel className="text-center">Key Deadlines</SectionLabel>
               <div className="grid grid-cols-2 gap-4">
                 <DateFieldRow label="Inspection Deadline" value={form.inspectionDeadline} onChange={(v) => set("inspectionDeadline", v)} />
                 <DateFieldRow label="Appraisal Deadline" value={form.appraisalDeadline} onChange={(v) => set("appraisalDeadline", v)} />
@@ -511,7 +511,7 @@ export default function NewTransactionPage() {
 
             {/* Listing Agent */}
             <div>
-              <p className="mb-3 text-sm font-semibold text-[#1B1B1B]/60">Listing Agent</p>
+              <p className="mb-3 text-center text-sm font-semibold text-[#1B1B1B]/60">Listing Agent</p>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Name" value={listingAgent.name} onChange={(v) => setListingAgent((a) => ({ ...a, name: v }))} />
                 <Field label="Email" type="email" value={listingAgent.email} onChange={(v) => setListingAgent((a) => ({ ...a, email: v }))} />
@@ -526,8 +526,8 @@ export default function NewTransactionPage() {
             {/* Title / Escrow / Attorney — the toggle only changes which type's fields
                 are on screen; each type keeps its own values underneath. */}
             <div>
-              <p className="mb-3 text-sm font-semibold text-[#1B1B1B]/60">Title / Escrow / Attorney</p>
-              <div className="mb-4 flex gap-2">
+              <p className="mb-3 text-center text-sm font-semibold text-[#1B1B1B]/60">Title / Escrow / Attorney</p>
+              <div className="mb-4 flex justify-center gap-2">
                 {(["Title", "Escrow", "Attorney"] as const).map((type) => (
                   <button
                     key={type}
@@ -869,11 +869,11 @@ function PartySection({
   const singular = label.slice(0, -1);
   return (
     <div>
-      <div className="mb-3 flex items-center justify-between">
-        <p className="text-sm font-semibold text-[#1B1B1B]/60">{label}</p>
+      <div className="relative mb-3 flex items-center">
+        <p className="absolute inset-x-0 text-center text-sm font-semibold text-[#1B1B1B]/60">{label}</p>
         <button
           onClick={() => onUpdate([...parties, emptyParty()])}
-          className="flex items-center gap-1 text-xs font-medium text-[#9E8C61] hover:text-[#7a6d4a]"
+          className="ml-auto flex items-center gap-1 text-xs font-medium text-[#9E8C61] hover:text-[#7a6d4a]"
         >
           <Plus size={13} /> Add {singular}
         </button>
@@ -914,11 +914,11 @@ function ConditionsSection({
   }
   return (
     <div>
-      <div className="mb-3 flex items-center justify-between">
-        <SectionLabel>Conditions / Contingencies</SectionLabel>
+      <div className="relative mb-3 flex items-center">
+        <SectionLabel className="absolute inset-x-0 text-center">Conditions / Contingencies</SectionLabel>
         <button
           onClick={() => onUpdate([...conditions, emptyCondition()])}
-          className="mb-4 flex items-center gap-1 text-xs font-medium text-[#9E8C61] hover:text-[#7a6d4a]"
+          className="ml-auto flex items-center gap-1 text-xs font-medium text-[#9E8C61] hover:text-[#7a6d4a]"
         >
           <Plus size={13} /> Add Condition
         </button>
@@ -1020,7 +1020,7 @@ function BdRow({ label, value, muted = false }: { label: string; value: string; 
 function ReviewSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-[#1B1B1B]/40">{title}</p>
+      <p className="mb-2 text-center text-xs font-semibold uppercase tracking-widest text-[#1B1B1B]/40">{title}</p>
       <div className="space-y-2 rounded-xl border border-[#1B1B1B]/8 p-4">{children}</div>
     </div>
   );

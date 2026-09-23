@@ -1,7 +1,7 @@
 "use client";
 
 export function FormField({
-  label, value, onChange, type = "text", placeholder = "", restrict,
+  label, value, onChange, type = "text", placeholder = "", restrict, labelClassName = "text-[#1B1B1B]/50",
 }: {
   label: string;
   value: string;
@@ -9,10 +9,11 @@ export function FormField({
   type?: string;
   placeholder?: string;
   restrict?: (v: string) => string;
+  labelClassName?: string;
 }) {
   return (
     <div>
-      <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">{label}</label>
+      <label className={`mb-1.5 block text-xs font-medium ${labelClassName}`}>{label}</label>
       <input
         type={type}
         value={value}
