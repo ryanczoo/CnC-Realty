@@ -36,23 +36,33 @@ const BASE_TABS: { key: Tab; label: string }[] = [
   { key: "activity", label: "Activity" },
 ];
 
+// Single source of truth for which tabs a file may show — the Commission tab is
+// hidden for listings and referrals (a referral has no real commission to show).
+// Both the tab bar and the initial-tab-from-URL resolution below must go through
+// this one function so a tab that's hidden from the tab list can never become
+// reachable via a raw "?tab=" query param either.
+function computeVisibleTabs(isListing: boolean, isReferral: boolean): { key: Tab; label: string }[] {
+  return isListing || isReferral ? BASE_TABS.filter((t) => t.key !== "commission") : BASE_TABS;
+}
+
 export default function FileDetailPage() {
   const params = useParams<{ fileType: string; id: string }>();
   const router = useRouter();
   const { data: session } = useSession();
   const { fileType, id } = params;
 
-  const [tab, setTab] = useState<Tab>(() => {
-    if (typeof window === "undefined") return "overview";
-    const requested = new URLSearchParams(window.location.search).get("tab");
-    return (BASE_TABS.some((t) => t.key === requested) ? requested : "overview") as Tab;
-  });
+  const [tab, setTab] = useState<Tab>("overview");
   const [file, setFile] = useState<ListingFileDetail | TransactionFileDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [tasks, setTasks] = useState<FileTaskRecord[]>([]);
   const abortRef = useRef<AbortController | null>(null);
+  // Holds the raw "?tab=" query param until the file has loaded and we actually
+  // know whether it's a listing/referral (and therefore know the true visibleTabs
+  // for it) — cleared after being applied once so a later load() (e.g. after
+  // submitting for review) never stomps on a tab the user has since clicked into.
+  const requestedTabRef = useRef<string | null>(null);
 
   function load() {
     abortRef.current?.abort();
@@ -67,6 +77,15 @@ export default function FileDetailPage() {
           const f = data.listing ?? data.transaction;
           setFile(f);
           setTasks(f?.tasks ?? []);
+          if (requestedTabRef.current) {
+            const requested = requestedTabRef.current;
+            requestedTabRef.current = null;
+            const isListingLoaded = fileType === "listing";
+            const isReferralLoaded = !isListingLoaded && f?.transactionSide === "REFERRAL";
+            if (computeVisibleTabs(isListingLoaded, isReferralLoaded).some((t) => t.key === requested)) {
+              setTab(requested as Tab);
+            }
+          }
         }
         setLoading(false);
       })
@@ -74,6 +93,9 @@ export default function FileDetailPage() {
   }
 
   useEffect(() => {
+    requestedTabRef.current = typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("tab")
+      : null;
     load();
     return () => abortRef.current?.abort();
   }, [id, fileType]);
@@ -156,9 +178,7 @@ export default function FileDetailPage() {
   const progressPct = required > 0 ? Math.round((satisfied / required) * 100) : 0;
 
   // Only show Commission tab for real-property transactions (not listings or referrals)
-  const visibleTabs = isListing || isReferral
-    ? BASE_TABS.filter((t) => t.key !== "commission")
-    : BASE_TABS;
+  const visibleTabs = computeVisibleTabs(isListing, isReferral);
 
   return (
     <div>
