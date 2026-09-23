@@ -830,9 +830,9 @@ export default function NewTransactionPage() {
         {step > 0 && (
           <button
             onClick={goBack}
-            className="rounded-full border border-[#1B1B1B]/20 px-6 py-2.5 text-sm text-[#1B1B1B]/60 hover:border-[#1B1B1B]/40 hover:text-[#1B1B1B]"
+            className="inline-flex items-center gap-1.5 rounded-full border border-[#1B1B1B]/20 px-6 py-2.5 text-sm text-[#1B1B1B]/60 hover:border-[#1B1B1B]/40 hover:text-[#1B1B1B]"
           >
-            ← Back
+            <ArrowIcon style={{ rotate: "90deg" }} /> Back
           </button>
         )}
         {step < STEPS.length - 1 ? (
@@ -841,9 +841,9 @@ export default function NewTransactionPage() {
             disabled={!canAdvance}
             whileHover={{ scale: 1.1 }}
             transition={SPRING_HOVER}
-            className="inline-flex items-center rounded-full bg-[#1B1B1B] px-7 py-3.5 text-sm font-medium text-white disabled:opacity-40"
+            className="inline-flex items-center gap-1.5 rounded-full bg-[#1B1B1B] px-7 py-3.5 text-sm font-medium text-white disabled:opacity-40"
           >
-            Next →
+            Next <ArrowIcon style={{ rotate: "-90deg" }} />
           </motion.button>
         ) : (
           <motion.button
@@ -862,6 +862,19 @@ export default function NewTransactionPage() {
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
+
+// Same icon already duplicated per-file in RentCitiesSlider, ComparableSales,
+// AgentReviewsSection, and AdvantageCarousel — matching that established
+// pattern rather than extracting a new shared component. Base shape points
+// diagonally; a 90deg rotate makes it point left, -90deg makes it point right.
+function ArrowIcon({ style }: { style?: React.CSSProperties }) {
+  return (
+    <svg width="14" height="14" viewBox="0 0 30 30" fill="currentColor" style={style}>
+      <path d="M16 20.488c0-.13.053-.253.146-.344l13-13.002c.42-.44 1.174.24.706.707l-13 13c-.302.31-.853.096-.853-.362z" />
+      <path d="M.852 7.142l14 14.002c.447.447-.273 1.16-.707.707l-14-14c-.444-.445.26-1.155.707-.708z" />
+    </svg>
+  );
+}
 
 function SectionLabel({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
