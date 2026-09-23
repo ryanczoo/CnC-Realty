@@ -69,7 +69,7 @@ export function ActivityFeed({ fileType, fileId, activities, onNoteAdded, readOn
             onChange={(e) => setNote(e.target.value)}
             placeholder="Add a note…"
             rows={3}
-            className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#9E8C61]/30"
+            className="w-full rounded-lg border border-[#1B1B1B]/10 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#9E8C61]/30"
           />
           <div className="mt-2 flex justify-end">
             <button onClick={addNote} disabled={saving || !note.trim()} className="rounded-full bg-[#1B1B1B] px-4 py-1.5 text-sm text-white disabled:opacity-40">

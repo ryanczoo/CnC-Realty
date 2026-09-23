@@ -51,7 +51,7 @@ export function PartiesTable({ fileType, fileId, parties, onChanged, readOnly = 
         </thead>
         <tbody>
           {parties.map((p) => (
-            <tr key={p.id} className="border-b border-[#1B1B1B]/5">
+            <tr key={p.id} className="border-b border-[#1B1B1B]/5 bg-white">
               <td className="py-2 text-[#1B1B1B]/60">{ROLE_LABELS[p.role]}</td>
               <td className="py-2 font-medium text-[#1B1B1B]">{p.name}</td>
               <td className="py-2 text-[#1B1B1B]/60">{p.email ?? "—"}</td>
