@@ -102,7 +102,7 @@ describe("calcTransactionFee", () => {
     expect(result.baseFee + result.eoSupplement).toBe(result.fee);
   });
 
-  it("overrides everything to 30% of gross when brokerProvidedLead is on", () => {
+  it("overrides everything to 30% of gross when brokerProvidedLead is on, but E&O coverage still applies (free — ICA §9.1's coverage is unconditional; §7.9 only exempts the §7.2 flat-fee mechanism)", () => {
     const result = calcTransactionFee({
       ...base,
       side: "DUAL",
@@ -114,15 +114,14 @@ describe("calcTransactionFee", () => {
     });
     expect(result.fee).toBe(20_000 * 0.3);
     expect(result.label).toBe("Broker-Provided Lead Fee (30%)");
-    // No base-fee/E&O split exists for this formula — the whole amount is
-    // the "base", and eoSupplement is 0 so a caller never renders a second
-    // "E&O Insurance" line for a broker-provided-lead file.
+    // No base-fee/E&O supplement split exists for this formula — the whole
+    // amount is the "base", and eoSupplement is 0 since no per-$500k tiers
+    // apply to a 30%-of-gross fee. hasEoInsurance is still true, though:
+    // the underlying E&O coverage itself is included at no extra charge,
+    // it's just never itemized as its own dollar line.
     expect(result.baseFee).toBe(result.fee);
     expect(result.eoSupplement).toBe(0);
-    // No E&O concept exists in this formula at all — unlike a plain sale
-    // under $1M (which has $0 supplement but E&O IS included, free), this
-    // is a structurally different case: there's nothing to be free.
-    expect(result.hasEoInsurance).toBe(false);
+    expect(result.hasEoInsurance).toBe(true);
   });
 
   it("uses the 10%-or-$200 lease formula for lease sides, ignoring toggles and parcels", () => {

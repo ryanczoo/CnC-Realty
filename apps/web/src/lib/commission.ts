@@ -50,8 +50,13 @@ export function calcTransactionFee(input: TransactionFeeInput): TransactionFeeRe
   }
 
   if (brokerProvidedLead) {
+    // ICA §9.1's E&O coverage is unconditional ("covering real estate
+    // transactions brokered through CnC Realty"); §7.9 only exempts
+    // Broker-Provided Leads from the §7.2 flat-fee mechanism, not from
+    // coverage itself. So E&O is still included here — free, since no
+    // per-$500k supplement tiers apply to a 30%-of-gross fee.
     const fee = grossCommission * 0.3;
-    return { fee, label: "Broker-Provided Lead Fee (30%)", baseFee: fee, eoSupplement: 0, hasEoInsurance: false };
+    return { fee, label: "Broker-Provided Lead Fee (30%)", baseFee: fee, eoSupplement: 0, hasEoInsurance: true };
   }
 
   const supplement = calcEoSupplement(salePrice);
