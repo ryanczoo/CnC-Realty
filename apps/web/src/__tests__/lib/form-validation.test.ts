@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatPhoneInput, isValidEmail, limitDigits, stripDigits, digitsOnly, trimStrings } from "@/lib/form-validation";
+import { formatPhoneInput, isValidEmail, limitDigits, stripDigits, digitsOnly, formatWithCommas, trimStrings } from "@/lib/form-validation";
 
 describe("formatPhoneInput", () => {
   it("returns digits as-is when 3 or fewer", () => {
@@ -114,6 +114,25 @@ describe("digitsOnly", () => {
 
   it("returns an empty string unchanged", () => {
     expect(digitsOnly("", 5)).toBe("");
+  });
+});
+
+describe("formatWithCommas", () => {
+  it("leaves a 1-3 digit number unchanged", () => {
+    expect(formatWithCommas("800")).toBe("800");
+  });
+
+  it("inserts one comma at the thousands mark", () => {
+    expect(formatWithCommas("15000")).toBe("15,000");
+  });
+
+  it("inserts multiple commas for larger numbers", () => {
+    expect(formatWithCommas("800000")).toBe("800,000");
+    expect(formatWithCommas("1200000")).toBe("1,200,000");
+  });
+
+  it("returns an empty string unchanged", () => {
+    expect(formatWithCommas("")).toBe("");
   });
 });
 

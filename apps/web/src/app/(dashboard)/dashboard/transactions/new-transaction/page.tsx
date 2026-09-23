@@ -9,7 +9,7 @@ import { TC_FEE, calcNetToAgent, calcTransactionFee } from "@/lib/commission";
 import { escrowTypeToRole, type EscrowContactType } from "@/lib/transaction-helpers";
 import { DateField } from "@/components/ui/DateField";
 import { FormField as Field } from "@/components/ui/FormField";
-import { stripDigits, digitsOnly } from "@/lib/form-validation";
+import { stripDigits, digitsOnly, formatWithCommas } from "@/lib/form-validation";
 import { SIDES, type TransactionSide } from "@/types/transaction";
 import { Spinner } from "@/components/ui/Spinner";
 
@@ -474,13 +474,13 @@ export default function NewTransactionPage() {
                 <Field label="Total Lease Amount *" type="number" value={form.leasePrice} onChange={(v) => set("leasePrice", v)} placeholder="$" />
               ) : (
                 <>
-                  <Field label="List Price" type="number" value={form.listPrice} onChange={(v) => set("listPrice", v)} placeholder="$" />
-                  <Field label="Sale / Purchase Price *" type="number" value={form.salePrice} onChange={(v) => set("salePrice", v)} placeholder="$" />
+                  <Field label="List Price" value={form.listPrice} onChange={(v) => set("listPrice", v)} placeholder="$" formatCommas />
+                  <Field label="Sale / Purchase Price *" value={form.salePrice} onChange={(v) => set("salePrice", v)} placeholder="$" formatCommas />
                 </>
               )}
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <Field label="Deposit" type="number" value={form.deposit} onChange={(v) => set("deposit", v)} placeholder="$" />
+              <Field label="Deposit" value={form.deposit} onChange={(v) => set("deposit", v)} placeholder="$" formatCommas />
               <Field label="Escrow Number" value={form.escrowNumber} onChange={(v) => set("escrowNumber", v)} placeholder="Optional" />
             </div>
             <div className="border-t border-[#1B1B1B]/5 pt-5">
@@ -652,9 +652,9 @@ export default function NewTransactionPage() {
             )}
             <Field
               label="Other Deductions ($)"
-              type="number"
               value={form.otherDeductions}
               onChange={(v) => set("otherDeductions", v)}
+              formatCommas
             />
             <ToggleRow
               label="CnC TC Service"
@@ -1017,13 +1017,24 @@ function CommissionField({
           </div>
         )}
       </div>
-      <input
-        type="number"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={mode === "pct" ? "e.g. 2.5" : "e.g. 15000"}
-        className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2.5 text-sm text-[#1B1B1B] placeholder:text-[#1B1B1B]/25 focus:outline-none focus:ring-2 focus:ring-[#9E8C61]/30"
-      />
+      {mode === "flat" ? (
+        <input
+          type="text"
+          inputMode="numeric"
+          value={formatWithCommas(value)}
+          onChange={(e) => onChange(digitsOnly(e.target.value, 12))}
+          placeholder="e.g. 15,000"
+          className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2.5 text-sm text-[#1B1B1B] placeholder:text-[#1B1B1B]/25 focus:outline-none focus:ring-2 focus:ring-[#9E8C61]/30"
+        />
+      ) : (
+        <input
+          type="number"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="e.g. 2.5"
+          className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2.5 text-sm text-[#1B1B1B] placeholder:text-[#1B1B1B]/25 focus:outline-none focus:ring-2 focus:ring-[#9E8C61]/30"
+        />
+      )}
     </div>
   );
 }

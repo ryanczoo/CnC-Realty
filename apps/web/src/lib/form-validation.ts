@@ -17,6 +17,13 @@ export function digitsOnly(value: string, maxLength: number): string {
   return value.replace(/\D/g, "").slice(0, maxLength);
 }
 
+// Inserts thousands-separator commas into a plain digit string, e.g.
+// "800000" -> "800,000". Whole-digit-only by design (no decimals) — matches
+// the pattern already used for Volume Closed on the agent Settings page.
+export function formatWithCommas(digits: string): string {
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
 export function limitDigits(value: string, maxDigits: number): string {
   let result = "";
   let digitCount = 0;
