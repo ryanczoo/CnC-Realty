@@ -10,7 +10,7 @@ import { TC_FEE, calcNetToAgent, calcTransactionFee } from "@/lib/commission";
 import { escrowTypeToRole, type EscrowContactType } from "@/lib/transaction-helpers";
 import { DateField } from "@/components/ui/DateField";
 import { FormField as Field } from "@/components/ui/FormField";
-import { stripDigits, digitsOnly, formatPhoneInput, sanitizeCurrencyInput, formatCurrencyDisplay } from "@/lib/form-validation";
+import { stripDigits, digitsOnly, formatPhoneInput, sanitizeCurrencyInput, formatCurrencyDisplay, emailError } from "@/lib/form-validation";
 import { SIDES, type TransactionSide } from "@/types/transaction";
 import { Spinner } from "@/components/ui/Spinner";
 
@@ -147,6 +147,9 @@ export default function NewTransactionPage() {
     numberOfParcels: form.numberOfParcels ? parseInt(form.numberOfParcels, 10) : null,
   });
   const netToAgent = calcNetToAgent(totalGci, transactionFee.fee, otherDeductionsAmt, tcFeeEnabled);
+  // Always shows exactly 2 decimal digits (never rounds cents away) — matches
+  // the file-detail page's Commission tab, which already formats this way.
+  const fmtAmt = (n: number) => n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   // Which party section gates Next on Step 3, mirroring how the agent
   // always knows the side they represent when the file is created.
@@ -176,13 +179,31 @@ export default function NewTransactionPage() {
     return ["LISTING", "LEASE_LANDLORD", "DUAL", "LEASE_DUAL"].includes(form.transactionSide);
   }, [form.transactionSide]);
 
+  // Only checks emails belonging to a party that actually has a name — an
+  // unnamed row (e.g. typed into the Escrow tab, then switched to Title
+  // without naming Escrow) never reaches submit() at all (see its own
+  // per-type .filter((t) => escrowContacts[t].name)), so its email
+  // shouldn't be able to block Next either.
+  const partyEmailsValid = useMemo(() => {
+    const namedPartyOk = (p: Party) => !p.name.trim() || !emailError(p.email);
+    return (
+      buyers.every(namedPartyOk) &&
+      sellers.every(namedPartyOk) &&
+      namedPartyOk(listingAgent) &&
+      (["Title", "Escrow", "Attorney"] as const).every((t) => namedPartyOk(escrowContacts[t])) &&
+      (!showLoanOfficer || namedPartyOk(loanOfficer)) &&
+      (!showTc || namedPartyOk(tc)) &&
+      (!showReferralAgent || namedPartyOk(referralAgent))
+    );
+  }, [buyers, sellers, listingAgent, escrowContacts, showLoanOfficer, loanOfficer, showTc, tc, showReferralAgent, referralAgent]);
+
   const canAdvance = useMemo(() => {
     if (step === 0) return isReferral ? !!form.transactionSide : (!!form.transactionSide && !!form.propertyCategory);
-    if (step === 1) return isReferral ? !!form.referredToAgentName : (!!form.propertyAddress && !!form.city && !!form.zip && !!form.propertyType && !!form.mlsNumber);
+    if (step === 1) return isReferral ? (!!form.referredToAgentName && !emailError(form.referredToContactEmail)) : (!!form.propertyAddress && !!form.city && !!form.zip && !!form.propertyType && !!form.mlsNumber);
     if (step === 2) return isLeaseSide ? !!form.leasePrice : !!form.salePrice;
-    if (step === 3) return partiesReady;
+    if (step === 3) return partiesReady && partyEmailsValid;
     return true;
-  }, [step, isReferral, form.transactionSide, form.propertyCategory, form.referredToAgentName, form.propertyAddress, form.city, form.zip, form.propertyType, form.mlsNumber, form.salePrice, form.leasePrice, partiesReady]);
+  }, [step, isReferral, form.transactionSide, form.propertyCategory, form.referredToAgentName, form.referredToContactEmail, form.propertyAddress, form.city, form.zip, form.propertyType, form.mlsNumber, form.salePrice, form.leasePrice, partiesReady, partyEmailsValid]);
 
   function goNext() {
     setStep((s) => {
@@ -365,7 +386,7 @@ export default function NewTransactionPage() {
               <Field label="Referred-To Agent Name *" value={form.referredToAgentName} onChange={(v) => set("referredToAgentName", v)} />
               <Field label="Referred-To Brokerage Name" value={form.referredToBrokerageName} onChange={(v) => set("referredToBrokerageName", v)} />
               <div className="grid grid-cols-2 gap-4">
-                <Field label="Contact Email" type="email" value={form.referredToContactEmail} onChange={(v) => set("referredToContactEmail", v)} />
+                <Field label="Contact Email" type="email" value={form.referredToContactEmail} onChange={(v) => set("referredToContactEmail", v)} error={emailError(form.referredToContactEmail)} />
                 <Field label="Contact Phone" type="tel" value={form.referredToContactPhone} onChange={(v) => set("referredToContactPhone", v)} />
               </div>
               <div>
@@ -531,7 +552,7 @@ export default function NewTransactionPage() {
               <p className="mb-3 text-center text-sm font-semibold text-[#1B1B1B]/60">Listing Agent</p>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Name" value={listingAgent.name} onChange={(v) => setListingAgent((a) => ({ ...a, name: v }))} restrict={stripDigits} />
-                <Field label="Email" type="email" value={listingAgent.email} onChange={(v) => setListingAgent((a) => ({ ...a, email: v }))} />
+                <Field label="Email" type="email" value={listingAgent.email} onChange={(v) => setListingAgent((a) => ({ ...a, email: v }))} error={emailError(listingAgent.email)} />
                 <Field label="Phone" type="tel" value={listingAgent.phone} onChange={(v) => setListingAgent((a) => ({ ...a, phone: v }))} restrict={formatPhoneInput} />
                 <Field label="License #" value={listingAgent.licenseNumber} onChange={(v) => setListingAgent((a) => ({ ...a, licenseNumber: v }))} />
                 <div className="col-span-2">
@@ -557,7 +578,7 @@ export default function NewTransactionPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Name" value={escrowContacts[activeEscrowType].name} onChange={(v) => setEscrowContacts((c) => ({ ...c, [activeEscrowType]: { ...c[activeEscrowType], name: v } }))} restrict={stripDigits} />
-                <Field label="Email" type="email" value={escrowContacts[activeEscrowType].email} onChange={(v) => setEscrowContacts((c) => ({ ...c, [activeEscrowType]: { ...c[activeEscrowType], email: v } }))} />
+                <Field label="Email" type="email" value={escrowContacts[activeEscrowType].email} onChange={(v) => setEscrowContacts((c) => ({ ...c, [activeEscrowType]: { ...c[activeEscrowType], email: v } }))} error={emailError(escrowContacts[activeEscrowType].email)} />
                 <Field label="Phone" type="tel" value={escrowContacts[activeEscrowType].phone} onChange={(v) => setEscrowContacts((c) => ({ ...c, [activeEscrowType]: { ...c[activeEscrowType], phone: v } }))} restrict={formatPhoneInput} />
                 <Field label="Company" value={escrowContacts[activeEscrowType].company} onChange={(v) => setEscrowContacts((c) => ({ ...c, [activeEscrowType]: { ...c[activeEscrowType], company: v } }))} />
               </div>
@@ -671,46 +692,46 @@ export default function NewTransactionPage() {
                 {isLeaseSide ? (
                   <BdRow
                     label="Lease Commission"
-                    value={saleCommissionAmt > 0 ? `$${Math.round(saleCommissionAmt).toLocaleString()}` : "—"}
+                    value={saleCommissionAmt > 0 ? `$${fmtAmt(saleCommissionAmt)}` : "—"}
                   />
                 ) : (
                   <>
                     {form.transactionSide !== "LISTING" && (
                       <BdRow
                         label="Selling Agent Commission"
-                        value={saleCommissionAmt > 0 ? `$${Math.round(saleCommissionAmt).toLocaleString()}` : "—"}
+                        value={saleCommissionAmt > 0 ? `$${fmtAmt(saleCommissionAmt)}` : "—"}
                       />
                     )}
                     {form.transactionSide !== "PURCHASE" && (
                       <BdRow
                         label="Listing Agent Commission"
-                        value={listingCommissionAmt > 0 ? `$${Math.round(listingCommissionAmt).toLocaleString()}` : "—"}
+                        value={listingCommissionAmt > 0 ? `$${fmtAmt(listingCommissionAmt)}` : "—"}
                       />
                     )}
                   </>
                 )}
                 <BdRow
                   label={transactionFee.label}
-                  value={transactionFee.baseFee > 0 ? `−$${Math.round(transactionFee.baseFee).toLocaleString()}` : "—"}
+                  value={transactionFee.baseFee > 0 ? `−$${fmtAmt(transactionFee.baseFee)}` : "—"}
                   muted
                 />
                 {transactionFee.hasEoInsurance && (
                   <BdRow
                     label="E&O Insurance"
-                    value={transactionFee.eoSupplement > 0 ? `−$${Math.round(transactionFee.eoSupplement).toLocaleString()}` : "FREE"}
+                    value={transactionFee.eoSupplement > 0 ? `−$${fmtAmt(transactionFee.eoSupplement)}` : "FREE"}
                     muted
                   />
                 )}
                 {otherDeductionsAmt > 0 && (
-                  <BdRow label="Other Deductions" value={`−$${otherDeductionsAmt.toLocaleString()}`} muted />
+                  <BdRow label="Other Deductions" value={`−$${fmtAmt(otherDeductionsAmt)}`} muted />
                 )}
                 {tcFeeEnabled && (
-                  <BdRow label="CnC TC Service" value={`−$${TC_FEE}`} muted />
+                  <BdRow label="CnC TC Service" value={`−$${fmtAmt(TC_FEE)}`} muted />
                 )}
                 <div className="border-t border-[#1B1B1B]/10 pt-2">
                   <div className="flex justify-between font-semibold text-[#1B1B1B]">
                     <span>Net to Agent</span>
-                    <span>{netToAgent > 0 ? `$${Math.round(netToAgent).toLocaleString()}` : "—"}</span>
+                    <span>{netToAgent > 0 ? `$${fmtAmt(netToAgent)}` : "—"}</span>
                   </div>
                 </div>
               </div>
@@ -917,7 +938,7 @@ function PartySection({
             )}
             <div className="grid grid-cols-2 gap-3">
               <Field label={`${singular} Name${required ? " *" : ""}`} value={p.name} onChange={(v) => update(i, "name", v)} restrict={stripDigits} />
-              <Field label="Email" type="email" value={p.email} onChange={(v) => update(i, "email", v)} />
+              <Field label="Email" type="email" value={p.email} onChange={(v) => update(i, "email", v)} error={emailError(p.email)} />
               <Field label="Phone" type="tel" value={p.phone} onChange={(v) => update(i, "phone", v)} restrict={formatPhoneInput} />
             </div>
           </div>
@@ -964,7 +985,7 @@ function OptionalPartySection({
       <p className="mb-3 text-sm font-semibold text-[#1B1B1B]/60">{label}</p>
       <div className="grid grid-cols-2 gap-3">
         <Field label="Name" value={party.name} onChange={(v) => onUpdate({ ...party, name: v })} restrict={stripDigits} />
-        <Field label="Email" type="email" value={party.email} onChange={(v) => onUpdate({ ...party, email: v })} />
+        <Field label="Email" type="email" value={party.email} onChange={(v) => onUpdate({ ...party, email: v })} error={emailError(party.email)} />
         <Field label="Phone" type="tel" value={party.phone} onChange={(v) => onUpdate({ ...party, phone: v })} restrict={formatPhoneInput} />
         <Field label="Company" value={party.company} onChange={(v) => onUpdate({ ...party, company: v })} />
       </div>
@@ -1051,9 +1072,10 @@ function CommissionField({
         />
       ) : (
         <input
-          type="number"
+          type="text"
+          inputMode="decimal"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => onChange(sanitizeCurrencyInput(e.target.value, 3))}
           placeholder="e.g. 2.5"
           className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2.5 text-sm text-[#1B1B1B] placeholder:text-[#1B1B1B]/25 focus:outline-none focus:ring-2 focus:ring-[#9E8C61]/30"
         />

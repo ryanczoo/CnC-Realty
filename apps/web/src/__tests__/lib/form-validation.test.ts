@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatPhoneInput, isValidEmail, limitDigits, stripDigits, digitsOnly, formatWithCommas, sanitizeCurrencyInput, formatCurrencyDisplay, trimStrings } from "@/lib/form-validation";
+import { formatPhoneInput, isValidEmail, emailError, limitDigits, stripDigits, digitsOnly, formatWithCommas, sanitizeCurrencyInput, formatCurrencyDisplay, trimStrings } from "@/lib/form-validation";
 
 describe("formatPhoneInput", () => {
   it("returns digits as-is when 3 or fewer", () => {
@@ -46,6 +46,28 @@ describe("isValidEmail", () => {
 
   it("rejects an empty string", () => {
     expect(isValidEmail("")).toBe(false);
+  });
+});
+
+describe("emailError", () => {
+  it("returns undefined for an empty value (these email fields are all optional)", () => {
+    expect(emailError("")).toBeUndefined();
+  });
+
+  it("returns undefined for whitespace-only input", () => {
+    expect(emailError("   ")).toBeUndefined();
+  });
+
+  it("returns undefined for a well-formed email", () => {
+    expect(emailError("agent@cncrealtygroup.com")).toBeUndefined();
+  });
+
+  it("returns the shared error message for gibberish input", () => {
+    expect(emailError("sdfdfsfdf")).toBe("Please enter a valid email address.");
+  });
+
+  it("returns the shared error message for an email missing a domain extension", () => {
+    expect(emailError("agent@cnc")).toBe("Please enter a valid email address.");
   });
 });
 
@@ -186,6 +208,10 @@ describe("formatCurrencyDisplay", () => {
 
   it("returns an empty string unchanged", () => {
     expect(formatCurrencyDisplay("")).toBe("");
+  });
+
+  it("defensively caps the decimal part at 2 digits even if the value wasn't pre-sanitized (e.g. arrived from an unrestricted input elsewhere)", () => {
+    expect(formatCurrencyDisplay("33333333.333333333333")).toBe("33,333,333.33");
   });
 });
 

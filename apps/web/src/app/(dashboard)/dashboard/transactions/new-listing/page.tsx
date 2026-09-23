@@ -6,7 +6,7 @@ import { motion } from "motion/react";
 import { SPRING_HOVER } from "@/lib/motion";
 import { DateField } from "@/components/ui/DateField";
 import { FormField as Field } from "@/components/ui/FormField";
-import { stripDigits, digitsOnly } from "@/lib/form-validation";
+import { stripDigits, digitsOnly, sanitizeCurrencyInput } from "@/lib/form-validation";
 import { Spinner } from "@/components/ui/Spinner";
 
 const STEPS = ["Property Info", "Commission", "Review"] as const;
@@ -114,7 +114,7 @@ export default function NewListingPage() {
 
         {step === 1 && (
           <div className="space-y-4">
-            <Field label="Commission %" type="number" value={form.commissionPercent} onChange={(v) => set("commissionPercent", v)} placeholder="e.g. 2.5" />
+            <Field label="Commission %" value={form.commissionPercent} onChange={(v) => set("commissionPercent", v)} placeholder="e.g. 2.5" inputMode="decimal" restrict={(v) => sanitizeCurrencyInput(v, 3)} />
             <div>
               <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">Commission Notes</label>
               <textarea

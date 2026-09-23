@@ -9,6 +9,15 @@ export function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+// Shared inline-field-error check for optional email fields: blank is fine
+// (these fields are never required), but non-blank, malformed input is
+// flagged with the same message used everywhere else on the site an email
+// gets validated. Returns undefined when there's nothing to show.
+export function emailError(value: string): string | undefined {
+  if (!value.trim()) return undefined;
+  return isValidEmail(value) ? undefined : "Please enter a valid email address.";
+}
+
 export function stripDigits(value: string): string {
   return value.replace(/\d/g, "");
 }
@@ -38,16 +47,20 @@ export function sanitizeCurrencyInput(raw: string, maxIntDigits = 12): string {
   return `${intPart}.${decPart}`;
 }
 
-// Formats a sanitized currency string (digits, optionally one decimal point
-// with up to 2 decimal digits) for display: commas in the integer part, the
-// decimal part shown verbatim (including a bare trailing "." while the user
-// is still typing, and a leading "0" when the integer part is empty).
+// Formats a currency string for display: commas in the integer part, the
+// decimal part shown as-is (including a bare trailing "." while the user is
+// still typing, and a leading "0" when the integer part is empty). Caps the
+// decimal part at 2 digits defensively — normal typing already arrives here
+// pre-sanitized via sanitizeCurrencyInput's onChange, but a value can also
+// reach this function unsanitized (e.g. a dual-purpose %/$ field carrying
+// over whatever was typed in the other mode), so this doesn't just trust
+// its input is already clean.
 export function formatCurrencyDisplay(value: string): string {
   if (!value) return "";
   const dotIndex = value.indexOf(".");
   if (dotIndex === -1) return formatWithCommas(value);
   const intPart = value.slice(0, dotIndex);
-  const decPart = value.slice(dotIndex + 1);
+  const decPart = value.slice(dotIndex + 1, dotIndex + 3);
   return `${formatWithCommas(intPart) || "0"}.${decPart}`;
 }
 

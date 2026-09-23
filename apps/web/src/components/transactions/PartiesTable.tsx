@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { TrashIcon } from "@/components/ui/TrashIcon";
+import { emailError } from "@/lib/form-validation";
 import type { FilePartyRecord, FilePartyRole, FileContextProps } from "@/types/transaction";
 
 const ROLE_LABELS: Record<FilePartyRole, string> = {
@@ -21,7 +22,10 @@ export function PartiesTable({ fileType, fileId, parties, onChanged, readOnly = 
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ role: "BUYER" as FilePartyRole, name: "", email: "", phone: "", company: "", licenseNumber: "" });
 
+  const emailErr = emailError(form.email);
+
   async function addParty() {
+    if (emailErr) return;
     await fetch(`/api/files/${fileType}/${fileId}/parties`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -67,16 +71,28 @@ export function PartiesTable({ fileType, fileId, parties, onChanged, readOnly = 
       </table>
 
       {!readOnly && (adding ? (
-        <div className="mt-4 grid grid-cols-2 gap-2 rounded-lg border border-[#1B1B1B]/10 p-4">
-          <select value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value as FilePartyRole }))} className="col-span-2 rounded-lg border border-[#1B1B1B]/10 bg-white px-3 py-2 text-sm text-[#1B1B1B]">
+        <div className="mt-4 grid grid-cols-2 gap-2 rounded-lg border border-[#1B1B1B]/10 bg-white p-4">
+          <select value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value as FilePartyRole }))} className="col-span-2 rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2 text-sm text-[#1B1B1B]">
             {Object.entries(ROLE_LABELS).filter(([v]) => v !== "TITLE_ESCROW").map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
-          {(["name", "email", "phone", "company", "licenseNumber"] as const).map((field) => (
-            <input key={field} placeholder={field.charAt(0).toUpperCase() + field.slice(1)} value={form[field]} onChange={(e) => setForm((f) => ({ ...f, [field]: e.target.value }))} className="rounded-lg border border-[#1B1B1B]/10 bg-white px-3 py-2 text-sm text-[#1B1B1B] placeholder:text-[#1B1B1B]/25" />
-          ))}
+          {(["name", "email", "phone", "company", "licenseNumber"] as const).map((field) =>
+            field === "email" ? (
+              <div key={field}>
+                <input
+                  placeholder="Email"
+                  value={form.email}
+                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                  className={`w-full rounded-lg border ${emailErr ? "border-red-400" : "border-[#1B1B1B]/10"} bg-[#F2F0EF] px-3 py-2 text-sm text-[#1B1B1B] placeholder:text-[#1B1B1B]/25`}
+                />
+                {emailErr && <p className="mt-1 text-xs text-red-500">{emailErr}</p>}
+              </div>
+            ) : (
+              <input key={field} placeholder={field.charAt(0).toUpperCase() + field.slice(1)} value={form[field]} onChange={(e) => setForm((f) => ({ ...f, [field]: e.target.value }))} className="rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2 text-sm text-[#1B1B1B] placeholder:text-[#1B1B1B]/25" />
+            )
+          )}
           <div className="col-span-2 flex justify-end gap-2">
             <button onClick={() => setAdding(false)} className="rounded-lg px-4 py-2 text-sm text-[#1B1B1B]/50 hover:text-[#1B1B1B]">Cancel</button>
-            <button onClick={addParty} className="rounded-lg bg-[#1B1B1B] px-4 py-2 text-sm text-white">Add Party</button>
+            <button onClick={addParty} disabled={!!emailErr} className="rounded-lg bg-[#1B1B1B] px-4 py-2 text-sm text-white disabled:opacity-40">Add Party</button>
           </div>
         </div>
       ) : (
