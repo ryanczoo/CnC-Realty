@@ -9,7 +9,7 @@ import { TC_FEE, calcNetToAgent, calcTransactionFee } from "@/lib/commission";
 import { escrowTypeToRole, type EscrowContactType } from "@/lib/transaction-helpers";
 import { DateField } from "@/components/ui/DateField";
 import { FormField as Field } from "@/components/ui/FormField";
-import { stripDigits, digitsOnly, sanitizeCurrencyInput, formatCurrencyDisplay } from "@/lib/form-validation";
+import { stripDigits, digitsOnly, formatPhoneInput, sanitizeCurrencyInput, formatCurrencyDisplay } from "@/lib/form-validation";
 import { SIDES, type TransactionSide } from "@/types/transaction";
 import { Spinner } from "@/components/ui/Spinner";
 
@@ -529,9 +529,9 @@ export default function NewTransactionPage() {
             <div>
               <p className="mb-3 text-center text-sm font-semibold text-[#1B1B1B]/60">Listing Agent</p>
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Name" value={listingAgent.name} onChange={(v) => setListingAgent((a) => ({ ...a, name: v }))} />
+                <Field label="Name" value={listingAgent.name} onChange={(v) => setListingAgent((a) => ({ ...a, name: v }))} restrict={stripDigits} />
                 <Field label="Email" type="email" value={listingAgent.email} onChange={(v) => setListingAgent((a) => ({ ...a, email: v }))} />
-                <Field label="Phone" type="tel" value={listingAgent.phone} onChange={(v) => setListingAgent((a) => ({ ...a, phone: v }))} />
+                <Field label="Phone" type="tel" value={listingAgent.phone} onChange={(v) => setListingAgent((a) => ({ ...a, phone: v }))} restrict={formatPhoneInput} />
                 <Field label="License #" value={listingAgent.licenseNumber} onChange={(v) => setListingAgent((a) => ({ ...a, licenseNumber: v }))} />
                 <div className="col-span-2">
                   <Field label="Brokerage" value={listingAgent.company} onChange={(v) => setListingAgent((a) => ({ ...a, company: v }))} />
@@ -555,69 +555,34 @@ export default function NewTransactionPage() {
                 ))}
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Name" value={escrowContacts[activeEscrowType].name} onChange={(v) => setEscrowContacts((c) => ({ ...c, [activeEscrowType]: { ...c[activeEscrowType], name: v } }))} />
+                <Field label="Name" value={escrowContacts[activeEscrowType].name} onChange={(v) => setEscrowContacts((c) => ({ ...c, [activeEscrowType]: { ...c[activeEscrowType], name: v } }))} restrict={stripDigits} />
                 <Field label="Email" type="email" value={escrowContacts[activeEscrowType].email} onChange={(v) => setEscrowContacts((c) => ({ ...c, [activeEscrowType]: { ...c[activeEscrowType], email: v } }))} />
-                <Field label="Phone" type="tel" value={escrowContacts[activeEscrowType].phone} onChange={(v) => setEscrowContacts((c) => ({ ...c, [activeEscrowType]: { ...c[activeEscrowType], phone: v } }))} />
+                <Field label="Phone" type="tel" value={escrowContacts[activeEscrowType].phone} onChange={(v) => setEscrowContacts((c) => ({ ...c, [activeEscrowType]: { ...c[activeEscrowType], phone: v } }))} restrict={formatPhoneInput} />
                 <Field label="Company" value={escrowContacts[activeEscrowType].company} onChange={(v) => setEscrowContacts((c) => ({ ...c, [activeEscrowType]: { ...c[activeEscrowType], company: v } }))} />
               </div>
             </div>
 
-            {/* Optional: Loan Officer */}
-            <div>
-              <button
-                onClick={() => setShowLoanOfficer((v) => !v)}
-                className="flex items-center gap-1.5 text-sm font-medium text-[#9E8C61] hover:text-[#7a6d4a]"
-              >
-                <Plus size={15} />
-                {showLoanOfficer ? "Remove" : "Add"} Loan Officer
-              </button>
-              {showLoanOfficer && (
-                <div className="mt-3 grid grid-cols-2 gap-3">
-                  <Field label="Name" value={loanOfficer.name} onChange={(v) => setLoanOfficer((a) => ({ ...a, name: v }))} />
-                  <Field label="Email" type="email" value={loanOfficer.email} onChange={(v) => setLoanOfficer((a) => ({ ...a, email: v }))} />
-                  <Field label="Phone" type="tel" value={loanOfficer.phone} onChange={(v) => setLoanOfficer((a) => ({ ...a, phone: v }))} />
-                  <Field label="Company" value={loanOfficer.company} onChange={(v) => setLoanOfficer((a) => ({ ...a, company: v }))} />
-                </div>
-              )}
-            </div>
-
-            {/* Optional: Transaction Coordinator */}
-            <div>
-              <button
-                onClick={() => setShowTc((v) => !v)}
-                className="flex items-center gap-1.5 text-sm font-medium text-[#9E8C61] hover:text-[#7a6d4a]"
-              >
-                <Plus size={15} />
-                {showTc ? "Remove" : "Add"} Transaction Coordinator
-              </button>
-              {showTc && (
-                <div className="mt-3 grid grid-cols-2 gap-3">
-                  <Field label="Name" value={tc.name} onChange={(v) => setTc((a) => ({ ...a, name: v }))} />
-                  <Field label="Email" type="email" value={tc.email} onChange={(v) => setTc((a) => ({ ...a, email: v }))} />
-                  <Field label="Phone" type="tel" value={tc.phone} onChange={(v) => setTc((a) => ({ ...a, phone: v }))} />
-                  <Field label="Company" value={tc.company} onChange={(v) => setTc((a) => ({ ...a, company: v }))} />
-                </div>
-              )}
-            </div>
-
-            {/* Optional: Referral Agent */}
-            <div>
-              <button
-                onClick={() => setShowReferralAgent((v) => !v)}
-                className="flex items-center gap-1.5 text-sm font-medium text-[#9E8C61] hover:text-[#7a6d4a]"
-              >
-                <Plus size={15} />
-                {showReferralAgent ? "Remove" : "Add"} Referral Agent
-              </button>
-              {showReferralAgent && (
-                <div className="mt-3 grid grid-cols-2 gap-3">
-                  <Field label="Name" value={referralAgent.name} onChange={(v) => setReferralAgent((a) => ({ ...a, name: v }))} />
-                  <Field label="Email" type="email" value={referralAgent.email} onChange={(v) => setReferralAgent((a) => ({ ...a, email: v }))} />
-                  <Field label="Phone" type="tel" value={referralAgent.phone} onChange={(v) => setReferralAgent((a) => ({ ...a, phone: v }))} />
-                  <Field label="Company" value={referralAgent.company} onChange={(v) => setReferralAgent((a) => ({ ...a, company: v }))} />
-                </div>
-              )}
-            </div>
+            <OptionalPartySection
+              label="Loan Officer"
+              show={showLoanOfficer}
+              onToggle={() => setShowLoanOfficer((v) => !v)}
+              party={loanOfficer}
+              onUpdate={setLoanOfficer}
+            />
+            <OptionalPartySection
+              label="Transaction Coordinator"
+              show={showTc}
+              onToggle={() => setShowTc((v) => !v)}
+              party={tc}
+              onUpdate={setTc}
+            />
+            <OptionalPartySection
+              label="Referral Agent"
+              show={showReferralAgent}
+              onToggle={() => setShowReferralAgent((v) => !v)}
+              party={referralAgent}
+              onUpdate={setReferralAgent}
+            />
           </div>
         )}
 
@@ -950,9 +915,9 @@ function PartySection({
               </button>
             )}
             <div className="grid grid-cols-2 gap-3">
-              <Field label={`${singular} Name${required ? " *" : ""}`} value={p.name} onChange={(v) => update(i, "name", v)} />
+              <Field label={`${singular} Name${required ? " *" : ""}`} value={p.name} onChange={(v) => update(i, "name", v)} restrict={stripDigits} />
               <Field label="Email" type="email" value={p.email} onChange={(v) => update(i, "email", v)} />
-              <Field label="Phone" type="tel" value={p.phone} onChange={(v) => update(i, "phone", v)} />
+              <Field label="Phone" type="tel" value={p.phone} onChange={(v) => update(i, "phone", v)} restrict={formatPhoneInput} />
             </div>
           </div>
         ))}
@@ -963,6 +928,45 @@ function PartySection({
       >
         <Plus size={15} /> Add {singular}
       </button>
+    </div>
+  );
+}
+
+// Single-optional-party sections (Loan Officer, Transaction Coordinator,
+// Referral Agent) — closed state shows "+ Add X"; open state shows a
+// bordered card with a trash-can icon to remove, matching the same
+// remove-icon pattern used for Contingencies and individual party cards
+// above, instead of a "+ Remove X" text toggle.
+function OptionalPartySection({
+  label, show, onToggle, party, onUpdate,
+}: {
+  label: string; show: boolean; onToggle: () => void; party: Party; onUpdate: (p: Party) => void;
+}) {
+  if (!show) {
+    return (
+      <button
+        onClick={onToggle}
+        className="flex items-center gap-1.5 text-sm font-medium text-[#9E8C61] hover:text-[#7a6d4a]"
+      >
+        <Plus size={15} /> Add {label}
+      </button>
+    );
+  }
+  return (
+    <div className="relative rounded-xl border border-[#1B1B1B]/8 p-4">
+      <button
+        onClick={onToggle}
+        className="absolute right-3 top-3 text-[#1B1B1B]/25 hover:text-red-400"
+      >
+        <Trash2 size={14} />
+      </button>
+      <p className="mb-3 text-sm font-semibold text-[#1B1B1B]/60">{label}</p>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Name" value={party.name} onChange={(v) => onUpdate({ ...party, name: v })} restrict={stripDigits} />
+        <Field label="Email" type="email" value={party.email} onChange={(v) => onUpdate({ ...party, email: v })} />
+        <Field label="Phone" type="tel" value={party.phone} onChange={(v) => onUpdate({ ...party, phone: v })} restrict={formatPhoneInput} />
+        <Field label="Company" value={party.company} onChange={(v) => onUpdate({ ...party, company: v })} />
+      </div>
     </div>
   );
 }
