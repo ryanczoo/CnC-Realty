@@ -67,6 +67,9 @@ export default function AdminFileDetailPage() {
     return (
       <div className="flex flex-col items-center justify-center py-24">
         <p className="text-[#1B1B1B]/50">File not found</p>
+        <Link href="/admin/transactions" className="mt-4 rounded-full bg-[#1B1B1B] px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-75">
+          All Transactions
+        </Link>
       </div>
     );
   }

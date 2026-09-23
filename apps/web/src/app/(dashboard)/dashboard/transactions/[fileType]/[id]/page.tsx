@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import Link from "next/link";
 import { StatusBadge } from "@/components/transactions/StatusBadge";
 import { ChecklistPanel } from "@/components/transactions/ChecklistPanel";
 import { PartiesTable } from "@/components/transactions/PartiesTable";
@@ -143,6 +144,9 @@ export default function FileDetailPage() {
     return (
       <div className="flex flex-col items-center justify-center py-24">
         <p className="text-[#1B1B1B]/50">File not found</p>
+        <Link href="/dashboard/transactions" className="mt-4 rounded-full bg-[#1B1B1B] px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-75">
+          All Transactions
+        </Link>
       </div>
     );
   }
