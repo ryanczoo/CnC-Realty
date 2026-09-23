@@ -397,21 +397,6 @@ function OverviewTab({
           </div>
         )}
 
-        {!isListing && transaction && !isReferral && (
-          <div className="rounded-xl border border-[#1B1B1B]/10 bg-white p-5 space-y-3">
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Key Dates</h2>
-            <InfoRow label="Offer Date" value={transaction.offerDate ? formatDateOnly(transaction.offerDate) : "—"} />
-            <InfoRow label="Acceptance Date" value={transaction.acceptanceDate ? formatDateOnly(transaction.acceptanceDate) : "—"} />
-            <InfoRow label="Inspection Deadline" value={transaction.inspectionDeadline ? formatDateOnly(transaction.inspectionDeadline) : "—"} />
-            <InfoRow label="Appraisal Deadline" value={transaction.appraisalDeadline ? formatDateOnly(transaction.appraisalDeadline) : "—"} />
-            <InfoRow label="Loan Approval" value={transaction.loanApprovalDeadline ? formatDateOnly(transaction.loanApprovalDeadline) : "—"} />
-            <InfoRow label="Close of Escrow" value={transaction.closeOfEscrow ? formatDateOnly(transaction.closeOfEscrow) : "—"} />
-            {transaction.offerExpirationDate && <InfoRow label="Offer Expiration" value={formatDateOnly(transaction.offerExpirationDate)} />}
-            {transaction.finalWalkthroughDate && <InfoRow label="Final Walkthrough" value={formatDateOnly(transaction.finalWalkthroughDate)} />}
-            {transaction.possessionDate && <InfoRow label="Possession Date" value={formatDateOnly(transaction.possessionDate)} />}
-          </div>
-        )}
-
         {!isListing && transaction && !isReferral && transaction.conditions.length > 0 && (
           <div className="rounded-xl border border-[#1B1B1B]/10 bg-white p-5 space-y-3">
             <h2 className="text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Contingencies</h2>
@@ -428,16 +413,33 @@ function OverviewTab({
         )}
       </div>
 
-      <div className="self-start rounded-xl border border-[#1B1B1B]/10 bg-white p-5 space-y-3">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Checklist Progress</h2>
-        <div className="flex items-end justify-between">
-          <span className="text-2xl font-light text-[#1B1B1B]">{progressPct}%</span>
-          <span className="text-sm text-[#1B1B1B]/50">{satisfied} / {required} required</span>
+      <div className="space-y-4">
+        <div className="rounded-xl border border-[#1B1B1B]/10 bg-white p-5 space-y-3">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Checklist Progress</h2>
+          <div className="flex items-end justify-between">
+            <span className="text-2xl font-light text-[#1B1B1B]">{progressPct}%</span>
+            <span className="text-sm text-[#1B1B1B]/50">{satisfied} / {required} required</span>
+          </div>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-[#F2F0EF]">
+            <div className="h-full rounded-full bg-[#9E8C61] transition-all" style={{ width: `${progressPct}%` }} />
+          </div>
+          <p className="text-xs text-[#1B1B1B]/40">Go to the Checklist tab to upload documents.</p>
         </div>
-        <div className="h-2 w-full overflow-hidden rounded-full bg-[#F2F0EF]">
-          <div className="h-full rounded-full bg-[#9E8C61] transition-all" style={{ width: `${progressPct}%` }} />
-        </div>
-        <p className="text-xs text-[#1B1B1B]/40">Go to the Checklist tab to upload documents.</p>
+
+        {!isListing && transaction && !isReferral && (
+          <div className="rounded-xl border border-[#1B1B1B]/10 bg-white p-5 space-y-3">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Key Dates</h2>
+            <InfoRow label="Offer Date" value={transaction.offerDate ? formatDateOnly(transaction.offerDate) : "—"} />
+            <InfoRow label="Acceptance Date" value={transaction.acceptanceDate ? formatDateOnly(transaction.acceptanceDate) : "—"} />
+            <InfoRow label="Inspection Deadline" value={transaction.inspectionDeadline ? formatDateOnly(transaction.inspectionDeadline) : "—"} />
+            <InfoRow label="Appraisal Deadline" value={transaction.appraisalDeadline ? formatDateOnly(transaction.appraisalDeadline) : "—"} />
+            <InfoRow label="Loan Approval" value={transaction.loanApprovalDeadline ? formatDateOnly(transaction.loanApprovalDeadline) : "—"} />
+            <InfoRow label="Close of Escrow" value={transaction.closeOfEscrow ? formatDateOnly(transaction.closeOfEscrow) : "—"} />
+            {transaction.offerExpirationDate && <InfoRow label="Offer Expiration" value={formatDateOnly(transaction.offerExpirationDate)} />}
+            {transaction.finalWalkthroughDate && <InfoRow label="Final Walkthrough" value={formatDateOnly(transaction.finalWalkthroughDate)} />}
+            {transaction.possessionDate && <InfoRow label="Possession Date" value={formatDateOnly(transaction.possessionDate)} />}
+          </div>
+        )}
       </div>
     </div>
   );
