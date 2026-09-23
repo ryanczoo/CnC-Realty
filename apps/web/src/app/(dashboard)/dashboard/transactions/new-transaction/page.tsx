@@ -24,6 +24,7 @@ const PROPERTY_CATEGORIES = [
 ] as const;
 
 const PROPERTY_TYPES = ["Single Family", "Condo", "Townhouse", "Multi-Family", "Commercial", "Land", "Industrial", "Farm and Ranch", "Manufactured Home", "Co-Op", "Other"];
+const MULTI_PARCEL_OPTIONS = Array.from({ length: 99 }, (_, i) => i + 2); // 2–100; blank/1 both mean "not multi-parcel"
 
 type Party = { name: string; email: string; phone: string; company: string; licenseNumber: string };
 const emptyParty = (): Party => ({ name: "", email: "", phone: "", company: "", licenseNumber: "" });
@@ -48,7 +49,7 @@ export default function NewTransactionPage() {
     propertyAddress: "", city: "", state: "CA", zip: "",
     propertyType: "", mlsNumber: "", yearBuilt: "",
     legalDescription: "", propertyIncludes: "", propertyExcludes: "",
-    taxId: "", annualTaxes: "", schoolDistrict: "", zoningClass: "", photoKey: "",
+    taxId: "", numberOfParcels: "", schoolDistrict: "", zoningClass: "", photoKey: "",
     listPrice: "", salePrice: "", leasePrice: "", deposit: "",
     offerDate: "", offerExpirationDate: "",
     acceptanceDate: "", closeOfEscrow: "",
@@ -385,8 +386,20 @@ export default function NewTransactionPage() {
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">Multi-Parcel</label>
+                  <select
+                    value={form.numberOfParcels}
+                    onChange={(e) => set("numberOfParcels", e.target.value)}
+                    className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2.5 text-sm text-[#1B1B1B] focus:outline-none focus:ring-2 focus:ring-[#9E8C61]/30"
+                  >
+                    <option value="">—</option>
+                    {MULTI_PARCEL_OPTIONS.map((n) => (
+                      <option key={n} value={n}>{n}</option>
+                    ))}
+                  </select>
+                </div>
                 <Field label="Tax ID / APN" value={form.taxId} onChange={(v) => set("taxId", v)} placeholder="Optional" />
-                <Field label="Annual Taxes" type="number" value={form.annualTaxes} onChange={(v) => set("annualTaxes", v)} placeholder="$" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <Field label="School District" value={form.schoolDistrict} onChange={(v) => set("schoolDistrict", v)} placeholder="Optional" />
@@ -670,8 +683,8 @@ export default function NewTransactionPage() {
               {form.propertyType && <ReviewRow label="Type" value={form.propertyType} />}
               {form.mlsNumber && <ReviewRow label="MLS #" value={form.mlsNumber} />}
               {form.yearBuilt && <ReviewRow label="Year Built" value={form.yearBuilt} />}
+              {form.numberOfParcels && <ReviewRow label="Multi-Parcel" value={`${form.numberOfParcels} parcels`} />}
               {form.taxId && <ReviewRow label="Tax ID / APN" value={form.taxId} />}
-              {form.annualTaxes && <ReviewRow label="Annual Taxes" value={`$${Number(form.annualTaxes).toLocaleString()}`} />}
               {form.schoolDistrict && <ReviewRow label="School District" value={form.schoolDistrict} />}
               {form.zoningClass && <ReviewRow label="Zoning Class" value={form.zoningClass} />}
             </ReviewSection>

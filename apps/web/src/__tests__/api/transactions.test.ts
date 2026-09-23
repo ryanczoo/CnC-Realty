@@ -72,14 +72,42 @@ describe("POST /api/transactions", () => {
       propertyIncludes: "Refrigerator, washer/dryer",
       propertyExcludes: "Wall-mounted TV brackets",
       taxId: "1234-567-890",
-      annualTaxes: 8500,
+      numberOfParcels: "3",
       schoolDistrict: "Pasadena Unified",
       zoningClass: "R-1",
     }));
     expect(res.status).toBe(201);
     const body = await res.json();
     expect(body.transaction.legalDescription).toBe("Lot 4, Block 2, Tract 12345");
-    expect(body.transaction.annualTaxes).toBe(8500);
+    expect(body.transaction.numberOfParcels).toBe(3);
+  });
+
+  it("persists numberOfParcels as an integer, and null when omitted", async () => {
+    let capturedArgs: any;
+    vi.mocked(prisma.transactionFile.create).mockImplementation(
+      (async (args: any) => {
+        capturedArgs = args;
+        return { id: "t1", ...args.data };
+      }) as any
+    );
+
+    const withParcels = await POST(makeRequest({
+      transactionSide: "PURCHASE",
+      propertyAddress: "1 Test St", city: "Test", zip: "00000",
+      propertyType: "Single Family", mlsNumber: "1234567890",
+      numberOfParcels: "3",
+    }));
+    expect(withParcels.status).toBe(201);
+    expect(capturedArgs.data.numberOfParcels).toBe(3);
+    expect(typeof capturedArgs.data.numberOfParcels).toBe("number");
+
+    const withoutParcels = await POST(makeRequest({
+      transactionSide: "PURCHASE",
+      propertyAddress: "1 Test St", city: "Test", zip: "00000",
+      propertyType: "Single Family", mlsNumber: "1234567890",
+    }));
+    expect(withoutParcels.status).toBe(201);
+    expect(capturedArgs.data.numberOfParcels).toBeNull();
   });
 
   it("creates a REFERRAL_AGENT party when provided", async () => {
