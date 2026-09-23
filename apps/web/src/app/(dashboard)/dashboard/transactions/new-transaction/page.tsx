@@ -398,7 +398,7 @@ export default function NewTransactionPage() {
               <Field label="Year Built" type="number" value={form.yearBuilt} onChange={(v) => set("yearBuilt", v)} placeholder="e.g. 2005" restrict={(v) => digitsOnly(v, 4)} />
             </div>
             <div className="border-t border-[#1B1B1B]/5 pt-5 space-y-4">
-              <SectionLabel className="text-center">Optional Property Info</SectionLabel>
+              <SectionLabel className="text-center">Optional Info</SectionLabel>
               <TextareaField
                 label="Legal Description"
                 value={form.legalDescription}
