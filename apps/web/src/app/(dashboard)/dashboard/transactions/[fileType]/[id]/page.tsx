@@ -428,7 +428,7 @@ function OverviewTab({
         )}
       </div>
 
-      <div className="rounded-xl border border-[#1B1B1B]/10 bg-white p-5 space-y-3">
+      <div className="self-start rounded-xl border border-[#1B1B1B]/10 bg-white p-5 space-y-3">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Checklist Progress</h2>
         <div className="flex items-end justify-between">
           <span className="text-2xl font-light text-[#1B1B1B]">{progressPct}%</span>
