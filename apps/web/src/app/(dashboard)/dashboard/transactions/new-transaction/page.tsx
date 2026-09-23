@@ -870,12 +870,6 @@ function PartySection({
   return (
     <div>
       <p className="mb-3 text-center text-sm font-semibold text-[#1B1B1B]/60">{label}</p>
-      <button
-        onClick={() => onUpdate([...parties, emptyParty()])}
-        className="mb-3 flex items-center gap-1.5 text-sm font-medium text-[#9E8C61] hover:text-[#7a6d4a]"
-      >
-        <Plus size={15} /> Add {singular}
-      </button>
       <div className="space-y-3">
         {parties.map((p, i) => (
           <div key={i} className="relative rounded-xl border border-[#1B1B1B]/8 p-4">
@@ -895,6 +889,12 @@ function PartySection({
           </div>
         ))}
       </div>
+      <button
+        onClick={() => onUpdate([...parties, emptyParty()])}
+        className="mt-3 flex items-center gap-1.5 text-sm font-medium text-[#9E8C61] hover:text-[#7a6d4a]"
+      >
+        <Plus size={15} /> Add {singular}
+      </button>
     </div>
   );
 }
