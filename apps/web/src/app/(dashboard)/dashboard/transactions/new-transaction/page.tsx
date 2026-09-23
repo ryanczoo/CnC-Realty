@@ -665,7 +665,7 @@ export default function NewTransactionPage() {
             {/* Auto-calculated breakdown */}
             {(salePrice > 0 || totalGci > 0) && (
               <div className="rounded-xl border border-[#1B1B1B]/8 bg-[#F2F0EF] p-5 space-y-2 text-sm">
-                <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#1B1B1B]/40">
+                <p className="mb-3 text-center text-xs font-semibold uppercase tracking-widest text-[#1B1B1B]/40">
                   Commission Breakdown
                 </p>
                 <BdRow label="Purchase Price" value={`$${salePrice.toLocaleString()}`} />
@@ -869,15 +869,13 @@ function PartySection({
   const singular = label.slice(0, -1);
   return (
     <div>
-      <div className="relative mb-3 flex items-center">
-        <p className="absolute inset-x-0 text-center text-sm font-semibold text-[#1B1B1B]/60">{label}</p>
-        <button
-          onClick={() => onUpdate([...parties, emptyParty()])}
-          className="ml-auto flex items-center gap-1 text-xs font-medium text-[#9E8C61] hover:text-[#7a6d4a]"
-        >
-          <Plus size={13} /> Add {singular}
-        </button>
-      </div>
+      <p className="mb-3 text-center text-sm font-semibold text-[#1B1B1B]/60">{label}</p>
+      <button
+        onClick={() => onUpdate([...parties, emptyParty()])}
+        className="mb-3 flex items-center gap-1.5 text-sm font-medium text-[#9E8C61] hover:text-[#7a6d4a]"
+      >
+        <Plus size={15} /> Add {singular}
+      </button>
       <div className="space-y-3">
         {parties.map((p, i) => (
           <div key={i} className="relative rounded-xl border border-[#1B1B1B]/8 p-4">
@@ -914,15 +912,13 @@ function ConditionsSection({
   }
   return (
     <div>
-      <div className="relative mb-3 flex items-center">
-        <SectionLabel className="absolute inset-x-0 text-center">Conditions / Contingencies</SectionLabel>
-        <button
-          onClick={() => onUpdate([...conditions, emptyCondition()])}
-          className="ml-auto flex items-center gap-1 text-xs font-medium text-[#9E8C61] hover:text-[#7a6d4a]"
-        >
-          <Plus size={13} /> Add Condition
-        </button>
-      </div>
+      <SectionLabel className="text-center">Conditions / Contingencies</SectionLabel>
+      <button
+        onClick={() => onUpdate([...conditions, emptyCondition()])}
+        className="mb-4 flex items-center gap-1.5 text-sm font-medium text-[#9E8C61] hover:text-[#7a6d4a]"
+      >
+        <Plus size={15} /> Add Condition
+      </button>
       <div className="space-y-3">
         {conditions.map((c, i) => (
           <div key={i} className="relative rounded-xl border border-[#1B1B1B]/8 p-4">
