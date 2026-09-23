@@ -471,7 +471,10 @@ export default function NewTransactionPage() {
           <div className="space-y-5">
             <div className="grid grid-cols-2 gap-4">
               {isLeaseSide ? (
-                <Field label="Total Lease Amount *" value={form.leasePrice} onChange={(v) => set("leasePrice", v)} placeholder="$" formatCommas />
+                <>
+                  <Field label="Total Lease Amount *" value={form.leasePrice} onChange={(v) => set("leasePrice", v)} placeholder="$" formatCommas />
+                  <Field label="Deposit" value={form.deposit} onChange={(v) => set("deposit", v)} placeholder="$" formatCommas />
+                </>
               ) : (
                 <>
                   <Field label="List Price" value={form.listPrice} onChange={(v) => set("listPrice", v)} placeholder="$" formatCommas />
@@ -479,10 +482,12 @@ export default function NewTransactionPage() {
                 </>
               )}
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Deposit" value={form.deposit} onChange={(v) => set("deposit", v)} placeholder="$" formatCommas />
-              <Field label="Escrow Number" value={form.escrowNumber} onChange={(v) => set("escrowNumber", v)} placeholder="Optional" />
-            </div>
+            {!isLeaseSide && (
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="Deposit" value={form.deposit} onChange={(v) => set("deposit", v)} placeholder="$" formatCommas />
+                <Field label="Escrow Number" value={form.escrowNumber} onChange={(v) => set("escrowNumber", v)} placeholder="Optional" />
+              </div>
+            )}
             <div className="border-t border-[#1B1B1B]/5 pt-5">
               <SectionLabel className="text-center">Offer</SectionLabel>
               <div className="grid grid-cols-2 gap-4">
