@@ -249,7 +249,6 @@ export default function AdminFileDetailPage() {
           fileId={id}
           parties={file.parties ?? []}
           onChanged={load}
-          readOnly
         />
       )}
 
