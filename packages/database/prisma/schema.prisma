@@ -532,6 +532,8 @@ model TransactionFile {
   commissionGCI        Float?
   saleCommissionPct    Float?
   listingCommissionPct Float?
+  saleCommissionAmount    Float?
+  listingCommissionAmount Float?
   otherDeductions      Float?
   commissionSplit      Float?
   commissionNotes      String?

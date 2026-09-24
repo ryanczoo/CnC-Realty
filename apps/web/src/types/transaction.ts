@@ -123,6 +123,8 @@ export interface TransactionFileDetail {
   commissionGCI: number | null;
   saleCommissionPct: number | null;
   listingCommissionPct: number | null;
+  saleCommissionAmount: number | null;
+  listingCommissionAmount: number | null;
   otherDeductions: number | null;
   commissionSplit: number | null;
   commissionNotes: string | null;

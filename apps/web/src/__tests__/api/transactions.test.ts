@@ -110,6 +110,46 @@ describe("POST /api/transactions", () => {
     expect(capturedArgs.data.numberOfParcels).toBeNull();
   });
 
+  it("persists saleCommissionAmount and listingCommissionAmount as the raw dollar amount regardless of which mode entered them", async () => {
+    let capturedArgs: any;
+    vi.mocked(prisma.transactionFile.create).mockImplementation(
+      (async (args: any) => {
+        capturedArgs = args;
+        return { id: "t1", ...args.data };
+      }) as any
+    );
+
+    const res = await POST(makeRequest({
+      transactionSide: "DUAL",
+      propertyAddress: "1 Test St", city: "Test", zip: "00000",
+      propertyType: "Single Family", mlsNumber: "1234567890",
+      saleCommissionAmount: "12345.67",
+      listingCommissionAmount: "890.12",
+    }));
+    expect(res.status).toBe(201);
+    expect(capturedArgs.data.saleCommissionAmount).toBe(12345.67);
+    expect(capturedArgs.data.listingCommissionAmount).toBe(890.12);
+  });
+
+  it("persists saleCommissionAmount and listingCommissionAmount as null when omitted", async () => {
+    let capturedArgs: any;
+    vi.mocked(prisma.transactionFile.create).mockImplementation(
+      (async (args: any) => {
+        capturedArgs = args;
+        return { id: "t1", ...args.data };
+      }) as any
+    );
+
+    const res = await POST(makeRequest({
+      transactionSide: "PURCHASE",
+      propertyAddress: "1 Test St", city: "Test", zip: "00000",
+      propertyType: "Single Family", mlsNumber: "1234567890",
+    }));
+    expect(res.status).toBe(201);
+    expect(capturedArgs.data.saleCommissionAmount).toBeNull();
+    expect(capturedArgs.data.listingCommissionAmount).toBeNull();
+  });
+
   it("persists agentRelativeSale and brokerProvidedLead as true when provided, false by default", async () => {
     let capturedArgs: any;
     vi.mocked(prisma.transactionFile.create).mockImplementation(

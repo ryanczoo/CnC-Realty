@@ -265,6 +265,11 @@ export default function NewTransactionPage() {
         commissionGCI: totalGci || null,
         saleCommissionPct: commissionMode.sale === "pct" ? parseFloat(form.saleCommission) || null : null,
         listingCommissionPct: commissionMode.listing === "pct" ? parseFloat(form.listingCommission) || null : null,
+        // The actual dollar amount for each side, regardless of which mode
+        // (% or $) was used to enter it — CommissionTab reads these directly
+        // instead of recomputing from a percentage that may not exist.
+        saleCommissionAmount: saleCommissionAmt || null,
+        listingCommissionAmount: listingCommissionAmt || null,
         otherDeductions: otherDeductionsAmt || null,
         parties,
       }),

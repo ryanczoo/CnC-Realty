@@ -5,21 +5,20 @@ import Link from "next/link";
 import { StatusBadge } from "@/components/transactions/StatusBadge";
 import { DocumentReviewCard } from "@/components/transactions/DocumentReviewCard";
 import { ActivityFeed } from "@/components/transactions/ActivityFeed";
-import type { FileDocumentRecord } from "@/types/transaction";
-import { allowedNextStatuses } from "@/lib/transaction-helpers";
+import { PartiesTable } from "@/components/transactions/PartiesTable";
+import { OverviewTab } from "@/components/transactions/OverviewTab";
+import { CommissionTab } from "@/components/transactions/CommissionTab";
+import { DocumentsTab } from "@/components/transactions/DocumentsTab";
+import { getChecklistProgress, allowedNextStatuses } from "@/lib/transaction-helpers";
+import type { FileDocumentRecord, FileChecklistItemWithDocs, ListingFileDetail, TransactionFileDetail } from "@/types/transaction";
 import { EMAIL_WARNING_TEXT } from "@/lib/file-messages";
 
-type Tab = "documents" | "activity";
-
-const ADMIN_TABS: { key: Tab; label: string }[] = [
-  { key: "documents", label: "Documents" },
-  { key: "activity", label: "Activity" },
-];
+type Tab = "overview" | "checklist" | "commission" | "documents" | "parties" | "activity";
 
 export default function AdminFileDetailPage() {
   const { fileType, id } = useParams<{ fileType: string; id: string }>();
-  const [tab, setTab] = useState<Tab>("documents");
-  const [file, setFile] = useState<any>(null);
+  const [tab, setTab] = useState<Tab>("overview");
+  const [file, setFile] = useState<ListingFileDetail | TransactionFileDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [statusLoading, setStatusLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -74,18 +73,34 @@ export default function AdminFileDetailPage() {
     );
   }
 
+  const isListing = fileType === "listing";
+  const listing = isListing ? (file as ListingFileDetail) : null;
+  const transaction = !isListing ? (file as TransactionFileDetail) : null;
+  const isReferralFile = !isListing && transaction?.transactionSide === "REFERRAL";
+
   const pendingCount = (file.checklistItems ?? []).reduce(
-    (n: number, item: any) => n + (item.documents ?? []).filter((d: FileDocumentRecord) => d.reviewStatus === "PENDING_REVIEW").length,
+    (n, item) => n + ((item.documents ?? []) as FileDocumentRecord[]).filter((d) => d.reviewStatus === "PENDING_REVIEW").length,
     0
   );
   const kind = fileType === "listing" ? "listing" : "transaction";
-  const isReferralFile = file.transactionSide === "REFERRAL";
   // Only offer moves the server will accept. The tables also hold the referral
   // steps, which make no sense on an ordinary file, so hide those unless this
   // really is a referral.
   const statuses = [
     file.status as string,
     ...allowedNextStatuses(kind, file.status, "ADMIN").filter((s) => isReferralFile || !s.startsWith("REFERRAL_")),
+  ];
+  const { satisfied, required } = getChecklistProgress(file.checklistItems as FileChecklistItemWithDocs[]);
+  const progressPct = required > 0 ? Math.round((satisfied / required) * 100) : 0;
+  // Same rule as the agent-side page: Commission has no meaning for Listing
+  // file records or Referral files, so hide the tab for those.
+  const ADMIN_TABS: { key: Tab; label: string }[] = [
+    { key: "overview", label: "Overview" },
+    { key: "checklist", label: "Checklist" },
+    ...(isListing || isReferralFile ? [] : [{ key: "commission" as const, label: "Commission" }]),
+    { key: "documents", label: "Documents" },
+    { key: "parties", label: "Parties" },
+    { key: "activity", label: "Activity" },
   ];
 
   return (
@@ -143,9 +158,21 @@ export default function AdminFileDetailPage() {
         ))}
       </div>
 
-      {tab === "documents" && (
+      {tab === "overview" && (
+        <OverviewTab
+          file={file}
+          isListing={isListing}
+          listing={listing}
+          transaction={transaction}
+          progressPct={progressPct}
+          satisfied={satisfied}
+          required={required}
+        />
+      )}
+
+      {tab === "checklist" && (
         <div className="space-y-6">
-          {(file.checklistItems ?? []).map((item: any) => (
+          {(file.checklistItems ?? []).map((item) => (
             <div key={item.id}>
               <div className="mb-3 flex items-center gap-2">
                 <h3 className="text-sm font-medium text-[#1B1B1B]">{item.name}</h3>
@@ -155,7 +182,7 @@ export default function AdminFileDetailPage() {
                 <p className="text-sm text-[#1B1B1B]/30 italic">No documents uploaded</p>
               ) : (
                 <div className="space-y-3">
-                  {item.documents.map((doc: FileDocumentRecord) => (
+                  {(item.documents as FileDocumentRecord[]).map((doc) => (
                     <DocumentReviewCard key={doc.id} document={doc} onReviewed={load} />
                   ))}
                 </div>
@@ -166,6 +193,27 @@ export default function AdminFileDetailPage() {
             <p className="text-sm text-[#1B1B1B]/40">No checklist items configured for this file.</p>
           )}
         </div>
+      )}
+
+      {tab === "commission" && transaction && (
+        <CommissionTab transaction={transaction} />
+      )}
+
+      {tab === "documents" && (
+        <DocumentsTab
+          documents={file.documents as FileDocumentRecord[]}
+          checklistItems={file.checklistItems as FileChecklistItemWithDocs[]}
+        />
+      )}
+
+      {tab === "parties" && (
+        <PartiesTable
+          fileType={fileType as "listing" | "transaction"}
+          fileId={id}
+          parties={file.parties ?? []}
+          onChanged={load}
+          readOnly
+        />
       )}
 
       {tab === "activity" && (
