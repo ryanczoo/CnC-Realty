@@ -47,7 +47,7 @@ export function SmartListSidebar({ customLists: initialLists }: Props) {
   function linkClass(isSelected: boolean) {
     return `block w-full rounded-lg px-3 py-1.5 text-left font-sans text-sm transition-colors ${
       isSelected
-        ? "bg-[#9E8C61]/10 font-semibold text-[#9E8C61]"
+        ? "bg-[#9E8C61]/10 font-medium text-[#9E8C61]"
         : "font-light text-[#1B1B1B]/60 hover:bg-[#F2F0EF] hover:text-[#1B1B1B]"
     }`;
   }
