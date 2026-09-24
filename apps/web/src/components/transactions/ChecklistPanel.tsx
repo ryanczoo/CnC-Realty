@@ -1,9 +1,9 @@
 "use client";
-import { useRef, useState } from "react";
-import { CheckCircle, XCircle, Clock, Upload, AlertCircle } from "lucide-react";
+import { CheckCircle, XCircle, Clock, AlertCircle } from "lucide-react";
 import type { FileChecklistItemWithDocs, DocumentReviewStatus } from "@/types/transaction";
-import { Spinner } from "@/components/ui/Spinner";
 import { Tooltip } from "@/components/ui/Tooltip";
+import { UploadFileButton } from "./UploadFileButton";
+import { useFileUpload } from "@/hooks/useFileUpload";
 import { latestDocument } from "@/lib/transaction-helpers";
 
 interface Props {
@@ -22,40 +22,7 @@ const STATUS_ICONS: Record<DocumentReviewStatus, React.ReactNode> = {
 };
 
 export function ChecklistPanel({ fileType, fileId, items, onUploaded, readOnly = false }: Props) {
-  const [uploadingItemId, setUploadingItemId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  async function handleUpload(itemId: string | null, file: File) {
-    setUploadingItemId(itemId ?? "additional");
-    setError(null);
-
-    try {
-      const params = new URLSearchParams({
-        fileType: fileType === "LISTING" ? "listing" : "transaction",
-        fileId,
-        filename: file.name,
-        contentType: file.type,
-        size: String(file.size),
-      });
-      const { uploadUrl, key, documentId } = await fetch(`/api/upload-url?${params}`).then((r) => r.json());
-
-      const uploadRes = await fetch(uploadUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
-      if (!uploadRes.ok) throw new Error("Upload failed");
-
-      const res = await fetch("/api/documents", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileType, fileId, checklistItemId: itemId, name: file.name, r2Key: key, r2Url: key, documentId }),
-      });
-      if (!res.ok) throw new Error("Upload failed");
-
-      onUploaded();
-    } catch {
-      setError("Couldn't upload that file. Please try again.");
-    } finally {
-      setUploadingItemId(null);
-    }
-  }
+  const { uploadingId, error, upload } = useFileUpload(fileType, fileId, onUploaded);
 
   return (
     <div className="space-y-2">
@@ -84,26 +51,25 @@ export function ChecklistPanel({ fileType, fileId, items, onUploaded, readOnly =
                 </>
               )}
             </div>
-            <label className={`${readOnly ? "pointer-events-none opacity-40 " : ""}shrink-0 cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition-colors ${uploadingItemId === item.id ? "bg-zinc-100 text-zinc-400" : "bg-[#1B1B1B] text-white hover:bg-[#1B1B1B]/80"}`}>
-              {uploadingItemId === item.id ? <><Spinner className="mr-1 inline h-3 w-3" />Uploading…</> : <><Upload className="mr-1 inline h-3 w-3" />Upload</>}
-              <input
-                type="file"
-                className="sr-only"
-                accept=".pdf,.jpg,.jpeg,.png,.docx"
-                disabled={uploadingItemId !== null || readOnly}
-                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(item.id, f); }}
-              />
-            </label>
+            <UploadFileButton
+              label="Upload"
+              uploading={uploadingId === item.id}
+              disabled={uploadingId !== null || readOnly}
+              onSelect={(f) => upload(item.id, f)}
+            />
           </Tooltip>
         );
       })}
 
       <div className="mt-4 flex items-center justify-between border-t border-[#1B1B1B]/10 pt-4">
         <p className="text-xs font-medium uppercase tracking-wider text-[#1B1B1B]/40">Additional Documents</p>
-        <label className={`cursor-pointer rounded-full border border-[#1B1B1B]/20 px-3 py-1.5 text-xs font-medium text-[#1B1B1B]/60 hover:border-[#1B1B1B]/40 hover:text-[#1B1B1B] ${uploadingItemId !== null ? "opacity-50" : ""} ${readOnly ? "pointer-events-none opacity-40" : ""}`}>
-          {uploadingItemId === "additional" ? <><Spinner className="mr-1 inline h-3 w-3" />Uploading…</> : <><Upload className="mr-1 inline h-3 w-3" />Add Document</>}
-          <input type="file" className="sr-only" accept=".pdf,.jpg,.jpeg,.png,.docx" disabled={uploadingItemId !== null || readOnly} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(null, f); }} />
-        </label>
+        <UploadFileButton
+          label="Add Document"
+          variant="outline"
+          uploading={uploadingId === "additional"}
+          disabled={uploadingId !== null || readOnly}
+          onSelect={(f) => upload(null, f)}
+        />
       </div>
     </div>
   );
