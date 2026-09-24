@@ -1,5 +1,10 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { motion } from "motion/react";
+import { PULSE_ANIMATE, PULSE_TRANSITION } from "@/lib/motion";
+import { ArrowIcon } from "@/components/ui/ArrowIcon";
 
 export interface BlogPostSummary {
   id: string;
@@ -46,9 +51,16 @@ export function BlogCard({ post }: { post: BlogPostSummary }) {
             {post.excerpt}
           </p>
         )}
-        <span className="mt-1 inline-flex items-center gap-1 font-sans text-sm text-[#1B1B1B]/50 group-hover:text-[#9E8C61] transition-colors">
-          Read More →
-        </span>
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          animate={PULSE_ANIMATE}
+          transition={PULSE_TRANSITION}
+          className="mt-1 self-start"
+        >
+          <span className="inline-flex items-center gap-2 rounded-full bg-[#1B1B1B] px-6 py-3 font-sans text-sm font-medium text-white">
+            Read More <ArrowIcon />
+          </span>
+        </motion.div>
       </div>
     </Link>
   );

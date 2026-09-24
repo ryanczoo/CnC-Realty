@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { PropertyCard } from "@/components/properties/PropertyCard";
 import { useSavedProperties } from "@/hooks/useSavedProperties";
+import { ArrowIcon } from "@/components/ui/ArrowIcon";
 import type { PropertyListing } from "@/types/property";
 
 type TourRequest = {
@@ -22,8 +23,8 @@ function EmptyState({ message }: { message: string }) {
   return (
     <div className="rounded-xl bg-white p-12 text-center shadow-sm">
       <p className="text-[#1B1B1B]/40">{message}</p>
-      <Link href="/properties" className="mt-3 inline-block text-sm text-[#9E8C61] hover:underline">
-        Browse listings →
+      <Link href="/properties" className="mt-3 inline-flex items-center gap-1 text-sm text-[#9E8C61] hover:underline">
+        Browse listings <ArrowIcon />
       </Link>
     </div>
   );
