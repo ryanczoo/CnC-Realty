@@ -191,7 +191,7 @@ export default function AdminFileDetailPage() {
         <div className="space-y-6">
           {uploadError && <p className="text-xs text-red-600">{uploadError}</p>}
           {(file.checklistItems ?? []).map((item) => (
-            <div key={item.id}>
+            <div key={item.id} className="rounded-xl border border-[#1B1B1B]/10 bg-white p-4">
               <div className="mb-3 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <h3 className="text-sm font-medium text-[#1B1B1B]">{item.name}</h3>
