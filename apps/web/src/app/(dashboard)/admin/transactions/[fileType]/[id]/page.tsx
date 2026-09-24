@@ -109,7 +109,7 @@ export default function AdminFileDetailPage() {
         <Link href="/admin/transactions" className="mb-2 inline-block text-sm text-[#1B1B1B]/40 hover:text-[#1B1B1B]">← All Files</Link>
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-xl font-light text-[#1B1B1B]">
+            <h1 className="text-xl font-bold text-[#1B1B1B]">
               {file.status === "PENDING_TRANSFER" ? "Locked — Pending Transfer" : `${file.propertyAddress}, ${file.city}, ${file.state} ${file.zip}`}
             </h1>
             <div className="mt-1 flex items-center gap-3">
