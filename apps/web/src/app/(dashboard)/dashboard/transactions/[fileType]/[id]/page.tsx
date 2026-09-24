@@ -185,7 +185,7 @@ export default function FileDetailPage() {
             {!isLocked && file.propertyAddress ? (
               <>
                 <h1 className="text-xl font-bold text-[#1B1B1B]">{file.propertyAddress}</h1>
-                <p className="text-sm font-medium text-[#1B1B1B]/60">{file.city ?? ""}, {file.state} {file.zip ?? ""}</p>
+                <p className="text-sm font-bold text-[#1B1B1B]/60">{file.city ?? ""}, {file.state} {file.zip ?? ""}</p>
               </>
             ) : (
               <h1 className="text-xl font-bold text-[#1B1B1B]">{title}</h1>
