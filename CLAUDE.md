@@ -7249,3 +7249,93 @@ yet" request:
    change needed); CnC ICA attorney review confirmed as a closed, non-backlog decision.
 5. Older backlog, unchanged: the CRES E&O follow-up from a prior session (Ryan already has quotes in
    hand as of this session, per his own note — may already be resolved, worth asking).
+
+---
+
+## Session Notes — 2026-09-24
+
+### What Was Completed This Session
+
+One commit on `main` (`bca817a`), plus DB-only cleanup (no code) for two closed-out walkthrough
+items. Nothing pushed to `origin` yet — only asked to commit, not push.
+
+**Smart List page title — found and fixed the real bug (`bca817a`).** Carried over from the prior
+session: Ryan said the earlier `font-semibold` sidebar-nav fix "didn't do what I wanted," reverted
+it, and gave corrected Puppeteer login credentials (`info@cncrealtygroup.com`, same password) to
+look again properly. Logged in live and confirmed the main dashboard sidebar's "Leads" nav link has
+**zero** active-state styling (identical `font-light` regardless of route) — so I initially assumed
+Ryan meant something structurally different from what a first guess would produce, and asked a
+clarifying question comparing "Kanban" (in `SmartListSidebar`) vs. the main nav. **Ryan corrected
+this directly with two cropped screenshots**: he meant neither of those — he meant the *page content
+heading* (e.g. "New This Week"), which should be bold like the "Leads" *page heading* is on the
+Kanban view. Traced it live: `Leads` h1 on `/dashboard/leads` is `font-medium` (weight 500);
+`SmartListResults.tsx`'s `<h1>{listName}</h1>` (used by all 5 Smart Lists) was `font-light` (weight
+300). One-line fix, confirmed live for two different lists (weight 500 both times), 1,324/1,324
+tests pass, `tsc` clean.
+**Lesson reinforced:** two prior wrong guesses on this exact task both came from pattern-matching
+onto a plausible-sounding but wrong target (`SmartListSidebar`'s nav links) instead of re-verifying
+against literally what Ryan pointed at. When corrected a second time, he was blunt that it was "a
+very simple ask" — the right move once trust is burned on a task is to ask for the literal
+screenshot comparison rather than keep guessing.
+
+**Dual listing walkthrough — closed.** Ryan confirmed all 6 items from the agreed test plan passed
+live (Parties both-required, mixed %/$ commission modes, the "CnC Transaction Fee (Dual ×2)" label +
+doubled amount, and the 13-item "Dual Agency Forms" checklist). Deleted the test file (`12 sdfsd`,
+`cmuf89utg0001tbmj4oeqvml9`) — confirmed no `Deal` linkage first, cascade-deleted 13 checklist items
+/ 2 parties / 1 activity, verified zero orphaned rows across all four child tables afterward.
+
+**Lease Tenant / Lease Landlord / Lease Dual checklist spot-check — done, all correct, no code
+changes needed.** Ryan asked me to verify these without him having to click through each one
+himself. Rather than just read the seed data, created one real test transaction of each type
+through the live wizard (Puppeteer, same `info@cncrealtygroup.com` test-agent session) and checked
+the actual rendered Checklist tab:
+
+| Type | Checklist (live) | Result |
+|---|---|---|
+| Lease Tenant | RLMM\*, AD\*, LPD, MII\* (4 items) | ✅ matches "Lease Tenant Forms" |
+| Lease Landlord | RLMM\*, AD\*, LPD (3 items, no MII) | ✅ matches "Lease Landlord Forms" |
+| Lease Dual | RLMM\*, AD\*, LPD, MII\* (4 items) | ✅ matches "Lease Dual Agency Forms" |
+
+Also confirmed live: Lease Dual's Parties step correctly requires **both** Tenant Name and Landlord
+Name (mirrors the sale-side Dual pattern). One thing worth flagging that I checked rather than
+assumed: **the lease fee does NOT double for Lease Dual** — it renders the same flat
+`max(10% of commission, $200)` "CnC Lease Fee" as the single-side lease types, no "×2" label. Verified
+this is intentional by reading `commission.ts` directly: `LEASE_SIDES` (including `LEASE_DUAL`) hits
+an early-return branch that bypasses the `isDual` ×2 multiplier entirely, and there's an explicit
+existing test (`commission.test.ts:157`, "applies the lease formula the same way for LEASE_DUAL")
+covering exactly this case — matches ICA §7.16 (leases are a separate flat-fee model with no
+dual-doubling clause). Not a bug.
+
+Deleted all 3 test files after confirming none had `Deal` linkage (`999 Test Lease Ln`,
+`888 Test Landlord Ave`, `777 Test Lease Dual Blvd`), verified zero orphaned children across
+checklist items / documents / tasks / parties / activities for all three.
+
+### Key Decisions Made
+
+1. **Smart List page-title weight fix is `SmartListResults.tsx`'s `<h1>`, not the sidebar nav** —
+   settled after two wrong guesses; the fix is committed and live-verified.
+2. **Dual walkthrough is closed** — Ryan confirmed all 6 checks live, test file cleaned up.
+3. **Lease Tenant/Landlord/Dual checklist templates are correct as-is** — verified via real wizard
+   creation, not just seed-file reading. No code changes needed.
+4. **Lease Dual's non-doubling fee behavior is confirmed intentional**, not a bug — per ICA §7.16 and
+   an existing passing test.
+
+### Next Session — Start Here
+
+1. Run `pnpm --filter web dev` from `C:\Users\hey_r\Desktop\CnC-Realty`
+2. **New Listing wizard walkthrough — this is the explicit next task.** This is the separate
+   `ListingFile` wizard (structurally independent from the `TransactionFile` wizard just finished),
+   never yet tested this whole session-arc. Per the original backlog plan: confirm required fields,
+   checklist template auto-apply (Residential Sale — Listing Forms / Residential Lease — Landlord
+   Listing Forms / Commercial Sale — Listing Forms / Commercial Lease — Listing Forms, per
+   `propertyCategory`/listing type), and the "convert Listing → Transaction" flow if time allows.
+   Same discipline as tonight: use superpowers, check for shared components first, create real test
+   listing(s) via Puppeteer with the `info@cncrealtygroup.com` test-agent login, verify live, delete
+   test data afterward (same Neon DB shared between dev and prod).
+3. Tonight's commit (`bca817a`) and the whole session's work is **not yet pushed to `origin/main`** —
+   push whenever convenient, nothing blocking it.
+4. Older backlog, unchanged from the 2026-09-16 notes above: broader Purchase/Listing (transaction
+   side, already covered by Dual/Referral this arc) transaction-type click-throughs are effectively
+   done now via this arc — remaining open items are the CRES E&O follow-up and the eventual Vercel
+   deploy (still gated on Postmark/Vercel paid-plan upgrades + a fresh full IDX resync, per the
+   2026-09-14/15/16 notes above).
