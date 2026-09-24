@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Loader2 } from "lucide-react";
 import { StatsCard } from "@/components/dashboard/StatsCard";
+import { ArrowIcon } from "@/components/ui/ArrowIcon";
 
 type RangeValue = "week" | "month" | "30d" | "90d" | "year" | "all";
 
@@ -126,9 +127,9 @@ export function DashboardTabs({ overviewStats, role }: DashboardTabsProps) {
           <h1 className="font-sans text-2xl font-light text-[#1B1B1B]">My Stats</h1>
           <button
             onClick={() => setTab("overview")}
-            className="rounded-full border border-[#1B1B1B]/20 px-4 py-1.5 text-sm font-medium text-[#1B1B1B]/60 transition-colors hover:border-[#1B1B1B]"
+            className="inline-flex items-center gap-1.5 rounded-full border border-[#1B1B1B]/20 px-4 py-1.5 text-sm font-medium text-[#1B1B1B]/60 transition-colors hover:border-[#1B1B1B]"
           >
-            ← Overview
+            <ArrowIcon direction="left" /> Overview
           </button>
         </div>
         <div className="mb-6 flex flex-wrap gap-2">

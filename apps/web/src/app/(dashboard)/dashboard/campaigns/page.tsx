@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
+import { ArrowIcon } from "@/components/ui/ArrowIcon";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -93,9 +94,9 @@ export default async function CampaignsPage() {
           <p className="font-sans text-sm text-[#1B1B1B]/30">Create your first email campaign</p>
           <Link
             href="/dashboard/campaigns/new"
-            className="mt-5 rounded-full bg-[#1B1B1B] px-5 py-2.5 font-sans text-sm text-white hover:bg-[#1B1B1B]/80 transition-colors"
+            className="mt-5 inline-flex items-center gap-1 rounded-full bg-[#1B1B1B] px-5 py-2.5 font-sans text-sm text-white hover:bg-[#1B1B1B]/80 transition-colors"
           >
-            New Campaign →
+            New Campaign <ArrowIcon />
           </Link>
         </div>
       ) : (

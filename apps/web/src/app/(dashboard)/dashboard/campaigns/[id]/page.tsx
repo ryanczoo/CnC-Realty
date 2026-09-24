@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { ArrowIcon } from "@/components/ui/ArrowIcon";
 import { CAMPAIGN_STATUS_COLORS, CONTACT_STATUS_COLORS } from "@/lib/campaign-ui";
 import { toSentenceCase } from "@/lib/utils";
 import { sanitizeHtml } from "@/lib/sanitize-html";
@@ -130,8 +131,8 @@ export default function CampaignDetailPage() {
     return (
       <div className="flex flex-col items-center py-20 text-center">
         <p className="font-sans text-[#1B1B1B]/40">Campaign not found.</p>
-        <Link href="/dashboard/campaigns" className="mt-4 font-sans text-sm text-[#9E8C61] hover:underline">
-          ← Back to Campaigns
+        <Link href="/dashboard/campaigns" className="mt-4 inline-flex items-center gap-1 font-sans text-sm text-[#9E8C61] hover:underline">
+          <ArrowIcon direction="left" /> Back to Campaigns
         </Link>
       </div>
     );
@@ -159,9 +160,9 @@ export default function CampaignDetailPage() {
         <div className="flex flex-col gap-2">
           <Link
             href="/dashboard/campaigns"
-            className="font-sans text-xs text-[#1B1B1B]/40 hover:text-[#1B1B1B]"
+            className="inline-flex items-center gap-1 font-sans text-xs text-[#1B1B1B]/40 hover:text-[#1B1B1B]"
           >
-            ← Campaigns
+            <ArrowIcon direction="left" /> Campaigns
           </Link>
           <div className="flex items-center gap-3">
             <h1 className="font-sans text-2xl font-light text-[#1B1B1B]">{campaign.name}</h1>

@@ -5,6 +5,7 @@ import { TiptapEditor } from "@/components/campaigns/TiptapEditor";
 import { RecipientPicker } from "@/components/campaigns/RecipientPicker";
 import { DripSequenceEditor, type DripStepData } from "@/components/dashboard/DripSequenceEditor";
 import { DateField } from "@/components/ui/DateField";
+import { ArrowIcon } from "@/components/ui/ArrowIcon";
 
 type CampaignType = "EMAIL" | "DRIP";
 
@@ -258,18 +259,18 @@ export default function NewCampaignPage() {
             type="button"
             onClick={() => setStep((s) => s - 1)}
             disabled={step === 1}
-            className="rounded-full border border-[#1B1B1B]/20 px-5 py-2.5 font-sans text-sm text-[#1B1B1B]/60 transition-colors hover:border-[#1B1B1B]/40 hover:text-[#1B1B1B] disabled:pointer-events-none disabled:opacity-0"
+            className="inline-flex items-center gap-1.5 rounded-full border border-[#1B1B1B]/20 px-5 py-2.5 font-sans text-sm text-[#1B1B1B]/60 transition-colors hover:border-[#1B1B1B]/40 hover:text-[#1B1B1B] disabled:pointer-events-none disabled:opacity-0"
           >
-            ← Back
+            <ArrowIcon direction="left" /> Back
           </button>
           {step < 4 ? (
             <button
               type="button"
               onClick={() => setStep((s) => s + 1)}
               disabled={!canNext()}
-              className="rounded-full bg-[#1B1B1B] px-5 py-2.5 font-sans text-sm text-white transition-colors hover:bg-[#1B1B1B]/80 disabled:pointer-events-none disabled:opacity-40"
+              className="inline-flex items-center gap-1.5 rounded-full bg-[#1B1B1B] px-5 py-2.5 font-sans text-sm text-white transition-colors hover:bg-[#1B1B1B]/80 disabled:pointer-events-none disabled:opacity-40"
             >
-              Next →
+              Next <ArrowIcon />
             </button>
           ) : (
             <button

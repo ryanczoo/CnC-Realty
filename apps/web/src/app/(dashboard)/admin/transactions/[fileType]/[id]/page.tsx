@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { ArrowIcon } from "@/components/ui/ArrowIcon";
 import { StatusBadge } from "@/components/transactions/StatusBadge";
 import { DocumentReviewCard } from "@/components/transactions/DocumentReviewCard";
 import { ActivityFeed } from "@/components/transactions/ActivityFeed";
@@ -116,7 +117,9 @@ export default function AdminFileDetailPage() {
   return (
     <div>
       <div className="mb-6">
-        <Link href="/admin/transactions" className="mb-2 inline-block text-sm text-[#1B1B1B]/40 hover:text-[#1B1B1B]">← All Files</Link>
+        <Link href="/admin/transactions" className="mb-2 inline-flex items-center gap-1 text-sm text-[#1B1B1B]/40 hover:text-[#1B1B1B]">
+          <ArrowIcon direction="left" /> All Files
+        </Link>
         <div className="flex items-start justify-between gap-4">
           <div>
             {file.status !== "PENDING_TRANSFER" && file.propertyAddress ? (

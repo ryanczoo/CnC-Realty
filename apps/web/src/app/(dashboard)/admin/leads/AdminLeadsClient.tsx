@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { LEAD_STATUS_COLORS } from "@/lib/campaign-ui";
 import { formatDate } from "@/lib/utils";
 import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
+import { ArrowIcon } from "@/components/ui/ArrowIcon";
 import { NewLeadModal } from "@/components/leads/NewLeadModal";
 
 type LeadRow = {
@@ -372,8 +373,8 @@ export function AdminLeadsClient({
                     {lead.firstName} {lead.lastName}
                   </p>
                   <p className="text-xs text-[#1B1B1B]/50">{lead.email}</p>
-                  <p className="mt-1 text-xs font-medium text-[#9E8C61]">
-                    {isMerging ? "Merging..." : "Keep this record →"}
+                  <p className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-[#9E8C61]">
+                    {isMerging ? "Merging..." : <>Keep this record <ArrowIcon /></>}
                   </p>
                 </button>
               ))}

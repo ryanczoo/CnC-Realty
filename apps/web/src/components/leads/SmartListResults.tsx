@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
+import { ArrowIcon } from "@/components/ui/ArrowIcon";
 import { LEAD_STATUS_COLORS } from "@/lib/campaign-ui";
 import { resolveListFilters, PREBUILT_LISTS } from "@/lib/smart-list-filters";
 import type { FilterCondition } from "@/lib/smart-list-filters";
@@ -238,9 +239,9 @@ export function SmartListResults({ activeList, customLists }: Props) {
               <button
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="rounded-lg px-4 py-2 font-sans text-sm text-[#1B1B1B]/60 hover:text-[#1B1B1B] disabled:opacity-30"
+                className="inline-flex items-center gap-1 rounded-lg px-4 py-2 font-sans text-sm text-[#1B1B1B]/60 hover:text-[#1B1B1B] disabled:opacity-30"
               >
-                ← Previous
+                <ArrowIcon direction="left" /> Previous
               </button>
               <span className="font-sans text-sm text-[#1B1B1B]/40">
                 Page {page} of {totalPages}
@@ -248,9 +249,9 @@ export function SmartListResults({ activeList, customLists }: Props) {
               <button
                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                className="rounded-lg px-4 py-2 font-sans text-sm text-[#1B1B1B]/60 hover:text-[#1B1B1B] disabled:opacity-30"
+                className="inline-flex items-center gap-1 rounded-lg px-4 py-2 font-sans text-sm text-[#1B1B1B]/60 hover:text-[#1B1B1B] disabled:opacity-30"
               >
-                Next →
+                Next <ArrowIcon />
               </button>
             </div>
           )}

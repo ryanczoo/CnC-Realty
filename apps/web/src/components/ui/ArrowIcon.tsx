@@ -1,0 +1,30 @@
+// Modern directional arrow — same shape already used in the rent page's
+// Popular Cities carousel and the transaction wizards' Back/Next buttons.
+// Shared here (rather than duplicated per-consumer, the convention used for
+// the handful of marketing carousels) because it now has many dashboard
+// consumers replacing plain "←"/"→" text glyphs, where one shared source
+// is the more maintainable choice. Base shape points diagonally; rotating
+// 90deg points it left, -90deg points it right.
+export function ArrowIcon({
+  direction = "right",
+  size = 14,
+  className = "",
+}: {
+  direction?: "left" | "right";
+  size?: number;
+  className?: string;
+}) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 30 30"
+      fill="currentColor"
+      className={className}
+      style={{ rotate: direction === "left" ? "90deg" : "-90deg" }}
+    >
+      <path d="M16 20.488c0-.13.053-.253.146-.344l13-13.002c.42-.44 1.174.24.706.707l-13 13c-.302.31-.853.096-.853-.362z" />
+      <path d="M.852 7.142l14 14.002c.447.447-.273 1.16-.707.707l-14-14c-.444-.445.26-1.155.707-.708z" />
+    </svg>
+  );
+}

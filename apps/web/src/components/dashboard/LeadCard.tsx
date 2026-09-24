@@ -1,6 +1,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
+import { ArrowIcon } from "@/components/ui/ArrowIcon";
 
 interface Lead {
   id: string;
@@ -29,9 +30,9 @@ export function LeadCard({ lead }: { lead: Lead }) {
       <Link
         href={`/dashboard/leads/${lead.id}`}
         onClick={(e) => e.stopPropagation()}
-        className="mt-3 inline-block font-sans text-xs text-[#9E8C61] hover:underline"
+        className="mt-3 inline-flex items-center gap-1 font-sans text-xs text-[#9E8C61] hover:underline"
       >
-        View →
+        View <ArrowIcon />
       </Link>
     </div>
   );

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { ArrowIcon } from "@/components/ui/ArrowIcon";
 import { LEAD_STATUS_COLORS } from "@/lib/campaign-ui";
 import { formatDate } from "@/lib/utils";
 
@@ -194,7 +195,7 @@ export function AdminLeadsMergeClient({ leads }: Props) {
                 >
                   <p className="font-medium text-[#1B1B1B]">{lead.firstName} {lead.lastName}</p>
                   <p className="text-xs text-[#1B1B1B]/50">{lead.email}</p>
-                  <p className="mt-1 text-xs font-medium text-[#9E8C61]">{isMerging ? "Merging..." : "Keep this record →"}</p>
+                  <p className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-[#9E8C61]">{isMerging ? "Merging..." : <>Keep this record <ArrowIcon /></>}</p>
                 </button>
               ))}
             </div>

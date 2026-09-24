@@ -5,6 +5,7 @@ import { STAGE_LABELS, PIPELINE_STAGES, isTerminalStage } from "@/lib/deal-pipel
 import type { DealRow } from "@/lib/deal-pipeline";
 import type { DealStage } from "@cnc/database";
 import { DateField } from "@/components/ui/DateField";
+import { ArrowIcon } from "@/components/ui/ArrowIcon";
 
 type Props = {
   open: boolean;
@@ -161,9 +162,9 @@ export function DealDrawer({ open, deal, onClose, onSaved, onDeleted, onConverte
             {hasLinkedFile && (
               <a
                 href={`/dashboard/transactions/transaction/${deal.transactionFileId}`}
-                className="block text-center font-sans text-sm text-[#9E8C61] underline"
+                className="flex items-center justify-center gap-1 font-sans text-sm text-[#9E8C61] underline"
               >
-                View Transaction File →
+                View Transaction File <ArrowIcon />
               </a>
             )}
 

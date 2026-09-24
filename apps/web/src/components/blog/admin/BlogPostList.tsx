@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { ArrowIcon } from "@/components/ui/ArrowIcon";
 
 interface PostRow {
   id: string;
@@ -49,8 +50,8 @@ export function BlogPostList({ posts: initial }: { posts: PostRow[] }) {
             <tr>
               <td colSpan={6} className="px-4 py-8 text-center text-[#1B1B1B]/40">
                 No posts yet.{" "}
-                <Link href="/admin/blog/new" className="text-[#9E8C61] hover:underline">
-                  Create your first post →
+                <Link href="/admin/blog/new" className="inline-flex items-center gap-1 text-[#9E8C61] hover:underline">
+                  Create your first post <ArrowIcon />
                 </Link>
               </td>
             </tr>

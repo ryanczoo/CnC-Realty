@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { ArrowIcon } from "@/components/ui/ArrowIcon";
 
 interface Deadline {
   transactionId: string;
@@ -45,7 +46,7 @@ export function DeadlineAlerts() {
             <strong>{d.address}</strong> is{" "}
             {d.daysOut === 0 ? "today" : "tomorrow"}
           </span>
-          <span className="ml-4 shrink-0 text-xs text-red-500">View →</span>
+          <span className="ml-4 inline-flex shrink-0 items-center gap-1 text-xs text-red-500">View <ArrowIcon /></span>
         </Link>
       ))}
       {upcoming.map((d) => (
@@ -58,7 +59,7 @@ export function DeadlineAlerts() {
             <strong>{d.label}</strong> deadline for{" "}
             <strong>{d.address}</strong> in {d.daysOut} days
           </span>
-          <span className="ml-4 shrink-0 text-xs text-amber-500">View →</span>
+          <span className="ml-4 inline-flex shrink-0 items-center gap-1 text-xs text-amber-500">View <ArrowIcon /></span>
         </Link>
       ))}
     </div>

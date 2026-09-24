@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import Link from "next/link";
+import { ArrowIcon } from "@/components/ui/ArrowIcon";
 import { LeadDetailSidebarWrapper } from "@/components/leads/LeadDetailSidebarWrapper";
 import { LeadProfileTabs } from "@/components/leads/LeadProfileTabs";
 import { DealsSection } from "@/components/leads/DealsSection";
@@ -86,9 +87,9 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
     <div>
       <Link
         href="/dashboard/leads"
-        className="mb-6 inline-block font-sans text-sm text-[#1B1B1B]/40 hover:text-[#1B1B1B]"
+        className="mb-6 inline-flex items-center gap-1 font-sans text-sm text-[#1B1B1B]/40 hover:text-[#1B1B1B]"
       >
-        ← Back to Leads
+        <ArrowIcon direction="left" /> Back to Leads
       </Link>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
