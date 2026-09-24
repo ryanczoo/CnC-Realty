@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "motion/react";
 import { PULSE_ANIMATE, PULSE_TRANSITION } from "@/lib/motion";
-import { ArrowIcon } from "@/components/ui/ArrowIcon";
 
 export interface BlogPostSummary {
   id: string;
@@ -57,8 +56,8 @@ export function BlogCard({ post }: { post: BlogPostSummary }) {
           transition={PULSE_TRANSITION}
           className="mt-1 self-start"
         >
-          <span className="inline-flex items-center gap-2 rounded-full bg-[#1B1B1B] px-6 py-3 font-sans text-sm font-medium text-white">
-            Read More <ArrowIcon />
+          <span className="inline-flex items-center rounded-full bg-[#1B1B1B] px-4 py-2 font-sans text-xs font-medium text-white">
+            Read More
           </span>
         </motion.div>
       </div>

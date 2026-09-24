@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "motion/react";
 import { SPRING_HOVER, PULSE_ANIMATE, PULSE_TRANSITION } from "@/lib/motion";
-import { ArrowIcon } from "@/components/ui/ArrowIcon";
 import type { BlogPostSummary } from "./BlogCard";
 
 function formatDate(d: string | Date | null): string {
@@ -53,8 +52,8 @@ export function BlogHero({ post }: { post: BlogPostSummary }) {
           transition={PULSE_TRANSITION}
           className="self-start"
         >
-          <span className="inline-flex items-center gap-2 rounded-full bg-[#1B1B1B] px-6 py-3 font-sans text-sm font-medium text-white">
-            Read More <ArrowIcon />
+          <span className="inline-flex items-center rounded-full bg-[#1B1B1B] px-6 py-3 font-sans text-sm font-medium text-white">
+            Read More
           </span>
         </motion.div>
       </div>
