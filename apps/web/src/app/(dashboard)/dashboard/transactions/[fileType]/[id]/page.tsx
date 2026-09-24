@@ -182,7 +182,14 @@ export default function FileDetailPage() {
       <div className="mb-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-xl font-bold text-[#1B1B1B]">{title}</h1>
+            {!isLocked && file.propertyAddress ? (
+              <>
+                <h1 className="text-xl font-bold text-[#1B1B1B]">{file.propertyAddress}</h1>
+                <p className="text-sm font-medium text-[#1B1B1B]/60">{file.city ?? ""}, {file.state} {file.zip ?? ""}</p>
+              </>
+            ) : (
+              <h1 className="text-xl font-bold text-[#1B1B1B]">{title}</h1>
+            )}
             <div className="mt-1 flex items-center gap-3">
               <StatusBadge status={file.status} />
               {file.awaitingReview && (
