@@ -1,7 +1,6 @@
 "use client";
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { motion } from "motion/react";
 import { Plus } from "lucide-react";
 import { TrashIcon } from "@/components/ui/TrashIcon";
@@ -300,12 +299,6 @@ export default function NewTransactionPage() {
     <div className="w-full">
       <div className="mb-16">
         <h1 className="text-4xl font-semibold text-[#1B1B1B]">New Transaction</h1>
-        <Link
-          href="/dashboard/transactions"
-          className="mt-1 inline-block text-sm text-[#1B1B1B]/40 hover:text-[#1B1B1B]"
-        >
-          ← Back
-        </Link>
       </div>
 
       {/* Step bar */}
