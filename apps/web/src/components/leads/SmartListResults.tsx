@@ -128,7 +128,7 @@ export function SmartListResults({ activeList, customLists }: Props) {
     <div>
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="font-sans text-2xl font-light text-[#1B1B1B]">{listName}</h1>
+        <h1 className="font-sans text-2xl font-medium text-[#1B1B1B]">{listName}</h1>
         {!loading && (
           <p className="font-sans text-sm text-[#1B1B1B]/40">
             {total} lead{total !== 1 ? "s" : ""}
