@@ -2,6 +2,7 @@
 import { Fragment, useState } from "react";
 import type { FileDocumentRecord, FileChecklistItemWithDocs } from "@/types/transaction";
 import { TrashIcon } from "@/components/ui/TrashIcon";
+import { DownloadIcon } from "@/components/ui/DownloadIcon";
 import { deleteDocumentPermanently } from "@/lib/document-actions";
 
 const STATUS_STYLES: Record<string, string> = {
@@ -102,9 +103,11 @@ export function DocumentsTab({
                     href={doc.r2Url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[#9E8C61] hover:underline"
+                    title="Download"
+                    aria-label={`Download ${doc.name}`}
+                    className="inline-flex text-[#9E8C61] hover:text-[#7a6d4a]"
                   >
-                    Download ↗
+                    <DownloadIcon size={18} />
                   </a>
                 </td>
                 {canDelete && (
