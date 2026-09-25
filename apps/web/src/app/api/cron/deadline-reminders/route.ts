@@ -80,3 +80,7 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ sent: reminders.length });
 }
+
+// Vercel Cron calls routes with GET (vercel.com/docs/cron-jobs); same pattern
+// as cron/campaign-deliveries.
+export const GET = POST;

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { POST } from "@/app/api/cron/deadline-reminders/route";
+import { GET, POST } from "@/app/api/cron/deadline-reminders/route";
 import { NextRequest } from "next/server";
 
 vi.mock("@/lib/prisma", () => ({ prisma: { transactionFile: { findMany: vi.fn() } } }));
@@ -82,5 +82,11 @@ describe("POST /api/cron/deadline-reminders", () => {
     } finally {
       process.env.CRON_SECRET = original;
     }
+  });
+});
+
+describe("Vercel Cron", () => {
+  it("accepts GET, the method Vercel Cron uses", () => {
+    expect(GET).toBe(POST);
   });
 });

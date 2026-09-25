@@ -20,7 +20,7 @@ vi.mock("@/lib/prisma", () => ({
 
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email/send";
-import { POST } from "../../app/api/cron/action-plans/route";
+import { GET, POST } from "../../app/api/cron/action-plans/route";
 
 const CRON_SECRET = "test-secret";
 process.env.CRON_SECRET = CRON_SECRET;
@@ -294,5 +294,11 @@ describe("POST /api/cron/action-plans", () => {
     } finally {
       process.env.CRON_SECRET = original;
     }
+  });
+});
+
+describe("Vercel Cron", () => {
+  it("accepts GET, the method Vercel Cron uses", () => {
+    expect(GET).toBe(POST);
   });
 });

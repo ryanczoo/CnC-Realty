@@ -13,9 +13,9 @@ vi.mock("@/lib/email/property-alert-email", () => ({
 
 import { prisma } from "@/lib/prisma";
 import { sendPropertyAlertEmail } from "@/lib/email/property-alert-email";
-import { POST } from "../../app/api/property-alerts/run/route";
+import { GET, POST } from "../../app/api/property-alerts/run/route";
 
-const SECRET = "test-sync-secret";
+const SECRET = "test-cron-secret";
 
 function makeRequest() {
   return new Request("http://localhost/api/property-alerts/run", {
@@ -36,7 +36,8 @@ const PROPERTY = (id: string) => ({
 describe("POST /api/property-alerts/run", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.SYNC_SECRET = SECRET;
+    vi.stubEnv("CRON_SECRET", SECRET);
+    vi.stubEnv("SYNC_SECRET", "");
   });
 
   it("returns 401 when the bearer token is missing or wrong", async () => {
@@ -77,5 +78,18 @@ describe("POST /api/property-alerts/run", () => {
     expect(body.emailsSent).toBe(0);
     expect(prisma.propertyAlert.createMany).not.toHaveBeenCalled();
     expect(sendPropertyAlertEmail).not.toHaveBeenCalled();
+  });
+});
+
+describe("property alerts on Vercel Cron", () => {
+  it("accepts GET, the method Vercel Cron uses", () => {
+    expect(GET).toBe(POST);
+  });
+
+  it("authenticates with CRON_SECRET (what Vercel sends), not the old SYNC_SECRET", async () => {
+    vi.stubEnv("CRON_SECRET", "");
+    vi.stubEnv("SYNC_SECRET", "legacy");
+    const res = await POST(new Request("http://localhost/api/property-alerts/run", { method: "POST", headers: { Authorization: "Bearer legacy" } }));
+    expect(res.status).toBe(401);
   });
 });

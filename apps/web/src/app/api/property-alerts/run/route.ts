@@ -2,14 +2,10 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@cnc/database";
 import { sendPropertyAlertEmail } from "@/lib/email/property-alert-email";
+import { isAuthorizedCronRequest } from "@/lib/cron-auth";
 
 export async function POST(req: Request) {
-  // Require SYNC_SECRET bearer token
-  const authHeader = req.headers.get("Authorization") ?? "";
-  const token = authHeader.replace(/^Bearer\s+/, "");
-  const secret = process.env.SYNC_SECRET;
-
-  if (!secret || token !== secret) {
+  if (!isAuthorizedCronRequest(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -163,3 +159,7 @@ export async function POST(req: Request) {
     );
   }
 }
+
+// Vercel Cron calls routes with GET (vercel.com/docs/cron-jobs); same pattern
+// as cron/campaign-deliveries.
+export const GET = POST;
