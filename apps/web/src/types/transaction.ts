@@ -144,6 +144,8 @@ export interface TransactionFileDetail {
   appraisalDeadline: string | null;
   loanApprovalDeadline: string | null;
   closeOfEscrow: string | null;
+  leaseSignedDate?: string | null;
+  leaseStartDate?: string | null;
   commissionGCI: number | null;
   saleCommissionPct: number | null;
   listingCommissionPct: number | null;

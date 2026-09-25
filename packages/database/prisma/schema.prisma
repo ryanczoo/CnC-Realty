@@ -531,6 +531,8 @@ model TransactionFile {
   appraisalDeadline    DateTime?
   loanApprovalDeadline DateTime?
   closeOfEscrow        DateTime?
+  leaseSignedDate      DateTime?
+  leaseStartDate       DateTime?
   commissionGCI        Float?
   saleCommissionPct    Float?
   listingCommissionPct Float?

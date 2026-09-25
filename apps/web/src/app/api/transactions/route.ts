@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { CHECKLIST_ITEMS_WITH_DOCS_INCLUDE } from "@/lib/transaction-helpers";
 import { trimStrings } from "@/lib/form-validation";
+import { isLeaseSide } from "@/types/transaction";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -39,7 +40,7 @@ export async function POST(req: Request) {
     deposit,
     offerDate, offerExpirationDate, acceptanceDate,
     inspectionDeadline, appraisalDeadline, loanApprovalDeadline,
-    finalWalkthroughDate, possessionDate, closeOfEscrow,
+    finalWalkthroughDate, possessionDate, closeOfEscrow, leaseSignedDate, leaseStartDate,
     commissionGCI, saleCommissionPct, listingCommissionPct,
     saleCommissionAmount, listingCommissionAmount, otherDeductions,
     commissionSplit, commissionNotes,
@@ -112,6 +113,9 @@ export async function POST(req: Request) {
         finalWalkthroughDate: finalWalkthroughDate ? new Date(finalWalkthroughDate) : null,
         possessionDate: possessionDate ? new Date(possessionDate) : null,
         closeOfEscrow: closeOfEscrow ? new Date(closeOfEscrow) : null,
+        // Lease sides carry their own dates; sale sides never get them.
+        leaseSignedDate: isLeaseSide(transactionSide) && leaseSignedDate ? new Date(leaseSignedDate) : null,
+        leaseStartDate: isLeaseSide(transactionSide) && leaseStartDate ? new Date(leaseStartDate) : null,
         commissionGCI: commissionGCI ? parseFloat(commissionGCI) : null,
         saleCommissionPct: saleCommissionPct ? parseFloat(saleCommissionPct) : null,
         listingCommissionPct: listingCommissionPct ? parseFloat(listingCommissionPct) : null,

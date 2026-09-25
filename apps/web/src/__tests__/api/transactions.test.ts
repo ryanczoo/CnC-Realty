@@ -297,6 +297,31 @@ describe("POST /api/transactions", () => {
     expect(data.mlsNumber).toBeNull();
   });
 
+  it("saves lease signed/start dates for a lease side", async () => {
+    vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "t-lease" } as any);
+    const res = await POST(makeRequest({
+      transactionSide: "LEASE_TENANT",
+      propertyAddress: "1 Test St", city: "Test", zip: "00000", propertyType: "Condo", leasePrice: "36000",
+      leaseSignedDate: "2026-09-20", leaseStartDate: "2026-10-01",
+    }));
+    expect(res.status).toBe(201);
+    const data = vi.mocked(prisma.transactionFile.create).mock.calls[0][0].data as any;
+    expect(data.leaseSignedDate).toEqual(new Date("2026-09-20"));
+    expect(data.leaseStartDate).toEqual(new Date("2026-10-01"));
+  });
+
+  it("ignores lease dates on a sale side", async () => {
+    vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "t-sale" } as any);
+    await POST(makeRequest({
+      transactionSide: "PURCHASE",
+      propertyAddress: "1 Test St", city: "Test", zip: "00000", propertyType: "Condo",
+      leaseSignedDate: "2026-09-20", leaseStartDate: "2026-10-01",
+    }));
+    const data = vi.mocked(prisma.transactionFile.create).mock.calls[0][0].data as any;
+    expect(data.leaseSignedDate).toBeNull();
+    expect(data.leaseStartDate).toBeNull();
+  });
+
   it("does not require propertyType or mlsNumber for REFERRAL", async () => {
     vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "t-ref" } as any);
 
