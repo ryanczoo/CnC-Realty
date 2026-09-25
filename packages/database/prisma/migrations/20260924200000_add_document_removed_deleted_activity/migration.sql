@@ -1,0 +1,3 @@
+-- AlterEnum
+ALTER TYPE "FileActivityType" ADD VALUE 'DOCUMENT_REMOVED';
+ALTER TYPE "FileActivityType" ADD VALUE 'DOCUMENT_DELETED';

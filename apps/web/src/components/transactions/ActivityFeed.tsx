@@ -13,6 +13,8 @@ const TYPE_LABELS: Record<FileActivityType, string> = {
   PARTY_ADDED:              "Party added",
   NOTE_ADDED:               "Note added",
   CONVERTED_TO_TRANSACTION: "Converted to transaction",
+  DOCUMENT_REMOVED:         "Document removed from checklist",
+  DOCUMENT_DELETED:         "Document permanently deleted",
 };
 
 interface Props extends FileContextProps {
