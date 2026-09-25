@@ -17,7 +17,7 @@ Every item covers **all listing types and all transaction sides**, on **both** t
 - **Listing — editable:** Address, City, ZIP, MLS #, List Price, List Date, Expiration, Commission %. **Not editable:** State, Type.
 - **Transaction — editable (Property Details):** Address, City, ZIP, MLS #, Property Type (select, same list as the wizard), Year Built, Escrow # (sales), List Price, Sale Price (sales) / Total Lease Amount (leases), Legal Description, Property Includes, Property Excludes, Tax ID / APN, Multi-Parcels, School District, Zoning Class. **Not editable:** Transaction Side, State.
 - **Transaction — editable (Key Dates):** sales — Offer Date, Offer Expiration, Acceptance Date, Inspection Deadline, Appraisal Deadline, Loan Approval, Close of Escrow, Final Walkthrough, Possession Date; leases — Offer Date, Offer Expiration, **Lease Signed Date**, **Lease Start Date**.
-- **Server rules (PATCH):** extend the transaction PATCH allowlist to these fields; blanks → null for optional text; required fields can't be cleared (listing: address/city/ZIP/list price/dates; transaction non-referral: address/city/ZIP/property type/MLS #/sale or lease price) — the same required sets the wizards enforce. Listing dates keep `listingDatesError`.
+- **Server rules (PATCH):** extend the transaction PATCH allowlist to these fields; blanks → null for optional text; required fields can't be cleared (listing: address/city/ZIP/list price/dates; transaction non-referral: address/city/ZIP/property type/sale or lease price; MLS # is optional — see 6b) — the same required sets the wizards enforce. Listing dates keep `listingDatesError`.
 
 ## 3. Status follows the dates (on save + morning job)
 - Extract the pure decision from `lib/auto-status.ts`: `dateDrivenStatus({ kind, status, side, listDate, expirationDate, closeOfEscrow, leaseStartDate }, today) → target | null`. Used by **both** the morning job and every PATCH save, so the rule lives in one place.
@@ -40,6 +40,15 @@ Every item covers **all listing types and all transaction sides**, on **both** t
 - Choosing **Request Cancellation** opens an inline form (same pattern as Reject): required reason → PATCH `{ status: "CANCELED_PENDING", cancellationReason }`; the reason goes into the `STATUS_CHANGED` payload (no schema change) and `describeActivity` shows it.
 - Broker notified **both** ways: a new email (shared transaction-emails + `sendSafely` pattern; live test send to ryanchong@cncrealtygroup.com after building it) and the admin **Awaiting Review** tab (audit-queue includes `CANCELED_PENDING` transactions; card shows the existing "Cancel Pending" pill). The admin transaction page shows the latest reason while Cancel Pending.
 - Approval → `CANCELED_APPROVED` (Plan 1 sync returns a converted listing to Active/Expired).
+
+## 6b. MLS # optional (reverses the 2026-07-21 `b805617` decision)
+- New Transaction wizard: label "MLS Number", placeholder "Optional", removed from the Step 1 Next gate; 10-digit restriction kept. Transactions POST no longer requires it. Matches the New Listing wizard (off-market / FSBO / new construction / most leases & commercial have no MLS #; converted listings may have none).
+- Pencil editing: MLS # is editable and **may be cleared** (blank → null). Never part of `isReadyForPending`.
+
+## 6c. Shared checkmark icons
+- `CheckCircleIcon` (Solar Broken Lines circled check — the exact paths already hand-drawn in `components/join/AgentPlan.tsx`) → agent Checklist row Approved icon (green), admin Approve button, and AgentPlan (local copy removed; public page unchanged).
+- `CheckIcon` (Ryan's `unread-svgrepo-com.svg`) → pencil-edit Save, "Photo uploaded ✓" in the New Transaction wizard, Action Plan step done (lead profile).
+- Both `currentColor`, in `components/ui/` beside `TrashIcon` / `DownloadIcon` / `PencilIcon`. Unchanged: the welcome email's ✓ (SVG is stripped by email clients) and native checkboxes (browser-drawn).
 
 ## 7. Deadline-reminder fix
 - `cron/deadline-reminders` reminds only for `INCOMPLETE`, `PRE_CONTRACT`, `PENDING` (not Canceled/Archived/Closed/Expired).
