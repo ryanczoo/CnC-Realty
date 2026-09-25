@@ -52,7 +52,14 @@ export function FileCard({ id, fileType, address, city, status, displayDate, pri
             </>
           )}
         </div>
-        <StatusBadge status={status} />
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <StatusBadge status={status} />
+          {/* Under Contract is only reachable by Convert to Transaction, so an Under
+              Contract listing always has a transaction card of its own too. */}
+          {fileType === "listing" && status === "ACTIVE_UNDER_CONTRACT" && (
+            <span className="text-xs italic text-[#1B1B1B]/50">Converted</span>
+          )}
+        </div>
       </div>
 
       {status !== "PENDING_TRANSFER" && price != null && price > 0 && (
