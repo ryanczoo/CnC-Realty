@@ -7,6 +7,7 @@ import { TrashIcon } from "@/components/ui/TrashIcon";
 import { SPRING_HOVER } from "@/lib/motion";
 import { TC_FEE, calcNetToAgent, calcTransactionFee } from "@/lib/commission";
 import { escrowTypeToRole, sidePartiesReady, type EscrowContactType } from "@/lib/transaction-helpers";
+import { transactionDetailsReady } from "@/lib/transaction-wizard";
 import { DateField } from "@/components/ui/DateField";
 import { FormField as Field } from "@/components/ui/FormField";
 import { stripDigits, digitsOnly, formatPhoneInput, sanitizeCurrencyInput, formatCurrencyDisplay, emailError } from "@/lib/form-validation";
@@ -56,6 +57,7 @@ export default function NewTransactionPage() {
     offerDate: "", offerExpirationDate: "",
     acceptanceDate: "", closeOfEscrow: "",
     finalWalkthroughDate: "", possessionDate: "",
+    leaseSignedDate: "", leaseStartDate: "",
     escrowNumber: "",
     inspectionDeadline: "", appraisalDeadline: "", loanApprovalDeadline: "",
     saleCommission: "", listingCommission: "",
@@ -91,6 +93,7 @@ export default function NewTransactionPage() {
   }
 
   const isLease = isLeaseSide(form.transactionSide);
+  const underContract = form.stage !== "PRE_CONTRACT";
   const isReferral = form.transactionSide === "REFERRAL";
 
   // Lease files have no salePrice to multiply a % against (leases populate
@@ -189,10 +192,10 @@ export default function NewTransactionPage() {
   const canAdvance = useMemo(() => {
     if (step === 0) return isReferral ? !!form.transactionSide : (!!form.transactionSide && !!form.propertyCategory);
     if (step === 1) return isReferral ? (!!form.referredToAgentName && !emailError(form.referredToContactEmail)) : (!!form.propertyAddress && !!form.city && !!form.zip && !!form.propertyType);
-    if (step === 2) return isLease ? !!form.leasePrice : !!form.salePrice;
+    if (step === 2) return transactionDetailsReady(form, form.stage, isLease);
     if (step === 3) return partiesReady && partyEmailsValid;
     return true;
-  }, [step, isReferral, form.transactionSide, form.propertyCategory, form.referredToAgentName, form.referredToContactEmail, form.propertyAddress, form.city, form.zip, form.propertyType, form.salePrice, form.leasePrice, partiesReady, partyEmailsValid]);
+  }, [step, isReferral, isLease, form, partiesReady, partyEmailsValid]);
 
   function goNext() {
     setStep((s) => {
@@ -504,25 +507,42 @@ export default function NewTransactionPage() {
                 <DateFieldRow label="Offer Date" value={form.offerDate} onChange={(v) => set("offerDate", v)} />
                 <DateFieldRow label="Offer Expiration Date" value={form.offerExpirationDate} onChange={(v) => set("offerExpirationDate", v)} />
               </div>
+              {/* Required once Under Contract (a ratified contract states them); a lease
+                  uses its own signed/start dates instead of acceptance/escrow. */}
               <div className="mt-4 grid grid-cols-2 gap-4">
-                <DateFieldRow label="Acceptance Date" value={form.acceptanceDate} onChange={(v) => set("acceptanceDate", v)} />
-                <DateFieldRow label="Close of Escrow" value={form.closeOfEscrow} onChange={(v) => set("closeOfEscrow", v)} />
+                {isLease ? (
+                  <>
+                    <DateFieldRow label={`Lease Signed Date${underContract ? " *" : ""}`} value={form.leaseSignedDate} onChange={(v) => set("leaseSignedDate", v)} />
+                    <DateFieldRow label={`Lease Start Date${underContract ? " *" : ""}`} value={form.leaseStartDate} onChange={(v) => set("leaseStartDate", v)} />
+                  </>
+                ) : (
+                  <>
+                    <DateFieldRow label={`Acceptance Date${underContract ? " *" : ""}`} value={form.acceptanceDate} onChange={(v) => set("acceptanceDate", v)} />
+                    <DateFieldRow label={`Close of Escrow${underContract ? " *" : ""}`} value={form.closeOfEscrow} onChange={(v) => set("closeOfEscrow", v)} />
+                  </>
+                )}
               </div>
+              {!isLease && underContract && form.acceptanceDate && form.closeOfEscrow && form.closeOfEscrow < form.acceptanceDate && (
+                <p className="mt-1 text-xs text-red-500">Close of Escrow can&apos;t be before the Acceptance Date.</p>
+              )}
             </div>
-            <div className="border-t border-[#1B1B1B]/5 pt-5">
-              <SectionLabel className="text-center">Key Deadlines</SectionLabel>
-              <div className="grid grid-cols-2 gap-4">
-                <DateFieldRow label="Inspection Deadline" value={form.inspectionDeadline} onChange={(v) => set("inspectionDeadline", v)} />
-                <DateFieldRow label="Appraisal Deadline" value={form.appraisalDeadline} onChange={(v) => set("appraisalDeadline", v)} />
+            {/* Escrow deadlines are sale-only; a lease's key date is its start date. */}
+            {!isLease && (
+              <div className="border-t border-[#1B1B1B]/5 pt-5">
+                <SectionLabel className="text-center">Key Deadlines</SectionLabel>
+                <div className="grid grid-cols-2 gap-4">
+                  <DateFieldRow label="Inspection Deadline" value={form.inspectionDeadline} onChange={(v) => set("inspectionDeadline", v)} />
+                  <DateFieldRow label="Appraisal Deadline" value={form.appraisalDeadline} onChange={(v) => set("appraisalDeadline", v)} />
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-4">
+                  <DateFieldRow label="Loan Approval Deadline" value={form.loanApprovalDeadline} onChange={(v) => set("loanApprovalDeadline", v)} />
+                  <DateFieldRow label="Final Walkthrough Date" value={form.finalWalkthroughDate} onChange={(v) => set("finalWalkthroughDate", v)} />
+                </div>
+                <div className="mt-4">
+                  <DateFieldRow label="Possession Date" value={form.possessionDate} onChange={(v) => set("possessionDate", v)} />
+                </div>
               </div>
-              <div className="mt-4 grid grid-cols-2 gap-4">
-                <DateFieldRow label="Loan Approval Deadline" value={form.loanApprovalDeadline} onChange={(v) => set("loanApprovalDeadline", v)} />
-                <DateFieldRow label="Final Walkthrough Date" value={form.finalWalkthroughDate} onChange={(v) => set("finalWalkthroughDate", v)} />
-              </div>
-              <div className="mt-4">
-                <DateFieldRow label="Possession Date" value={form.possessionDate} onChange={(v) => set("possessionDate", v)} />
-              </div>
-            </div>
+            )}
             <div className="border-t border-[#1B1B1B]/5 pt-5">
               <ConditionsSection conditions={conditions} onUpdate={setConditions} />
             </div>
@@ -760,6 +780,8 @@ export default function NewTransactionPage() {
               {form.offerDate && <ReviewRow label="Offer Date" value={formatDateMDY(form.offerDate)} />}
               {form.offerExpirationDate && <ReviewRow label="Offer Expiration Date" value={formatDateMDY(form.offerExpirationDate)} />}
               {form.acceptanceDate && <ReviewRow label="Acceptance Date" value={formatDateMDY(form.acceptanceDate)} />}
+              {form.leaseSignedDate && <ReviewRow label="Lease Signed Date" value={formatDateMDY(form.leaseSignedDate)} />}
+              {form.leaseStartDate && <ReviewRow label="Lease Start Date" value={formatDateMDY(form.leaseStartDate)} />}
               {form.finalWalkthroughDate && <ReviewRow label="Final Walkthrough Date" value={formatDateMDY(form.finalWalkthroughDate)} />}
               {form.possessionDate && <ReviewRow label="Possession Date" value={formatDateMDY(form.possessionDate)} />}
               {form.escrowNumber && <ReviewRow label="Escrow #" value={form.escrowNumber} />}
