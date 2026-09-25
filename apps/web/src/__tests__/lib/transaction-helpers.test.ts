@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calcReferralFee, canTransitionTransaction, pickDisplayPrice, pickDisplayDate, listingStatusOptions, canDeleteListing, convertBlockedReason, escrowTypeToRole, latestDocument, allowedNextStatuses, canTransitionListing } from "@/lib/transaction-helpers";
+import { calcReferralFee, canTransitionTransaction, pickDisplayPrice, pickDisplayDate, listingStatusOptions, canDeleteListing, convertBlockedReason, sidePartiesReady, isReadyForPending, escrowTypeToRole, latestDocument, allowedNextStatuses, canTransitionListing } from "@/lib/transaction-helpers";
 
 describe("calcReferralFee", () => {
   it("takes 10% when 10% of the amount exceeds $200", () => {
@@ -253,5 +253,47 @@ describe("convertBlockedReason", () => {
 
   it("only converts an Active listing", () => {
     expect(convertBlockedReason({ status: "COMING_SOON", checklistItems: [] })).toBe("Only an Active listing can be converted");
+  });
+});
+
+describe("sidePartiesReady (the wizard's rule: each side needs its own client)", () => {
+  it.each([
+    ["PURCHASE", true, false, true], ["PURCHASE", false, true, false],
+    ["LISTING", false, true, true], ["LISTING", true, false, false],
+    ["DUAL", true, false, false], ["DUAL", true, true, true],
+    ["LEASE_TENANT", true, false, true], ["LEASE_LANDLORD", false, true, true],
+    ["LEASE_DUAL", false, true, false], ["LEASE_DUAL", true, true, true],
+  ] as const)("%s with buyer=%s seller=%s -> %s", (side, hasBuyer, hasSeller, expected) => {
+    expect(sidePartiesReady(side, { hasBuyer, hasSeller })).toBe(expected);
+  });
+});
+
+describe("isReadyForPending", () => {
+  const seller = { role: "SELLER", name: "Sam Seller" };
+  const buyer = { role: "BUYER", name: "Bea Buyer" };
+  const sale = { transactionSide: "LISTING", salePrice: 900000, acceptanceDate: "2026-09-20", closeOfEscrow: "2026-10-20" };
+  const lease = { transactionSide: "LEASE_TENANT", leasePrice: 36000, leaseSignedDate: "2026-09-20", leaseStartDate: "2026-10-01" };
+
+  it("is ready when a sale has price, acceptance date, close of escrow and its client", () => {
+    expect(isReadyForPending(sale, [seller])).toBe(true);
+  });
+
+  it.each(["salePrice", "acceptanceDate", "closeOfEscrow"])("is not ready without %s", (field) => {
+    expect(isReadyForPending({ ...sale, [field]: null }, [seller])).toBe(false);
+  });
+
+  it("is not ready without the side's client (ignoring unnamed rows)", () => {
+    expect(isReadyForPending(sale, [])).toBe(false);
+    expect(isReadyForPending(sale, [{ role: "SELLER", name: "  " }])).toBe(false);
+  });
+
+  it("uses lease amount and lease dates for lease sides, not the sale fields", () => {
+    expect(isReadyForPending(lease, [buyer])).toBe(true);
+    expect(isReadyForPending({ ...lease, leaseStartDate: null }, [buyer])).toBe(false);
+    expect(isReadyForPending({ ...lease, leasePrice: null, salePrice: 5 }, [buyer])).toBe(false);
+  });
+
+  it("never applies to referrals", () => {
+    expect(isReadyForPending({ ...sale, transactionSide: "REFERRAL" }, [seller])).toBe(false);
   });
 });

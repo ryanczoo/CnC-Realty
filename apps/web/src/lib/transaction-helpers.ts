@@ -5,6 +5,7 @@ import type {
   FileChecklistItemWithDocs,
   ChecklistProgress,
 } from "@/types/transaction";
+import { isLeaseSide } from "@/types/transaction";
 
 export function toDbFileType(fileType: "listing" | "transaction"): "LISTING" | "TRANSACTION" {
   return fileType === "listing" ? "LISTING" : "TRANSACTION";
@@ -157,6 +158,49 @@ export function convertBlockedReason(listing: { status: string; checklistItems: 
     return `Upload the ${missing} remaining required listing document${missing === 1 ? "" : "s"} before converting`;
   }
   return null;
+}
+
+// Which named parties a side needs — each side needs its own client (the buyer
+// for Purchase / Lease Tenant, the seller for Listing / Lease Landlord, both for
+// the Dual sides). Tenants are stored as BUYER and landlords as SELLER. Shared by
+// the New Transaction wizard and isReadyForPending so they can't drift apart.
+export function sidePartiesReady(side: string, has: { hasBuyer: boolean; hasSeller: boolean }): boolean {
+  switch (side) {
+    case "PURCHASE":
+    case "LEASE_TENANT":
+      return has.hasBuyer;
+    case "LISTING":
+    case "LEASE_LANDLORD":
+      return has.hasSeller;
+    case "DUAL":
+    case "LEASE_DUAL":
+      return has.hasBuyer && has.hasSeller;
+    default:
+      return true;
+  }
+}
+
+// A transaction is Pending once its deal is fully described: a sale needs its
+// price, Acceptance Date and Close of Escrow; a lease its total amount, Lease
+// Signed Date and Lease Start Date; both need the side's client. Referrals never.
+export function isReadyForPending(
+  tx: {
+    transactionSide: string;
+    salePrice?: number | null;
+    leasePrice?: number | null;
+    acceptanceDate?: unknown;
+    closeOfEscrow?: unknown;
+    leaseSignedDate?: unknown;
+    leaseStartDate?: unknown;
+  },
+  parties: { role: string; name: string }[],
+): boolean {
+  if (tx.transactionSide === "REFERRAL") return false;
+  const named = (role: string) => parties.some((p) => p.role === role && p.name.trim());
+  const details = isLeaseSide(tx.transactionSide)
+    ? !!tx.leasePrice && !!tx.leaseSignedDate && !!tx.leaseStartDate
+    : !!tx.salePrice && !!tx.acceptanceDate && !!tx.closeOfEscrow;
+  return details && sidePartiesReady(tx.transactionSide, { hasBuyer: named("BUYER"), hasSeller: named("SELLER") });
 }
 
 // Mirrors DELETE /api/listings/[id]: only an empty, never-converted listing.

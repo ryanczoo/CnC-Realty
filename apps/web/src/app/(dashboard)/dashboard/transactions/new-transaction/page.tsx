@@ -6,7 +6,7 @@ import { Plus } from "lucide-react";
 import { TrashIcon } from "@/components/ui/TrashIcon";
 import { SPRING_HOVER } from "@/lib/motion";
 import { TC_FEE, calcNetToAgent, calcTransactionFee } from "@/lib/commission";
-import { escrowTypeToRole, type EscrowContactType } from "@/lib/transaction-helpers";
+import { escrowTypeToRole, sidePartiesReady, type EscrowContactType } from "@/lib/transaction-helpers";
 import { DateField } from "@/components/ui/DateField";
 import { FormField as Field } from "@/components/ui/FormField";
 import { stripDigits, digitsOnly, formatPhoneInput, sanitizeCurrencyInput, formatCurrencyDisplay, emailError } from "@/lib/form-validation";
@@ -153,23 +153,13 @@ export default function NewTransactionPage() {
 
   // Which party section gates Next on Step 3, mirroring how the agent
   // always knows the side they represent when the file is created.
-  const partiesReady = useMemo(() => {
-    const hasBuyer = buyers.some((b) => b.name.trim());
-    const hasSeller = sellers.some((s) => s.name.trim());
-    switch (form.transactionSide) {
-      case "PURCHASE":
-      case "LEASE_TENANT":
-        return hasBuyer;
-      case "LISTING":
-      case "LEASE_LANDLORD":
-        return hasSeller;
-      case "DUAL":
-      case "LEASE_DUAL":
-        return hasBuyer && hasSeller;
-      default:
-        return true;
-    }
-  }, [form.transactionSide, buyers, sellers]);
+  const partiesReady = useMemo(
+    () => sidePartiesReady(form.transactionSide, {
+      hasBuyer: buyers.some((b) => b.name.trim()),
+      hasSeller: sellers.some((s) => s.name.trim()),
+    }),
+    [form.transactionSide, buyers, sellers],
+  );
 
   const buyerSectionRequired = useMemo(() => {
     return ["PURCHASE", "LEASE_TENANT", "DUAL", "LEASE_DUAL"].includes(form.transactionSide);
