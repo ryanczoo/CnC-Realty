@@ -90,3 +90,17 @@ describe("Vercel Cron", () => {
     expect(GET).toBe(POST);
   });
 });
+
+describe("deadline reminders only for files still in play", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.stubEnv("CRON_SECRET", validSecret);
+    vi.mocked(prisma.transactionFile.findMany).mockResolvedValue([]);
+  });
+
+  it("queries only Incomplete, Pre-Contract and Pending transactions (not canceled, archived, closed or expired)", async () => {
+    await POST(makeReq(validSecret));
+    const where = (vi.mocked(prisma.transactionFile.findMany).mock.calls[0][0] as any).where;
+    expect(where.status).toEqual({ in: ["INCOMPLETE", "PRE_CONTRACT", "PENDING"] });
+  });
+});

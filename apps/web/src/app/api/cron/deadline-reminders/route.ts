@@ -26,7 +26,9 @@ export async function POST(req: NextRequest) {
 
   const files = await prisma.transactionFile.findMany({
     where: {
-      status: { not: TransactionFileStatus.CLOSED },
+      // Only files still in play — canceled, archived, closed and expired files
+      // must not keep emailing agents about deadlines.
+      status: { in: [TransactionFileStatus.INCOMPLETE, TransactionFileStatus.PRE_CONTRACT, TransactionFileStatus.PENDING] },
       OR: windows.flatMap((w) => [
         { closeOfEscrow: w },
         { inspectionDeadline: w },
