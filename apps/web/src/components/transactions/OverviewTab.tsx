@@ -1,6 +1,6 @@
 import { InfoRow } from "./InfoRow";
 import { formatDateOnly } from "@/lib/utils";
-import type { ListingFileDetail, TransactionFileDetail } from "@/types/transaction";
+import { listingTypeLabel, transactionSideLabel, type ListingFileDetail, type TransactionFileDetail } from "@/types/transaction";
 
 // Shared Overview tab — renders identically for agent and admin viewers of
 // the same file. Extracted so both sides stay in sync automatically instead
@@ -30,7 +30,7 @@ export function OverviewTab({
           {isListing && listing && (
             <>
               <InfoRow label="List Price" value={listing.listPrice ? `$${Number(listing.listPrice).toLocaleString()}` : "—"} />
-              <InfoRow label="Type" value={listing.listingType ?? "—"} />
+              <InfoRow label="Type" value={listingTypeLabel(listing.listingType)} />
               {listing.listDate && <InfoRow label="List Date" value={formatDateOnly(listing.listDate)} />}
               {listing.expirationDate && <InfoRow label="Expiration" value={formatDateOnly(listing.expirationDate)} />}
               {listing.commissionPercent && <InfoRow label="Commission" value={`${listing.commissionPercent}%`} />}
@@ -41,7 +41,7 @@ export function OverviewTab({
               {transaction.propertyType && <InfoRow label="Property Type" value={transaction.propertyType} />}
               {transaction.yearBuilt && <InfoRow label="Year Built" value={String(transaction.yearBuilt)} />}
               {transaction.escrowNumber && <InfoRow label="Escrow #" value={transaction.escrowNumber} />}
-              <InfoRow label="Transaction Side" value={transaction.transactionSide ?? "—"} />
+              <InfoRow label="Transaction Side" value={transactionSideLabel(transaction.transactionSide)} />
               <InfoRow label="List Price" value={transaction.listPrice ? `$${Number(transaction.listPrice).toLocaleString()}` : "—"} />
               <InfoRow label="Sale Price" value={transaction.salePrice ? `$${Number(transaction.salePrice).toLocaleString()}` : "—"} />
               {transaction.leasePrice && <InfoRow label="Total Lease Amount" value={`$${Number(transaction.leasePrice).toLocaleString()}`} />}

@@ -200,7 +200,7 @@ export default function FileDetailPage() {
 
           <div className="flex shrink-0 gap-2">
             {isListing && listing?.status === "ACTIVE" && !readOnly && (
-              <button onClick={convertToTransaction} className="rounded-full border border-[#1B1B1B]/20 px-4 py-2 text-sm text-[#1B1B1B]/70 hover:border-[#1B1B1B]/40">
+              <button onClick={convertToTransaction} className="rounded-full border border-[#1B1B1B]/20 bg-white px-4 py-2 text-sm text-[#1B1B1B] hover:border-[#1B1B1B]/40">
                 Convert to Transaction
               </button>
             )}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatCompactCurrency, formatDateOnly, formatDate, isDateOnlyPast } from "@/lib/utils";
+import { formatCompactCurrency, formatDateOnly, formatDateMDY, formatDate, isDateOnlyPast } from "@/lib/utils";
 
 describe("formatCompactCurrency", () => {
   it("strips a trailing .0 for whole millions", () => {
@@ -48,6 +48,17 @@ describe("formatDateOnly", () => {
 
   it("does not slip a month boundary (Nov 1 stays November)", () => {
     expect(formatDateOnly("2026-11-01T00:00:00.000Z", { month: "short", year: "numeric" })).toBe("Nov 2026");
+  });
+});
+
+describe("formatDateMDY", () => {
+  it("formats a DateField 'YYYY-MM-DD' value as zero-padded MM/DD/YYYY without shifting the day", () => {
+    expect(formatDateMDY("2026-02-05")).toBe("02/05/2026");
+    expect(formatDateMDY("2026-01-01")).toBe("01/01/2026");
+  });
+
+  it("returns an em dash for an empty value", () => {
+    expect(formatDateMDY("")).toBe("—");
   });
 });
 

@@ -60,6 +60,7 @@ describe("whitespace is trimmed before a write", () => {
   it("POST /api/listings trims propertyAddress", async () => {
     await postListing(json({
       propertyAddress: "  1 Main St  ", city: "Irvine", zip: "92603", listPrice: "500000", listingType: "RESIDENTIAL_SALE",
+      listDate: "2026-09-24", expirationDate: "2027-03-24", parties: [{ role: "SELLER", name: "Jane Seller" }],
     }));
     const data = vi.mocked(prisma.listingFile.create).mock.calls[0][0].data as any;
     expect(data.propertyAddress).toBe("1 Main St");

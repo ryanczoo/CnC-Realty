@@ -135,7 +135,7 @@ export function DealDrawer({ open, deal, onClose, onSaved, onDeleted, onConverte
                   <button
                     onClick={handleConvert}
                     disabled={converting}
-                    className="rounded-lg bg-[#9E8C61] px-4 py-2 font-sans text-sm font-medium text-white hover:bg-[#8a7a55] disabled:opacity-50"
+                    className="rounded-full bg-[#9E8C61] px-4 py-2 font-sans text-sm font-medium text-white hover:bg-[#8a7a55] disabled:opacity-50"
                   >
                     {converting ? "Creating…" : "Create Transaction File"}
                   </button>
@@ -153,7 +153,7 @@ export function DealDrawer({ open, deal, onClose, onSaved, onDeleted, onConverte
               <button
                 onClick={handleConvert}
                 disabled={converting}
-                className="w-full rounded-lg border border-[#9E8C61]/40 bg-[#9E8C61]/5 px-4 py-2 font-sans text-sm font-medium text-[#9E8C61] hover:bg-[#9E8C61]/10 disabled:opacity-50"
+                className="w-full rounded-full border border-[#9E8C61]/40 bg-[#9E8C61]/5 px-4 py-2 font-sans text-sm font-medium text-[#9E8C61] hover:bg-[#9E8C61]/10 disabled:opacity-50"
               >
                 {converting ? "Creating…" : "Create Transaction File"}
               </button>

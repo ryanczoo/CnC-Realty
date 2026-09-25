@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { CHECKLIST_ITEMS_WITH_DOCS_INCLUDE } from "@/lib/transaction-helpers";
 import { trimStrings } from "@/lib/form-validation";
+import { listingDatesError } from "@/lib/listing-dates";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -29,10 +30,16 @@ export async function POST(req: Request) {
   if (!agentId) return NextResponse.json({ error: "Agent not found" }, { status: 404 });
 
   const body = trimStrings(await req.json());
-  const { propertyAddress, city, state, zip, mlsNumber, listPrice, listingType, expirationDate, listDate, commissionPercent, commissionNotes } = body;
+  const { propertyAddress, city, state, zip, mlsNumber, listPrice, listingType, expirationDate, listDate, commissionPercent, commissionNotes, parties = [] } = body;
 
   if (!propertyAddress || !city || !zip || !listPrice || !listingType) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+  }
+  const datesError = listingDatesError(listDate, expirationDate);
+  if (datesError) return NextResponse.json({ error: datesError }, { status: 400 });
+  const namedParties = parties.filter((p: { name?: string }) => p.name);
+  if (!namedParties.some((p: { role: string }) => p.role === "SELLER")) {
+    return NextResponse.json({ error: "At least one seller is required" }, { status: 400 });
   }
 
   const template = await prisma.checklistTemplate.findFirst({
@@ -45,13 +52,24 @@ export async function POST(req: Request) {
       data: {
         agentId,
         propertyAddress, city, state: state ?? "CA", zip,
-        mlsNumber: mlsNumber ?? null,
+        mlsNumber: mlsNumber || null,
         listPrice: parseFloat(listPrice),
         listingType,
         expirationDate: expirationDate ? new Date(expirationDate) : null,
         listDate: listDate ? new Date(listDate) : null,
         commissionPercent: commissionPercent ? parseFloat(commissionPercent) : null,
-        commissionNotes: commissionNotes ?? null,
+        commissionNotes: commissionNotes || null,
+        parties: {
+          create: namedParties.map((p: { role: string; name: string; email?: string; phone?: string; company?: string; licenseNumber?: string }) => ({
+            fileType: "LISTING" as const,
+            role: p.role,
+            name: p.name,
+            email: p.email || null,
+            phone: p.phone || null,
+            company: p.company || null,
+            licenseNumber: p.licenseNumber || null,
+          })),
+        },
         checklistItems: template ? {
           create: template.items.map((item) => ({
             fileType: "LISTING" as const,

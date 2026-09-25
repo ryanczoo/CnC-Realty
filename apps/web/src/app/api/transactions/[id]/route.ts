@@ -56,7 +56,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     ...(body.loanApprovalDeadline !== undefined && { loanApprovalDeadline: body.loanApprovalDeadline ? new Date(body.loanApprovalDeadline) : null }),
     ...(body.commissionGCI !== undefined && { commissionGCI: body.commissionGCI ? parseFloat(body.commissionGCI) : null }),
     ...(body.commissionSplit !== undefined && { commissionSplit: body.commissionSplit ? parseFloat(body.commissionSplit) : null }),
-    ...(body.commissionNotes !== undefined && { commissionNotes: body.commissionNotes }),
+    ...(body.commissionNotes !== undefined && { commissionNotes: body.commissionNotes || null }),
     ...(body.referralAmountReceived !== undefined && { referralAmountReceived: parseFloat(body.referralAmountReceived) }),
     ...(referralFeeUpdate && { referralCncFee: referralFeeUpdate.cncFee }),
   };

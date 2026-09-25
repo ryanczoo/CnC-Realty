@@ -7,19 +7,31 @@ import { DateField } from "@/components/ui/DateField";
 import { FormField as Field } from "@/components/ui/FormField";
 import { stripDigits, digitsOnly, sanitizeCurrencyInput } from "@/lib/form-validation";
 import { Spinner } from "@/components/ui/Spinner";
-
-const STEPS = ["Property Info", "Commission", "Review"] as const;
+import { canAdvanceListingStep } from "@/lib/listing-wizard";
+import { PartySection, emptyParty, type Party } from "@/components/transactions/PartySection";
+import { LISTING_TYPES, listingTypeLabel } from "@/types/transaction";
+import { listingDatesError } from "@/lib/listing-dates";
+import { formatDateMDY } from "@/lib/utils";
 
 export default function NewListingPage() {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const [form, setForm] = useState({
     propertyAddress: "", city: "", state: "CA", zip: "",
     mlsNumber: "", listPrice: "", listingType: "RESIDENTIAL_SALE",
     expirationDate: "", listDate: "",
     commissionPercent: "", commissionNotes: "",
   });
+  const [sellers, setSellers] = useState<Party[]>([emptyParty()]);
+
+  // Lease listings represent the owner as a landlord — same relabel the
+  // Transaction wizard applies to its Sellers section on lease sides.
+  const isLease = form.listingType.endsWith("_LEASE");
+  const STEPS = ["Property Info", isLease ? "Landlords" : "Sellers", "Commission", "Review"];
+  // Only shown once both dates are picked — a blank date just keeps Next greyed out.
+  const dateOrderError = form.listDate && form.expirationDate ? listingDatesError(form.listDate, form.expirationDate) : null;
 
   function set(field: string, value: string) {
     setForm((f) => ({ ...f, [field]: value }));
@@ -27,15 +39,22 @@ export default function NewListingPage() {
 
   async function submit() {
     setSaving(true);
+    setSubmitError("");
     const res = await fetch("/api/listings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify({
+        ...form,
+        parties: sellers.filter((s) => s.name).map((s) => ({ role: "SELLER", ...s })),
+      }),
     });
     if (res.ok) {
       const { listing } = await res.json();
       router.push(`/dashboard/transactions/listing/${listing.id}`);
+      return;
     }
+    const { error } = await res.json().catch(() => ({ error: "" }));
+    setSubmitError(error || "Something went wrong creating this listing. Please try again.");
     setSaving(false);
   }
 
@@ -86,26 +105,32 @@ export default function NewListingPage() {
                 onChange={(e) => set("listingType", e.target.value)}
                 className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2.5 text-sm text-[#1B1B1B] focus:outline-none focus:ring-2 focus:ring-[#9E8C61]/30"
               >
-                <option value="RESIDENTIAL_SALE">Residential Sale</option>
-                <option value="RESIDENTIAL_LEASE">Residential Lease</option>
-                <option value="COMMERCIAL_SALE">Commercial Sale</option>
-                <option value="COMMERCIAL_LEASE">Commercial Lease</option>
+                {LISTING_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
               </select>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">List Date</label>
+                <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">List Date *</label>
                 <DateField value={form.listDate} onChange={(v) => set("listDate", v)} />
               </div>
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">Expiration Date</label>
+                <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">Expiration Date *</label>
                 <DateField value={form.expirationDate} onChange={(v) => set("expirationDate", v)} />
+                {dateOrderError && (
+                  <p className="mt-1 text-xs text-red-500">{dateOrderError}</p>
+                )}
               </div>
             </div>
           </div>
         )}
 
         {step === 1 && (
+          <PartySection label={isLease ? "Landlords" : "Sellers"} parties={sellers} onUpdate={setSellers} required />
+        )}
+
+        {step === 2 && (
           <div className="space-y-4">
             <Field label="Commission %" value={form.commissionPercent} onChange={(v) => set("commissionPercent", v)} placeholder="e.g. 2.5" inputMode="decimal" restrict={(v) => sanitizeCurrencyInput(v, 3)} />
             <div>
@@ -120,16 +145,22 @@ export default function NewListingPage() {
           </div>
         )}
 
-        {step === 2 && (
+        {step === 3 && (
           <div className="space-y-2 rounded-xl border border-[#1B1B1B]/8 p-4 text-sm">
             <ReviewRow label="Address" value={`${form.propertyAddress}, ${form.city}, ${form.state} ${form.zip}`} />
             <ReviewRow label="List Price" value={form.listPrice ? `$${Number(form.listPrice).toLocaleString()}` : "—"} />
-            <ReviewRow label="Type" value={form.listingType} />
-            <ReviewRow label="Expiration" value={form.expirationDate || "—"} />
+            <ReviewRow label="Type" value={listingTypeLabel(form.listingType)} />
+            <ReviewRow label="List Date" value={formatDateMDY(form.listDate)} />
+            <ReviewRow label="Expiration" value={formatDateMDY(form.expirationDate)} />
+            {sellers.filter((s) => s.name).map((s, i) => (
+              <ReviewRow key={i} label={`${isLease ? "Landlord" : "Seller"} ${sellers.length > 1 ? i + 1 : ""}`} value={s.name} />
+            ))}
             <ReviewRow label="Commission" value={form.commissionPercent ? `${form.commissionPercent}%` : "—"} />
           </div>
         )}
       </div>
+
+      {submitError && <p className="mt-6 text-center text-sm text-red-500">{submitError}</p>}
 
       {/* Navigation */}
       <div className="mt-16 flex items-center justify-center gap-3">
@@ -144,9 +175,10 @@ export default function NewListingPage() {
         {step < STEPS.length - 1 ? (
           <motion.button
             onClick={() => setStep((s) => s + 1)}
+            disabled={!canAdvanceListingStep(step, form, sellers)}
             whileHover={{ scale: 1.1 }}
             transition={SPRING_HOVER}
-            className="inline-flex items-center gap-1.5 rounded-full bg-[#1B1B1B] px-7 py-3.5 text-sm font-medium text-white"
+            className="inline-flex items-center gap-1.5 rounded-full bg-[#1B1B1B] px-7 py-3.5 text-sm font-medium text-white disabled:opacity-40"
           >
             Next <ArrowIcon style={{ rotate: "-90deg" }} />
           </motion.button>

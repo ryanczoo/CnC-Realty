@@ -10,7 +10,9 @@ import { escrowTypeToRole, type EscrowContactType } from "@/lib/transaction-help
 import { DateField } from "@/components/ui/DateField";
 import { FormField as Field } from "@/components/ui/FormField";
 import { stripDigits, digitsOnly, formatPhoneInput, sanitizeCurrencyInput, formatCurrencyDisplay, emailError } from "@/lib/form-validation";
-import { SIDES, type TransactionSide } from "@/types/transaction";
+import { SIDES, transactionSideLabel, type TransactionSide } from "@/types/transaction";
+import { formatDateMDY } from "@/lib/utils";
+import { PartySection, emptyParty, type Party } from "@/components/transactions/PartySection";
 import { Spinner } from "@/components/ui/Spinner";
 
 const STAGES = [
@@ -26,8 +28,6 @@ const PROPERTY_CATEGORIES = [
 const PROPERTY_TYPES = ["Single Family", "Condo", "Townhouse", "Multi-Family", "Commercial", "Land", "Industrial", "Farm and Ranch", "Manufactured Home", "Co-Op", "Other"];
 const MULTI_PARCEL_OPTIONS = Array.from({ length: 99 }, (_, i) => i + 2); // 2–100; blank/1 both mean "not multi-parcel"
 
-type Party = { name: string; email: string; phone: string; company: string; licenseNumber: string };
-const emptyParty = (): Party => ({ name: "", email: "", phone: "", company: "", licenseNumber: "" });
 
 export default function NewTransactionPage() {
   const router = useRouter();
@@ -292,7 +292,7 @@ export default function NewTransactionPage() {
     setSaving(false);
   }
 
-  const sideLabel = SIDES.find((s) => s.value === form.transactionSide)?.label ?? "—";
+  const sideLabel = transactionSideLabel(form.transactionSide);
   const stageLabel = STAGES.find((s) => s.value === form.stage)?.label ?? "—";
 
   return (
@@ -744,7 +744,7 @@ export default function NewTransactionPage() {
               <ReviewRow label="Referred-To Agent" value={form.referredToAgentName} />
               <ReviewRow label="Referred-To Brokerage" value={form.referredToBrokerageName || "—"} />
               <ReviewRow label="Contact" value={form.referredToContactEmail || form.referredToContactPhone || "—"} />
-              <ReviewRow label="Date Referred" value={form.dateReferred || "—"} />
+              <ReviewRow label="Date Referred" value={formatDateMDY(form.dateReferred)} />
             </div>
           ) : (
           <div className="space-y-6 text-sm">
@@ -766,18 +766,18 @@ export default function NewTransactionPage() {
               {form.salePrice && <ReviewRow label="Sale Price" value={`$${Number(form.salePrice).toLocaleString()}`} />}
               {form.leasePrice && <ReviewRow label="Total Lease Amount" value={`$${Number(form.leasePrice).toLocaleString()}`} />}
               {form.deposit && <ReviewRow label="Deposit" value={`$${Number(form.deposit).toLocaleString()}`} />}
-              {form.closeOfEscrow && <ReviewRow label="Close of Escrow" value={form.closeOfEscrow} />}
-              {form.offerDate && <ReviewRow label="Offer Date" value={form.offerDate} />}
-              {form.offerExpirationDate && <ReviewRow label="Offer Expiration Date" value={form.offerExpirationDate} />}
-              {form.acceptanceDate && <ReviewRow label="Acceptance Date" value={form.acceptanceDate} />}
-              {form.finalWalkthroughDate && <ReviewRow label="Final Walkthrough Date" value={form.finalWalkthroughDate} />}
-              {form.possessionDate && <ReviewRow label="Possession Date" value={form.possessionDate} />}
+              {form.closeOfEscrow && <ReviewRow label="Close of Escrow" value={formatDateMDY(form.closeOfEscrow)} />}
+              {form.offerDate && <ReviewRow label="Offer Date" value={formatDateMDY(form.offerDate)} />}
+              {form.offerExpirationDate && <ReviewRow label="Offer Expiration Date" value={formatDateMDY(form.offerExpirationDate)} />}
+              {form.acceptanceDate && <ReviewRow label="Acceptance Date" value={formatDateMDY(form.acceptanceDate)} />}
+              {form.finalWalkthroughDate && <ReviewRow label="Final Walkthrough Date" value={formatDateMDY(form.finalWalkthroughDate)} />}
+              {form.possessionDate && <ReviewRow label="Possession Date" value={formatDateMDY(form.possessionDate)} />}
               {form.escrowNumber && <ReviewRow label="Escrow #" value={form.escrowNumber} />}
             </ReviewSection>
             {conditions.filter((c) => c.name).length > 0 && (
               <ReviewSection title="Contingencies">
                 {conditions.filter((c) => c.name).map((c, i) => (
-                  <ReviewRow key={i} label={c.name} value={c.dueDate || "—"} />
+                  <ReviewRow key={i} label={c.name} value={formatDateMDY(c.dueDate)} />
                 ))}
               </ReviewSection>
             )}
@@ -907,47 +907,6 @@ function TextareaField({
         rows={rows}
         className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2.5 text-sm text-[#1B1B1B] placeholder:text-[#1B1B1B]/25 focus:outline-none focus:ring-2 focus:ring-[#9E8C61]/30"
       />
-    </div>
-  );
-}
-
-function PartySection({
-  label, parties, onUpdate, required = false,
-}: {
-  label: string; parties: Party[]; onUpdate: (p: Party[]) => void; required?: boolean;
-}) {
-  function update(i: number, field: keyof Party, value: string) {
-    onUpdate(parties.map((p, idx) => (idx === i ? { ...p, [field]: value } : p)));
-  }
-  const singular = label.slice(0, -1);
-  return (
-    <div>
-      <p className="mb-3 text-center text-sm font-semibold text-[#1B1B1B]/60">{label}</p>
-      <div className="space-y-3">
-        {parties.map((p, i) => (
-          <div key={i} className="relative rounded-xl border border-[#1B1B1B]/8 p-4">
-            {parties.length > 1 && (
-              <button
-                onClick={() => onUpdate(parties.filter((_, idx) => idx !== i))}
-                className="absolute right-3 top-3 text-[#1B1B1B]/25 hover:text-red-400"
-              >
-                <TrashIcon size={14} />
-              </button>
-            )}
-            <div className="grid grid-cols-2 gap-3">
-              <Field label={`${singular} Name${required ? " *" : ""}`} value={p.name} onChange={(v) => update(i, "name", v)} restrict={stripDigits} />
-              <Field label="Email" type="email" value={p.email} onChange={(v) => update(i, "email", v)} error={emailError(p.email)} />
-              <Field label="Phone" type="tel" value={p.phone} onChange={(v) => update(i, "phone", v)} restrict={formatPhoneInput} />
-            </div>
-          </div>
-        ))}
-      </div>
-      <button
-        onClick={() => onUpdate([...parties, emptyParty()])}
-        className="mt-3 flex items-center gap-1.5 text-sm font-medium text-[#9E8C61] hover:text-[#7a6d4a]"
-      >
-        <Plus size={15} /> Add {singular}
-      </button>
     </div>
   );
 }

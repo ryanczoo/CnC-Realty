@@ -324,3 +324,25 @@ describe("PATCH /api/transactions/[id] — shared status rules", () => {
     expect("awaitingReview" in data).toBe(false);
   });
 });
+
+describe("PATCH /api/transactions/[id] — optional text fields", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(prisma.fileActivity.create).mockResolvedValue({} as any);
+  });
+
+  it("stores cleared commission notes as null, not an empty string", async () => {
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u1", role: "AGENT", agentId: "a1" } } as any);
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({ id: "tf1", agentId: "a1", status: "PENDING" } as any);
+    vi.mocked(prisma.transactionFile.update).mockResolvedValue({ id: "tf1" } as any);
+
+    const res = await PATCH(
+      new Request("http://localhost", { method: "PATCH", body: JSON.stringify({ commissionNotes: "" }) }),
+      { params: { id: "tf1" } }
+    );
+
+    expect(res.status).toBe(200);
+    const data = vi.mocked(prisma.transactionFile.update).mock.calls[0][0].data as any;
+    expect(data.commissionNotes).toBeNull();
+  });
+});

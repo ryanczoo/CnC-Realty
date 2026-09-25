@@ -8,7 +8,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const listingRecord = await prisma.listingFile.findUnique({ where: { id: params.id } });
+  const listingRecord = await prisma.listingFile.findUnique({ where: { id: params.id }, include: { parties: true } });
   const { exists, forbidden, record: listing } = checkOwnership(listingRecord, session.user.agentId, session.user.role);
   if (!exists || !listing) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (forbidden) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -45,6 +45,18 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
         transactionSide,
         propertyCategory,
         listPrice: listing.listPrice,
+        // Carry the listing's sellers/landlords over so the agent doesn't re-enter them.
+        parties: listing.parties.length > 0 ? {
+          create: listing.parties.map((p) => ({
+            fileType: "TRANSACTION" as const,
+            role: p.role,
+            name: p.name,
+            email: p.email,
+            phone: p.phone,
+            company: p.company,
+            licenseNumber: p.licenseNumber,
+          })),
+        } : undefined,
         checklistItems: template ? {
           create: template.items.map((item) => ({
             fileType: "TRANSACTION" as const,

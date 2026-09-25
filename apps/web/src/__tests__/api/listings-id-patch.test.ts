@@ -48,6 +48,56 @@ describe("PATCH /api/listings/[id]", () => {
     expect((await patch({ commissionNotes: "x" })).status).toBe(200);
   });
 
+  it("stores a cleared MLS number and commission notes as null, not empty strings", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(AGENT as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "lf1", agentId: "a1", status: "ACTIVE" } as any);
+    vi.mocked(prisma.listingFile.update).mockResolvedValue({ id: "lf1" } as any);
+    expect((await patch({ mlsNumber: "", commissionNotes: "" })).status).toBe(200);
+    const data = vi.mocked(prisma.listingFile.update).mock.calls[0][0].data as any;
+    expect(data.mlsNumber).toBeNull();
+    expect(data.commissionNotes).toBeNull();
+  });
+
+  describe("list/expiration dates", () => {
+    const STORED = { id: "lf1", agentId: "a1", status: "ACTIVE", listDate: new Date("2026-09-24T00:00:00.000Z"), expirationDate: new Date("2027-03-24T00:00:00.000Z") };
+    beforeEach(() => {
+      vi.mocked(getServerSession).mockResolvedValue(AGENT as any);
+      vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(STORED as any);
+      vi.mocked(prisma.listingFile.update).mockResolvedValue({ id: "lf1" } as any);
+    });
+
+    it.each(["listDate", "expirationDate"])("returns 400 when %s is cleared", async (field) => {
+      const res = await patch({ [field]: "" });
+      expect(res.status).toBe(400);
+      expect((await res.json()).error).toBe("List date and expiration date are required");
+      expect(prisma.listingFile.update).not.toHaveBeenCalled();
+    });
+
+    it("returns 400 when a new expiration is before the stored list date", async () => {
+      const res = await patch({ expirationDate: "2026-09-01" });
+      expect(res.status).toBe(400);
+      expect((await res.json()).error).toBe("Expiration date can't be before the list date");
+      expect(prisma.listingFile.update).not.toHaveBeenCalled();
+    });
+
+    it("returns 400 when a new list date is after the stored expiration", async () => {
+      const res = await patch({ listDate: "2027-04-01" });
+      expect(res.status).toBe(400);
+      expect(prisma.listingFile.update).not.toHaveBeenCalled();
+    });
+
+    it("accepts a valid date change", async () => {
+      expect((await patch({ expirationDate: "2027-06-30" })).status).toBe(200);
+      const data = vi.mocked(prisma.listingFile.update).mock.calls[0][0].data as any;
+      expect(data.expirationDate).toEqual(new Date("2027-06-30"));
+    });
+
+    it("does not block edits that don't touch dates on an older listing with no dates", async () => {
+      vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ ...STORED, listDate: null, expirationDate: null } as any);
+      expect((await patch({ commissionNotes: "x" })).status).toBe(200);
+    });
+  });
+
   it("refuses to close without every required document approved", async () => {
     vi.mocked(getServerSession).mockResolvedValue(ADMIN as any);
     vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "lf1", agentId: "a1", status: "ACTIVE", checklistItems: NOT_READY } as any);

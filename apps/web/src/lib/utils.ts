@@ -23,6 +23,12 @@ export function formatDateOnly(
   return new Date(d).toLocaleDateString("en-US", { ...options, timeZone: "UTC" });
 }
 
+// A DateField "YYYY-MM-DD" value as "MM/DD/YYYY" (or "—" when empty) — used
+// by the New Listing and New Transaction wizards' Review steps.
+export function formatDateMDY(value: string): string {
+  return value ? formatDateOnly(value, { month: "2-digit", day: "2-digit", year: "numeric" }) : "—";
+}
+
 // True when a date-only field (stored as UTC midnight) is on a calendar day before
 // today's LOCAL calendar day. Due today is not past due.
 export function isDateOnlyPast(d: Date | string, now: Date = new Date()): boolean {

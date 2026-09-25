@@ -31,6 +31,21 @@ export const SIDES = [
   { value: "LEASE_DUAL", label: "Both Lease Tenant & Landlord", desc: "Dual agency - lease transaction" },
   { value: "REFERRAL", label: "Referral", desc: "Client referral to another agent or brokerage" },
 ] as const;
+
+export function transactionSideLabel(value: string | null | undefined): string {
+  return SIDES.find((s) => s.value === value)?.label ?? "—";
+}
+
+export const LISTING_TYPES = [
+  { value: "RESIDENTIAL_SALE", label: "Residential Sale" },
+  { value: "RESIDENTIAL_LEASE", label: "Residential Lease" },
+  { value: "COMMERCIAL_SALE", label: "Commercial Sale" },
+  { value: "COMMERCIAL_LEASE", label: "Commercial Lease" },
+] as const;
+
+export function listingTypeLabel(value: string | null | undefined): string {
+  return LISTING_TYPES.find((t) => t.value === value)?.label ?? "—";
+}
 export type FilePartyRole =
   | "BUYER" | "SELLER" | "LISTING_AGENT" | "BUYERS_AGENT" | "CO_AGENT"
   | "TITLE_ESCROW" | "TITLE" | "ESCROW" | "ATTORNEY" | "LENDER"

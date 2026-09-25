@@ -7,6 +7,7 @@ import { changeFileStatus } from "@/lib/file-status";
 import { FILE_DETAIL_INCLUDE } from "@/lib/transaction-helpers";
 import { deleteR2Object } from "@/lib/r2";
 import { trimStrings } from "@/lib/form-validation";
+import { listingDatesError } from "@/lib/listing-dates";
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
@@ -42,16 +43,26 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const body = trimStrings(await req.json());
   const role = isAdmin ? "ADMIN" : "AGENT";
 
+  // Only validated when this edit touches a date, so older listings created
+  // before dates were required can still have other fields edited.
+  if (body.listDate !== undefined || body.expirationDate !== undefined) {
+    const datesError = listingDatesError(
+      body.listDate !== undefined ? body.listDate : listing.listDate,
+      body.expirationDate !== undefined ? body.expirationDate : listing.expirationDate,
+    );
+    if (datesError) return NextResponse.json({ error: datesError }, { status: 400 });
+  }
+
   const fieldData = {
     ...(body.propertyAddress !== undefined && { propertyAddress: body.propertyAddress }),
     ...(body.city !== undefined && { city: body.city }),
     ...(body.zip !== undefined && { zip: body.zip }),
     ...(body.listPrice !== undefined && { listPrice: parseFloat(body.listPrice) }),
-    ...(body.mlsNumber !== undefined && { mlsNumber: body.mlsNumber }),
+    ...(body.mlsNumber !== undefined && { mlsNumber: body.mlsNumber || null }),
     ...(body.expirationDate !== undefined && { expirationDate: body.expirationDate ? new Date(body.expirationDate) : null }),
     ...(body.listDate !== undefined && { listDate: body.listDate ? new Date(body.listDate) : null }),
     ...(body.commissionPercent !== undefined && { commissionPercent: body.commissionPercent ? parseFloat(body.commissionPercent) : null }),
-    ...(body.commissionNotes !== undefined && { commissionNotes: body.commissionNotes }),
+    ...(body.commissionNotes !== undefined && { commissionNotes: body.commissionNotes || null }),
   };
 
   if (body.status && body.status !== listing.status) {

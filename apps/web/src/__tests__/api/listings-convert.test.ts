@@ -21,7 +21,7 @@ const SESSION_AGENT = { user: { id: "u1", role: "AGENT", agentId: "a1" } };
 const SALE_LISTING = {
   id: "l1", agentId: "a1", listingType: "RESIDENTIAL_SALE",
   propertyAddress: "123 Main St", city: "LA", state: "CA", zip: "90001",
-  mlsNumber: "M1", listPrice: 800000,
+  mlsNumber: "M1", listPrice: 800000, parties: [],
 };
 
 const LEASE_LISTING = {
@@ -64,6 +64,27 @@ describe("POST /api/listings/[id]/convert", () => {
 
     const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "l1" } });
     expect(res.status).toBe(201);
+  });
+
+  it("copies the listing's parties onto the new transaction file", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({
+      ...SALE_LISTING,
+      parties: [
+        { id: "p1", role: "SELLER", name: "Jane Seller", email: "jane@example.com", phone: null, company: null, licenseNumber: null },
+      ],
+    } as any);
+    vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "tf-parties" } as any);
+
+    const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "l1" } });
+    expect(res.status).toBe(201);
+    expect(prisma.listingFile.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ include: expect.objectContaining({ parties: true }) })
+    );
+    const data = vi.mocked(prisma.transactionFile.create).mock.calls[0][0].data as any;
+    expect(data.parties.create).toEqual([
+      { fileType: "TRANSACTION", role: "SELLER", name: "Jane Seller", email: "jane@example.com", phone: null, company: null, licenseNumber: null },
+    ]);
   });
 
   it("converts a RESIDENTIAL_SALE listing to transactionSide LISTING", async () => {
