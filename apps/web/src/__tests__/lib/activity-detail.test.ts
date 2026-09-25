@@ -22,6 +22,16 @@ describe("describeActivity", () => {
       .toEqual({ detail: "INCOMPLETE → PENDING", reason: null });
   });
 
+  it("marks a status change made by the morning job as automatic", () => {
+    expect(describeActivity({ type: "STATUS_CHANGED", payload: { from: "ACTIVE", to: "EXPIRED", automatic: true } }))
+      .toEqual({ detail: "ACTIVE → EXPIRED (automatic)", reason: null });
+  });
+
+  it("marks a listing change driven by its linked transaction", () => {
+    expect(describeActivity({ type: "STATUS_CHANGED", payload: { from: "ACTIVE_UNDER_CONTRACT", to: "CLOSED", viaTransactionId: "t1" } }))
+      .toEqual({ detail: "ACTIVE_UNDER_CONTRACT → CLOSED (from its transaction)", reason: null });
+  });
+
   it("shows → to when only the new status was recorded", () => {
     expect(describeActivity({ type: "STATUS_CHANGED", payload: { to: "CLOSED" } }))
       .toEqual({ detail: "→ CLOSED", reason: null });

@@ -1,12 +1,14 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { POST } from "@/app/api/cron/listing-expiration-warnings/route";
+import { GET, POST } from "@/app/api/cron/listing-expiration-warnings/route";
 import { NextRequest } from "next/server";
 
 vi.mock("@/lib/prisma", () => ({ prisma: { listingFile: { findMany: vi.fn() } } }));
 vi.mock("@/lib/email/transaction-emails", () => ({ sendFileExpirationWarning: vi.fn() }));
+vi.mock("@/lib/auto-status", () => ({ runAutoStatus: vi.fn().mockResolvedValue({ listingsExpired: 0, listingsActivated: 0, transactionsExpired: 0, transactionsReopened: 0 }) }));
 
 import { prisma } from "@/lib/prisma";
 import { sendFileExpirationWarning } from "@/lib/email/transaction-emails";
+import { runAutoStatus } from "@/lib/auto-status";
 
 const validSecret = "test-secret";
 
@@ -52,7 +54,7 @@ describe("POST /api/cron/listing-expiration-warnings", () => {
     vi.mocked(prisma.listingFile.findMany).mockResolvedValue([]);
     const res = await POST(makeReq(validSecret));
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ sent: 0 });
+    expect(await res.json()).toMatchObject({ sent: 0 });
     expect(sendFileExpirationWarning).not.toHaveBeenCalled();
   });
 
@@ -68,7 +70,7 @@ describe("POST /api/cron/listing-expiration-warnings", () => {
     const res = await POST(makeReq(validSecret));
 
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ sent: 1 });
+    expect(await res.json()).toMatchObject({ sent: 1 });
     expect(sendFileExpirationWarning).toHaveBeenCalledTimes(1);
     expect(sendFileExpirationWarning).toHaveBeenCalledWith({
       agentEmail: "agent@test.com",
@@ -88,7 +90,7 @@ describe("POST /api/cron/listing-expiration-warnings", () => {
 
     const res = await POST(makeReq(validSecret));
 
-    expect(await res.json()).toEqual({ sent: 1 });
+    expect(await res.json()).toMatchObject({ sent: 1 });
     expect(sendFileExpirationWarning).toHaveBeenCalledTimes(1);
     expect(sendFileExpirationWarning).toHaveBeenCalledWith(
       expect.objectContaining({ fileId: "listing-1" })
@@ -109,5 +111,29 @@ describe("POST /api/cron/listing-expiration-warnings", () => {
     } finally {
       process.env.CRON_SECRET = original;
     }
+  });
+});
+
+describe("morning job: date-driven statuses and Vercel Cron's GET", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.stubEnv("CRON_SECRET", validSecret);
+    vi.mocked(prisma.listingFile.findMany).mockResolvedValue([]);
+  });
+
+  it("accepts GET, the method Vercel Cron actually uses", () => {
+    expect(GET).toBe(POST);
+  });
+
+  it("runs the date-driven status pass and reports its counts", async () => {
+    vi.mocked(runAutoStatus).mockResolvedValue({ listingsExpired: 2, listingsActivated: 1, transactionsExpired: 0, transactionsReopened: 0 });
+    const res = await POST(makeReq(validSecret));
+    expect(runAutoStatus).toHaveBeenCalledTimes(1);
+    expect(await res.json()).toMatchObject({ sent: 0, autoStatus: { listingsExpired: 2, listingsActivated: 1 } });
+  });
+
+  it("does not run the status pass for an unauthorized request", async () => {
+    await POST(makeReq("wrong"));
+    expect(runAutoStatus).not.toHaveBeenCalled();
   });
 });

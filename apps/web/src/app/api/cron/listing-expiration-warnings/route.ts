@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendFileExpirationWarning } from "@/lib/email/transaction-emails";
 import { isAuthorizedCronRequest } from "@/lib/cron-auth";
+import { runAutoStatus } from "@/lib/auto-status";
 
 export const maxDuration = 60;
 
@@ -59,5 +60,14 @@ export async function POST(req: NextRequest) {
     )
   );
 
-  return NextResponse.json({ sent: warnings.length });
+  // Morning status pass (SkySlope-style, date-driven): Coming Soon -> Active on
+  // the list date; listings Expired after their expiration date; transactions
+  // Expired after close of escrow and back to Pending if that date moves out.
+  const autoStatus = await runAutoStatus(new Date());
+
+  return NextResponse.json({ sent: warnings.length, autoStatus });
 }
+
+// Vercel Cron calls routes with GET (vercel.com/docs/cron-jobs); same pattern
+// as cron/campaign-deliveries.
+export const GET = POST;
