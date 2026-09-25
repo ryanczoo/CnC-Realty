@@ -80,7 +80,7 @@ export function DocumentsTab({
             <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Checklist Item</th>
             <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Status</th>
             <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Uploaded</th>
-            <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Download</th>
+            <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Download</th>
             {canDelete && <th className="w-12 px-5 py-3" />}
           </tr>
         </thead>
@@ -98,7 +98,7 @@ export function DocumentsTab({
                   </span>
                 </td>
                 <td className="px-5 py-3 text-[#1B1B1B]/50">{new Date(doc.uploadedAt).toLocaleDateString()}</td>
-                <td className="px-5 py-3 text-right">
+                <td className="px-5 py-3 text-center">
                   <a
                     href={doc.r2Url}
                     target="_blank"
