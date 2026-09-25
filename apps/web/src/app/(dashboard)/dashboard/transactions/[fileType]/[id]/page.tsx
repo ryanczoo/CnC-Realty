@@ -185,6 +185,8 @@ export default function FileDetailPage() {
   const viewerIsAdmin = session?.user?.role === "ADMIN";
   const readOnly = isFileReadOnlyFor(isListing ? "listing" : "transaction", file.status, session?.user?.role ?? "AGENT");
   const listingStatusOptions = listing ? agentListingStatusOptions(listing.status) : [];
+  // Convert becomes View Transaction in the same slot once the listing is Under Contract.
+  const linkedTransactionId = listing?.status === "ACTIVE_UNDER_CONTRACT" ? listing.convertedFiles?.[0]?.id : undefined;
   const viewerIsFileAgent =
     !!transaction && session?.user?.agentId != null && session.user.agentId === transaction.agentId;
 
@@ -227,6 +229,11 @@ export default function FileDetailPage() {
               <button onClick={convertToTransaction} className="rounded-full border border-[#1B1B1B]/20 bg-white px-4 py-2 text-sm text-[#1B1B1B] hover:border-[#1B1B1B]/40">
                 Convert to Transaction
               </button>
+            )}
+            {linkedTransactionId && (
+              <Link href={`/dashboard/transactions/transaction/${linkedTransactionId}`} className="rounded-full border border-[#1B1B1B]/20 bg-white px-4 py-2 text-sm text-[#1B1B1B] hover:border-[#1B1B1B]/40">
+                View Transaction
+              </Link>
             )}
             {isReferral && transaction && (
               <ReferralActions

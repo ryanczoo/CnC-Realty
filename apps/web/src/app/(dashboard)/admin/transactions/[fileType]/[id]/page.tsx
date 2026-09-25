@@ -87,6 +87,7 @@ export default function AdminFileDetailPage() {
 
   const isListing = fileType === "listing";
   const listing = isListing ? (file as ListingFileDetail) : null;
+  const linkedTransactionId = listing?.status === "ACTIVE_UNDER_CONTRACT" ? listing.convertedFiles?.[0]?.id : undefined;
   const transaction = !isListing ? (file as TransactionFileDetail) : null;
   const isReferralFile = !isListing && transaction?.transactionSide === "REFERRAL";
 
@@ -145,6 +146,11 @@ export default function AdminFileDetailPage() {
           </div>
 
           <div className="flex items-center gap-2">
+            {linkedTransactionId && (
+              <Link href={`/admin/transactions/transaction/${linkedTransactionId}`} className="rounded-full border border-[#1B1B1B]/20 bg-white px-4 py-2 text-sm text-[#1B1B1B] hover:border-[#1B1B1B]/40">
+                View Transaction
+              </Link>
+            )}
             {file.status === "PENDING_TRANSFER" ? (
               <span className="rounded-full bg-purple-100 px-3 py-1.5 text-xs font-medium text-purple-700">
                 Approve the uploaded document below to unlock

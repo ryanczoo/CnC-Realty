@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@cnc/database";
 import {
   canTransitionListing,
   canTransitionTransaction,
@@ -72,7 +73,37 @@ export async function changeFileStatus({
   const updateOp: any = isListing
     ? prisma.listingFile.update({ where: { id: fileId }, data: data as any })
     : prisma.transactionFile.update({ where: { id: fileId }, data: data as any });
-  const [updated] = await prisma.$transaction([updateOp, prisma.fileActivity.create({ data: activityData })]);
+  // A converted listing follows its transaction: closed when the sale closes, back
+  // on the market (or Expired, if its listing period is over) when the broker
+  // approves the transaction's cancellation. Written in the same DB transaction.
+  const listingSyncOps: Prisma.PrismaPromise<unknown>[] = [];
+  if (!isListing && file.originatingListingId && (toStatus === "CLOSED" || toStatus === "CANCELED_APPROVED")) {
+    const listing = await prisma.listingFile.findUnique({
+      where: { id: file.originatingListingId },
+      select: { id: true, status: true, expirationDate: true },
+    });
+    if (listing?.status === "ACTIVE_UNDER_CONTRACT") {
+      const listingTo = toStatus === "CLOSED"
+        ? "CLOSED"
+        : listing.expirationDate && new Date(listing.expirationDate) < new Date() ? "EXPIRED" : "ACTIVE";
+      listingSyncOps.push(
+        prisma.listingFile.update({ where: { id: listing.id }, data: { status: listingTo } }),
+        prisma.fileActivity.create({
+          data: {
+            fileType: "LISTING" as const,
+            listingFileId: listing.id,
+            transactionFileId: null,
+            actorId: actor.userId,
+            actorRole: actor.role,
+            type: "STATUS_CHANGED" as const,
+            payload: { from: listing.status, to: listingTo, viaTransactionId: fileId },
+          },
+        }),
+      );
+    }
+  }
+
+  const [updated] = await prisma.$transaction([updateOp, prisma.fileActivity.create({ data: activityData }), ...listingSyncOps]);
 
   let emailFailed = false;
   if (toStatus === "CLOSED") {

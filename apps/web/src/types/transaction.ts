@@ -85,6 +85,7 @@ export interface ListingFileDetail {
   status: ListingStatus;
   expirationDate: string | null;
   listDate: string | null;
+  convertedFiles?: { id: string; status: string }[];
   commissionPercent: number | null;
   commissionNotes: string | null;
   awaitingReview: boolean;

@@ -218,3 +218,55 @@ describe("changeFileStatus: the Closed email", () => {
     expect(sendFileClosed).not.toHaveBeenCalled();
   });
 });
+
+describe("changeFileStatus: keeps the originating listing in step", () => {
+  const LINKED = { id: "l1", status: "ACTIVE_UNDER_CONTRACT", expirationDate: new Date("2099-01-01T00:00:00.000Z") };
+  beforeEach(() => vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(LINKED as any));
+
+  it("closes the listing when its transaction closes", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx({ originatingListingId: "l1" }) as any);
+    await changeFileStatus({ kind: "transaction", fileId: "f1", toStatus: "CLOSED", actor: ADMIN });
+    expect(prisma.listingFile.update).toHaveBeenCalledWith({ where: { id: "l1" }, data: { status: "CLOSED" } });
+  });
+
+  it("returns the listing to Active when the transaction's cancellation is approved", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx({ status: "CANCELED_PENDING", originatingListingId: "l1" }) as any);
+    await changeFileStatus({ kind: "transaction", fileId: "f1", toStatus: "CANCELED_APPROVED", actor: ADMIN });
+    expect(prisma.listingFile.update).toHaveBeenCalledWith({ where: { id: "l1" }, data: { status: "ACTIVE" } });
+  });
+
+  it("returns the listing to Expired instead when its expiration date has passed", async () => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ ...LINKED, expirationDate: new Date("2000-01-01T00:00:00.000Z") } as any);
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx({ status: "CANCELED_PENDING", originatingListingId: "l1" }) as any);
+    await changeFileStatus({ kind: "transaction", fileId: "f1", toStatus: "CANCELED_APPROVED", actor: ADMIN });
+    expect(prisma.listingFile.update).toHaveBeenCalledWith({ where: { id: "l1" }, data: { status: "EXPIRED" } });
+  });
+
+  it("logs the listing's change in the listing's own activity feed", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx({ originatingListingId: "l1" }) as any);
+    await changeFileStatus({ kind: "transaction", fileId: "f1", toStatus: "CLOSED", actor: ADMIN });
+    expect(prisma.fileActivity.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        fileType: "LISTING",
+        listingFileId: "l1",
+        type: "STATUS_CHANGED",
+        payload: { from: "ACTIVE_UNDER_CONTRACT", to: "CLOSED", viaTransactionId: "f1" },
+      }),
+    });
+  });
+
+  it("leaves the listing alone when it is not Under Contract", async () => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ ...LINKED, status: "WITHDRAWN" } as any);
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx({ originatingListingId: "l1" }) as any);
+    await changeFileStatus({ kind: "transaction", fileId: "f1", toStatus: "CLOSED", actor: ADMIN });
+    expect(prisma.listingFile.update).not.toHaveBeenCalled();
+  });
+
+  it("does nothing for other transaction statuses or for transactions without a listing", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx({ status: "INCOMPLETE", originatingListingId: "l1" }) as any);
+    await changeFileStatus({ kind: "transaction", fileId: "f1", toStatus: "PENDING", actor: ADMIN });
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx() as any);
+    await changeFileStatus({ kind: "transaction", fileId: "f1", toStatus: "CLOSED", actor: ADMIN });
+    expect(prisma.listingFile.update).not.toHaveBeenCalled();
+  });
+});

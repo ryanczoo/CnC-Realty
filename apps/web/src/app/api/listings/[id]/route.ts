@@ -13,7 +13,12 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const listing = await prisma.listingFile.findUnique({ where: { id: params.id }, include: FILE_DETAIL_INCLUDE });
+  // convertedFiles: the latest transaction made from this listing, for the
+  // "View Transaction" link on an Under Contract listing.
+  const listing = await prisma.listingFile.findUnique({
+    where: { id: params.id },
+    include: { ...FILE_DETAIL_INCLUDE, convertedFiles: { select: { id: true, status: true }, orderBy: { createdAt: "desc" }, take: 1 } },
+  });
   if (!listing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const { forbidden } = checkOwnership(listing, session.user.agentId, session.user.role);
