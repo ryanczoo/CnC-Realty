@@ -114,7 +114,8 @@ export function FileStatusSelect({ current, statuses, disabled, onChange, delete
 }
 ```
 - [ ] Admin page: swap the inline `<select>` for `<FileStatusSelect current={file.status} statuses={statuses} disabled={statusLoading} onChange={changeStatus} />` (delete wired in Task 6).
-- [ ] Agent page, listings only, not `readOnly`, not `PENDING_TRANSFER`, only when `allowedNextStatuses("listing", status, "AGENT")` is non-empty: render `FileStatusSelect` with `[status, ...allowed]`; `onChange` PATCHes `/api/listings/${id}` `{ status }`, shows `body.error` in the existing `actionError`, then `load()`. Placement: header right, before Convert/Submit (confirm with Ryan).
+- [ ] Add a pure helper in `transaction-helpers.ts` with RED tests first: `agentListingStatusOptions(status: string): string[]` → `[]` when status is `ACTIVE_UNDER_CONTRACT`, `PENDING_TRANSFER`, `CLOSED`, or `CANCELED`; otherwise `allowedNextStatuses("listing", status, "AGENT").filter((s) => s !== "ACTIVE_UNDER_CONTRACT")`. Tests: Active → contains ACTIVE/…/WITHDRAWN but not ACTIVE_UNDER_CONTRACT or CANCELED; Under Contract → `[]`; Incomplete → `["COMING_SOON", "ACTIVE"]`.
+- [ ] Agent page, listings only, not `readOnly`: when `agentListingStatusOptions(status)` is non-empty render `FileStatusSelect` with `[status, ...options]`; `onChange` PATCHes `/api/listings/${id}` `{ status }`, shows `body.error` in the existing `actionError`, then `load()`. Header order (Ryan): `[Convert to Transaction | View Transaction] [Submit for Review] [Status ▾]` — the dropdown is last.
 - [ ] Gate + commit `feat: agents can change their listing's status (shared FileStatusSelect)`.
 
 ### Task 5: Listing ↔ transaction sync + View Transaction link
@@ -187,7 +188,7 @@ if (!isListing && file.originatingListingId && (toStatus === "CLOSED" || toStatu
 }
 const [updated] = await prisma.$transaction([updateOp, prisma.fileActivity.create({ data: activityData }), ...listingSyncOps]);
 ```
-- [ ] Listing GET: `include: { ...FILE_DETAIL_INCLUDE, convertedFiles: { select: { id: true, status: true }, orderBy: { createdAt: "desc" }, take: 1 } }`. Both pages: when listing `status === "ACTIVE_UNDER_CONTRACT"` and `convertedFiles?.[0]`, render a pill link "View Transaction" (agent → `/dashboard/transactions/transaction/<id>`, admin → `/admin/transactions/transaction/<id>`). Placement confirmed with Ryan.
+- [ ] Listing GET: `include: { ...FILE_DETAIL_INCLUDE, convertedFiles: { select: { id: true, status: true }, orderBy: { createdAt: "desc" }, take: 1 } }`. Both pages: when listing `status === "ACTIVE_UNDER_CONTRACT"` and `convertedFiles?.[0]`, render a white pill link "View Transaction" (same classes as the Convert button) in the slot Convert occupies — first in the header row (agent → `/dashboard/transactions/transaction/<id>`, admin → `/admin/transactions/transaction/<id>`, admin places it before its status dropdown).
 - [ ] Gate + commit `feat: keep a converted listing in step with its transaction`.
 
 ### Task 6: Admin-only listing delete (zero documents, not converted)
@@ -236,9 +237,19 @@ ALTER TYPE "FileActivityType" ADD VALUE 'DOCUMENT_DELETED';
 **Files:** `ChecklistPanel.tsx` (agent trash icon), agent page (pass `viewerId={session?.user?.id}`), `DocumentReviewCard.tsx` (admin Remove), `DocumentsTab.tsx` (admin trash + inline reason form), admin page (pass `canDelete` + `onChanged={load}` to `DocumentsTab`). Reuse `TrashIcon`, `window.confirm` for Remove, and `DocumentReviewCard`'s inline reject-form pattern for the reason.
 
 - [ ] `ChecklistPanel`: when `topDoc?.reviewStatus === "PENDING_REVIEW" && topDoc.uploadedByAgentId === viewerId && !readOnly`, show a `TrashIcon` button (title "Remove this document") before Upload → `window.confirm("Remove this document from the checklist? It stays in the file's Documents tab.")` → `POST /api/documents/${id}/remove` → `onUploaded()`; errors shown in the panel's error line.
-- [ ] `DocumentReviewCard`: pill "Remove" button (admin, any status, only when `doc.checklistItemId`) → same endpoint → `onReviewed()`.
+- [ ] `DocumentReviewCard`: white pill "Remove" button placed after Download / Approve / Reject (admin, any status, only when `doc.checklistItemId`) → `window.confirm("Remove this document from the checklist item? The checklist item stays; the document moves to the Documents tab.")` → same endpoint → `onReviewed()`.
 - [ ] `DocumentsTab`: optional `canDelete?: boolean; onChanged?: () => void`. When `canDelete`, add a trailing column with `TrashIcon`; clicking expands an inline row: warning text ("Permanently erases this file. It can't be undone. California requires keeping file documents for 3 years (B&P §10148) — only delete a document that doesn't belong in this file."), required reason textarea, pill "Delete permanently" (disabled until reason) → `DELETE /api/documents/${id}` `{ reason }` → `onChanged()`.
 - [ ] Gate + commit `feat: Remove on the checklist, admin permanent Delete on the Documents tab`.
+
+### Task 10b: Morning status job (date-driven)
+
+**Files:** Create `src/lib/auto-status.ts`; modify `src/app/api/cron/listing-expiration-warnings/route.ts` to call it; test `src/__tests__/lib/auto-status.test.ts`.
+
+**Produces:** `runAutoStatus(now: Date): Promise<{ listingsActivated: number; listingsExpired: number; transactionsExpired: number; transactionsReopened: number }>`.
+
+- [ ] Tests (RED), prisma mocked: `COMING_SOON` listing with `listDate ≤ today` → `ACTIVE`; `ACTIVE`/`COMING_SOON` with `expirationDate < today` → `EXPIRED` (expiration wins over activation); `INCOMPLETE` never touched; `PENDING` transaction with `closeOfEscrow < today` → `EXPIRED`; `EXPIRED` transaction with `closeOfEscrow ≥ today` → `PENDING`; each change writes a `STATUS_CHANGED` activity `{ from, to, automatic: true }` with `actorId` = the file agent's `userId`, `actorRole: "AGENT"`; "today" is the Pacific calendar day (`America/Los_Angeles`) compared against UTC-midnight date-only fields.
+- [ ] Implement with `findMany` on the indexed `status` column (select `id`, `status`, dates, `agent.userId`) and one `$transaction([update, activity])` per changed file. Cron route: call `runAutoStatus(new Date())` after the existing warnings and include the counts in its JSON response. Ignore failures per file (log to Sentry, continue).
+- [ ] Gate + commit `feat: date-driven listing/transaction statuses in the morning job`.
 
 ### Task 11: Live verification + cleanup (with Ryan)
 - [ ] Ryan clicks through: card labels, convert redirect, agent dropdown (no Cancel), sync (close + cancel-approved), delete listing option visibility, Remove/Delete flows.
