@@ -1,4 +1,4 @@
-type Payload = { name?: unknown; note?: unknown; from?: unknown; to?: unknown; automatic?: unknown; viaTransactionId?: unknown };
+type Payload = { name?: unknown; note?: unknown; from?: unknown; to?: unknown; automatic?: unknown; viaTransactionId?: unknown; reason?: unknown; checklistItemName?: unknown };
 
 const asText = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
 
@@ -11,6 +11,14 @@ export function describeActivity(a: { type: string; payload: unknown }): { detai
   }
   if (a.type === "DOCUMENT_REJECTED") {
     return { detail: asText(p.name), reason: asText(p.note) };
+  }
+  if (a.type === "DOCUMENT_REMOVED") {
+    const name = asText(p.name);
+    const item = asText(p.checklistItemName);
+    return { detail: name && item ? `${name} (from ${item})` : name, reason: null };
+  }
+  if (a.type === "DOCUMENT_DELETED") {
+    return { detail: asText(p.name), reason: asText(p.reason) };
   }
   if (a.type === "STATUS_CHANGED") {
     const from = asText(p.from);

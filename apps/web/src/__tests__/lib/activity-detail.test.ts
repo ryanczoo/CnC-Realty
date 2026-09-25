@@ -37,6 +37,16 @@ describe("describeActivity", () => {
       .toEqual({ detail: "→ CLOSED", reason: null });
   });
 
+  it("names the document that was removed from the checklist, and which item", () => {
+    expect(describeActivity({ type: "DOCUMENT_REMOVED", payload: { name: "RLA.pdf", checklistItemName: "RLA — Residential Listing Agreement" } }))
+      .toEqual({ detail: "RLA.pdf (from RLA — Residential Listing Agreement)", reason: null });
+  });
+
+  it("names a permanently deleted document and shows the broker's reason", () => {
+    expect(describeActivity({ type: "DOCUMENT_DELETED", payload: { name: "Wrong client.pdf", reason: "Another client's paperwork" } }))
+      .toEqual({ detail: "Wrong client.pdf", reason: "Another client's paperwork" });
+  });
+
   it("returns nothing extra for other types or a missing payload", () => {
     expect(describeActivity({ type: "SUBMITTED_FOR_REVIEW", payload: null })).toEqual({ detail: null, reason: null });
     expect(describeActivity({ type: "DOCUMENT_APPROVED", payload: null })).toEqual({ detail: null, reason: null });

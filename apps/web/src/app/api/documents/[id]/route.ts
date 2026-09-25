@@ -3,29 +3,37 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { deleteR2Object } from "@/lib/r2";
-import { resolveFileRef, assertFileEditable } from "@/lib/api-auth";
+import { resolveFileRef } from "@/lib/api-auth";
 
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+// Permanent delete: broker only, for a document that never belonged in the file
+// (e.g. another client's paperwork). Everything else uses Remove, which keeps
+// the document (B&P §10148). The name and reason are logged on the file first,
+// so the record survives even though the document is erased.
+export async function DELETE(req: Request, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (session.user.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const doc = await prisma.fileDocument.findUnique({ where: { id: params.id } });
   if (!doc) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  if (doc.reviewStatus !== "PENDING_REVIEW" && doc.reviewStatus !== "NOT_SUBMITTED") {
-    return NextResponse.json({ error: "Cannot delete a reviewed document" }, { status: 400 });
-  }
-  if (doc.uploadedByAgentId !== session.user.id && session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  const body = await req.json().catch(() => ({}));
+  const reason = typeof body?.reason === "string" ? body.reason.trim() : "";
+  if (!reason) return NextResponse.json({ error: "A reason is required" }, { status: 400 });
 
   const ref = resolveFileRef(doc);
   if (ref) {
-    const parent = ref.fileType === "listing"
-      ? await prisma.listingFile.findUnique({ where: { id: ref.fileId }, select: { status: true } })
-      : await prisma.transactionFile.findUnique({ where: { id: ref.fileId }, select: { status: true } });
-    const locked = assertFileEditable(ref.fileType, parent?.status, session.user.role);
-    if (locked) return locked;
+    await prisma.fileActivity.create({
+      data: {
+        fileType: ref.fileType === "listing" ? "LISTING" : "TRANSACTION",
+        listingFileId: ref.fileType === "listing" ? ref.fileId : null,
+        transactionFileId: ref.fileType === "transaction" ? ref.fileId : null,
+        actorId: session.user.id,
+        actorRole: "ADMIN",
+        type: "DOCUMENT_DELETED",
+        payload: { name: doc.name, documentId: doc.id, reason },
+      },
+    });
   }
 
   await deleteR2Object(doc.r2Key);

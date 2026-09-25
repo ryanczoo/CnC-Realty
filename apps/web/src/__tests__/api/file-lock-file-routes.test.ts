@@ -14,7 +14,7 @@ vi.mock("@/lib/prisma", () => ({
 
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
-import { DELETE as deleteDocument } from "../../app/api/documents/[id]/route";
+import { POST as removeDocument } from "../../app/api/documents/[id]/remove/route";
 import { POST as postCondition } from "../../app/api/transactions/[id]/conditions/route";
 import { POST as submitTransaction } from "../../app/api/transactions/[id]/submit-review/route";
 import { POST as submitListing } from "../../app/api/listings/[id]/submit-review/route";
@@ -28,7 +28,7 @@ const CLOSED_TX = { id: "f1", agentId: "a1", status: "CLOSED", checklistItems: [
 const CLOSED_LISTING = { id: "f1", agentId: "a1", status: "CLOSED", listingType: "RESIDENTIAL_SALE", checklistItems: [], agent: { user: { name: "Ann" } }, propertyAddress: "1 A St" };
 
 const CALLS: [string, () => Promise<Response>][] = [
-  ["DELETE /api/documents/[id]", () => deleteDocument(new Request("http://localhost"), { params: { id: "d1" } })],
+  ["POST /api/documents/[id]/remove", () => removeDocument(new Request("http://localhost"), { params: { id: "d1" } })],
   ["POST transaction conditions", () => postCondition(req(), { params: { id: "f1" } })],
   ["POST transaction submit-review", () => submitTransaction(req(), { params: { id: "f1" } })],
   ["POST listing submit-review", () => submitListing(req(), { params: { id: "f1" } })],
@@ -41,7 +41,7 @@ beforeEach(() => {
   vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(CLOSED_TX as any);
   vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(CLOSED_LISTING as any);
   vi.mocked(prisma.fileDocument.findUnique).mockResolvedValue({
-    id: "d1", reviewStatus: "PENDING_REVIEW", uploadedByAgentId: "u1", transactionFileId: "f1", listingFileId: null, r2Key: "k",
+    id: "d1", reviewStatus: "PENDING_REVIEW", uploadedByAgentId: "u1", checklistItemId: "c1", transactionFileId: "f1", listingFileId: null, r2Key: "k",
   } as any);
 });
 
@@ -52,11 +52,11 @@ describe("closed files are read-only for agents (routes with their own lookup)",
     expect((await res.json()).error).toBe(LOCK_MESSAGE);
   });
 
-  it("deleting a document on a listing file checks the listing's status", async () => {
+  it("removing a document on a listing file checks the listing's status", async () => {
     vi.mocked(prisma.fileDocument.findUnique).mockResolvedValue({
-      id: "d1", reviewStatus: "PENDING_REVIEW", uploadedByAgentId: "u1", transactionFileId: null, listingFileId: "f1", r2Key: "k",
+      id: "d1", reviewStatus: "PENDING_REVIEW", uploadedByAgentId: "u1", checklistItemId: "c1", transactionFileId: null, listingFileId: "f1", r2Key: "k",
     } as any);
-    const res = await deleteDocument(new Request("http://localhost"), { params: { id: "d1" } });
+    const res = await removeDocument(new Request("http://localhost"), { params: { id: "d1" } });
     expect(res.status).toBe(403);
     expect((await res.json()).error).toBe(LOCK_MESSAGE);
   });
