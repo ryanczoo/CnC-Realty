@@ -35,12 +35,14 @@ export function latestDocument<T extends { uploadedAt?: string | Date }>(docs: r
   return docs.reduce<T | undefined>((latest, d) => (!latest || time(d) > time(latest) ? d : latest), undefined);
 }
 
+// Agents never cancel a listing (it locks the file): they withdraw it, and only
+// the broker cancels — SkySlope routes agent cancellations through the broker too.
 const AGENT_LISTING_TRANSITIONS: Record<ListingStatus, ListingStatus[]> = {
   INCOMPLETE:            ["COMING_SOON", "ACTIVE"],
   PENDING_TRANSFER:      [],
-  COMING_SOON:           ["ACTIVE", "WITHDRAWN", "CANCELED"],
-  ACTIVE:                ["COMING_SOON", "ACTIVE_UNDER_CONTRACT", "EXPIRED", "WITHDRAWN", "CANCELED"],
-  ACTIVE_UNDER_CONTRACT: ["ACTIVE", "WITHDRAWN", "CANCELED"],
+  COMING_SOON:           ["ACTIVE", "WITHDRAWN"],
+  ACTIVE:                ["COMING_SOON", "ACTIVE_UNDER_CONTRACT", "EXPIRED", "WITHDRAWN"],
+  ACTIVE_UNDER_CONTRACT: ["ACTIVE", "WITHDRAWN"],
   EXPIRED:               ["ACTIVE"],
   WITHDRAWN:             [],
   CANCELED:              [],

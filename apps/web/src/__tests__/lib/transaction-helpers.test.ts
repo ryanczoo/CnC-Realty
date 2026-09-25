@@ -168,3 +168,17 @@ describe("pickDisplayDate", () => {
     expect(pickDisplayDate("transaction", { expirationDate: "2026-02-22T00:00:00.000Z", closeOfEscrow: null })).toBeNull();
   });
 });
+
+describe("listing cancellation is broker-only", () => {
+  it.each(["COMING_SOON", "ACTIVE", "ACTIVE_UNDER_CONTRACT"])("does not let an agent cancel a %s listing", (from) => {
+    expect(canTransitionListing(from as any, "CANCELED", "AGENT")).toBe(false);
+  });
+
+  it.each(["INCOMPLETE", "COMING_SOON", "ACTIVE", "ACTIVE_UNDER_CONTRACT", "EXPIRED", "WITHDRAWN"])("still lets the broker cancel a %s listing", (from) => {
+    expect(canTransitionListing(from as any, "CANCELED", "ADMIN")).toBe(true);
+  });
+
+  it("still lets an agent withdraw an active listing", () => {
+    expect(canTransitionListing("ACTIVE", "WITHDRAWN", "AGENT")).toBe(true);
+  });
+});
