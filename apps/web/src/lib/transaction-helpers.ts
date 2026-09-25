@@ -167,6 +167,16 @@ export function pickDisplayPrice(
   return prices.listPrice ?? null;
 }
 
+// The date a file card shows: a listing's expiration, a transaction's close of
+// escrow — never one labeled as the other.
+export function pickDisplayDate(
+  fileType: "listing" | "transaction",
+  dates: { expirationDate?: string | null; closeOfEscrow?: string | null }
+): { label: "Expires" | "COE"; date: string } | null {
+  if (fileType === "listing") return dates.expirationDate ? { label: "Expires", date: dates.expirationDate } : null;
+  return dates.closeOfEscrow ? { label: "COE", date: dates.closeOfEscrow } : null;
+}
+
 export type EscrowContactType = "Title" | "Escrow" | "Attorney";
 
 const ESCROW_ROLE_BY_TYPE = { Title: "TITLE", Escrow: "ESCROW", Attorney: "ATTORNEY" } as const;

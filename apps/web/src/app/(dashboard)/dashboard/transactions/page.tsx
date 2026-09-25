@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { FileCard } from "@/components/transactions/FileCard";
-import { pickDisplayPrice } from "@/lib/transaction-helpers";
+import { pickDisplayPrice, pickDisplayDate } from "@/lib/transaction-helpers";
 import { fetchListings, fetchTransactions } from "@/lib/dashboard-queries";
 
 type Tab = "listings" | "transactions";
@@ -75,7 +75,7 @@ export default function TransactionsPage() {
               address={item.propertyAddress}
               city={item.city}
               status={item.status}
-              closeDate={item.closeOfEscrow ?? item.expirationDate}
+              displayDate={pickDisplayDate(fileKind, item)}
               price={pickDisplayPrice(fileKind, item)}
               checklistItems={item.checklistItems ?? []}
               awaitingReview={item.awaitingReview}

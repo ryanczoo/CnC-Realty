@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { FileCard } from "@/components/transactions/FileCard";
-import { pickDisplayPrice } from "@/lib/transaction-helpers";
+import { pickDisplayPrice, pickDisplayDate } from "@/lib/transaction-helpers";
 
 type Tab = "all" | "review";
 
@@ -79,7 +79,7 @@ export default function AdminTransactionsPage() {
               address={item.propertyAddress}
               city={item.city}
               status={item.status}
-              closeDate={item.closeOfEscrow ?? item.expirationDate}
+              displayDate={pickDisplayDate(item.kind, item)}
               price={pickDisplayPrice(item.kind, item)}
               checklistItems={item.checklistItems ?? []}
               awaitingReview={item.awaitingReview}

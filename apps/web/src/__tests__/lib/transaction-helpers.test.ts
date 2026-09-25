@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calcReferralFee, canTransitionTransaction, pickDisplayPrice, escrowTypeToRole, latestDocument, allowedNextStatuses, canTransitionListing } from "@/lib/transaction-helpers";
+import { calcReferralFee, canTransitionTransaction, pickDisplayPrice, pickDisplayDate, escrowTypeToRole, latestDocument, allowedNextStatuses, canTransitionListing } from "@/lib/transaction-helpers";
 
 describe("calcReferralFee", () => {
   it("takes 10% when 10% of the amount exceeds $200", () => {
@@ -151,5 +151,20 @@ describe("allowedNextStatuses", () => {
     expect(allowedNextStatuses("transaction", "NOPE", "ADMIN")).toEqual([]);
     const list = allowedNextStatuses("transaction", "PENDING", "ADMIN");
     expect(new Set(list).size).toBe(list.length);
+  });
+});
+
+describe("pickDisplayDate", () => {
+  it("labels a listing's expiration date 'Expires'", () => {
+    expect(pickDisplayDate("listing", { expirationDate: "2026-02-22T00:00:00.000Z", closeOfEscrow: null })).toEqual({ label: "Expires", date: "2026-02-22T00:00:00.000Z" });
+  });
+
+  it("labels a transaction's close of escrow 'COE'", () => {
+    expect(pickDisplayDate("transaction", { closeOfEscrow: "2026-03-01T00:00:00.000Z" })).toEqual({ label: "COE", date: "2026-03-01T00:00:00.000Z" });
+  });
+
+  it("never shows a listing's date as COE or a transaction's as Expires", () => {
+    expect(pickDisplayDate("listing", { closeOfEscrow: "2026-03-01T00:00:00.000Z", expirationDate: null })).toBeNull();
+    expect(pickDisplayDate("transaction", { expirationDate: "2026-02-22T00:00:00.000Z", closeOfEscrow: null })).toBeNull();
   });
 });
