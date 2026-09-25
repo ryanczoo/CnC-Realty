@@ -3,15 +3,15 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("@sentry/nextjs", () => ({ captureException: vi.fn() }));
 vi.mock("@/lib/prisma", () => ({
   prisma: {
-    listingFile: { findMany: vi.fn(), update: vi.fn() },
-    transactionFile: { findMany: vi.fn(), update: vi.fn() },
+    listingFile: { findMany: vi.fn(), findUnique: vi.fn(), update: vi.fn() },
+    transactionFile: { findMany: vi.fn(), findUnique: vi.fn(), update: vi.fn() },
     fileActivity: { create: vi.fn() },
     $transaction: vi.fn(),
   },
 }));
 
 import { prisma } from "@/lib/prisma";
-import { runAutoStatus, pacificToday, dateDrivenStatus } from "@/lib/auto-status";
+import { runAutoStatus, pacificToday, dateDrivenStatus, followDates } from "@/lib/auto-status";
 
 // 2026-09-24 at 10:00 Pacific (17:00 UTC) — the morning job's run time.
 const NOW = new Date("2026-09-24T17:00:00.000Z");
@@ -146,5 +146,31 @@ describe("dateDrivenStatus", () => {
     for (const s of ["INCOMPLETE", "PRE_CONTRACT", "CANCELED_PENDING", "CLOSED"]) {
       expect(dateDrivenStatus(S(s, { closeOfEscrow: past }), TODAY)).toBeNull();
     }
+  });
+});
+
+describe("followDates (after a detail save)", () => {
+  const ACTOR = { userId: "u9", role: "AGENT" as const };
+  const future = new Date("2099-01-01T00:00:00.000Z");
+
+  it("returns an Expired listing to Active when its expiration was extended, credited to whoever saved", async () => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "l1", status: "EXPIRED", listDate: null, expirationDate: future } as any);
+    await followDates("listing", "l1", ACTOR);
+    expect(prisma.listingFile.update).toHaveBeenCalledWith({ where: { id: "l1" }, data: { status: "ACTIVE" } });
+    expect(prisma.fileActivity.create).toHaveBeenCalledWith({ data: expect.objectContaining({
+      listingFileId: "l1", actorId: "u9", actorRole: "AGENT", payload: { from: "EXPIRED", to: "ACTIVE", automatic: true },
+    }) });
+  });
+
+  it("returns an Expired lease to Pending when its lease start date moved out", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({ id: "t1", status: "EXPIRED", transactionSide: "LEASE_TENANT", closeOfEscrow: null, leaseStartDate: future } as any);
+    await followDates("transaction", "t1", ACTOR);
+    expect(prisma.transactionFile.update).toHaveBeenCalledWith({ where: { id: "t1" }, data: { status: "PENDING" } });
+  });
+
+  it("writes nothing when the dates don't call for a change", async () => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "l1", status: "ACTIVE", listDate: null, expirationDate: future } as any);
+    await followDates("listing", "l1", ACTOR);
+    expect(prisma.listingFile.update).not.toHaveBeenCalled();
   });
 });

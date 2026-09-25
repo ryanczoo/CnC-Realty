@@ -5,6 +5,7 @@ vi.mock("@/lib/auth", () => ({ authOptions: {} }));
 vi.mock("@sentry/nextjs", () => ({ captureException: vi.fn() }));
 vi.mock("@/lib/r2", () => ({ deleteR2Object: vi.fn() }));
 vi.mock("@/lib/email/transaction-emails", () => ({ sendFileClosed: vi.fn() }));
+vi.mock("@/lib/auto-status", () => ({ followDates: vi.fn() }));
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     listingFile: { findUnique: vi.fn(), update: vi.fn() },
@@ -17,6 +18,7 @@ vi.mock("@/lib/prisma", () => ({
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { PATCH } from "../../app/api/listings/[id]/route";
+import { followDates } from "@/lib/auto-status";
 
 const AGENT = { user: { id: "u1", role: "AGENT", agentId: "a1" } };
 const ADMIN = { user: { id: "admin1", role: "ADMIN", agentId: null } };
@@ -135,5 +137,26 @@ describe("PATCH /api/listings/[id]", () => {
     const data = vi.mocked(prisma.listingFile.update).mock.calls[0][0].data as Record<string, unknown>;
     expect(data.status).toBe("WITHDRAWN");
     expect("awaitingReview" in data).toBe(false);
+  });
+});
+
+describe("PATCH /api/listings/[id] — detail edits", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getServerSession).mockResolvedValue(AGENT as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "lf1", agentId: "a1", status: "EXPIRED", listDate: new Date("2026-01-01"), expirationDate: new Date("2026-06-01") } as any);
+    vi.mocked(prisma.listingFile.update).mockResolvedValue({ id: "lf1" } as any);
+  });
+
+  it("won't clear a required field", async () => {
+    const res = await patch({ listPrice: "" });
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("List Price can't be blank");
+    expect(prisma.listingFile.update).not.toHaveBeenCalled();
+  });
+
+  it("after saving, lets the dates move the status (e.g. an extended Expired listing)", async () => {
+    await patch({ expirationDate: "2027-06-01" });
+    expect(followDates).toHaveBeenCalledWith("listing", "lf1", { userId: "u1", role: "AGENT" });
   });
 });

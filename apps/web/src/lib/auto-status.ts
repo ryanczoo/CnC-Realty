@@ -60,7 +60,7 @@ export function dateDrivenStatus(
 type Candidate = {
   id: string;
   status: string;
-  agent: { userId: string } | null;
+  agent?: { userId: string } | null;
   transactionSide?: string | null;
   listDate?: DateInput;
   expirationDate?: DateInput;
@@ -68,34 +68,62 @@ type Candidate = {
   leaseStartDate?: DateInput;
 };
 
+// Writes one automatic status change and its activity row together. The morning
+// job credits the file's agent; a detail save credits whoever saved.
+async function writeAutoStatus(
+  kind: "listing" | "transaction",
+  id: string,
+  from: string,
+  to: string,
+  actor: { userId: string; role: "ADMIN" | "AGENT" },
+): Promise<void> {
+  const update = kind === "listing"
+    ? prisma.listingFile.update({ where: { id }, data: { status: to as never } })
+    : prisma.transactionFile.update({ where: { id }, data: { status: to as never } });
+  await prisma.$transaction([
+    update,
+    prisma.fileActivity.create({
+      data: {
+        fileType: kind === "listing" ? "LISTING" : "TRANSACTION",
+        listingFileId: kind === "listing" ? id : null,
+        transactionFileId: kind === "transaction" ? id : null,
+        actorId: actor.userId,
+        actorRole: actor.role,
+        type: "STATUS_CHANGED",
+        payload: { from, to, automatic: true },
+      },
+    }),
+  ]);
+}
+
 async function applyAll(kind: "listing" | "transaction", files: Candidate[], to: string): Promise<number> {
   let changed = 0;
   for (const f of files) {
     if (!f.agent) continue;
     try {
-      const update = kind === "listing"
-        ? prisma.listingFile.update({ where: { id: f.id }, data: { status: to as never } })
-        : prisma.transactionFile.update({ where: { id: f.id }, data: { status: to as never } });
-      await prisma.$transaction([
-        update,
-        prisma.fileActivity.create({
-          data: {
-            fileType: kind === "listing" ? "LISTING" : "TRANSACTION",
-            listingFileId: kind === "listing" ? f.id : null,
-            transactionFileId: kind === "transaction" ? f.id : null,
-            actorId: f.agent.userId,
-            actorRole: "AGENT",
-            type: "STATUS_CHANGED",
-            payload: { from: f.status, to, automatic: true },
-          },
-        }),
-      ]);
+      await writeAutoStatus(kind, f.id, f.status, to, { userId: f.agent.userId, role: "AGENT" });
       changed++;
     } catch (err) {
       Sentry.captureException(err, { extra: { kind, fileId: f.id, to } });
     }
   }
   return changed;
+}
+
+// After a detail save: if the saved dates call for a new status (an extended
+// Expired listing -> Active, an Expired transaction whose key date moved out ->
+// Pending, …), apply it now instead of waiting for the morning job.
+export async function followDates(
+  kind: "listing" | "transaction",
+  id: string,
+  actor: { userId: string; role: "ADMIN" | "AGENT" },
+): Promise<void> {
+  const file: Candidate | null = kind === "listing"
+    ? await prisma.listingFile.findUnique({ where: { id }, select: { id: true, status: true, listDate: true, expirationDate: true } })
+    : await prisma.transactionFile.findUnique({ where: { id }, select: { id: true, status: true, transactionSide: true, closeOfEscrow: true, leaseStartDate: true } });
+  if (!file) return;
+  const to = dateDrivenStatus({ ...file, kind }, pacificToday(new Date()));
+  if (to) await writeAutoStatus(kind, id, file.status, to, actor);
 }
 
 export async function runAutoStatus(now: Date) {

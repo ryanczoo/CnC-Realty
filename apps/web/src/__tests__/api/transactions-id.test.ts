@@ -12,10 +12,14 @@ vi.mock("@/lib/prisma", () => ({
 }));
 vi.mock("@/lib/email/transaction-emails", () => ({ sendFileClosed: vi.fn() }));
 vi.mock("@sentry/nextjs", () => ({ captureException: vi.fn() }));
+vi.mock("@/lib/auto-status", () => ({ followDates: vi.fn() }));
+vi.mock("@/lib/file-status", async (orig) => ({ ...(await orig<typeof import("@/lib/file-status")>()), maybeAutoPending: vi.fn() }));
 
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { GET, PATCH } from "../../app/api/transactions/[id]/route";
+import { followDates } from "@/lib/auto-status";
+import { maybeAutoPending } from "@/lib/file-status";
 
 function makeRequest() {
   return new Request("http://localhost/api/transactions/tf1");
@@ -344,5 +348,35 @@ describe("PATCH /api/transactions/[id] — optional text fields", () => {
     expect(res.status).toBe(200);
     const data = vi.mocked(prisma.transactionFile.update).mock.calls[0][0].data as any;
     expect(data.commissionNotes).toBeNull();
+  });
+});
+
+describe("PATCH /api/transactions/[id] — detail edits", () => {
+  const AGENT = { user: { id: "u1", role: "AGENT", agentId: "a1" } };
+  const patch = (body: unknown) => PATCH(new Request("http://localhost", { method: "PATCH", body: JSON.stringify(body) }), { params: { id: "tf1" } });
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getServerSession).mockResolvedValue(AGENT as any);
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({ id: "tf1", agentId: "a1", status: "INCOMPLETE", transactionSide: "LISTING" } as any);
+    vi.mocked(prisma.transactionFile.update).mockResolvedValue({ id: "tf1" } as any);
+  });
+
+  it("saves any editable field (parsed), and ignores fields that aren't editable", async () => {
+    expect((await patch({ deposit: "25000", acceptanceDate: "2026-09-20", transactionSide: "DUAL" })).status).toBe(200);
+    expect(prisma.transactionFile.update).toHaveBeenCalledWith({ where: { id: "tf1" }, data: { deposit: 25000, acceptanceDate: new Date("2026-09-20") } });
+  });
+
+  it("won't clear a required field", async () => {
+    const res = await patch({ salePrice: "" });
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("Sale Price can't be blank");
+    expect(prisma.transactionFile.update).not.toHaveBeenCalled();
+  });
+
+  it("after saving, lets the dates move the status, then re-checks automatic Pending", async () => {
+    await patch({ closeOfEscrow: "2026-10-20" });
+    const actor = { userId: "u1", role: "AGENT" };
+    expect(followDates).toHaveBeenCalledWith("transaction", "tf1", actor);
+    expect(maybeAutoPending).toHaveBeenCalledWith("tf1", actor);
   });
 });

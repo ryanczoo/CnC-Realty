@@ -3,7 +3,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { checkOwnership, assertFileEditable } from "@/lib/api-auth";
-import { changeFileStatus } from "@/lib/file-status";
+import { changeFileStatus, maybeAutoPending } from "@/lib/file-status";
+import { followDates } from "@/lib/auto-status";
+import { transactionEditData, requiredFieldError } from "@/lib/file-edit";
 import { calcReferralFee, FILE_DETAIL_INCLUDE } from "@/lib/transaction-helpers";
 import { trimStrings } from "@/lib/form-validation";
 
@@ -47,13 +49,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       ? calcReferralFee(parseFloat(body.referralAmountReceived))
       : null;
 
+  // Detail fields follow the shared edit rules (lib/file-edit): parsed, blanks ->
+  // null, required ones can't be cleared.
+  const required = requiredFieldError("transaction", body, tx);
+  if (required) return NextResponse.json({ error: required }, { status: 400 });
+
   const fieldData = {
-    ...(body.propertyAddress !== undefined && { propertyAddress: body.propertyAddress }),
-    ...(body.salePrice !== undefined && { salePrice: body.salePrice ? parseFloat(body.salePrice) : null }),
-    ...(body.closeOfEscrow !== undefined && { closeOfEscrow: body.closeOfEscrow ? new Date(body.closeOfEscrow) : null }),
-    ...(body.inspectionDeadline !== undefined && { inspectionDeadline: body.inspectionDeadline ? new Date(body.inspectionDeadline) : null }),
-    ...(body.appraisalDeadline !== undefined && { appraisalDeadline: body.appraisalDeadline ? new Date(body.appraisalDeadline) : null }),
-    ...(body.loanApprovalDeadline !== undefined && { loanApprovalDeadline: body.loanApprovalDeadline ? new Date(body.loanApprovalDeadline) : null }),
+    ...transactionEditData(body),
     ...(body.commissionGCI !== undefined && { commissionGCI: body.commissionGCI ? parseFloat(body.commissionGCI) : null }),
     ...(body.commissionSplit !== undefined && { commissionSplit: body.commissionSplit ? parseFloat(body.commissionSplit) : null }),
     ...(body.commissionNotes !== undefined && { commissionNotes: body.commissionNotes || null }),
@@ -74,5 +76,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   }
 
   const updated = await prisma.transactionFile.update({ where: { id: params.id }, data: fieldData });
+  // A saved date can move the status (Expired -> Pending), and saved details can
+  // complete the file (-> Pending).
+  const actor = { userId: session.user.id, role } as const;
+  await followDates("transaction", params.id, actor);
+  await maybeAutoPending(params.id, actor);
   return NextResponse.json({ transaction: updated });
 }
