@@ -14,7 +14,7 @@ import { CommissionTab } from "@/components/transactions/CommissionTab";
 import { DocumentsTab } from "@/components/transactions/DocumentsTab";
 import { UploadFileButton } from "@/components/transactions/UploadFileButton";
 import { useFileUpload } from "@/hooks/useFileUpload";
-import { getChecklistProgress, allowedNextStatuses, canDeleteListing, listingStatusOptions, convertBlockedReason } from "@/lib/transaction-helpers";
+import { getChecklistProgress, allowedNextStatuses, canDeleteListing, listingStatusOptions, transactionStatusOptions, convertBlockedReason } from "@/lib/transaction-helpers";
 import type { FileDocumentRecord, FileChecklistItemWithDocs, ListingFileDetail, TransactionFileDetail } from "@/types/transaction";
 import { EMAIL_WARNING_TEXT } from "@/lib/file-messages";
 
@@ -120,7 +120,7 @@ export default function AdminFileDetailPage() {
     file.status as string,
     ...(isListing
       ? listingStatusOptions(file.status, "ADMIN")
-      : allowedNextStatuses(kind, file.status, "ADMIN").filter((s) => isReferralFile || !s.startsWith("REFERRAL_"))),
+      : isReferralFile ? allowedNextStatuses(kind, file.status, "ADMIN") : transactionStatusOptions(file.status, "ADMIN")),
   ];
   const { satisfied, required } = getChecklistProgress(file.checklistItems as FileChecklistItemWithDocs[]);
   const progressPct = required > 0 ? Math.round((satisfied / required) * 100) : 0;

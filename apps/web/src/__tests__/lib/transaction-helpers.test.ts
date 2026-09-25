@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calcReferralFee, canTransitionTransaction, pickDisplayPrice, pickDisplayDate, listingStatusOptions, canDeleteListing, convertBlockedReason, sidePartiesReady, isReadyForPending, escrowTypeToRole, latestDocument, allowedNextStatuses, canTransitionListing } from "@/lib/transaction-helpers";
+import { calcReferralFee, canTransitionTransaction, pickDisplayPrice, pickDisplayDate, listingStatusOptions, canDeleteListing, convertBlockedReason, sidePartiesReady, isReadyForPending, transactionStatusOptions, escrowTypeToRole, latestDocument, allowedNextStatuses, canTransitionListing } from "@/lib/transaction-helpers";
 
 describe("calcReferralFee", () => {
   it("takes 10% when 10% of the amount exceeds $200", () => {
@@ -295,5 +295,32 @@ describe("isReadyForPending", () => {
 
   it("never applies to referrals", () => {
     expect(isReadyForPending({ ...sale, transactionSide: "REFERRAL" }, [seller])).toBe(false);
+  });
+});
+
+describe("transactionStatusOptions", () => {
+  it("offers an agent Pre-Contract and Request Cancellation from Incomplete", () => {
+    expect(transactionStatusOptions("INCOMPLETE", "AGENT")).toEqual(["PRE_CONTRACT", "CANCELED_PENDING"]);
+  });
+
+  it.each(["PRE_CONTRACT", "PENDING", "EXPIRED"])("offers an agent only Request Cancellation from %s", (s) => {
+    expect(transactionStatusOptions(s, "AGENT")).toEqual(["CANCELED_PENDING"]);
+  });
+
+  it("never offers an agent Pending (it's automatic) or referral steps", () => {
+    for (const s of ["INCOMPLETE", "PRE_CONTRACT", "PENDING", "EXPIRED"]) {
+      const o = transactionStatusOptions(s, "AGENT");
+      expect(o).not.toContain("PENDING");
+      expect(o.some((x) => x.startsWith("REFERRAL_"))).toBe(false);
+    }
+  });
+
+  it.each(["CANCELED_PENDING", "CANCELED_APPROVED", "CLOSED", "ARCHIVED", "PENDING_TRANSFER"])("offers an agent nothing from %s", (s) => {
+    expect(transactionStatusOptions(s, "AGENT")).toEqual([]);
+  });
+
+  it("lets the server accept an agent's cancellation request from Incomplete and Expired", () => {
+    expect(canTransitionTransaction("INCOMPLETE" as any, "CANCELED_PENDING" as any, "AGENT")).toBe(true);
+    expect(canTransitionTransaction("EXPIRED" as any, "CANCELED_PENDING" as any, "AGENT")).toBe(true);
   });
 });

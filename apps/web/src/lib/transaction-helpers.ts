@@ -63,11 +63,11 @@ const ADMIN_LISTING_TRANSITIONS: Record<ListingStatus, ListingStatus[]> = {
 };
 
 const AGENT_TX_TRANSITIONS: Record<TransactionFileStatus, TransactionFileStatus[]> = {
-  INCOMPLETE:              ["PRE_CONTRACT", "PENDING"],
+  INCOMPLETE:              ["PRE_CONTRACT", "PENDING", "CANCELED_PENDING"],
   PENDING_TRANSFER:        [],
   PRE_CONTRACT:            ["PENDING", "CANCELED_PENDING"],
   PENDING:                 ["CANCELED_PENDING", "REFERRAL_SUCCESSFUL", "REFERRAL_UNSUCCESSFUL"],
-  EXPIRED:                 [],
+  EXPIRED:                 ["CANCELED_PENDING"],
   CLOSED:                  [],
   ARCHIVED:                [],
   CANCELED_PENDING:        [],
@@ -146,6 +146,16 @@ export function listingStatusOptions(status: string, role: ActorRole): string[] 
   return allowedNextStatuses("listing", status, role).filter((s) => s !== "ACTIVE_UNDER_CONTRACT");
 }
 
+
+// What a transaction's status dropdown offers. Agents: Pre-Contract (from
+// Incomplete) and a cancellation request (-> Cancel Pending, which the broker
+// approves); Pending is never picked — it's automatic (isReadyForPending), and
+// referral steps have their own buttons. The broker gets every allowed move
+// except the referral steps on ordinary files.
+export function transactionStatusOptions(status: string, role: ActorRole): string[] {
+  const allowed = allowedNextStatuses("transaction", status, role).filter((s) => !s.startsWith("REFERRAL_"));
+  return role === "AGENT" ? allowed.filter((s) => s !== "PENDING") : allowed;
+}
 // Why Convert to Transaction isn't available yet, or null when it is. Like
 // SkySlope's Accepted Contract: every required listing document must be uploaded
 // (In Review or Approved) first — the RLA and AVID are never required again on

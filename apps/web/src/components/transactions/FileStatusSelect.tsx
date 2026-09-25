@@ -14,12 +14,15 @@ export function FileStatusSelect({
   disabled,
   onChange,
   deleteAction,
+  optionLabel,
 }: {
   current: string;
   statuses: string[];
   disabled?: boolean;
   onChange: (status: string) => void;
   deleteAction?: { label: string; onSelect: () => void };
+  // Override an option's text (e.g. the agent's "Request Cancellation").
+  optionLabel?: (status: string) => string;
 }) {
   // Browser arrow hidden and replaced by a chevron inside the pill — the same
   // appearance-none + ChevronDown pattern as the join ApplicationForm selects.
@@ -32,7 +35,7 @@ export function FileStatusSelect({
         className="appearance-none rounded-full border border-[#1B1B1B]/10 bg-white py-2 pl-4 pr-9 text-sm text-[#1B1B1B] disabled:opacity-50"
       >
         {statuses.map((s) => (
-          <option key={s} value={s}>{statusLabel(s)}</option>
+          <option key={s} value={s}>{optionLabel?.(s) ?? statusLabel(s)}</option>
         ))}
         {deleteAction && <option disabled>──────────</option>}
         {deleteAction && <option value={DELETE_VALUE}>{deleteAction.label}</option>}

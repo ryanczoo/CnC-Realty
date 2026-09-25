@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { StatusBadge } from "@/components/transactions/StatusBadge";
+import { StatusBadge, statusLabel } from "@/components/transactions/StatusBadge";
 import { FileStatusSelect } from "@/components/transactions/FileStatusSelect";
 import { ConvertListingButton } from "@/components/transactions/ConvertListingButton";
 import { ChecklistPanel } from "@/components/transactions/ChecklistPanel";
@@ -13,7 +13,7 @@ import { TransferPendingPanel } from "@/components/transactions/TransferPendingP
 import { OverviewTab } from "@/components/transactions/OverviewTab";
 import { CommissionTab } from "@/components/transactions/CommissionTab";
 import { DocumentsTab } from "@/components/transactions/DocumentsTab";
-import { getChecklistProgress, listingStatusOptions, convertBlockedReason } from "@/lib/transaction-helpers";
+import { getChecklistProgress, listingStatusOptions, transactionStatusOptions, convertBlockedReason } from "@/lib/transaction-helpers";
 import { isFileReadOnlyFor } from "@/lib/file-lock";
 import { isPlaceholderAddress } from "@/lib/transfer-placeholder";
 import { DateField } from "@/components/ui/DateField";
@@ -55,12 +55,15 @@ export default function FileDetailPage() {
   const router = useRouter();
   const { data: session } = useSession();
   const { fileType, id } = params;
+  const isListingFile = fileType === "listing";
 
   const [tab, setTab] = useState<Tab>("overview");
   const [file, setFile] = useState<ListingFileDetail | TransactionFileDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [statusChanging, setStatusChanging] = useState(false);
+  const [showCancelForm, setShowCancelForm] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
   const [tasks, setTasks] = useState<FileTaskRecord[]>([]);
   const abortRef = useRef<AbortController | null>(null);
@@ -125,24 +128,42 @@ export default function FileDetailPage() {
     }
   }
 
-  async function changeListingStatus(status: string) {
+  // One status change for listings and transactions. A cancellation request
+  // carries the agent's reason (required by the server).
+  async function changeStatus(status: string, cancellationReason?: string) {
     setStatusChanging(true);
     setActionError(null);
     try {
-      const res = await fetch(`/api/listings/${id}`, {
+      const res = await fetch(`/api/${isListingFile ? "listings" : "transactions"}/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status, ...(cancellationReason !== undefined && { cancellationReason }) }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => null);
         setActionError(body?.error ?? "Couldn't change the status. Please try again.");
-        return;
+        return false;
       }
       load();
+      return true;
     } finally {
       setStatusChanging(false);
     }
+  }
+
+  // Picking "Request Cancellation" asks for a reason first instead of saving.
+  function onStatusPicked(status: string) {
+    if (status === "CANCELED_PENDING") {
+      setCancelReason("");
+      setShowCancelForm(true);
+      return;
+    }
+    changeStatus(status);
+  }
+
+  async function submitCancellation() {
+    if (!cancelReason.trim()) return;
+    if (await changeStatus("CANCELED_PENDING", cancelReason.trim())) setShowCancelForm(false);
   }
 
   if (loading) {
@@ -173,7 +194,9 @@ export default function FileDetailPage() {
   const isLocked = file.status === "PENDING_TRANSFER";
   const viewerIsAdmin = session?.user?.role === "ADMIN";
   const readOnly = isFileReadOnlyFor(isListing ? "listing" : "transaction", file.status, session?.user?.role ?? "AGENT");
-  const statusOptions = listing ? listingStatusOptions(listing.status, "AGENT") : [];
+  const statusOptions = listing
+    ? listingStatusOptions(listing.status, "AGENT")
+    : transaction && !isReferral && !isLocked ? transactionStatusOptions(transaction.status, "AGENT") : [];
   // Pencil editing on the Overview: the file's own agent, while it isn't locked
   // (closed/canceled) or a Pending Transfer placeholder; never referral cards.
   const canEditDetails = !readOnly && !isLocked && !isReferral && session?.user?.agentId != null && session.user.agentId === file.agentId;
@@ -243,16 +266,36 @@ export default function FileDetailPage() {
                 {submitting ? <><Spinner className="mr-1.5 h-3.5 w-3.5 text-white" />Submitting…</> : "Submit for Review"}
               </button>
             )}
-            {listing && !readOnly && statusOptions.length > 0 && (
+            {!readOnly && statusOptions.length > 0 && (
               <FileStatusSelect
-                current={listing.status}
-                statuses={[listing.status, ...statusOptions]}
+                current={file.status}
+                statuses={[file.status, ...statusOptions]}
                 disabled={statusChanging}
-                onChange={changeListingStatus}
+                onChange={onStatusPicked}
+                optionLabel={(s) => (s === "CANCELED_PENDING" && s !== file.status ? "Request Cancellation" : statusLabel(s))}
               />
             )}
           </div>
         </div>
+        {showCancelForm && (
+          <div className="mt-3 ml-auto max-w-md space-y-2 rounded-xl border border-[#1B1B1B]/10 bg-white p-4">
+            <p className="text-sm font-medium text-[#1B1B1B]">Request cancellation</p>
+            <p className="text-xs text-[#1B1B1B]/50">Your broker will review and approve it. Briefly say why the deal is being canceled.</p>
+            <textarea
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="Reason (required)"
+              rows={2}
+              className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2 text-sm text-[#1B1B1B] placeholder:text-[#1B1B1B]/25"
+            />
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setShowCancelForm(false)} className="text-sm text-[#1B1B1B]/50">Cancel</button>
+              <button onClick={submitCancellation} disabled={statusChanging || !cancelReason.trim()} className="rounded-full bg-red-500 px-4 py-1.5 text-sm text-white disabled:opacity-40">
+                {statusChanging ? "Sending…" : "Request Cancellation"}
+              </button>
+            </div>
+          </div>
+        )}
         {actionError && <p className="mt-2 text-xs text-red-600">{actionError}</p>}
       </div>
 
