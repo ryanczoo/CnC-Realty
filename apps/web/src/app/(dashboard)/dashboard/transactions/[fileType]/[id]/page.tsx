@@ -130,7 +130,8 @@ export default function FileDetailPage() {
       setActionError(body?.error ?? "Couldn't convert this listing. Please try again.");
       return;
     }
-    router.push("/dashboard/transactions");
+    const { transactionFile } = await res.json();
+    router.push(`/dashboard/transactions/transaction/${transactionFile.id}`);
   }
 
   if (loading) {
