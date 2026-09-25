@@ -36,6 +36,14 @@ export function transactionSideLabel(value: string | null | undefined): string {
   return SIDES.find((s) => s.value === value)?.label ?? "—";
 }
 
+// The three lease sides — lease files use lease dates and lease pricing instead
+// of the sale fields. The single shared list (wizard, commission, status rules).
+export const LEASE_SIDES = ["LEASE_TENANT", "LEASE_LANDLORD", "LEASE_DUAL"] as const;
+
+export function isLeaseSide(side: string | null | undefined): boolean {
+  return !!side && (LEASE_SIDES as readonly string[]).includes(side);
+}
+
 export const LISTING_TYPES = [
   { value: "RESIDENTIAL_SALE", label: "Residential Sale" },
   { value: "RESIDENTIAL_LEASE", label: "Residential Lease" },

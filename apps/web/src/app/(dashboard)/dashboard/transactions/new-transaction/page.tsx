@@ -10,7 +10,7 @@ import { escrowTypeToRole, type EscrowContactType } from "@/lib/transaction-help
 import { DateField } from "@/components/ui/DateField";
 import { FormField as Field } from "@/components/ui/FormField";
 import { stripDigits, digitsOnly, formatPhoneInput, sanitizeCurrencyInput, formatCurrencyDisplay, emailError } from "@/lib/form-validation";
-import { SIDES, transactionSideLabel, type TransactionSide } from "@/types/transaction";
+import { SIDES, transactionSideLabel, isLeaseSide, type TransactionSide } from "@/types/transaction";
 import { formatDateMDY } from "@/lib/utils";
 import { PartySection, emptyParty, type Party } from "@/components/transactions/PartySection";
 import { CheckIcon } from "@/components/ui/CheckIcon";
@@ -91,7 +91,7 @@ export default function NewTransactionPage() {
     setForm((f) => ({ ...f, [field]: value }));
   }
 
-  const isLeaseSide = ["LEASE_TENANT", "LEASE_LANDLORD", "LEASE_DUAL"].includes(form.transactionSide);
+  const isLease = isLeaseSide(form.transactionSide);
   const isReferral = form.transactionSide === "REFERRAL";
 
   // Lease files have no salePrice to multiply a % against (leases populate
@@ -100,12 +100,12 @@ export default function NewTransactionPage() {
   // covers both picking a lease type directly and switching to one after Step 4
   // was already visited with "%" selected.
   useEffect(() => {
-    if (isLeaseSide) {
+    if (isLease) {
       setCommissionMode((prev) =>
         prev.sale === "flat" && prev.listing === "flat" ? prev : { sale: "flat", listing: "flat" }
       );
     }
-  }, [isLeaseSide]);
+  }, [isLease]);
 
   const STEPS = isReferral
     ? ["File Type", "Referral Details", "Review"]
@@ -133,7 +133,7 @@ export default function NewTransactionPage() {
   // Only Dual agency sums both, since the agent has separate agreements with
   // both parties. Lease sides fall through to the sum too, but that's safe:
   // listingCommissionAmt is always 0 there (the field is hidden on lease
-  // sides — see the isLeaseSide branch below), so it adds nothing.
+  // sides — see the isLease branch below), so it adds nothing.
   const totalGci =
     form.transactionSide === "PURCHASE" ? saleCommissionAmt :
     form.transactionSide === "LISTING" ? listingCommissionAmt :
@@ -200,7 +200,7 @@ export default function NewTransactionPage() {
   const canAdvance = useMemo(() => {
     if (step === 0) return isReferral ? !!form.transactionSide : (!!form.transactionSide && !!form.propertyCategory);
     if (step === 1) return isReferral ? (!!form.referredToAgentName && !emailError(form.referredToContactEmail)) : (!!form.propertyAddress && !!form.city && !!form.zip && !!form.propertyType);
-    if (step === 2) return isLeaseSide ? !!form.leasePrice : !!form.salePrice;
+    if (step === 2) return isLease ? !!form.leasePrice : !!form.salePrice;
     if (step === 3) return partiesReady && partyEmailsValid;
     return true;
   }, [step, isReferral, form.transactionSide, form.propertyCategory, form.referredToAgentName, form.referredToContactEmail, form.propertyAddress, form.city, form.zip, form.propertyType, form.salePrice, form.leasePrice, partiesReady, partyEmailsValid]);
@@ -260,8 +260,8 @@ export default function NewTransactionPage() {
       body: JSON.stringify({
         ...form,
         tcFeeEnabled,
-        agentRelativeSale: isLeaseSide ? false : agentRelativeSale,
-        brokerProvidedLead: isLeaseSide ? false : brokerProvidedLead,
+        agentRelativeSale: isLease ? false : agentRelativeSale,
+        brokerProvidedLead: isLease ? false : brokerProvidedLead,
         commissionGCI: totalGci || null,
         saleCommissionPct: commissionMode.sale === "pct" ? parseFloat(form.saleCommission) || null : null,
         listingCommissionPct: commissionMode.listing === "pct" ? parseFloat(form.listingCommission) || null : null,
@@ -491,7 +491,7 @@ export default function NewTransactionPage() {
         {step === 2 && (
           <div className="space-y-5">
             <div className="grid grid-cols-2 gap-4">
-              {isLeaseSide ? (
+              {isLease ? (
                 <>
                   <Field label="Total Lease Amount *" value={form.leasePrice} onChange={(v) => set("leasePrice", v)} placeholder="$" formatCommas />
                   <Field label="Deposit" value={form.deposit} onChange={(v) => set("deposit", v)} placeholder="$" formatCommas />
@@ -503,7 +503,7 @@ export default function NewTransactionPage() {
                 </>
               )}
             </div>
-            {!isLeaseSide && (
+            {!isLease && (
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Deposit" value={form.deposit} onChange={(v) => set("deposit", v)} placeholder="$" formatCommas />
                 <Field label="Escrow Number" value={form.escrowNumber} onChange={(v) => set("escrowNumber", v)} placeholder="Optional" />
@@ -543,8 +543,8 @@ export default function NewTransactionPage() {
         {/* ── Step 3: Parties ── */}
         {step === 3 && (
           <div className="space-y-8">
-            <PartySection label={isLeaseSide ? "Tenants" : "Buyers"} parties={buyers} onUpdate={setBuyers} required={buyerSectionRequired} />
-            <PartySection label={isLeaseSide ? "Landlords" : "Sellers"} parties={sellers} onUpdate={setSellers} required={sellerSectionRequired} />
+            <PartySection label={isLease ? "Tenants" : "Buyers"} parties={buyers} onUpdate={setBuyers} required={buyerSectionRequired} />
+            <PartySection label={isLease ? "Landlords" : "Sellers"} parties={sellers} onUpdate={setSellers} required={sellerSectionRequired} />
 
             {/* Listing Agent */}
             <div>
@@ -610,7 +610,7 @@ export default function NewTransactionPage() {
         {/* ── Step 4: Commission ── */}
         {step === 4 && (
           <div className="space-y-5">
-            {isLeaseSide ? (
+            {isLease ? (
               <CommissionField
                 label="Lease Commission"
                 value={form.saleCommission}
@@ -653,7 +653,7 @@ export default function NewTransactionPage() {
               checked={tcFeeEnabled}
               onChange={() => setTcFeeEnabled((v) => !v)}
             />
-            {!isLeaseSide && (
+            {!isLease && (
               <>
                 <ToggleRow
                   label="Agent-Relative Sale"
@@ -685,10 +685,10 @@ export default function NewTransactionPage() {
                   Commission Breakdown
                 </p>
                 <BdRow
-                  label={isLeaseSide ? "Total Lease Amount" : "Purchase Price"}
-                  value={`$${(isLeaseSide ? leasePrice : salePrice).toLocaleString()}`}
+                  label={isLease ? "Total Lease Amount" : "Purchase Price"}
+                  value={`$${(isLease ? leasePrice : salePrice).toLocaleString()}`}
                 />
-                {isLeaseSide ? (
+                {isLease ? (
                   <BdRow
                     label="Lease Commission"
                     value={saleCommissionAmt > 0 ? `$${fmtAmt(saleCommissionAmt)}` : "—"}
@@ -784,10 +784,10 @@ export default function NewTransactionPage() {
             )}
             <ReviewSection title="Parties">
               {buyers.filter((b) => b.name).map((b, i) => (
-                <ReviewRow key={i} label={`${isLeaseSide ? "Tenant" : "Buyer"} ${buyers.length > 1 ? i + 1 : ""}`} value={b.name} />
+                <ReviewRow key={i} label={`${isLease ? "Tenant" : "Buyer"} ${buyers.length > 1 ? i + 1 : ""}`} value={b.name} />
               ))}
               {sellers.filter((s) => s.name).map((s, i) => (
-                <ReviewRow key={i} label={`${isLeaseSide ? "Landlord" : "Seller"} ${sellers.length > 1 ? i + 1 : ""}`} value={s.name} />
+                <ReviewRow key={i} label={`${isLease ? "Landlord" : "Seller"} ${sellers.length > 1 ? i + 1 : ""}`} value={s.name} />
               ))}
               {listingAgent.name && <ReviewRow label="Listing Agent" value={listingAgent.name} />}
               {(["Title", "Escrow", "Attorney"] as const)

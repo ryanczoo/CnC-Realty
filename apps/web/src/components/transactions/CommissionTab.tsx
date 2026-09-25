@@ -1,14 +1,13 @@
 import { InfoRow } from "./InfoRow";
 import { TC_FEE, calcNetToAgent, calcTransactionFee } from "@/lib/commission";
-import type { TransactionFileDetail } from "@/types/transaction";
+import { isLeaseSide, type TransactionFileDetail } from "@/types/transaction";
 
-const LEASE_SIDES = ["LEASE_TENANT", "LEASE_LANDLORD", "LEASE_DUAL"];
 
 // Shared Commission tab — renders identically for agent and admin viewers of
 // the same file. Extracted so both sides stay in sync automatically instead
 // of drifting apart as separate implementations.
 export function CommissionTab({ transaction }: { transaction: TransactionFileDetail }) {
-  const isLeaseSide = LEASE_SIDES.includes(transaction.transactionSide);
+  const isLease = isLeaseSide(transaction.transactionSide);
   const salePrice = Number(transaction.salePrice ?? 0);
   const leasePrice = Number(transaction.leasePrice ?? 0);
   const salePct = Number(transaction.saleCommissionPct ?? 0);
@@ -43,11 +42,11 @@ export function CommissionTab({ transaction }: { transaction: TransactionFileDet
       <div className="rounded-xl border border-[#1B1B1B]/10 bg-white p-5 space-y-3">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Commission Breakdown</h2>
         <InfoRow
-          label={isLeaseSide ? "Total Lease Amount" : "Sale Price"}
-          value={(isLeaseSide ? leasePrice : salePrice) > 0 ? `$${(isLeaseSide ? leasePrice : salePrice).toLocaleString()}` : "—"}
+          label={isLease ? "Total Lease Amount" : "Sale Price"}
+          value={(isLease ? leasePrice : salePrice) > 0 ? `$${(isLease ? leasePrice : salePrice).toLocaleString()}` : "—"}
         />
         {transaction.deposit && <InfoRow label="Deposit" value={`$${Number(transaction.deposit).toLocaleString()}`} />}
-        {isLeaseSide ? (
+        {isLease ? (
           <InfoRow label="Lease Commission $" value={fmt(totalGross)} />
         ) : (
           <>

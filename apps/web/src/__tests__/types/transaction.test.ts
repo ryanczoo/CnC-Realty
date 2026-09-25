@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { listingTypeLabel, transactionSideLabel } from "@/types/transaction";
+import { listingTypeLabel, transactionSideLabel, isLeaseSide } from "@/types/transaction";
 
 describe("listingTypeLabel", () => {
   it.each([
@@ -35,5 +35,15 @@ describe("transactionSideLabel", () => {
     expect(transactionSideLabel(null)).toBe("—");
     expect(transactionSideLabel("")).toBe("—");
     expect(transactionSideLabel("SOMETHING_ELSE")).toBe("—");
+  });
+});
+
+describe("isLeaseSide", () => {
+  it.each(["LEASE_TENANT", "LEASE_LANDLORD", "LEASE_DUAL"])("treats %s as a lease", (s) => {
+    expect(isLeaseSide(s)).toBe(true);
+  });
+
+  it.each(["PURCHASE", "LISTING", "DUAL", "REFERRAL", "", null])("does not treat %j as a lease", (s) => {
+    expect(isLeaseSide(s)).toBe(false);
   });
 });

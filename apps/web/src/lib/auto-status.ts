@@ -1,5 +1,6 @@
 import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/prisma";
+import { isLeaseSide } from "@/types/transaction";
 
 // Date-driven statuses (SkySlope-style), run once each morning by the
 // listing-expiration-warnings cron. Incomplete listings are never touched: the
@@ -18,7 +19,45 @@ export function pacificToday(now: Date): Date {
   return new Date(`${ymd}T00:00:00.000Z`);
 }
 
-type Candidate = { id: string; status: string; agent: { userId: string } | null };
+type DateInput = Date | string | null | undefined;
+const asTime = (d: DateInput) => (d ? new Date(d).getTime() : null);
+
+// The one date-driven status rule, used by the morning job and by every detail
+// save. Returns the status a file should move to because of its dates, or null.
+// Listings: Coming Soon -> Active on the list date; Active/Coming Soon -> Expired
+// after the expiration date; Expired -> Active when the expiration moves out.
+// Transactions key on close of escrow (sales) or lease start date (leases):
+// Pending -> Expired once it passes, Expired -> Pending when it moves out.
+// Incomplete files are never touched — the agent decides when they're ready.
+export function dateDrivenStatus(
+  f: {
+    kind: "listing" | "transaction";
+    status: string;
+    transactionSide?: string | null;
+    listDate?: DateInput;
+    expirationDate?: DateInput;
+    closeOfEscrow?: DateInput;
+    leaseStartDate?: DateInput;
+  },
+  today: Date,
+): string | null {
+  const now = today.getTime();
+  if (f.kind === "listing") {
+    const exp = asTime(f.expirationDate);
+    const list = asTime(f.listDate);
+    if ((f.status === "ACTIVE" || f.status === "COMING_SOON") && exp !== null && exp < now) return "EXPIRED";
+    if (f.status === "COMING_SOON" && list !== null && list <= now) return "ACTIVE";
+    if (f.status === "EXPIRED" && exp !== null && exp >= now) return "ACTIVE";
+    return null;
+  }
+  const key = asTime(isLeaseSide(f.transactionSide) ? f.leaseStartDate : f.closeOfEscrow);
+  if (key === null) return null;
+  if (f.status === "PENDING" && key < now) return "EXPIRED";
+  if (f.status === "EXPIRED" && key >= now) return "PENDING";
+  return null;
+}
+
+type Candidate ={ id: string; status: string; agent: { userId: string } | null };
 
 async function applyAll(kind: "listing" | "transaction", files: Candidate[], to: string): Promise<number> {
   let changed = 0;

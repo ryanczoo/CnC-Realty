@@ -1,4 +1,4 @@
-import type { TransactionSide } from "@/types/transaction";
+import { isLeaseSide, type TransactionSide } from "@/types/transaction";
 
 export const TC_FEE = 350;
 
@@ -39,12 +39,11 @@ export interface TransactionFeeResult {
   hasEoInsurance: boolean;
 }
 
-const LEASE_SIDES = new Set(["LEASE_TENANT", "LEASE_LANDLORD", "LEASE_DUAL"]);
 
 export function calcTransactionFee(input: TransactionFeeInput): TransactionFeeResult {
   const { side, salePrice, grossCommission, agentRelativeSale, brokerProvidedLead, numberOfParcels } = input;
 
-  if (LEASE_SIDES.has(side)) {
+  if (isLeaseSide(side)) {
     const fee = Math.max(grossCommission * 0.1, 200);
     return { fee, label: "CnC Lease Fee", baseFee: fee, eoSupplement: 0, hasEoInsurance: false };
   }
