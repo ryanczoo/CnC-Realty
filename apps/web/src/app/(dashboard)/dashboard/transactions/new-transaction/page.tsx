@@ -199,11 +199,11 @@ export default function NewTransactionPage() {
 
   const canAdvance = useMemo(() => {
     if (step === 0) return isReferral ? !!form.transactionSide : (!!form.transactionSide && !!form.propertyCategory);
-    if (step === 1) return isReferral ? (!!form.referredToAgentName && !emailError(form.referredToContactEmail)) : (!!form.propertyAddress && !!form.city && !!form.zip && !!form.propertyType && !!form.mlsNumber);
+    if (step === 1) return isReferral ? (!!form.referredToAgentName && !emailError(form.referredToContactEmail)) : (!!form.propertyAddress && !!form.city && !!form.zip && !!form.propertyType);
     if (step === 2) return isLeaseSide ? !!form.leasePrice : !!form.salePrice;
     if (step === 3) return partiesReady && partyEmailsValid;
     return true;
-  }, [step, isReferral, form.transactionSide, form.propertyCategory, form.referredToAgentName, form.referredToContactEmail, form.propertyAddress, form.city, form.zip, form.propertyType, form.mlsNumber, form.salePrice, form.leasePrice, partiesReady, partyEmailsValid]);
+  }, [step, isReferral, form.transactionSide, form.propertyCategory, form.referredToAgentName, form.referredToContactEmail, form.propertyAddress, form.city, form.zip, form.propertyType, form.salePrice, form.leasePrice, partiesReady, partyEmailsValid]);
 
   function goNext() {
     setStep((s) => {
@@ -415,7 +415,7 @@ export default function NewTransactionPage() {
               </select>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <Field label="MLS Number *" value={form.mlsNumber} onChange={(v) => set("mlsNumber", v)} restrict={(v) => digitsOnly(v, 10)} />
+              <Field label="MLS Number" value={form.mlsNumber} onChange={(v) => set("mlsNumber", v)} placeholder="Optional" restrict={(v) => digitsOnly(v, 10)} />
               <Field label="Year Built" type="number" value={form.yearBuilt} onChange={(v) => set("yearBuilt", v)} placeholder="e.g. 2005" restrict={(v) => digitsOnly(v, 4)} />
             </div>
             <div className="border-t border-[#1B1B1B]/5 pt-5 space-y-4">

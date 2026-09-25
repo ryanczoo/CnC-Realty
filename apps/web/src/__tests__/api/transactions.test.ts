@@ -283,13 +283,18 @@ describe("POST /api/transactions", () => {
     expect(res.status).toBe(400);
   });
 
-  it("requires mlsNumber for non-REFERRAL sides", async () => {
+  // MLS # is optional (off-market, FSBO, new construction, most leases and
+  // commercial deals have none) — reverses the 2026-07-21 requirement.
+  it("creates a non-REFERRAL transaction without an MLS number", async () => {
+    vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "t-no-mls" } as any);
     const res = await POST(makeRequest({
       transactionSide: "PURCHASE",
       propertyAddress: "1 Test St", city: "Test", zip: "00000",
       propertyType: "Single Family",
     }));
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(201);
+    const data = vi.mocked(prisma.transactionFile.create).mock.calls[0][0].data as any;
+    expect(data.mlsNumber).toBeNull();
   });
 
   it("does not require propertyType or mlsNumber for REFERRAL", async () => {

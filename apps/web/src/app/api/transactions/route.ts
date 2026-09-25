@@ -55,7 +55,7 @@ export async function POST(req: Request) {
   if (!transactionSide) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
-  if (transactionSide !== "REFERRAL" && (!propertyAddress || !city || !zip || !propertyType || !mlsNumber)) {
+  if (transactionSide !== "REFERRAL" && (!propertyAddress || !city || !zip || !propertyType)) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
   if (transactionSide === "REFERRAL" && !referredToAgentName) {
