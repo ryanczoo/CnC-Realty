@@ -174,6 +174,9 @@ export default function FileDetailPage() {
   const viewerIsAdmin = session?.user?.role === "ADMIN";
   const readOnly = isFileReadOnlyFor(isListing ? "listing" : "transaction", file.status, session?.user?.role ?? "AGENT");
   const statusOptions = listing ? listingStatusOptions(listing.status, "AGENT") : [];
+  // Pencil editing on the Overview: the file's own agent, while it isn't locked
+  // (closed/canceled) or a Pending Transfer placeholder; never referral cards.
+  const canEditDetails = !readOnly && !isLocked && !isReferral && session?.user?.agentId != null && session.user.agentId === file.agentId;
   // Convert becomes View Transaction in the same slot once the listing is Under Contract.
   const linkedTransactionId = listing?.status === "ACTIVE_UNDER_CONTRACT" ? listing.convertedFiles?.[0]?.id : undefined;
   const viewerIsFileAgent =
@@ -292,6 +295,8 @@ export default function FileDetailPage() {
           progressPct={progressPct}
           satisfied={satisfied}
           required={required}
+          canEdit={canEditDetails}
+          onSaved={load}
         />
       )}
 

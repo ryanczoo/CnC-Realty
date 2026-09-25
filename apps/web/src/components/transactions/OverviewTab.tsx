@@ -1,12 +1,19 @@
-import { InfoRow } from "./InfoRow";
+import { InfoRow, type InfoRowEdit } from "./InfoRow";
 import { formatDateOnly } from "@/lib/utils";
-import { listingTypeLabel, transactionSideLabel, type ListingFileDetail, type TransactionFileDetail } from "@/types/transaction";
+import { saveFileField } from "@/lib/file-actions";
+import { digitsOnly, stripDigits, sanitizeCurrencyInput } from "@/lib/form-validation";
+import {
+  listingTypeLabel, transactionSideLabel, isLeaseSide, FILE_PROPERTY_TYPES,
+  type ListingFileDetail, type TransactionFileDetail,
+} from "@/types/transaction";
 
 // Shared Overview tab — renders identically for agent and admin viewers of
 // the same file. Extracted so both sides stay in sync automatically instead
-// of drifting apart as separate implementations.
+// of drifting apart as separate implementations. With canEdit, editable rows
+// get a pencil (and always show, "—" when empty, so a missing value can be
+// added); State, Listing Type and Transaction Side are never editable.
 export function OverviewTab({
-  file, isListing, listing, transaction, progressPct, satisfied, required,
+  file, isListing, listing, transaction, progressPct, satisfied, required, canEdit = false, onSaved,
 }: {
   file: ListingFileDetail | TransactionFileDetail;
   isListing: boolean;
@@ -15,43 +22,81 @@ export function OverviewTab({
   progressPct: number;
   satisfied: number;
   required: number;
+  canEdit?: boolean;
+  onSaved?: () => void;
 }) {
   const isReferral = !isListing && transaction?.transactionSide === "REFERRAL";
+  const isLease = !isListing && isLeaseSide(transaction?.transactionSide);
+
+  const edit = (field: string, raw: unknown, opts: Partial<InfoRowEdit> = {}): InfoRowEdit | undefined =>
+    canEdit
+      ? {
+          kind: "text",
+          raw: raw == null ? "" : String(raw),
+          ...opts,
+          onSave: async (value) => {
+            const err = await saveFileField(isListing ? "listing" : "transaction", file.id, field, value);
+            if (!err) onSaved?.();
+            return err;
+          },
+        }
+      : undefined;
+  const dateEdit = (field: string, iso: string | null | undefined) => edit(field, iso ? iso.slice(0, 10) : "", { kind: "date" });
+  const moneyEdit = (field: string, n: number | null | undefined) => edit(field, n ?? "", { kind: "currency" });
+  const money = (n: number | null | undefined) => (n ? `$${Number(n).toLocaleString()}` : "—");
+  const date = (d: string | null | undefined) => (d ? formatDateOnly(d) : "—");
+  // Optional rows show when there's a value, or always when they can be edited.
+  const show = (v: unknown) => canEdit || (v != null && v !== "");
+
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       <div className="space-y-4">
         <div className="rounded-xl border border-[#1B1B1B]/10 bg-white p-5 space-y-3">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Property Details</h2>
-          <InfoRow label="Address" value={file.propertyAddress ?? "—"} />
-          <InfoRow label="City" value={file.city ?? "—"} />
+          <InfoRow label="Address" value={file.propertyAddress ?? "—"} edit={isReferral ? undefined : edit("propertyAddress", file.propertyAddress)} />
+          <InfoRow label="City" value={file.city ?? "—"} edit={isReferral ? undefined : edit("city", file.city, { restrict: stripDigits })} />
           <InfoRow label="State" value={file.state} />
-          <InfoRow label="ZIP" value={file.zip ?? "—"} />
-          {file.mlsNumber && <InfoRow label="MLS #" value={file.mlsNumber} />}
+          <InfoRow label="ZIP" value={file.zip ?? "—"} edit={isReferral ? undefined : edit("zip", file.zip, { restrict: (v) => digitsOnly(v, 5) })} />
+          {!isReferral && show(file.mlsNumber) && (
+            <InfoRow label="MLS #" value={file.mlsNumber || "—"} edit={edit("mlsNumber", file.mlsNumber, { restrict: (v) => digitsOnly(v, 10) })} />
+          )}
           {isListing && listing && (
             <>
-              <InfoRow label="List Price" value={listing.listPrice ? `$${Number(listing.listPrice).toLocaleString()}` : "—"} />
+              <InfoRow label="List Price" value={money(listing.listPrice)} edit={moneyEdit("listPrice", listing.listPrice)} />
               <InfoRow label="Type" value={listingTypeLabel(listing.listingType)} />
-              {listing.listDate && <InfoRow label="List Date" value={formatDateOnly(listing.listDate)} />}
-              {listing.expirationDate && <InfoRow label="Expiration" value={formatDateOnly(listing.expirationDate)} />}
-              {listing.commissionPercent && <InfoRow label="Commission" value={`${listing.commissionPercent}%`} />}
+              {show(listing.listDate) && <InfoRow label="List Date" value={date(listing.listDate)} edit={dateEdit("listDate", listing.listDate)} />}
+              {show(listing.expirationDate) && <InfoRow label="Expiration" value={date(listing.expirationDate)} edit={dateEdit("expirationDate", listing.expirationDate)} />}
+              {show(listing.commissionPercent) && (
+                <InfoRow
+                  label="Commission"
+                  value={listing.commissionPercent ? `${listing.commissionPercent}%` : "—"}
+                  edit={edit("commissionPercent", listing.commissionPercent, { restrict: (v) => sanitizeCurrencyInput(v, 3), inputMode: "decimal" })}
+                />
+              )}
             </>
           )}
           {!isListing && transaction && !isReferral && (
             <>
-              {transaction.propertyType && <InfoRow label="Property Type" value={transaction.propertyType} />}
-              {transaction.yearBuilt && <InfoRow label="Year Built" value={String(transaction.yearBuilt)} />}
-              {transaction.escrowNumber && <InfoRow label="Escrow #" value={transaction.escrowNumber} />}
+              {show(transaction.propertyType) && (
+                <InfoRow label="Property Type" value={transaction.propertyType || "—"} edit={edit("propertyType", transaction.propertyType, { kind: "select", options: FILE_PROPERTY_TYPES })} />
+              )}
+              {show(transaction.yearBuilt) && <InfoRow label="Year Built" value={transaction.yearBuilt ? String(transaction.yearBuilt) : "—"} edit={edit("yearBuilt", transaction.yearBuilt, { restrict: (v) => digitsOnly(v, 4) })} />}
+              {!isLease && show(transaction.escrowNumber) && <InfoRow label="Escrow #" value={transaction.escrowNumber || "—"} edit={edit("escrowNumber", transaction.escrowNumber)} />}
               <InfoRow label="Transaction Side" value={transactionSideLabel(transaction.transactionSide)} />
-              <InfoRow label="List Price" value={transaction.listPrice ? `$${Number(transaction.listPrice).toLocaleString()}` : "—"} />
-              <InfoRow label="Sale Price" value={transaction.salePrice ? `$${Number(transaction.salePrice).toLocaleString()}` : "—"} />
-              {transaction.leasePrice && <InfoRow label="Total Lease Amount" value={`$${Number(transaction.leasePrice).toLocaleString()}`} />}
-              {transaction.legalDescription && <InfoRow label="Legal Description" value={transaction.legalDescription} />}
-              {transaction.propertyIncludes && <InfoRow label="Property Includes" value={transaction.propertyIncludes} />}
-              {transaction.propertyExcludes && <InfoRow label="Property Excludes" value={transaction.propertyExcludes} />}
-              {transaction.taxId && <InfoRow label="Tax ID / APN" value={transaction.taxId} />}
-              {transaction.numberOfParcels && <InfoRow label="Multi-Parcels" value={`${transaction.numberOfParcels} parcels`} />}
-              {transaction.schoolDistrict && <InfoRow label="School District" value={transaction.schoolDistrict} />}
-              {transaction.zoningClass && <InfoRow label="Zoning Class" value={transaction.zoningClass} />}
+              <InfoRow label="List Price" value={money(transaction.listPrice)} edit={moneyEdit("listPrice", transaction.listPrice)} />
+              {isLease
+                ? <InfoRow label="Total Lease Amount" value={money(transaction.leasePrice)} edit={moneyEdit("leasePrice", transaction.leasePrice)} />
+                : <InfoRow label="Sale Price" value={money(transaction.salePrice)} edit={moneyEdit("salePrice", transaction.salePrice)} />}
+              {show(transaction.deposit) && <InfoRow label="Deposit" value={money(transaction.deposit)} edit={moneyEdit("deposit", transaction.deposit)} />}
+              {show(transaction.legalDescription) && <InfoRow label="Legal Description" value={transaction.legalDescription || "—"} edit={edit("legalDescription", transaction.legalDescription)} />}
+              {show(transaction.propertyIncludes) && <InfoRow label="Property Includes" value={transaction.propertyIncludes || "—"} edit={edit("propertyIncludes", transaction.propertyIncludes)} />}
+              {show(transaction.propertyExcludes) && <InfoRow label="Property Excludes" value={transaction.propertyExcludes || "—"} edit={edit("propertyExcludes", transaction.propertyExcludes)} />}
+              {show(transaction.taxId) && <InfoRow label="Tax ID / APN" value={transaction.taxId || "—"} edit={edit("taxId", transaction.taxId)} />}
+              {show(transaction.numberOfParcels) && (
+                <InfoRow label="Multi-Parcels" value={transaction.numberOfParcels ? `${transaction.numberOfParcels} parcels` : "—"} edit={edit("numberOfParcels", transaction.numberOfParcels, { restrict: (v) => digitsOnly(v, 3) })} />
+              )}
+              {show(transaction.schoolDistrict) && <InfoRow label="School District" value={transaction.schoolDistrict || "—"} edit={edit("schoolDistrict", transaction.schoolDistrict)} />}
+              {show(transaction.zoningClass) && <InfoRow label="Zoning Class" value={transaction.zoningClass || "—"} edit={edit("zoningClass", transaction.zoningClass)} />}
             </>
           )}
         </div>
@@ -113,15 +158,24 @@ export function OverviewTab({
         {!isListing && transaction && !isReferral && (
           <div className="rounded-xl border border-[#1B1B1B]/10 bg-white p-5 space-y-3">
             <h2 className="text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Key Dates</h2>
-            <InfoRow label="Offer Date" value={transaction.offerDate ? formatDateOnly(transaction.offerDate) : "—"} />
-            <InfoRow label="Acceptance Date" value={transaction.acceptanceDate ? formatDateOnly(transaction.acceptanceDate) : "—"} />
-            <InfoRow label="Inspection Deadline" value={transaction.inspectionDeadline ? formatDateOnly(transaction.inspectionDeadline) : "—"} />
-            <InfoRow label="Appraisal Deadline" value={transaction.appraisalDeadline ? formatDateOnly(transaction.appraisalDeadline) : "—"} />
-            <InfoRow label="Loan Approval" value={transaction.loanApprovalDeadline ? formatDateOnly(transaction.loanApprovalDeadline) : "—"} />
-            <InfoRow label="Close of Escrow" value={transaction.closeOfEscrow ? formatDateOnly(transaction.closeOfEscrow) : "—"} />
-            {transaction.offerExpirationDate && <InfoRow label="Offer Expiration" value={formatDateOnly(transaction.offerExpirationDate)} />}
-            {transaction.finalWalkthroughDate && <InfoRow label="Final Walkthrough" value={formatDateOnly(transaction.finalWalkthroughDate)} />}
-            {transaction.possessionDate && <InfoRow label="Possession Date" value={formatDateOnly(transaction.possessionDate)} />}
+            <InfoRow label="Offer Date" value={date(transaction.offerDate)} edit={dateEdit("offerDate", transaction.offerDate)} />
+            {show(transaction.offerExpirationDate) && <InfoRow label="Offer Expiration" value={date(transaction.offerExpirationDate)} edit={dateEdit("offerExpirationDate", transaction.offerExpirationDate)} />}
+            {isLease ? (
+              <>
+                <InfoRow label="Lease Signed Date" value={date(transaction.leaseSignedDate)} edit={dateEdit("leaseSignedDate", transaction.leaseSignedDate)} />
+                <InfoRow label="Lease Start Date" value={date(transaction.leaseStartDate)} edit={dateEdit("leaseStartDate", transaction.leaseStartDate)} />
+              </>
+            ) : (
+              <>
+                <InfoRow label="Acceptance Date" value={date(transaction.acceptanceDate)} edit={dateEdit("acceptanceDate", transaction.acceptanceDate)} />
+                <InfoRow label="Inspection Deadline" value={date(transaction.inspectionDeadline)} edit={dateEdit("inspectionDeadline", transaction.inspectionDeadline)} />
+                <InfoRow label="Appraisal Deadline" value={date(transaction.appraisalDeadline)} edit={dateEdit("appraisalDeadline", transaction.appraisalDeadline)} />
+                <InfoRow label="Loan Approval" value={date(transaction.loanApprovalDeadline)} edit={dateEdit("loanApprovalDeadline", transaction.loanApprovalDeadline)} />
+                <InfoRow label="Close of Escrow" value={date(transaction.closeOfEscrow)} edit={dateEdit("closeOfEscrow", transaction.closeOfEscrow)} />
+                {show(transaction.finalWalkthroughDate) && <InfoRow label="Final Walkthrough" value={date(transaction.finalWalkthroughDate)} edit={dateEdit("finalWalkthroughDate", transaction.finalWalkthroughDate)} />}
+                {show(transaction.possessionDate) && <InfoRow label="Possession Date" value={date(transaction.possessionDate)} edit={dateEdit("possessionDate", transaction.possessionDate)} />}
+              </>
+            )}
           </div>
         )}
       </div>

@@ -10,7 +10,7 @@ import { escrowTypeToRole, sidePartiesReady, type EscrowContactType } from "@/li
 import { DateField } from "@/components/ui/DateField";
 import { FormField as Field } from "@/components/ui/FormField";
 import { stripDigits, digitsOnly, formatPhoneInput, sanitizeCurrencyInput, formatCurrencyDisplay, emailError } from "@/lib/form-validation";
-import { SIDES, transactionSideLabel, isLeaseSide, type TransactionSide } from "@/types/transaction";
+import { SIDES, transactionSideLabel, isLeaseSide, FILE_PROPERTY_TYPES, type TransactionSide } from "@/types/transaction";
 import { formatDateMDY } from "@/lib/utils";
 import { PartySection, emptyParty, type Party } from "@/components/transactions/PartySection";
 import { CheckIcon } from "@/components/ui/CheckIcon";
@@ -26,7 +26,6 @@ const PROPERTY_CATEGORIES = [
   { value: "COMMERCIAL", label: "Commercial" },
 ] as const;
 
-const PROPERTY_TYPES = ["Single Family", "Condo", "Townhouse", "Multi-Family", "Commercial", "Land", "Industrial", "Farm and Ranch", "Manufactured Home", "Co-Op", "Other"];
 const MULTI_PARCEL_OPTIONS = Array.from({ length: 99 }, (_, i) => i + 2); // 2–100; blank/1 both mean "not multi-parcel"
 
 
@@ -399,7 +398,7 @@ export default function NewTransactionPage() {
                 className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2.5 text-sm text-[#1B1B1B] focus:outline-none focus:ring-2 focus:ring-[#9E8C61]/30"
               >
                 <option value="">Select type…</option>
-                {PROPERTY_TYPES.map((t) => (
+                {FILE_PROPERTY_TYPES.map((t) => (
                   <option key={t} value={t}>{t}</option>
                 ))}
               </select>

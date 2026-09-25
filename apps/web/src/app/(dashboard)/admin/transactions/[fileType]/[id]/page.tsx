@@ -225,6 +225,8 @@ export default function AdminFileDetailPage() {
           progressPct={progressPct}
           satisfied={satisfied}
           required={required}
+          canEdit={!isReferralFile && file.status !== "PENDING_TRANSFER"}
+          onSaved={load}
         />
       )}
 

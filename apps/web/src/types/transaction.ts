@@ -44,6 +44,13 @@ export function isLeaseSide(side: string | null | undefined): boolean {
   return !!side && (LEASE_SIDES as readonly string[]).includes(side);
 }
 
+// Property types a transaction file can have (New Transaction wizard + the
+// Overview's Property Type row). Not the MLS/IDX subtypes in types/property.
+export const FILE_PROPERTY_TYPES = [
+  "Single Family", "Condo", "Townhouse", "Multi-Family", "Commercial", "Land",
+  "Industrial", "Farm and Ranch", "Manufactured Home", "Co-Op", "Other",
+] as const;
+
 export const LISTING_TYPES = [
   { value: "RESIDENTIAL_SALE", label: "Residential Sale" },
   { value: "RESIDENTIAL_LEASE", label: "Residential Lease" },
