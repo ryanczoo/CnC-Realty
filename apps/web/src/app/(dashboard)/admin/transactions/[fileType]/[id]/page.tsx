@@ -270,6 +270,8 @@ export default function AdminFileDetailPage() {
         <DocumentsTab
           documents={file.documents as FileDocumentRecord[]}
           checklistItems={file.checklistItems as FileChecklistItemWithDocs[]}
+          canDelete
+          onChanged={load}
         />
       )}
 

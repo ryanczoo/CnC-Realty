@@ -64,7 +64,7 @@ export interface FileChecklistItemWithDocs {
   description?: string | null;
   order?: number;
   isRequired: boolean;
-  documents: { reviewStatus: DocumentReviewStatus; uploadedAt?: string | Date; rejectionNote?: string | null }[];
+  documents: { id?: string; uploadedByAgentId?: string; reviewStatus: DocumentReviewStatus; uploadedAt?: string | Date; rejectionNote?: string | null }[];
 }
 
 export interface ChecklistProgress {
@@ -199,6 +199,7 @@ export interface FileDocumentRecord {
   id: string;
   checklistItemId: string | null;
   name: string;
+  uploadedByAgentId: string;
   r2Url: string;
   uploadedAt: string;
   reviewStatus: DocumentReviewStatus;

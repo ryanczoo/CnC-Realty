@@ -331,6 +331,7 @@ export default function FileDetailPage() {
           items={file.checklistItems as FileChecklistItemWithDocs[]}
           onUploaded={load}
           readOnly={readOnly}
+          viewerId={session?.user?.id}
         />
       )}
 

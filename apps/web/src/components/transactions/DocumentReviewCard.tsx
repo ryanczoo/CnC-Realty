@@ -3,6 +3,7 @@ import { useState } from "react";
 import { CheckCircle, XCircle, ExternalLink } from "lucide-react";
 import type { FileDocumentRecord } from "@/types/transaction";
 import { EMAIL_WARNING_TEXT } from "@/lib/file-messages";
+import { removeFromChecklist } from "@/lib/document-actions";
 
 interface Props {
   document: FileDocumentRecord;
@@ -63,6 +64,21 @@ export function DocumentReviewCard({ document: doc, onReviewed }: Props) {
     }
   }
 
+  // Broker's Remove: any status, including Approved (SkySlope parity). The
+  // checklist item stays; the document moves to the Documents tab.
+  async function remove() {
+    if (!window.confirm("Remove this document from the checklist item? The checklist item stays; the document moves to the Documents tab.")) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const err = await removeFromChecklist(doc.id);
+      if (err) { setError(err); return; }
+      onReviewed();
+    } finally {
+      setLoading(false);
+    }
+  }
+
   const statusColor = {
     APPROVED: "text-green-600",
     REJECTED: "text-red-500",
@@ -94,6 +110,11 @@ export function DocumentReviewCard({ document: doc, onReviewed }: Props) {
               <XCircle className="h-3 w-3" /> Reject
             </button>
           </>
+        )}
+        {doc.checklistItemId && (
+          <button onClick={remove} disabled={loading} className="flex items-center gap-1 rounded-full border border-[#1B1B1B]/20 bg-white px-3 py-1 text-xs text-[#1B1B1B] hover:border-[#1B1B1B]/40 disabled:opacity-50">
+            Remove
+          </button>
         )}
       </div>
       {error && <p className="mt-2 text-xs text-red-600">{error}</p>}

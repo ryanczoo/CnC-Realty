@@ -1,10 +1,13 @@
 "use client";
+import { useState } from "react";
 import { CheckCircle, XCircle, Clock, AlertCircle } from "lucide-react";
 import type { FileChecklistItemWithDocs, DocumentReviewStatus } from "@/types/transaction";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { UploadFileButton } from "./UploadFileButton";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { latestDocument } from "@/lib/transaction-helpers";
+import { removeFromChecklist } from "@/lib/document-actions";
+import { TrashIcon } from "@/components/ui/TrashIcon";
 
 interface Props {
   fileType: "LISTING" | "TRANSACTION";
@@ -12,6 +15,8 @@ interface Props {
   items: FileChecklistItemWithDocs[];
   onUploaded: () => void;
   readOnly?: boolean;
+  // The signed-in user: an agent may remove only their own In Review upload.
+  viewerId?: string;
 }
 
 const STATUS_ICONS: Record<DocumentReviewStatus, React.ReactNode> = {
@@ -21,12 +26,21 @@ const STATUS_ICONS: Record<DocumentReviewStatus, React.ReactNode> = {
   NOT_SUBMITTED:  <AlertCircle className="h-4 w-4 text-zinc-400" />,
 };
 
-export function ChecklistPanel({ fileType, fileId, items, onUploaded, readOnly = false }: Props) {
+export function ChecklistPanel({ fileType, fileId, items, onUploaded, readOnly = false, viewerId }: Props) {
   const { uploadingId, error, upload } = useFileUpload(fileType, fileId, onUploaded);
+  const [removeError, setRemoveError] = useState<string | null>(null);
+
+  async function remove(documentId: string) {
+    if (!window.confirm("Remove this document from the checklist? It stays in the file's Documents tab.")) return;
+    setRemoveError(null);
+    const err = await removeFromChecklist(documentId);
+    if (err) { setRemoveError(err); return; }
+    onUploaded();
+  }
 
   return (
     <div className="space-y-2">
-      {error && <p className="text-xs text-red-600">{error}</p>}
+      {(error || removeError) && <p className="text-xs text-red-600">{error ?? removeError}</p>}
       {items.map((item) => {
         const topDoc = latestDocument(item.documents);
         const status: DocumentReviewStatus = topDoc?.reviewStatus ?? "NOT_SUBMITTED";
@@ -51,6 +65,16 @@ export function ChecklistPanel({ fileType, fileId, items, onUploaded, readOnly =
                 </>
               )}
             </div>
+            {topDoc?.id && viewerId && status === "PENDING_REVIEW" && topDoc.uploadedByAgentId === viewerId && !readOnly && (
+              <button
+                onClick={() => remove(topDoc.id!)}
+                title="Remove from checklist"
+                aria-label="Remove from checklist"
+                className="shrink-0 text-[#1B1B1B]/25 hover:text-red-400"
+              >
+                <TrashIcon size={14} />
+              </button>
+            )}
             <UploadFileButton
               label="Upload"
               uploading={uploadingId === item.id}
