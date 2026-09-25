@@ -1,4 +1,5 @@
 "use client";
+import { ChevronDown } from "lucide-react";
 import { statusLabel } from "./StatusBadge";
 
 const DELETE_VALUE = "__delete__";
@@ -20,18 +21,23 @@ export function FileStatusSelect({
   onChange: (status: string) => void;
   deleteAction?: { label: string; onSelect: () => void };
 }) {
+  // Browser arrow hidden and replaced by a chevron inside the pill — the same
+  // appearance-none + ChevronDown pattern as the join ApplicationForm selects.
   return (
-    <select
-      disabled={disabled}
-      value={current}
-      onChange={(e) => (e.target.value === DELETE_VALUE ? deleteAction?.onSelect() : onChange(e.target.value))}
-      className="rounded-full border border-[#1B1B1B]/10 bg-white px-3 py-2 text-sm text-[#1B1B1B] disabled:opacity-50"
-    >
-      {statuses.map((s) => (
-        <option key={s} value={s}>{statusLabel(s)}</option>
-      ))}
-      {deleteAction && <option disabled>──────────</option>}
-      {deleteAction && <option value={DELETE_VALUE}>{deleteAction.label}</option>}
-    </select>
+    <div className="relative">
+      <select
+        disabled={disabled}
+        value={current}
+        onChange={(e) => (e.target.value === DELETE_VALUE ? deleteAction?.onSelect() : onChange(e.target.value))}
+        className="appearance-none rounded-full border border-[#1B1B1B]/10 bg-white py-2 pl-4 pr-9 text-sm text-[#1B1B1B] disabled:opacity-50"
+      >
+        {statuses.map((s) => (
+          <option key={s} value={s}>{statusLabel(s)}</option>
+        ))}
+        {deleteAction && <option disabled>──────────</option>}
+        {deleteAction && <option value={DELETE_VALUE}>{deleteAction.label}</option>}
+      </select>
+      <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#1B1B1B]/40" />
+    </div>
   );
 }
