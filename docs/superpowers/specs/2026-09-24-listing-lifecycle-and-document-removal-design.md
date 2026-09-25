@@ -16,7 +16,7 @@ After **Convert to Transaction** succeeds, go to `/dashboard/transactions/transa
 - No own/family-property approval gate (Ryan: agents email him first).
 - `ACTIVE_UNDER_CONTRACT` is never offered in the agent dropdown — Convert is the only way there — and the agent dropdown is hidden entirely while a listing is Under Contract (the linked transaction drives it).
 - Header order on a listing: `[Convert to Transaction | View Transaction] [Submit for Review] [Status ▾]`. Convert becomes View Transaction in the same slot after converting.
-- Agent **transaction** status is a separate follow-up plan (Plan 2: edit details, auto-Pending, Pre-Contract / Request Cancellation dropdown with required reason, broker email + Awaiting Review entry, deadline-reminder fix, required Acceptance Date + COE in the wizard's Under Contract stage).
+- Follow-up work (edit details for listings and transactions, agent + admin; transaction status; cancellation requests; …) is scoped in `2026-09-25-plan-2-file-details-and-transaction-status-scope.md`.
 
 ## 3b. Morning status job (date-driven, SkySlope-style)
 Folded into the existing daily `/api/cron/listing-expiration-warnings` job (no new cron): listing `COMING_SOON → ACTIVE` once `listDate ≤ today`; listing `ACTIVE`/`COMING_SOON → EXPIRED` once `expirationDate < today`; transaction `PENDING → EXPIRED` once `closeOfEscrow < today`, and `EXPIRED → PENDING` if `closeOfEscrow ≥ today` again. `INCOMPLETE` stays manual. Each change logs a `STATUS_CHANGED` activity with `payload.automatic = true`, attributed to the file's agent.
