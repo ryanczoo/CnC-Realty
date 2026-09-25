@@ -17,6 +17,7 @@ import { useFileUpload } from "@/hooks/useFileUpload";
 import { getChecklistProgress, allowedNextStatuses, canDeleteListing, listingStatusOptions, transactionStatusOptions, convertBlockedReason } from "@/lib/transaction-helpers";
 import type { FileDocumentRecord, FileChecklistItemWithDocs, ListingFileDetail, TransactionFileDetail } from "@/types/transaction";
 import { EMAIL_WARNING_TEXT } from "@/lib/file-messages";
+import { latestCancellationReason } from "@/lib/activity-detail";
 
 type Tab = "overview" | "checklist" | "commission" | "documents" | "parties" | "activity";
 
@@ -104,6 +105,7 @@ export default function AdminFileDetailPage() {
   const isListing = fileType === "listing";
   const listing = isListing ? (file as ListingFileDetail) : null;
   const linkedTransactionId = listing?.status === "ACTIVE_UNDER_CONTRACT" ? listing.convertedFiles?.[0]?.id : undefined;
+  const cancellationReason = file.status === "CANCELED_PENDING" ? latestCancellationReason((file.activities ?? []) as { type: string; payload: unknown; createdAt: string }[]) : null;
   const listingDeletable = !!listing && canDeleteListing(listing);
   const transaction = !isListing ? (file as TransactionFileDetail) : null;
   const isReferralFile = !isListing && transaction?.transactionSide === "REFERRAL";
@@ -202,6 +204,13 @@ export default function AdminFileDetailPage() {
         </div>
         {actionError && <p className="mt-2 text-xs text-red-600">{actionError}</p>}
         {emailWarning && <p className="mt-2 text-xs text-amber-700">{EMAIL_WARNING_TEXT}</p>}
+        {file.status === "CANCELED_PENDING" && cancellationReason && (
+          <div className="mt-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm">
+            <p className="font-medium text-red-700">Cancellation requested</p>
+            <p className="mt-0.5 text-red-600">Reason: {cancellationReason}</p>
+            <p className="mt-1 text-xs text-red-500/80">Approve with Canceled, or decline by setting it back to Pending.</p>
+          </div>
+        )}
       </div>
 
       <div className="mb-6 flex gap-1 rounded-xl bg-[#F2F0EF] p-1 w-fit">

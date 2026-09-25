@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { describeActivity } from "@/lib/activity-detail";
+import { describeActivity, latestCancellationReason } from "@/lib/activity-detail";
 
 describe("describeActivity", () => {
   it("shows the document name for an upload", () => {
@@ -37,6 +37,11 @@ describe("describeActivity", () => {
       .toEqual({ detail: "Incomplete → Canceled", reason: null });
   });
 
+  it("shows the agent's reason on a cancellation request", () => {
+    expect(describeActivity({ type: "STATUS_CHANGED", payload: { from: "PENDING", to: "CANCELED_PENDING", reason: "Financing fell through" } }))
+      .toEqual({ detail: "Pending → Cancel Pending", reason: "Financing fell through" });
+  });
+
   it("shows → to when only the new status was recorded", () => {
     expect(describeActivity({ type: "STATUS_CHANGED", payload: { to: "CLOSED" } }))
       .toEqual({ detail: "→ Closed", reason: null });
@@ -61,5 +66,22 @@ describe("describeActivity", () => {
   it("trims stray padding around a document name", () => {
     expect(describeActivity({ type: "DOCUMENT_UPLOADED", payload: { name: "  TDS.pdf  " } }))
       .toEqual({ detail: "TDS.pdf", reason: null });
+  });
+});
+
+describe("latestCancellationReason", () => {
+  const change = (to: string, reason?: string, createdAt = "2026-09-25T10:00:00.000Z") =>
+    ({ type: "STATUS_CHANGED", payload: { from: "PENDING", to, ...(reason && { reason }) }, createdAt });
+
+  it("returns the reason from the most recent cancellation request", () => {
+    expect(latestCancellationReason([
+      change("CANCELED_PENDING", "Old reason", "2026-09-01T10:00:00.000Z"),
+      change("PENDING"),
+      change("CANCELED_PENDING", "Financing fell through", "2026-09-25T10:00:00.000Z"),
+    ])).toBe("Financing fell through");
+  });
+
+  it("returns null when there is no reasoned request", () => {
+    expect(latestCancellationReason([change("PENDING"), { type: "NOTE_ADDED", payload: null, createdAt: "2026-09-25T10:00:00.000Z" }])).toBeNull();
   });
 });

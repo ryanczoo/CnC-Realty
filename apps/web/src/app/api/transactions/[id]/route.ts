@@ -6,6 +6,8 @@ import { checkOwnership, assertFileEditable } from "@/lib/api-auth";
 import { changeFileStatus, maybeAutoPending } from "@/lib/file-status";
 import { followDates } from "@/lib/auto-status";
 import { transactionEditData, requiredFieldError } from "@/lib/file-edit";
+import { sendCancellationRequested } from "@/lib/email/transaction-emails";
+import { sendSafely } from "@/lib/email/send-safely";
 import { calcReferralFee, FILE_DETAIL_INCLUDE } from "@/lib/transaction-helpers";
 import { trimStrings } from "@/lib/form-validation";
 
@@ -64,14 +66,30 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   };
 
   if (body.status && body.status !== tx.status) {
+    // An agent's cancellation request must say why; the reason is logged with the
+    // status change and emailed to the broker, who approves or declines it.
+    const isCancellationRequest = body.status === "CANCELED_PENDING" && !isAdmin;
+    const reason = typeof body.cancellationReason === "string" ? body.cancellationReason.trim() : "";
+    if (isCancellationRequest && !reason) {
+      return NextResponse.json({ error: "Please give a reason for the cancellation" }, { status: 400 });
+    }
     const result = await changeFileStatus({
       kind: "transaction",
       fileId: params.id,
       toStatus: body.status,
       actor: { userId: session.user.id, role },
       extraData: fieldData,
+      ...(reason && { activityPayloadExtra: { reason } }),
     });
     if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
+    if (isCancellationRequest) {
+      await sendSafely(() => sendCancellationRequested({
+        address: tx.propertyAddress,
+        agentName: session.user.name ?? "An agent",
+        reason,
+        fileId: params.id,
+      }));
+    }
     return NextResponse.json({ transaction: result.file, ...(result.emailWarning && { emailWarning: true }) });
   }
 

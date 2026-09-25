@@ -10,7 +10,7 @@ vi.mock("@/lib/prisma", () => ({
     $transaction: vi.fn(async (ops: Promise<unknown>[]) => Promise.all(ops)),
   },
 }));
-vi.mock("@/lib/email/transaction-emails", () => ({ sendFileClosed: vi.fn() }));
+vi.mock("@/lib/email/transaction-emails", () => ({ sendFileClosed: vi.fn(), sendCancellationRequested: vi.fn() }));
 vi.mock("@sentry/nextjs", () => ({ captureException: vi.fn() }));
 vi.mock("@/lib/auto-status", () => ({ followDates: vi.fn() }));
 vi.mock("@/lib/file-status", async (orig) => ({ ...(await orig<typeof import("@/lib/file-status")>()), maybeAutoPending: vi.fn() }));
@@ -19,6 +19,7 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { GET, PATCH } from "../../app/api/transactions/[id]/route";
 import { followDates } from "@/lib/auto-status";
+import { sendCancellationRequested } from "@/lib/email/transaction-emails";
 import { maybeAutoPending } from "@/lib/file-status";
 
 function makeRequest() {
@@ -321,7 +322,8 @@ describe("PATCH /api/transactions/[id] — shared status rules", () => {
     vi.mocked(getServerSession).mockResolvedValue(AGENT_SESSION as any);
     vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({ id: "tf1", agentId: "a1", status: "PENDING", checklistItems: READY_ITEMS } as any);
     vi.mocked(prisma.transactionFile.update).mockResolvedValue({ id: "tf1", status: "CANCELED_PENDING" } as any);
-    const res = await PATCH(okReq({ status: "CANCELED_PENDING", awaitingReview: false }), { params: { id: "tf1" } });
+    // A cancellation request needs a reason (Plan 2); this test is about awaitingReview.
+    const res = await PATCH(okReq({ status: "CANCELED_PENDING", cancellationReason: "Deal fell through", awaitingReview: false }), { params: { id: "tf1" } });
     expect(res.status).toBe(200);
     const data = vi.mocked(prisma.transactionFile.update).mock.calls[0][0].data as Record<string, unknown>;
     expect(data.status).toBe("CANCELED_PENDING");
@@ -378,5 +380,37 @@ describe("PATCH /api/transactions/[id] — detail edits", () => {
     const actor = { userId: "u1", role: "AGENT" };
     expect(followDates).toHaveBeenCalledWith("transaction", "tf1", actor);
     expect(maybeAutoPending).toHaveBeenCalledWith("tf1", actor);
+  });
+});
+
+describe("PATCH /api/transactions/[id] — cancellation requests", () => {
+  const AGENT = { user: { id: "u1", role: "AGENT", agentId: "a1", name: "Ann Agent" } };
+  const patch = (body: unknown) => PATCH(new Request("http://localhost", { method: "PATCH", body: JSON.stringify(body) }), { params: { id: "tf1" } });
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getServerSession).mockResolvedValue(AGENT as any);
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({
+      id: "tf1", agentId: "a1", status: "PENDING", transactionSide: "PURCHASE", propertyAddress: "1 Main St", checklistItems: [], parties: [],
+    } as any);
+    vi.mocked(prisma.transactionFile.update).mockResolvedValue({ id: "tf1", status: "CANCELED_PENDING" } as any);
+    vi.mocked(prisma.fileActivity.create).mockResolvedValue({} as any);
+  });
+
+  it("requires a reason from an agent", async () => {
+    const res = await patch({ status: "CANCELED_PENDING", cancellationReason: "  " });
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("Please give a reason for the cancellation");
+    expect(prisma.transactionFile.update).not.toHaveBeenCalled();
+  });
+
+  it("logs the reason with the status change and emails the broker", async () => {
+    const res = await patch({ status: "CANCELED_PENDING", cancellationReason: "Buyer's financing fell through" });
+    expect(res.status).toBe(200);
+    expect(prisma.fileActivity.create).toHaveBeenCalledWith({ data: expect.objectContaining({
+      type: "STATUS_CHANGED", payload: { from: "PENDING", to: "CANCELED_PENDING", reason: "Buyer's financing fell through" },
+    }) });
+    expect(sendCancellationRequested).toHaveBeenCalledWith(expect.objectContaining({
+      address: "1 Main St", agentName: "Ann Agent", reason: "Buyer's financing fell through", fileId: "tf1",
+    }));
   });
 });

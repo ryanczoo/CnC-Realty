@@ -31,8 +31,23 @@ export function describeActivity(a: { type: string; payload: unknown }): { detai
     // Who drove it, when it wasn't a person: the morning status job, or the
     // listing's linked transaction (sync in changeFileStatus).
     const source = p.automatic === true ? " (automatic)" : p.viaTransactionId ? " (via transaction file)" : "";
-    if (from && to) return { detail: `${from} → ${to}${source}`, reason: null };
+    if (from && to) return { detail: `${from} → ${to}${source}`, reason: asText(p.reason) };
     if (to) return { detail: `→ ${to}`, reason: null };
   }
   return { detail: null, reason: null };
+}
+
+// The reason on the most recent cancellation request (STATUS_CHANGED -> Cancel
+// Pending), read from activity the file page already loads — shown to the broker
+// while the request is pending.
+export function latestCancellationReason(
+  activities: readonly { type: string; payload: unknown; createdAt: string | Date }[],
+): string | null {
+  const requests = activities
+    .filter((a) => {
+      const p = a.payload && typeof a.payload === "object" ? (a.payload as Payload) : {};
+      return a.type === "STATUS_CHANGED" && p.to === "CANCELED_PENDING" && !!asText(p.reason);
+    })
+    .sort((x, y) => new Date(y.createdAt).getTime() - new Date(x.createdAt).getTime());
+  return requests.length ? asText((requests[0].payload as Payload).reason) : null;
 }

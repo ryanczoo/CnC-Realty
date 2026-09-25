@@ -232,3 +232,39 @@ export async function sendFileExpirationWarning(opts: {
     stream: "transactional",
   });
 }
+
+// An agent asked to cancel a transaction; the broker approves or declines it.
+export async function sendCancellationRequested(opts: {
+  address: string | null;
+  agentName: string;
+  reason: string;
+  fileId: string;
+  to?: string;
+}): Promise<void> {
+  const address = opts.address ?? NO_ADDRESS_LABEL;
+  const bodyHtml = buildHeadingBodyHtml({
+    heading: "Cancellation Requested",
+    bodyHtml: `
+      <p style="color: #4b4b4b; font-size: 15px; line-height: 1.6; text-align: center; margin: 0;">
+        <strong style="color: #1B1B1B;">${escapeHtml(opts.agentName)}</strong> has asked to cancel a transaction file.
+      </p>
+      <p style="color: #4b4b4b; font-size: 15px; line-height: 1.6; text-align: center; margin: 12px 0 0;">
+        Property: <strong style="color: #1B1B1B;">${escapeHtml(address)}</strong>
+      </p>
+      <p style="color: #4b4b4b; font-size: 15px; line-height: 1.6; text-align: center; margin: 12px 0 0;">
+        Reason: <em>${escapeHtml(opts.reason)}</em>
+      </p>
+    `,
+  });
+  const html = emailLayout({
+    bodyHtml,
+    ctaLabel: "Review Request",
+    ctaHref: `${process.env.NEXTAUTH_URL}/admin/transactions/transaction/${opts.fileId}`,
+  });
+  await sendEmail({
+    to: opts.to ?? BROKER_EMAIL,
+    subject: `[CnC] Cancellation Requested — ${address}`,
+    html,
+    stream: "transactional",
+  });
+}

@@ -19,7 +19,8 @@ export async function GET() {
       orderBy: { updatedAt: "asc" },
     }),
     prisma.transactionFile.findMany({
-      where: { awaitingReview: true },
+      // Submitted-for-review files plus agents' cancellation requests.
+      where: { OR: [{ awaitingReview: true }, { status: "CANCELED_PENDING" }] },
       include: {
         agent: { include: { user: { select: { name: true, email: true } } } },
         documents: { where: { reviewStatus: "PENDING_REVIEW" } },
