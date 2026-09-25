@@ -6,6 +6,7 @@ import { ArrowIcon } from "@/components/ui/ArrowIcon";
 import { StatusBadge } from "@/components/transactions/StatusBadge";
 import { DocumentReviewCard } from "@/components/transactions/DocumentReviewCard";
 import { FileStatusSelect } from "@/components/transactions/FileStatusSelect";
+import { ConvertListingButton } from "@/components/transactions/ConvertListingButton";
 import { ActivityFeed } from "@/components/transactions/ActivityFeed";
 import { PartiesTable } from "@/components/transactions/PartiesTable";
 import { OverviewTab } from "@/components/transactions/OverviewTab";
@@ -13,7 +14,7 @@ import { CommissionTab } from "@/components/transactions/CommissionTab";
 import { DocumentsTab } from "@/components/transactions/DocumentsTab";
 import { UploadFileButton } from "@/components/transactions/UploadFileButton";
 import { useFileUpload } from "@/hooks/useFileUpload";
-import { getChecklistProgress, allowedNextStatuses, canDeleteListing } from "@/lib/transaction-helpers";
+import { getChecklistProgress, allowedNextStatuses, canDeleteListing, listingStatusOptions, convertBlockedReason } from "@/lib/transaction-helpers";
 import type { FileDocumentRecord, FileChecklistItemWithDocs, ListingFileDetail, TransactionFileDetail } from "@/types/transaction";
 import { EMAIL_WARNING_TEXT } from "@/lib/file-messages";
 
@@ -117,7 +118,9 @@ export default function AdminFileDetailPage() {
   // really is a referral.
   const statuses = [
     file.status as string,
-    ...allowedNextStatuses(kind, file.status, "ADMIN").filter((s) => isReferralFile || !s.startsWith("REFERRAL_")),
+    ...(isListing
+      ? listingStatusOptions(file.status, "ADMIN")
+      : allowedNextStatuses(kind, file.status, "ADMIN").filter((s) => isReferralFile || !s.startsWith("REFERRAL_"))),
   ];
   const { satisfied, required } = getChecklistProgress(file.checklistItems as FileChecklistItemWithDocs[]);
   const progressPct = required > 0 ? Math.round((satisfied / required) * 100) : 0;
@@ -162,6 +165,14 @@ export default function AdminFileDetailPage() {
           </div>
 
           <div className="flex items-center gap-2">
+            {listing?.status === "ACTIVE" && (
+              <ConvertListingButton
+                listingId={id}
+                blockedReason={convertBlockedReason(listing)}
+                onConverted={(transactionId) => router.push(`/admin/transactions/transaction/${transactionId}`)}
+                onError={setActionError}
+              />
+            )}
             {linkedTransactionId && (
               <Link href={`/admin/transactions/transaction/${linkedTransactionId}`} className="rounded-full border border-[#1B1B1B]/20 bg-white px-4 py-2 text-sm text-[#1B1B1B] hover:border-[#1B1B1B]/40">
                 View Transaction

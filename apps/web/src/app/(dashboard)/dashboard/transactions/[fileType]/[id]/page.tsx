@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { StatusBadge } from "@/components/transactions/StatusBadge";
 import { FileStatusSelect } from "@/components/transactions/FileStatusSelect";
+import { ConvertListingButton } from "@/components/transactions/ConvertListingButton";
 import { ChecklistPanel } from "@/components/transactions/ChecklistPanel";
 import { PartiesTable } from "@/components/transactions/PartiesTable";
 import { ActivityFeed } from "@/components/transactions/ActivityFeed";
@@ -144,18 +145,6 @@ export default function FileDetailPage() {
     }
   }
 
-  async function convertToTransaction() {
-    setActionError(null);
-    const res = await fetch(`/api/listings/${id}/convert`, { method: "POST" });
-    if (!res.ok) {
-      const body = await res.json().catch(() => null);
-      setActionError(body?.error ?? "Couldn't convert this listing. Please try again.");
-      return;
-    }
-    const { transactionFile } = await res.json();
-    router.push(`/dashboard/transactions/transaction/${transactionFile.id}`);
-  }
-
   if (loading) {
     return (
       <div className="space-y-4">
@@ -226,9 +215,12 @@ export default function FileDetailPage() {
 
           <div className="flex shrink-0 gap-2">
             {isListing && listing?.status === "ACTIVE" && !readOnly && (
-              <button onClick={convertToTransaction} className="rounded-full border border-[#1B1B1B]/20 bg-white px-4 py-2 text-sm text-[#1B1B1B] hover:border-[#1B1B1B]/40">
-                Convert to Transaction
-              </button>
+              <ConvertListingButton
+                listingId={id}
+                blockedReason={convertBlockedReason(listing)}
+                onConverted={(transactionId) => router.push(`/dashboard/transactions/transaction/${transactionId}`)}
+                onError={setActionError}
+              />
             )}
             {linkedTransactionId && (
               <Link href={`/dashboard/transactions/transaction/${linkedTransactionId}`} className="rounded-full border border-[#1B1B1B]/20 bg-white px-4 py-2 text-sm text-[#1B1B1B] hover:border-[#1B1B1B]/40">
