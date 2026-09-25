@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
-import { CheckCircle, XCircle, Clock, AlertCircle } from "lucide-react";
+import { XCircle, Clock, AlertCircle } from "lucide-react";
+import { CheckCircleIcon } from "@/components/ui/CheckCircleIcon";
 import type { FileChecklistItemWithDocs, DocumentReviewStatus } from "@/types/transaction";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { UploadFileButton } from "./UploadFileButton";
@@ -20,7 +21,7 @@ interface Props {
 }
 
 const STATUS_ICONS: Record<DocumentReviewStatus, React.ReactNode> = {
-  APPROVED:       <CheckCircle className="h-4 w-4 text-green-600" />,
+  APPROVED:       <CheckCircleIcon size={16} className="text-green-600" />,
   REJECTED:       <XCircle className="h-4 w-4 text-red-500" />,
   PENDING_REVIEW: <Clock className="h-4 w-4 text-yellow-600" />,
   NOT_SUBMITTED:  <AlertCircle className="h-4 w-4 text-zinc-400" />,

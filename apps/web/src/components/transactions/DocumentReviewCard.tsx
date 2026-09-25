@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
-import { CheckCircle, XCircle, ExternalLink } from "lucide-react";
+import { XCircle, ExternalLink } from "lucide-react";
+import { CheckCircleIcon } from "@/components/ui/CheckCircleIcon";
 import type { FileDocumentRecord } from "@/types/transaction";
 import { EMAIL_WARNING_TEXT } from "@/lib/file-messages";
 import { removeFromChecklist } from "@/lib/document-actions";
@@ -104,7 +105,7 @@ export function DocumentReviewCard({ document: doc, onReviewed }: Props) {
         {doc.reviewStatus === "PENDING_REVIEW" && (
           <>
             <button onClick={approve} disabled={loading} className="flex items-center gap-1 rounded-full bg-green-600 px-3 py-1 text-xs text-white hover:bg-green-700 disabled:opacity-50">
-              <CheckCircle className="h-3 w-3" /> Approve
+              <CheckCircleIcon size={12} /> Approve
             </button>
             <button onClick={() => setShowRejectForm((v) => !v)} className="flex items-center gap-1 rounded-full bg-red-500 px-3 py-1 text-xs text-white hover:bg-red-600">
               <XCircle className="h-3 w-3" /> Reject

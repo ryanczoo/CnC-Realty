@@ -13,6 +13,7 @@ import { stripDigits, digitsOnly, formatPhoneInput, sanitizeCurrencyInput, forma
 import { SIDES, transactionSideLabel, type TransactionSide } from "@/types/transaction";
 import { formatDateMDY } from "@/lib/utils";
 import { PartySection, emptyParty, type Party } from "@/components/transactions/PartySection";
+import { CheckIcon } from "@/components/ui/CheckIcon";
 import { Spinner } from "@/components/ui/Spinner";
 
 const STAGES = [
@@ -478,7 +479,7 @@ export default function NewTransactionPage() {
                   />
                 </label>
                 {form.photoKey && !photoUploading && (
-                  <p className="mt-1.5 text-xs text-[#9E8C61]">Photo uploaded ✓</p>
+                  <p className="mt-1.5 inline-flex items-center gap-1 text-xs text-[#9E8C61]">Photo uploaded <CheckIcon size={14} /></p>
                 )}
               </div>
             </div>

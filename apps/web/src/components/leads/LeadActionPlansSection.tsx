@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
+import { CheckIcon } from "@/components/ui/CheckIcon";
 
 type EnrollmentStep = {
   id: string;
@@ -209,7 +210,7 @@ export function LeadActionPlansSection({ leadId }: { leadId: string }) {
                   {enr.steps.map((s) => (
                     <div key={s.id} className="flex items-center gap-2 text-xs">
                       <span className={`w-4 text-center font-medium ${STEP_STATUS_COLORS[s.status]}`}>
-                        {s.status === "DONE" ? "✓" : s.status === "SKIPPED" ? "—" : s.stepOrder}
+                        {s.status === "DONE" ? <CheckIcon size={14} className="mx-auto" /> : s.status === "SKIPPED" ? "—" : s.stepOrder}
                       </span>
                       <span className={`flex-1 ${STEP_STATUS_COLORS[s.status]}`}>
                         {s.stepType === "EMAIL" ? s.subject : s.taskTitle}

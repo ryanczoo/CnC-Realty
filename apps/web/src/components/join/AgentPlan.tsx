@@ -4,6 +4,7 @@ import Link from "next/link";
 import { motion } from "motion/react";
 import { RevealLine } from "@/components/ui/reveal-text";
 import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
+import { CheckCircleIcon } from "@/components/ui/CheckCircleIcon";
 
 const BENEFITS: { label: string; muted?: string }[] = [
   { label: "100% Commission" },
@@ -19,21 +20,6 @@ const BENEFITS: { label: string; muted?: string }[] = [
   { label: "No Long Term Commitment" },
   { label: "Optional Transaction Coordinator Service" },
 ];
-
-function CheckIcon() {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      className="mt-[1px] flex-shrink-0"
-    >
-      <path d="M20.94,11A8.26,8.26,0,0,1,21,12a9,9,0,1,1-9-9,8.83,8.83,0,0,1,4,1" stroke="#9E8C61" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      <polyline points="21 5 12 14 8 10" stroke="#9E8C61" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
 
 export function AgentPlan() {
   return (
@@ -100,7 +86,7 @@ export function AgentPlan() {
           <ul className="space-y-4">
             {BENEFITS.map((b) => (
               <li key={b.label} className="flex items-start gap-3">
-                <CheckIcon />
+                <CheckCircleIcon size={18} className="mt-[1px] flex-shrink-0 text-[#9E8C61]" />
                 <span className="font-sans text-sm leading-snug text-[#1B1B1B]">
                   {b.label}
                   {b.muted && (
