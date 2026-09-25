@@ -19,22 +19,27 @@ describe("describeActivity", () => {
 
   it("shows from → to when both statuses are recorded", () => {
     expect(describeActivity({ type: "STATUS_CHANGED", payload: { from: "INCOMPLETE", to: "PENDING" } }))
-      .toEqual({ detail: "INCOMPLETE → PENDING", reason: null });
+      .toEqual({ detail: "Incomplete → Pending", reason: null });
   });
 
   it("marks a status change made by the morning job as automatic", () => {
     expect(describeActivity({ type: "STATUS_CHANGED", payload: { from: "ACTIVE", to: "EXPIRED", automatic: true } }))
-      .toEqual({ detail: "ACTIVE → EXPIRED (automatic)", reason: null });
+      .toEqual({ detail: "Active → Expired (automatic)", reason: null });
   });
 
   it("marks a listing change driven by its linked transaction", () => {
     expect(describeActivity({ type: "STATUS_CHANGED", payload: { from: "ACTIVE_UNDER_CONTRACT", to: "CLOSED", viaTransactionId: "t1" } }))
-      .toEqual({ detail: "ACTIVE_UNDER_CONTRACT → CLOSED (from its transaction)", reason: null });
+      .toEqual({ detail: "Under Contract → Closed (from its transaction)", reason: null });
+  });
+
+  it("uses the same readable names as the status badges (e.g. an approved cancellation)", () => {
+    expect(describeActivity({ type: "STATUS_CHANGED", payload: { from: "INCOMPLETE", to: "CANCELED_APPROVED" } }))
+      .toEqual({ detail: "Incomplete → Canceled", reason: null });
   });
 
   it("shows → to when only the new status was recorded", () => {
     expect(describeActivity({ type: "STATUS_CHANGED", payload: { to: "CLOSED" } }))
-      .toEqual({ detail: "→ CLOSED", reason: null });
+      .toEqual({ detail: "→ Closed", reason: null });
   });
 
   it("names the document that was removed from the checklist, and which item", () => {

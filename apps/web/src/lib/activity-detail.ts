@@ -1,3 +1,5 @@
+import { statusLabel } from "@/components/transactions/StatusBadge";
+
 type Payload = { name?: unknown; note?: unknown; from?: unknown; to?: unknown; automatic?: unknown; viaTransactionId?: unknown; reason?: unknown; checklistItemName?: unknown };
 
 const asText = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
@@ -21,8 +23,11 @@ export function describeActivity(a: { type: string; payload: unknown }): { detai
     return { detail: asText(p.name), reason: asText(p.reason) };
   }
   if (a.type === "STATUS_CHANGED") {
-    const from = asText(p.from);
-    const to = asText(p.to);
+    // Same readable names as the status badges and dropdown ("Incomplete", "Canceled").
+    const fromCode = asText(p.from);
+    const toCode = asText(p.to);
+    const from = fromCode ? statusLabel(fromCode) : null;
+    const to = toCode ? statusLabel(toCode) : null;
     // Who drove it, when it wasn't a person: the morning status job, or the
     // listing's linked transaction (sync in changeFileStatus).
     const source = p.automatic === true ? " (automatic)" : p.viaTransactionId ? " (from its transaction)" : "";
