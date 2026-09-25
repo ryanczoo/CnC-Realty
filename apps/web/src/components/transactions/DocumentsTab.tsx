@@ -78,8 +78,8 @@ export function DocumentsTab({
           <tr className="border-b border-[#1B1B1B]/5 bg-[#F2F0EF]/60">
             <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Document</th>
             <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Checklist Item</th>
-            <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Status</th>
-            <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Uploaded</th>
+            <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Status</th>
+            <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Uploaded</th>
             <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Download</th>
             {canDelete && <th className="w-12 px-5 py-3" />}
           </tr>
@@ -92,12 +92,12 @@ export function DocumentsTab({
                 <td className="px-5 py-3 text-[#1B1B1B]/50">
                   {doc.checklistItemId ? (itemMap.get(doc.checklistItemId) ?? "—") : "Unattached"}
                 </td>
-                <td className="px-5 py-3">
+                <td className="px-5 py-3 text-center">
                   <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLES[doc.reviewStatus] ?? ""}`}>
                     {STATUS_LABELS[doc.reviewStatus] ?? doc.reviewStatus}
                   </span>
                 </td>
-                <td className="px-5 py-3 text-[#1B1B1B]/50">{new Date(doc.uploadedAt).toLocaleDateString()}</td>
+                <td className="px-5 py-3 text-center text-[#1B1B1B]/50">{new Date(doc.uploadedAt).toLocaleDateString()}</td>
                 <td className="px-5 py-3 text-center">
                   <a
                     href={doc.r2Url}
