@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calcReferralFee, canTransitionTransaction, pickDisplayPrice, pickDisplayDate, agentListingStatusOptions, escrowTypeToRole, latestDocument, allowedNextStatuses, canTransitionListing } from "@/lib/transaction-helpers";
+import { calcReferralFee, canTransitionTransaction, pickDisplayPrice, pickDisplayDate, agentListingStatusOptions, canDeleteListing, escrowTypeToRole, latestDocument, allowedNextStatuses, canTransitionListing } from "@/lib/transaction-helpers";
 
 describe("calcReferralFee", () => {
   it("takes 10% when 10% of the amount exceeds $200", () => {
@@ -206,5 +206,17 @@ describe("agentListingStatusOptions", () => {
 
   it.each(["PENDING_TRANSFER", "WITHDRAWN", "CANCELED", "CLOSED"])("offers nothing for a %s listing", (s) => {
     expect(agentListingStatusOptions(s)).toEqual([]);
+  });
+});
+
+describe("canDeleteListing", () => {
+  it("allows an empty, never-converted listing", () => {
+    expect(canDeleteListing({ documents: [], convertedFiles: [] })).toBe(true);
+    expect(canDeleteListing({})).toBe(true);
+  });
+
+  it("refuses a listing with documents or a converted transaction", () => {
+    expect(canDeleteListing({ documents: [{}], convertedFiles: [] })).toBe(false);
+    expect(canDeleteListing({ documents: [], convertedFiles: [{}] })).toBe(false);
   });
 });

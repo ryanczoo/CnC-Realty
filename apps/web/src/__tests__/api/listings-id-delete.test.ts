@@ -6,7 +6,6 @@ vi.mock("@/lib/r2", () => ({ deleteR2Object: vi.fn().mockResolvedValue(undefined
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     listingFile: { findUnique: vi.fn(), delete: vi.fn() },
-    fileDocument: { findMany: vi.fn() },
   },
 }));
 
@@ -15,68 +14,56 @@ import { prisma } from "@/lib/prisma";
 import { deleteR2Object } from "@/lib/r2";
 import { DELETE } from "../../app/api/listings/[id]/route";
 
+const ADMIN = { user: { id: "admin1", role: "ADMIN", agentId: null } };
+const AGENT = { user: { id: "u1", role: "AGENT", agentId: "agent-1" } };
+const listing = (over: Record<string, unknown> = {}) => ({
+  id: "listing-1", status: "INCOMPLETE", agentId: "agent-1", _count: { documents: 0, convertedFiles: 0 }, ...over,
+});
+const del = () => DELETE(new Request("http://localhost/api/listings/listing-1", { method: "DELETE" }), { params: { id: "listing-1" } });
+
+// Retention (B&P §10148): a listing is only deletable by the broker, and only
+// while it holds no documents and was never converted to a transaction.
 describe("DELETE /api/listings/[id]", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(prisma.fileDocument.findMany).mockResolvedValue([]);
+  beforeEach(() => vi.clearAllMocks());
+
+  it("refuses an agent, even the listing's own agent", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(AGENT as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(listing() as any);
+    const res = await del();
+    expect(res.status).toBe(403);
+    expect(prisma.listingFile.delete).not.toHaveBeenCalled();
   });
 
-  it("still allows deleting an INCOMPLETE listing", async () => {
-    vi.mocked(getServerSession).mockResolvedValue({ user: { role: "ADMIN", agentId: null } } as any);
-    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "listing-1", status: "INCOMPLETE", agentId: "agent-1" } as any);
+  it("refuses when the listing still has documents", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(ADMIN as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(listing({ _count: { documents: 2, convertedFiles: 0 } }) as any);
+    const res = await del();
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("Delete this listing's documents first");
+    expect(prisma.listingFile.delete).not.toHaveBeenCalled();
+  });
 
-    const res = await DELETE(new Request("http://localhost/api/listings/listing-1", { method: "DELETE" }), { params: { id: "listing-1" } });
+  it("refuses when the listing was converted to a transaction", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(ADMIN as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(listing({ _count: { documents: 0, convertedFiles: 1 } }) as any);
+    const res = await del();
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("This listing was converted to a transaction and can't be deleted");
+    expect(prisma.listingFile.delete).not.toHaveBeenCalled();
+  });
 
+  it.each(["INCOMPLETE", "PENDING_TRANSFER", "ACTIVE", "WITHDRAWN"])("lets the broker delete an empty %s listing", async (status) => {
+    vi.mocked(getServerSession).mockResolvedValue(ADMIN as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(listing({ status }) as any);
+    const res = await del();
     expect(res.status).toBe(200);
     expect(prisma.listingFile.delete).toHaveBeenCalledWith({ where: { id: "listing-1" } });
+    expect(deleteR2Object).not.toHaveBeenCalled();
   });
 
-  it("deletes each attached document's R2 object before deleting the listing", async () => {
-    vi.mocked(getServerSession).mockResolvedValue({ user: { role: "ADMIN", agentId: null } } as any);
-    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "listing-4", status: "INCOMPLETE", agentId: "agent-1" } as any);
-    vi.mocked(prisma.fileDocument.findMany).mockResolvedValue([
-      { r2Key: "transactions/listing/listing-4/doc-1/a.pdf" },
-      { r2Key: "transactions/listing/listing-4/doc-2/b.pdf" },
-    ] as any);
-
-    const res = await DELETE(new Request("http://localhost/api/listings/listing-4", { method: "DELETE" }), { params: { id: "listing-4" } });
-
-    expect(res.status).toBe(200);
-    expect(deleteR2Object).toHaveBeenCalledTimes(2);
-    expect(deleteR2Object).toHaveBeenCalledWith("transactions/listing/listing-4/doc-1/a.pdf");
-    expect(deleteR2Object).toHaveBeenCalledWith("transactions/listing/listing-4/doc-2/b.pdf");
-    expect(prisma.listingFile.delete).toHaveBeenCalledWith({ where: { id: "listing-4" } });
-  });
-
-  it("still deletes the listing even when an R2 delete fails", async () => {
-    vi.mocked(getServerSession).mockResolvedValue({ user: { role: "ADMIN", agentId: null } } as any);
-    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "listing-5", status: "INCOMPLETE", agentId: "agent-1" } as any);
-    vi.mocked(prisma.fileDocument.findMany).mockResolvedValue([{ r2Key: "bad-key" }] as any);
-    vi.mocked(deleteR2Object).mockRejectedValueOnce(new Error("R2 unreachable"));
-
-    const res = await DELETE(new Request("http://localhost/api/listings/listing-5", { method: "DELETE" }), { params: { id: "listing-5" } });
-
-    expect(res.status).toBe(200);
-    expect(prisma.listingFile.delete).toHaveBeenCalledWith({ where: { id: "listing-5" } });
-  });
-
-  it("also allows deleting a PENDING_TRANSFER listing", async () => {
-    vi.mocked(getServerSession).mockResolvedValue({ user: { role: "ADMIN", agentId: null } } as any);
-    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "listing-2", status: "PENDING_TRANSFER", agentId: "agent-1" } as any);
-
-    const res = await DELETE(new Request("http://localhost/api/listings/listing-2", { method: "DELETE" }), { params: { id: "listing-2" } });
-
-    expect(res.status).toBe(200);
-    expect(prisma.listingFile.delete).toHaveBeenCalledWith({ where: { id: "listing-2" } });
-  });
-
-  it("still rejects deleting an ACTIVE listing", async () => {
-    vi.mocked(getServerSession).mockResolvedValue({ user: { role: "ADMIN", agentId: null } } as any);
-    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "listing-3", status: "ACTIVE", agentId: "agent-1" } as any);
-
-    const res = await DELETE(new Request("http://localhost/api/listings/listing-3", { method: "DELETE" }), { params: { id: "listing-3" } });
-
-    expect(res.status).toBe(400);
-    expect(prisma.listingFile.delete).not.toHaveBeenCalled();
+  it("returns 404 for a missing listing", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(ADMIN as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(null);
+    expect((await del()).status).toBe(404);
   });
 });

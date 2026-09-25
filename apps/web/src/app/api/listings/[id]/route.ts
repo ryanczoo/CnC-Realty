@@ -5,7 +5,6 @@ import { prisma } from "@/lib/prisma";
 import { checkOwnership, assertFileEditable } from "@/lib/api-auth";
 import { changeFileStatus } from "@/lib/file-status";
 import { FILE_DETAIL_INCLUDE } from "@/lib/transaction-helpers";
-import { deleteR2Object } from "@/lib/r2";
 import { trimStrings } from "@/lib/form-validation";
 import { listingDatesError } from "@/lib/listing-dates";
 
@@ -86,31 +85,26 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   return NextResponse.json({ listing: updated });
 }
 
+// Broker-only, and only for an empty listing: a file that holds documents (or
+// became a transaction) is part of the 3-year record B&P §10148 requires — it
+// gets Withdrawn or Canceled instead, never deleted.
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (session.user.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const listing = await prisma.listingFile.findUnique({ where: { id: params.id } });
+  const listing = await prisma.listingFile.findUnique({
+    where: { id: params.id },
+    include: { _count: { select: { documents: true, convertedFiles: true } } },
+  });
   if (!listing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  if (listing.status !== "INCOMPLETE" && listing.status !== "PENDING_TRANSFER") {
-    return NextResponse.json({ error: "Only INCOMPLETE or PENDING_TRANSFER files can be deleted" }, { status: 400 });
+  if (listing._count.documents > 0) {
+    return NextResponse.json({ error: "Delete this listing's documents first" }, { status: 400 });
   }
-
-  const { forbidden } = checkOwnership(listing, session.user.agentId, session.user.role);
-  if (forbidden) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (listing._count.convertedFiles > 0) {
+    return NextResponse.json({ error: "This listing was converted to a transaction and can't be deleted" }, { status: 400 });
   }
-
-  const documents = await prisma.fileDocument.findMany({
-    where: { listingFileId: params.id },
-    select: { r2Key: true },
-  });
-  await Promise.all(
-    documents.map((doc) =>
-      deleteR2Object(doc.r2Key).catch((err) => console.error(`Failed to delete R2 object ${doc.r2Key}:`, err))
-    )
-  );
 
   await prisma.listingFile.delete({ where: { id: params.id } });
   return NextResponse.json({ ok: true });

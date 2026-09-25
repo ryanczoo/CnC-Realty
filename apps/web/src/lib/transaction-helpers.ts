@@ -143,6 +143,11 @@ export function agentListingStatusOptions(status: string): string[] {
   return allowedNextStatuses("listing", status, "AGENT").filter((s) => s !== "ACTIVE_UNDER_CONTRACT");
 }
 
+// Mirrors DELETE /api/listings/[id]: only an empty, never-converted listing.
+export function canDeleteListing(listing: { documents?: unknown[]; convertedFiles?: unknown[] }): boolean {
+  return (listing.documents?.length ?? 0) === 0 && (listing.convertedFiles?.length ?? 0) === 0;
+}
+
 export function isItemSatisfied(item: FileChecklistItemWithDocs): boolean {
   return item.documents.some(
     (d) => d.reviewStatus === "APPROVED" || d.reviewStatus === "PENDING_REVIEW"

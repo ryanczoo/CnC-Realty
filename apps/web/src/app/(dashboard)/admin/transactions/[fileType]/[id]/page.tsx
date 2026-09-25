@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowIcon } from "@/components/ui/ArrowIcon";
 import { StatusBadge } from "@/components/transactions/StatusBadge";
@@ -13,7 +13,7 @@ import { CommissionTab } from "@/components/transactions/CommissionTab";
 import { DocumentsTab } from "@/components/transactions/DocumentsTab";
 import { UploadFileButton } from "@/components/transactions/UploadFileButton";
 import { useFileUpload } from "@/hooks/useFileUpload";
-import { getChecklistProgress, allowedNextStatuses } from "@/lib/transaction-helpers";
+import { getChecklistProgress, allowedNextStatuses, canDeleteListing } from "@/lib/transaction-helpers";
 import type { FileDocumentRecord, FileChecklistItemWithDocs, ListingFileDetail, TransactionFileDetail } from "@/types/transaction";
 import { EMAIL_WARNING_TEXT } from "@/lib/file-messages";
 
@@ -21,6 +21,7 @@ type Tab = "overview" | "checklist" | "commission" | "documents" | "parties" | "
 
 export default function AdminFileDetailPage() {
   const { fileType, id } = useParams<{ fileType: string; id: string }>();
+  const router = useRouter();
   const [tab, setTab] = useState<Tab>("overview");
   const [file, setFile] = useState<ListingFileDetail | TransactionFileDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -70,6 +71,20 @@ export default function AdminFileDetailPage() {
     }
   }
 
+  // Only offered for an empty, never-converted listing (canDeleteListing); the
+  // server enforces the same rule.
+  async function deleteListing() {
+    if (!window.confirm("Permanently delete this listing file? This can't be undone.")) return;
+    setActionError(null);
+    const res = await fetch(`/api/listings/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      setActionError(body?.error ?? "Couldn't delete this listing. Please try again.");
+      return;
+    }
+    router.push("/admin/transactions");
+  }
+
   if (loading) {
     return <div className="h-48 animate-pulse rounded-xl bg-[#F2F0EF]" />;
   }
@@ -88,6 +103,7 @@ export default function AdminFileDetailPage() {
   const isListing = fileType === "listing";
   const listing = isListing ? (file as ListingFileDetail) : null;
   const linkedTransactionId = listing?.status === "ACTIVE_UNDER_CONTRACT" ? listing.convertedFiles?.[0]?.id : undefined;
+  const listingDeletable = !!listing && canDeleteListing(listing);
   const transaction = !isListing ? (file as TransactionFileDetail) : null;
   const isReferralFile = !isListing && transaction?.transactionSide === "REFERRAL";
 
@@ -152,11 +168,24 @@ export default function AdminFileDetailPage() {
               </Link>
             )}
             {file.status === "PENDING_TRANSFER" ? (
-              <span className="rounded-full bg-purple-100 px-3 py-1.5 text-xs font-medium text-purple-700">
-                Approve the uploaded document below to unlock
-              </span>
+              <>
+                <span className="rounded-full bg-purple-100 px-3 py-1.5 text-xs font-medium text-purple-700">
+                  Approve the uploaded document below to unlock
+                </span>
+                {listingDeletable && (
+                  <button onClick={deleteListing} className="text-xs text-red-500 hover:text-red-600">
+                    Delete listing…
+                  </button>
+                )}
+              </>
             ) : (
-              <FileStatusSelect current={file.status} statuses={statuses} disabled={statusLoading} onChange={changeStatus} />
+              <FileStatusSelect
+                current={file.status}
+                statuses={statuses}
+                disabled={statusLoading}
+                onChange={changeStatus}
+                deleteAction={listingDeletable ? { label: "Delete listing…", onSelect: deleteListing } : undefined}
+              />
             )}
           </div>
         </div>
