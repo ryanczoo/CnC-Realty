@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calcReferralFee, canTransitionTransaction, pickDisplayPrice, pickDisplayDate, agentListingStatusOptions, canDeleteListing, escrowTypeToRole, latestDocument, allowedNextStatuses, canTransitionListing } from "@/lib/transaction-helpers";
+import { calcReferralFee, canTransitionTransaction, pickDisplayPrice, pickDisplayDate, listingStatusOptions, canDeleteListing, convertBlockedReason, escrowTypeToRole, latestDocument, allowedNextStatuses, canTransitionListing } from "@/lib/transaction-helpers";
 
 describe("calcReferralFee", () => {
   it("takes 10% when 10% of the amount exceeds $200", () => {
@@ -183,29 +183,29 @@ describe("listing cancellation is broker-only", () => {
   });
 });
 
-describe("agentListingStatusOptions", () => {
+describe("listingStatusOptions (agent)", () => {
   it("offers an Incomplete listing Coming Soon and Active", () => {
-    expect(agentListingStatusOptions("INCOMPLETE")).toEqual(["COMING_SOON", "ACTIVE"]);
+    expect(listingStatusOptions("INCOMPLETE", "AGENT")).toEqual(["COMING_SOON", "ACTIVE"]);
   });
 
   it("never offers Under Contract — converting is the only way there", () => {
-    const options = agentListingStatusOptions("ACTIVE");
+    const options = listingStatusOptions("ACTIVE", "AGENT");
     expect(options).not.toContain("ACTIVE_UNDER_CONTRACT");
     expect(options).toEqual(expect.arrayContaining(["COMING_SOON", "EXPIRED", "WITHDRAWN"]));
   });
 
   it("never offers Cancel (broker only)", () => {
     for (const s of ["INCOMPLETE", "COMING_SOON", "ACTIVE", "EXPIRED"]) {
-      expect(agentListingStatusOptions(s)).not.toContain("CANCELED");
+      expect(listingStatusOptions(s, "AGENT")).not.toContain("CANCELED");
     }
   });
 
   it("offers nothing while Under Contract — the linked transaction drives the listing", () => {
-    expect(agentListingStatusOptions("ACTIVE_UNDER_CONTRACT")).toEqual([]);
+    expect(listingStatusOptions("ACTIVE_UNDER_CONTRACT", "AGENT")).toEqual([]);
   });
 
   it.each(["PENDING_TRANSFER", "WITHDRAWN", "CANCELED", "CLOSED"])("offers nothing for a %s listing", (s) => {
-    expect(agentListingStatusOptions(s)).toEqual([]);
+    expect(listingStatusOptions(s, "AGENT")).toEqual([]);
   });
 });
 
@@ -218,5 +218,40 @@ describe("canDeleteListing", () => {
   it("refuses a listing with documents or a converted transaction", () => {
     expect(canDeleteListing({ documents: [{}], convertedFiles: [] })).toBe(false);
     expect(canDeleteListing({ documents: [], convertedFiles: [{}] })).toBe(false);
+  });
+});
+
+describe("listingStatusOptions (broker)", () => {
+  it("never offers Under Contract to the broker either — Convert is the only way there", () => {
+    expect(listingStatusOptions("ACTIVE", "ADMIN")).not.toContain("ACTIVE_UNDER_CONTRACT");
+    expect(listingStatusOptions("ACTIVE", "ADMIN")).toEqual(expect.arrayContaining(["CANCELED", "CLOSED", "WITHDRAWN"]));
+  });
+
+  it("keeps the broker's override while Under Contract", () => {
+    expect(listingStatusOptions("ACTIVE_UNDER_CONTRACT", "ADMIN")).toEqual(expect.arrayContaining(["ACTIVE", "CLOSED", "WITHDRAWN", "CANCELED"]));
+  });
+});
+
+describe("convertBlockedReason", () => {
+  const item = (isRequired: boolean, statuses: string[]) => ({
+    id: "c", name: "x", isRequired, documents: statuses.map((reviewStatus) => ({ reviewStatus: reviewStatus as any })),
+  });
+
+  it("allows an Active listing whose required items all have an upload (In Review or Approved)", () => {
+    expect(convertBlockedReason({ status: "ACTIVE", checklistItems: [item(true, ["APPROVED"]), item(true, ["PENDING_REVIEW"]), item(false, [])] })).toBeNull();
+  });
+
+  it("blocks until every required listing document is uploaded (SkySlope's Accepted Contract rule)", () => {
+    expect(convertBlockedReason({ status: "ACTIVE", checklistItems: [item(true, ["APPROVED"]), item(true, []), item(true, ["REJECTED"])] }))
+      .toBe("Upload the 2 remaining required listing documents before converting");
+  });
+
+  it("uses the singular for one missing document", () => {
+    expect(convertBlockedReason({ status: "ACTIVE", checklistItems: [item(true, [])] }))
+      .toBe("Upload the 1 remaining required listing document before converting");
+  });
+
+  it("only converts an Active listing", () => {
+    expect(convertBlockedReason({ status: "COMING_SOON", checklistItems: [] })).toBe("Only an Active listing can be converted");
   });
 });

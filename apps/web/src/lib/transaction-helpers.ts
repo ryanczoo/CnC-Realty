@@ -135,12 +135,28 @@ export function allowedNextStatuses(
   return Array.from(next);
 }
 
-// What an agent's own listing dropdown offers. Under Contract is only reached by
-// Convert to Transaction, and while Under Contract the linked transaction drives
-// the listing (sync in changeFileStatus), so the agent gets no choices then.
-export function agentListingStatusOptions(status: string): string[] {
-  if (status === "ACTIVE_UNDER_CONTRACT") return [];
-  return allowedNextStatuses("listing", status, "AGENT").filter((s) => s !== "ACTIVE_UNDER_CONTRACT");
+// What a listing's status dropdown offers. Under Contract is never offered —
+// Convert to Transaction is the only way there, for agents and the broker, so a
+// listing marked Under Contract always has a transaction behind it. While Under
+// Contract the linked transaction drives the listing (sync in changeFileStatus):
+// agents get no choices then; the broker keeps an override.
+export function listingStatusOptions(status: string, role: ActorRole): string[] {
+  if (role === "AGENT" && status === "ACTIVE_UNDER_CONTRACT") return [];
+  return allowedNextStatuses("listing", status, role).filter((s) => s !== "ACTIVE_UNDER_CONTRACT");
+}
+
+// Why Convert to Transaction isn't available yet, or null when it is. Like
+// SkySlope's Accepted Contract: every required listing document must be uploaded
+// (In Review or Approved) first — the RLA and AVID are never required again on
+// the transaction, so this is their last checkpoint.
+export function convertBlockedReason(listing: { status: string; checklistItems: FileChecklistItemWithDocs[] }): string | null {
+  if (listing.status !== "ACTIVE") return "Only an Active listing can be converted";
+  const { satisfied, required } = getChecklistProgress(listing.checklistItems);
+  const missing = required - satisfied;
+  if (missing > 0) {
+    return `Upload the ${missing} remaining required listing document${missing === 1 ? "" : "s"} before converting`;
+  }
+  return null;
 }
 
 // Mirrors DELETE /api/listings/[id]: only an empty, never-converted listing.

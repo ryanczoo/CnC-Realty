@@ -22,6 +22,7 @@ const SALE_LISTING = {
   id: "l1", agentId: "a1", listingType: "RESIDENTIAL_SALE",
   propertyAddress: "123 Main St", city: "LA", state: "CA", zip: "90001",
   mlsNumber: "M1", listPrice: 800000, parties: [],
+  status: "ACTIVE", checklistItems: [{ id: "c1", name: "RLA", isRequired: true, documents: [{ reviewStatus: "PENDING_REVIEW" }] }],
 };
 
 const LEASE_LISTING = {
@@ -64,6 +65,26 @@ describe("POST /api/listings/[id]/convert", () => {
 
     const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "l1" } });
     expect(res.status).toBe(201);
+  });
+
+  it("refuses to convert until every required listing document is uploaded", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({
+      ...SALE_LISTING,
+      checklistItems: [{ id: "c1", name: "RLA", isRequired: true, documents: [] }],
+    } as any);
+    const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "l1" } });
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("Upload the 1 remaining required listing document before converting");
+    expect(prisma.transactionFile.create).not.toHaveBeenCalled();
+  });
+
+  it("refuses to convert a listing that isn't Active", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ ...SALE_LISTING, status: "COMING_SOON" } as any);
+    const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "l1" } });
+    expect(res.status).toBe(400);
+    expect(prisma.transactionFile.create).not.toHaveBeenCalled();
   });
 
   it("copies the listing's parties onto the new transaction file", async () => {

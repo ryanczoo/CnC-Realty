@@ -3,17 +3,23 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { checkOwnership, assertFileEditable } from "@/lib/api-auth";
+import { convertBlockedReason, CHECKLIST_ITEMS_WITH_DOCS_INCLUDE } from "@/lib/transaction-helpers";
 
 export async function POST(_req: Request, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const listingRecord = await prisma.listingFile.findUnique({ where: { id: params.id }, include: { parties: true } });
+  const listingRecord = await prisma.listingFile.findUnique({
+    where: { id: params.id },
+    include: { parties: true, checklistItems: CHECKLIST_ITEMS_WITH_DOCS_INCLUDE },
+  });
   const { exists, forbidden, record: listing } = checkOwnership(listingRecord, session.user.agentId, session.user.role);
   if (!exists || !listing) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (forbidden) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const locked = assertFileEditable("listing", listing.status, session.user.role);
   if (locked) return locked;
+  const blocked = convertBlockedReason(listing);
+  if (blocked) return NextResponse.json({ error: blocked }, { status: 400 });
 
   const transactionSide = listing.listingType === "RESIDENTIAL_LEASE" || listing.listingType === "COMMERCIAL_LEASE"
     ? "LEASE_LANDLORD"

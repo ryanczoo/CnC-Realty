@@ -12,7 +12,7 @@ import { TransferPendingPanel } from "@/components/transactions/TransferPendingP
 import { OverviewTab } from "@/components/transactions/OverviewTab";
 import { CommissionTab } from "@/components/transactions/CommissionTab";
 import { DocumentsTab } from "@/components/transactions/DocumentsTab";
-import { getChecklistProgress, agentListingStatusOptions } from "@/lib/transaction-helpers";
+import { getChecklistProgress, listingStatusOptions, convertBlockedReason } from "@/lib/transaction-helpers";
 import { isFileReadOnlyFor } from "@/lib/file-lock";
 import { isPlaceholderAddress } from "@/lib/transfer-placeholder";
 import { DateField } from "@/components/ui/DateField";
@@ -184,7 +184,7 @@ export default function FileDetailPage() {
   const isLocked = file.status === "PENDING_TRANSFER";
   const viewerIsAdmin = session?.user?.role === "ADMIN";
   const readOnly = isFileReadOnlyFor(isListing ? "listing" : "transaction", file.status, session?.user?.role ?? "AGENT");
-  const listingStatusOptions = listing ? agentListingStatusOptions(listing.status) : [];
+  const statusOptions = listing ? listingStatusOptions(listing.status, "AGENT") : [];
   // Convert becomes View Transaction in the same slot once the listing is Under Contract.
   const linkedTransactionId = listing?.status === "ACTIVE_UNDER_CONTRACT" ? listing.convertedFiles?.[0]?.id : undefined;
   const viewerIsFileAgent =
@@ -248,10 +248,10 @@ export default function FileDetailPage() {
                 {submitting ? <><Spinner className="mr-1.5 h-3.5 w-3.5 text-white" />Submitting…</> : "Submit for Review"}
               </button>
             )}
-            {listing && !readOnly && listingStatusOptions.length > 0 && (
+            {listing && !readOnly && statusOptions.length > 0 && (
               <FileStatusSelect
                 current={listing.status}
-                statuses={[listing.status, ...listingStatusOptions]}
+                statuses={[listing.status, ...statusOptions]}
                 disabled={statusChanging}
                 onChange={changeListingStatus}
               />
