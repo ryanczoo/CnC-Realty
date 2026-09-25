@@ -57,7 +57,16 @@ export function dateDrivenStatus(
   return null;
 }
 
-type Candidate ={ id: string; status: string; agent: { userId: string } | null };
+type Candidate = {
+  id: string;
+  status: string;
+  agent: { userId: string } | null;
+  transactionSide?: string | null;
+  listDate?: DateInput;
+  expirationDate?: DateInput;
+  closeOfEscrow?: DateInput;
+  leaseStartDate?: DateInput;
+};
 
 async function applyAll(kind: "listing" | "transaction", files: Candidate[], to: string): Promise<number> {
   let changed = 0;
@@ -91,24 +100,29 @@ async function applyAll(kind: "listing" | "transaction", files: Candidate[], to:
 
 export async function runAutoStatus(now: Date) {
   const today = pacificToday(now);
-  const select = { id: true, status: true, agent: { select: { userId: true } } } as const;
 
-  // Expiration first: a listing whose whole period has passed goes straight to
-  // Expired, and the activation query below skips anything already expired.
-  const [toExpire, toActivate, txToExpire, txToReopen] = await Promise.all([
-    prisma.listingFile.findMany({ where: { status: { in: ["ACTIVE", "COMING_SOON"] }, expirationDate: { lt: today } }, select }),
+  // Candidates by status only (indexed); dateDrivenStatus — the same rule every
+  // detail save uses — decides each one.
+  const [listings, transactions] = await Promise.all([
     prisma.listingFile.findMany({
-      where: { status: "COMING_SOON", listDate: { lte: today }, OR: [{ expirationDate: null }, { expirationDate: { gte: today } }] },
-      select,
+      where: { status: { in: ["COMING_SOON", "ACTIVE", "EXPIRED"] } },
+      select: { id: true, status: true, listDate: true, expirationDate: true, agent: { select: { userId: true } } },
     }),
-    prisma.transactionFile.findMany({ where: { status: "PENDING", closeOfEscrow: { lt: today } }, select }),
-    prisma.transactionFile.findMany({ where: { status: "EXPIRED", closeOfEscrow: { gte: today } }, select }),
+    prisma.transactionFile.findMany({
+      where: { status: { in: ["PENDING", "EXPIRED"] } },
+      select: { id: true, status: true, transactionSide: true, closeOfEscrow: true, leaseStartDate: true, agent: { select: { userId: true } } },
+    }),
   ]);
 
+  const byTarget = (files: Candidate[], kind: "listing" | "transaction", to: string) =>
+    files.filter((f) => dateDrivenStatus({ ...f, kind }, today) === to);
+
+  const l: Candidate[] = listings;
+  const t: Candidate[] = transactions;
   return {
-    listingsExpired: await applyAll("listing", toExpire as Candidate[], "EXPIRED"),
-    listingsActivated: await applyAll("listing", toActivate as Candidate[], "ACTIVE"),
-    transactionsExpired: await applyAll("transaction", txToExpire as Candidate[], "EXPIRED"),
-    transactionsReopened: await applyAll("transaction", txToReopen as Candidate[], "PENDING"),
+    listingsExpired: await applyAll("listing", byTarget(l, "listing", "EXPIRED"), "EXPIRED"),
+    listingsActivated: await applyAll("listing", byTarget(l, "listing", "ACTIVE"), "ACTIVE"),
+    transactionsExpired: await applyAll("transaction", byTarget(t, "transaction", "EXPIRED"), "EXPIRED"),
+    transactionsReopened: await applyAll("transaction", byTarget(t, "transaction", "PENDING"), "PENDING"),
   };
 }

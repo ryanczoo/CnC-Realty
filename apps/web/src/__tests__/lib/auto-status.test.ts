@@ -38,68 +38,61 @@ describe("pacificToday", () => {
 });
 
 describe("runAutoStatus", () => {
-  it("queries only the four date-driven groups, and never Incomplete listings", async () => {
+  const past = new Date("2026-09-01T00:00:00.000Z");
+  const future = new Date("2026-10-01T00:00:00.000Z");
+
+  it("reads candidates by status only (indexed) — never Incomplete — and lets dateDrivenStatus decide", async () => {
     await runAutoStatus(NOW);
-    const listingWheres = vi.mocked(prisma.listingFile.findMany).mock.calls.map((c) => (c[0] as any).where);
-    expect(listingWheres).toEqual(expect.arrayContaining([
-      { status: { in: ["ACTIVE", "COMING_SOON"] }, expirationDate: { lt: TODAY } },
-      { status: "COMING_SOON", listDate: { lte: TODAY }, OR: [{ expirationDate: null }, { expirationDate: { gte: TODAY } }] },
-    ]));
-    for (const w of listingWheres) expect(JSON.stringify(w)).not.toContain("INCOMPLETE");
-    const txWheres = vi.mocked(prisma.transactionFile.findMany).mock.calls.map((c) => (c[0] as any).where);
-    expect(txWheres).toEqual(expect.arrayContaining([
-      { status: "PENDING", closeOfEscrow: { lt: TODAY } },
-      { status: "EXPIRED", closeOfEscrow: { gte: TODAY } },
-    ]));
+    const lWhere = (vi.mocked(prisma.listingFile.findMany).mock.calls[0][0] as any).where;
+    const tWhere = (vi.mocked(prisma.transactionFile.findMany).mock.calls[0][0] as any).where;
+    expect(lWhere).toEqual({ status: { in: ["COMING_SOON", "ACTIVE", "EXPIRED"] } });
+    expect(tWhere).toEqual({ status: { in: ["PENDING", "EXPIRED"] } });
   });
 
-  it("expires a listing past its expiration date and logs it as automatic, under the listing's agent", async () => {
-    vi.mocked(prisma.listingFile.findMany).mockImplementation((async (args: any) =>
-      args.where.expirationDate ? [{ id: "l1", status: "ACTIVE", agent: { userId: "u1" } }] : []) as any);
+  it("expires, activates and reactivates listings, logging each as automatic under the agent", async () => {
+    vi.mocked(prisma.listingFile.findMany).mockResolvedValue([
+      { id: "l1", status: "ACTIVE", listDate: past, expirationDate: past, agent: { userId: "u1" } },
+      { id: "l2", status: "COMING_SOON", listDate: past, expirationDate: future, agent: { userId: "u1" } },
+      { id: "l3", status: "EXPIRED", listDate: past, expirationDate: future, agent: { userId: "u1" } },
+      { id: "l4", status: "ACTIVE", listDate: past, expirationDate: future, agent: { userId: "u1" } },
+    ] as any);
 
     const result = await runAutoStatus(NOW);
 
     expect(prisma.listingFile.update).toHaveBeenCalledWith({ where: { id: "l1" }, data: { status: "EXPIRED" } });
+    expect(prisma.listingFile.update).toHaveBeenCalledWith({ where: { id: "l2" }, data: { status: "ACTIVE" } });
+    expect(prisma.listingFile.update).toHaveBeenCalledWith({ where: { id: "l3" }, data: { status: "ACTIVE" } });
+    expect(prisma.listingFile.update).toHaveBeenCalledTimes(3);
     expect(prisma.fileActivity.create).toHaveBeenCalledWith({ data: {
       fileType: "LISTING", listingFileId: "l1", transactionFileId: null,
       actorId: "u1", actorRole: "AGENT", type: "STATUS_CHANGED",
       payload: { from: "ACTIVE", to: "EXPIRED", automatic: true },
     } });
-    expect(result.listingsExpired).toBe(1);
+    expect(result).toMatchObject({ listingsExpired: 1, listingsActivated: 2 });
   });
 
-  it("activates a Coming Soon listing on its list date", async () => {
-    vi.mocked(prisma.listingFile.findMany).mockImplementation((async (args: any) =>
-      args.where.listDate ? [{ id: "l2", status: "COMING_SOON", agent: { userId: "u1" } }] : []) as any);
-
-    const result = await runAutoStatus(NOW);
-
-    expect(prisma.listingFile.update).toHaveBeenCalledWith({ where: { id: "l2" }, data: { status: "ACTIVE" } });
-    expect(result.listingsActivated).toBe(1);
-  });
-
-  it("expires a Pending transaction past close of escrow, and reopens an Expired one whose date moved out", async () => {
-    vi.mocked(prisma.transactionFile.findMany).mockImplementation((async (args: any) =>
-      args.where.status === "PENDING"
-        ? [{ id: "t1", status: "PENDING", agent: { userId: "u1" } }]
-        : [{ id: "t2", status: "EXPIRED", agent: { userId: "u2" } }]) as any);
+  it("keys sales on close of escrow and leases on lease start date", async () => {
+    vi.mocked(prisma.transactionFile.findMany).mockResolvedValue([
+      { id: "t1", status: "PENDING", transactionSide: "PURCHASE", closeOfEscrow: past, leaseStartDate: null, agent: { userId: "u1" } },
+      { id: "t2", status: "EXPIRED", transactionSide: "LISTING", closeOfEscrow: future, leaseStartDate: null, agent: { userId: "u2" } },
+      { id: "t3", status: "PENDING", transactionSide: "LEASE_TENANT", closeOfEscrow: null, leaseStartDate: past, agent: { userId: "u1" } },
+      { id: "t4", status: "PENDING", transactionSide: "LEASE_LANDLORD", closeOfEscrow: past, leaseStartDate: future, agent: { userId: "u1" } },
+    ] as any);
 
     const result = await runAutoStatus(NOW);
 
     expect(prisma.transactionFile.update).toHaveBeenCalledWith({ where: { id: "t1" }, data: { status: "EXPIRED" } });
     expect(prisma.transactionFile.update).toHaveBeenCalledWith({ where: { id: "t2" }, data: { status: "PENDING" } });
-    expect(prisma.fileActivity.create).toHaveBeenCalledWith({ data: expect.objectContaining({
-      fileType: "TRANSACTION", transactionFileId: "t2", listingFileId: null, actorId: "u2",
-      payload: { from: "EXPIRED", to: "PENDING", automatic: true },
-    }) });
-    expect(result).toMatchObject({ transactionsExpired: 1, transactionsReopened: 1 });
+    expect(prisma.transactionFile.update).toHaveBeenCalledWith({ where: { id: "t3" }, data: { status: "EXPIRED" } });
+    expect(prisma.transactionFile.update).toHaveBeenCalledTimes(3);
+    expect(result).toMatchObject({ transactionsExpired: 2, transactionsReopened: 1 });
   });
 
   it("keeps going when one file fails, and does not count it", async () => {
-    vi.mocked(prisma.transactionFile.findMany).mockImplementation((async (args: any) =>
-      args.where.status === "PENDING"
-        ? [{ id: "bad", status: "PENDING", agent: { userId: "u1" } }, { id: "t1", status: "PENDING", agent: { userId: "u1" } }]
-        : []) as any);
+    vi.mocked(prisma.transactionFile.findMany).mockResolvedValue([
+      { id: "bad", status: "PENDING", transactionSide: "PURCHASE", closeOfEscrow: past, agent: { userId: "u1" } },
+      { id: "t1", status: "PENDING", transactionSide: "PURCHASE", closeOfEscrow: past, agent: { userId: "u1" } },
+    ] as any);
     vi.mocked(prisma.$transaction).mockRejectedValueOnce(new Error("db blip"));
 
     const result = await runAutoStatus(NOW);
