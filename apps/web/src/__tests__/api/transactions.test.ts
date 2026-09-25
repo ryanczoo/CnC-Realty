@@ -322,6 +322,32 @@ describe("POST /api/transactions", () => {
     expect(data.leaseStartDate).toBeNull();
   });
 
+  describe("starting status", () => {
+    const complete = {
+      transactionSide: "LISTING", stage: "UNDER_CONTRACT",
+      propertyAddress: "1 Test St", city: "Test", zip: "00000", propertyType: "Condo",
+      salePrice: "900000", acceptanceDate: "2026-09-20", closeOfEscrow: "2026-10-20",
+      parties: [{ role: "SELLER", name: "Sam Seller" }],
+    };
+    const created = () => (vi.mocked(prisma.transactionFile.create).mock.calls[0][0].data as any).status;
+    beforeEach(() => vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "t-new" } as any));
+
+    it("starts an Under Contract transaction as Pending when its details are complete", async () => {
+      await POST(makeRequest(complete));
+      expect(created()).toBe("PENDING");
+    });
+
+    it("starts it Incomplete while details are missing", async () => {
+      await POST(makeRequest({ ...complete, closeOfEscrow: "" }));
+      expect(created()).toBe("INCOMPLETE");
+    });
+
+    it("keeps a Pre-Contract file Pre-Contract", async () => {
+      await POST(makeRequest({ ...complete, stage: "PRE_CONTRACT" }));
+      expect(created()).toBe("PRE_CONTRACT");
+    });
+  });
+
   it("does not require propertyType or mlsNumber for REFERRAL", async () => {
     vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "t-ref" } as any);
 

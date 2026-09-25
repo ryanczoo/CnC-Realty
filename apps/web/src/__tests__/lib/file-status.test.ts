@@ -14,7 +14,7 @@ vi.mock("@/lib/prisma", () => ({
 
 import { prisma } from "@/lib/prisma";
 import { sendFileClosed } from "@/lib/email/transaction-emails";
-import { changeFileStatus } from "@/lib/file-status";
+import { changeFileStatus, maybeAutoPending } from "@/lib/file-status";
 
 const READY = [{ isRequired: true, documents: [{ reviewStatus: "APPROVED" }] }];
 const NOT_READY = [{ isRequired: true, documents: [{ reviewStatus: "PENDING_REVIEW" }] }];
@@ -268,5 +268,48 @@ describe("changeFileStatus: keeps the originating listing in step", () => {
     vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx() as any);
     await changeFileStatus({ kind: "transaction", fileId: "f1", toStatus: "CLOSED", actor: ADMIN });
     expect(prisma.listingFile.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("changeFileStatus: Pending needs a complete transaction", () => {
+  const COMPLETE = { transactionSide: "LISTING", salePrice: 900000, acceptanceDate: new Date("2026-09-20"), closeOfEscrow: new Date("2026-10-20"), parties: [{ role: "SELLER", name: "Sam" }] };
+
+  it("refuses an agent moving an incomplete transaction to Pending", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx({ status: "INCOMPLETE", ...COMPLETE, closeOfEscrow: null }) as any);
+    const res = await changeFileStatus({ kind: "transaction", fileId: "f1", toStatus: "PENDING", actor: AGENT });
+    expect(res).toEqual({ ok: false, status: 400, error: "Add the price, dates and parties this transaction needs before it can be Pending" });
+    expect(prisma.transactionFile.update).not.toHaveBeenCalled();
+  });
+
+  it("allows it once complete, and always for the broker", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx({ status: "INCOMPLETE", ...COMPLETE }) as any);
+    expect((await changeFileStatus({ kind: "transaction", fileId: "f1", toStatus: "PENDING", actor: AGENT })).ok).toBe(true);
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx({ status: "INCOMPLETE", ...COMPLETE, closeOfEscrow: null }) as any);
+    expect((await changeFileStatus({ kind: "transaction", fileId: "f1", toStatus: "PENDING", actor: ADMIN })).ok).toBe(true);
+  });
+
+  it("merges extra activity details into the STATUS_CHANGED payload", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx({ status: "INCOMPLETE", ...COMPLETE }) as any);
+    await changeFileStatus({ kind: "transaction", fileId: "f1", toStatus: "PENDING", actor: AGENT, activityPayloadExtra: { automatic: true } });
+    expect(prisma.fileActivity.create).toHaveBeenCalledWith({ data: expect.objectContaining({ payload: { from: "INCOMPLETE", to: "PENDING", automatic: true } }) });
+  });
+});
+
+describe("maybeAutoPending", () => {
+  const COMPLETE = { transactionSide: "LISTING", salePrice: 900000, acceptanceDate: new Date("2026-09-20"), closeOfEscrow: new Date("2026-10-20"), parties: [{ role: "SELLER", name: "Sam" }] };
+
+  it.each(["INCOMPLETE", "PRE_CONTRACT"])("moves a complete %s transaction to Pending, logged as automatic", async (status) => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx({ status, ...COMPLETE }) as any);
+    await maybeAutoPending("f1", AGENT);
+    expect(prisma.transactionFile.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: "PENDING" }) }));
+    expect(prisma.fileActivity.create).toHaveBeenCalledWith({ data: expect.objectContaining({ payload: { from: status, to: "PENDING", automatic: true } }) });
+  });
+
+  it("does nothing while details are missing, or for other statuses", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx({ status: "INCOMPLETE", ...COMPLETE, salePrice: null }) as any);
+    await maybeAutoPending("f1", AGENT);
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx({ status: "CANCELED_PENDING", ...COMPLETE }) as any);
+    await maybeAutoPending("f1", AGENT);
+    expect(prisma.transactionFile.update).not.toHaveBeenCalled();
   });
 });

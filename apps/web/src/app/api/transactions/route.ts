@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { CHECKLIST_ITEMS_WITH_DOCS_INCLUDE } from "@/lib/transaction-helpers";
+import { CHECKLIST_ITEMS_WITH_DOCS_INCLUDE, isReadyForPending } from "@/lib/transaction-helpers";
 import { trimStrings } from "@/lib/form-validation";
 import { isLeaseSide } from "@/types/transaction";
 
@@ -63,7 +63,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "referredToAgentName is required" }, { status: 400 });
   }
 
-  const initialStatus = transactionSide === "REFERRAL" ? "PENDING" : (stage === "PRE_CONTRACT" ? "PRE_CONTRACT" : "INCOMPLETE");
+  // An Under Contract file whose deal is already fully described starts Pending
+  // (the same isReadyForPending rule later edits use); Pre-Contract stays put.
+  const readyForPending = isReadyForPending(
+    { transactionSide, salePrice: salePrice ? parseFloat(salePrice) : null, leasePrice: leasePrice ? parseFloat(leasePrice) : null, acceptanceDate, closeOfEscrow, leaseSignedDate, leaseStartDate },
+    (parties as { role: string; name?: string }[]).map((p) => ({ role: p.role, name: p.name ?? "" })),
+  );
+  const initialStatus = transactionSide === "REFERRAL"
+    ? "PENDING"
+    : stage === "PRE_CONTRACT" ? "PRE_CONTRACT" : readyForPending ? "PENDING" : "INCOMPLETE";
 
   const category = propertyCategory === "COMMERCIAL" ? "COMMERCIAL" : "RESIDENTIAL";
   const template = await prisma.checklistTemplate.findFirst({

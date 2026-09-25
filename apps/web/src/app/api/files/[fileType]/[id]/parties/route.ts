@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getFileAndVerifyAccess, assertFileEditable } from "@/lib/api-auth";
 import { trimStrings } from "@/lib/form-validation";
+import { maybeAutoPending } from "@/lib/file-status";
 
 export async function POST(req: Request, { params }: { params: { fileType: string; id: string } }) {
   const session = await getServerSession(authOptions);
@@ -46,6 +47,9 @@ export async function POST(req: Request, { params }: { params: { fileType: strin
       payload: { partyId: party.id, role, name },
     },
   });
+
+  // A new party may be the last detail a transaction needed to become Pending.
+  if (!isListing) await maybeAutoPending(params.id, { userId: session.user.id, role: session.user.role === "ADMIN" ? "ADMIN" : "AGENT" });
 
   return NextResponse.json({ party }, { status: 201 });
 }

@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("next-auth", () => ({ getServerSession: vi.fn() }));
 vi.mock("@/lib/auth", () => ({ authOptions: {} }));
+vi.mock("@/lib/file-status", () => ({ maybeAutoPending: vi.fn() }));
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     listingFile: { findUnique: vi.fn() },
@@ -16,6 +17,7 @@ vi.mock("@/lib/prisma", () => ({
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { POST } from "../../app/api/files/[fileType]/[id]/parties/route";
+import { maybeAutoPending } from "@/lib/file-status";
 
 const SESSION_AGENT = { user: { id: "u1", role: "AGENT", agentId: "a1" } };
 
@@ -53,5 +55,31 @@ describe("POST /api/files/[fileType]/[id]/parties", () => {
 
     const res = await POST(req({ role: "BUYER", name: "Jane" }), { params: { fileType: "bogus", id: "f1" } });
     expect(res.status).toBe(400);
+  });
+});
+
+describe("adding a party can complete a transaction", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("re-checks automatic Pending after adding a party to a transaction", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({ id: "t1", agentId: "a1", status: "INCOMPLETE" } as any);
+    vi.mocked(prisma.fileParty.create).mockResolvedValue({ id: "p1" } as any);
+    vi.mocked(prisma.fileActivity.create).mockResolvedValue({} as any);
+    const res = await POST(
+      new Request("http://localhost/api/files/transaction/t1/parties", { method: "POST", body: JSON.stringify({ role: "BUYER", name: "Bea" }) }),
+      { params: { fileType: "transaction", id: "t1" } },
+    );
+    expect(res.status).toBe(201);
+    expect(maybeAutoPending).toHaveBeenCalledWith("t1", { userId: "u1", role: "AGENT" });
+  });
+
+  it("doesn't for a listing", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "f1", agentId: "a1", status: "ACTIVE" } as any);
+    vi.mocked(prisma.fileParty.create).mockResolvedValue({ id: "p1" } as any);
+    vi.mocked(prisma.fileActivity.create).mockResolvedValue({} as any);
+    await POST(req({ role: "SELLER", name: "Sam" }), { params: { fileType: "listing", id: "f1" } });
+    expect(maybeAutoPending).not.toHaveBeenCalled();
   });
 });

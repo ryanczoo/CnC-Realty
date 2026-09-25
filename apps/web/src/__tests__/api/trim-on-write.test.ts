@@ -8,6 +8,8 @@ vi.mock("@/lib/api-auth", () => ({
   resolveFileRef: vi.fn(),
 }));
 vi.mock("@/lib/file-lock", () => ({ isFileReadOnlyFor: vi.fn(() => false) }));
+// Adding a party also re-checks automatic Pending; this file only tests trimming.
+vi.mock("@/lib/file-status", () => ({ maybeAutoPending: vi.fn() }));
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     transactionFile: { create: vi.fn() },

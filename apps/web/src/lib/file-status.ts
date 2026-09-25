@@ -4,6 +4,7 @@ import {
   canTransitionListing,
   canTransitionTransaction,
   isReadyToClose,
+  isReadyForPending,
   CHECKLIST_ITEMS_WITH_DOCS_INCLUDE,
 } from "@/lib/transaction-helpers";
 import { sendFileClosed } from "@/lib/email/transaction-emails";
@@ -16,6 +17,9 @@ export type ChangeFileStatusArgs = {
   toStatus: string;
   actor: { userId: string; role: "ADMIN" | "AGENT" };
   extraData?: Record<string, unknown>;
+  // Extra details for the STATUS_CHANGED activity, e.g. { automatic: true } or a
+  // cancellation reason.
+  activityPayloadExtra?: Record<string, unknown>;
 };
 
 export type ChangeFileStatusResult =
@@ -31,12 +35,16 @@ export async function changeFileStatus({
   toStatus,
   actor,
   extraData = {},
+  activityPayloadExtra = {},
 }: ChangeFileStatusArgs): Promise<ChangeFileStatusResult> {
   const isListing = kind === "listing";
 
   const file: any = isListing
     ? await prisma.listingFile.findUnique({ where: { id: fileId }, include: { checklistItems: CHECKLIST_ITEMS_WITH_DOCS_INCLUDE } })
-    : await prisma.transactionFile.findUnique({ where: { id: fileId }, include: { checklistItems: CHECKLIST_ITEMS_WITH_DOCS_INCLUDE } });
+    : await prisma.transactionFile.findUnique({
+        where: { id: fileId },
+        include: { checklistItems: CHECKLIST_ITEMS_WITH_DOCS_INCLUDE, parties: { select: { role: true, name: true } } },
+      });
   if (!file) return { ok: false, status: 404, error: "Not found" };
 
   const allowed = isListing
@@ -44,6 +52,11 @@ export async function changeFileStatus({
     : canTransitionTransaction(file.status as TransactionFileStatus, toStatus as TransactionFileStatus, actor.role);
   if (!allowed) {
     return { ok: false, status: 400, error: `Cannot transition from ${file.status} to ${toStatus}` };
+  }
+  // Pending means the deal is fully described (isReadyForPending); only the broker
+  // can override that.
+  if (!isListing && toStatus === "PENDING" && actor.role !== "ADMIN" && !isReadyForPending(file, file.parties ?? [])) {
+    return { ok: false, status: 400, error: "Add the price, dates and parties this transaction needs before it can be Pending" };
   }
   if (toStatus === "CLOSED" && !isReadyToClose((file.checklistItems ?? []) as FileChecklistItemWithDocs[])) {
     return { ok: false, status: 400, error: "Cannot close: not all required documents are approved" };
@@ -64,7 +77,7 @@ export async function changeFileStatus({
     actorId: actor.userId,
     actorRole: actor.role,
     type: "STATUS_CHANGED" as const,
-    payload: { from: file.status, to: toStatus },
+    payload: { from: file.status, to: toStatus, ...activityPayloadExtra },
   };
 
   // One transaction: the status change and its audit row succeed or fail together, so a
@@ -127,4 +140,17 @@ export async function changeFileStatus({
   }
 
   return { ok: true, file: updated, ...(emailFailed && actor.role === "ADMIN" && { emailWarning: true as const }) };
+}
+
+// Called after anything that can complete a transaction's details (a detail
+// edit, adding or removing a party): an Incomplete or Pre-Contract transaction
+// that's now fully described moves to Pending, logged as automatic.
+export async function maybeAutoPending(transactionId: string, actor: ChangeFileStatusArgs["actor"]): Promise<void> {
+  const tx = await prisma.transactionFile.findUnique({
+    where: { id: transactionId },
+    include: { parties: { select: { role: true, name: true } } },
+  });
+  if (!tx || (tx.status !== "INCOMPLETE" && tx.status !== "PRE_CONTRACT")) return;
+  if (!isReadyForPending(tx, tx.parties)) return;
+  await changeFileStatus({ kind: "transaction", fileId: transactionId, toStatus: "PENDING", actor, activityPayloadExtra: { automatic: true } });
 }
