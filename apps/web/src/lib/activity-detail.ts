@@ -30,7 +30,7 @@ export function describeActivity(a: { type: string; payload: unknown }): { detai
     const to = toCode ? statusLabel(toCode) : null;
     // Who drove it, when it wasn't a person: the morning status job, or the
     // listing's linked transaction (sync in changeFileStatus).
-    const source = p.automatic === true ? " (automatic)" : p.viaTransactionId ? " (from its transaction)" : "";
+    const source = p.automatic === true ? " (automatic)" : p.viaTransactionId ? " (via transaction file)" : "";
     if (from && to) return { detail: `${from} → ${to}${source}`, reason: null };
     if (to) return { detail: `→ ${to}`, reason: null };
   }

@@ -29,7 +29,7 @@ describe("describeActivity", () => {
 
   it("marks a listing change driven by its linked transaction", () => {
     expect(describeActivity({ type: "STATUS_CHANGED", payload: { from: "ACTIVE_UNDER_CONTRACT", to: "CLOSED", viaTransactionId: "t1" } }))
-      .toEqual({ detail: "Under Contract → Closed (from its transaction)", reason: null });
+      .toEqual({ detail: "Under Contract → Closed (via transaction file)", reason: null });
   });
 
   it("uses the same readable names as the status badges (e.g. an approved cancellation)", () => {
