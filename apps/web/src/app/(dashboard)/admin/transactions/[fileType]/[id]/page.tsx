@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowIcon } from "@/components/ui/ArrowIcon";
 import { StatusBadge } from "@/components/transactions/StatusBadge";
 import { DocumentReviewCard } from "@/components/transactions/DocumentReviewCard";
+import { FileStatusSelect } from "@/components/transactions/FileStatusSelect";
 import { ActivityFeed } from "@/components/transactions/ActivityFeed";
 import { PartiesTable } from "@/components/transactions/PartiesTable";
 import { OverviewTab } from "@/components/transactions/OverviewTab";
@@ -149,16 +150,7 @@ export default function AdminFileDetailPage() {
                 Approve the uploaded document below to unlock
               </span>
             ) : (
-              <select
-                disabled={statusLoading}
-                value={file.status}
-                onChange={(e) => changeStatus(e.target.value)}
-                className="rounded-lg border border-[#1B1B1B]/10 bg-white px-3 py-2 text-sm text-[#1B1B1B] disabled:opacity-50"
-              >
-                {statuses.map((s) => (
-                  <option key={s} value={s}>{s.replace(/_/g, " ")}</option>
-                ))}
-              </select>
+              <FileStatusSelect current={file.status} statuses={statuses} disabled={statusLoading} onChange={changeStatus} />
             )}
           </div>
         </div>

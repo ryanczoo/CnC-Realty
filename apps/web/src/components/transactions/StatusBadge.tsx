@@ -42,10 +42,15 @@ const LABELS: Record<string, string> = {
   REFERRAL_BROKER_REVIEW: "Broker Review",
 };
 
+// The readable name for a status — shared by the badge and FileStatusSelect.
+export function statusLabel(status: string): string {
+  return LABELS[status] ?? status.replace(/_/g, " ");
+}
+
 export function StatusBadge({ status }: { status: Status }) {
   return (
     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${COLORS[status] ?? "bg-zinc-100 text-zinc-500"}`}>
-      {LABELS[status] ?? status}
+      {statusLabel(status)}
     </span>
   );
 }

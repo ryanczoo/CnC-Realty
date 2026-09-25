@@ -135,6 +135,14 @@ export function allowedNextStatuses(
   return Array.from(next);
 }
 
+// What an agent's own listing dropdown offers. Under Contract is only reached by
+// Convert to Transaction, and while Under Contract the linked transaction drives
+// the listing (sync in changeFileStatus), so the agent gets no choices then.
+export function agentListingStatusOptions(status: string): string[] {
+  if (status === "ACTIVE_UNDER_CONTRACT") return [];
+  return allowedNextStatuses("listing", status, "AGENT").filter((s) => s !== "ACTIVE_UNDER_CONTRACT");
+}
+
 export function isItemSatisfied(item: FileChecklistItemWithDocs): boolean {
   return item.documents.some(
     (d) => d.reviewStatus === "APPROVED" || d.reviewStatus === "PENDING_REVIEW"

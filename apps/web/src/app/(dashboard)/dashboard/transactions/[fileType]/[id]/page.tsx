@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { StatusBadge } from "@/components/transactions/StatusBadge";
+import { FileStatusSelect } from "@/components/transactions/FileStatusSelect";
 import { ChecklistPanel } from "@/components/transactions/ChecklistPanel";
 import { PartiesTable } from "@/components/transactions/PartiesTable";
 import { ActivityFeed } from "@/components/transactions/ActivityFeed";
@@ -11,7 +12,7 @@ import { TransferPendingPanel } from "@/components/transactions/TransferPendingP
 import { OverviewTab } from "@/components/transactions/OverviewTab";
 import { CommissionTab } from "@/components/transactions/CommissionTab";
 import { DocumentsTab } from "@/components/transactions/DocumentsTab";
-import { getChecklistProgress } from "@/lib/transaction-helpers";
+import { getChecklistProgress, agentListingStatusOptions } from "@/lib/transaction-helpers";
 import { isFileReadOnlyFor } from "@/lib/file-lock";
 import { isPlaceholderAddress } from "@/lib/transfer-placeholder";
 import { DateField } from "@/components/ui/DateField";
@@ -58,6 +59,7 @@ export default function FileDetailPage() {
   const [file, setFile] = useState<ListingFileDetail | TransactionFileDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [statusChanging, setStatusChanging] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [tasks, setTasks] = useState<FileTaskRecord[]>([]);
   const abortRef = useRef<AbortController | null>(null);
@@ -122,6 +124,26 @@ export default function FileDetailPage() {
     }
   }
 
+  async function changeListingStatus(status: string) {
+    setStatusChanging(true);
+    setActionError(null);
+    try {
+      const res = await fetch(`/api/listings/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        setActionError(body?.error ?? "Couldn't change the status. Please try again.");
+        return;
+      }
+      load();
+    } finally {
+      setStatusChanging(false);
+    }
+  }
+
   async function convertToTransaction() {
     setActionError(null);
     const res = await fetch(`/api/listings/${id}/convert`, { method: "POST" });
@@ -162,6 +184,7 @@ export default function FileDetailPage() {
   const isLocked = file.status === "PENDING_TRANSFER";
   const viewerIsAdmin = session?.user?.role === "ADMIN";
   const readOnly = isFileReadOnlyFor(isListing ? "listing" : "transaction", file.status, session?.user?.role ?? "AGENT");
+  const listingStatusOptions = listing ? agentListingStatusOptions(listing.status) : [];
   const viewerIsFileAgent =
     !!transaction && session?.user?.agentId != null && session.user.agentId === transaction.agentId;
 
@@ -217,6 +240,14 @@ export default function FileDetailPage() {
               <button onClick={submitForReview} disabled={submitting} className="inline-flex items-center rounded-full bg-[#9E8C61] px-4 py-2 text-sm text-white disabled:opacity-70">
                 {submitting ? <><Spinner className="mr-1.5 h-3.5 w-3.5 text-white" />Submitting…</> : "Submit for Review"}
               </button>
+            )}
+            {listing && !readOnly && listingStatusOptions.length > 0 && (
+              <FileStatusSelect
+                current={listing.status}
+                statuses={[listing.status, ...listingStatusOptions]}
+                disabled={statusChanging}
+                onChange={changeListingStatus}
+              />
             )}
           </div>
         </div>

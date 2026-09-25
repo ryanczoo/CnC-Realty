@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calcReferralFee, canTransitionTransaction, pickDisplayPrice, pickDisplayDate, escrowTypeToRole, latestDocument, allowedNextStatuses, canTransitionListing } from "@/lib/transaction-helpers";
+import { calcReferralFee, canTransitionTransaction, pickDisplayPrice, pickDisplayDate, agentListingStatusOptions, escrowTypeToRole, latestDocument, allowedNextStatuses, canTransitionListing } from "@/lib/transaction-helpers";
 
 describe("calcReferralFee", () => {
   it("takes 10% when 10% of the amount exceeds $200", () => {
@@ -180,5 +180,31 @@ describe("listing cancellation is broker-only", () => {
 
   it("still lets an agent withdraw an active listing", () => {
     expect(canTransitionListing("ACTIVE", "WITHDRAWN", "AGENT")).toBe(true);
+  });
+});
+
+describe("agentListingStatusOptions", () => {
+  it("offers an Incomplete listing Coming Soon and Active", () => {
+    expect(agentListingStatusOptions("INCOMPLETE")).toEqual(["COMING_SOON", "ACTIVE"]);
+  });
+
+  it("never offers Under Contract — converting is the only way there", () => {
+    const options = agentListingStatusOptions("ACTIVE");
+    expect(options).not.toContain("ACTIVE_UNDER_CONTRACT");
+    expect(options).toEqual(expect.arrayContaining(["COMING_SOON", "EXPIRED", "WITHDRAWN"]));
+  });
+
+  it("never offers Cancel (broker only)", () => {
+    for (const s of ["INCOMPLETE", "COMING_SOON", "ACTIVE", "EXPIRED"]) {
+      expect(agentListingStatusOptions(s)).not.toContain("CANCELED");
+    }
+  });
+
+  it("offers nothing while Under Contract — the linked transaction drives the listing", () => {
+    expect(agentListingStatusOptions("ACTIVE_UNDER_CONTRACT")).toEqual([]);
+  });
+
+  it.each(["PENDING_TRANSFER", "WITHDRAWN", "CANCELED", "CLOSED"])("offers nothing for a %s listing", (s) => {
+    expect(agentListingStatusOptions(s)).toEqual([]);
   });
 });
