@@ -1,4 +1,4 @@
-import { isLeaseSide } from "@/types/transaction";
+import { isLeaseSide, listingPriceLabel } from "@/types/transaction";
 
 // Detail edits (the Overview pencils) — which fields each file type accepts, how
 // each is parsed, and which can never be cleared. Shared by the listing and
@@ -39,7 +39,7 @@ const LABELS: Record<string, string> = {
 export function requiredFieldError(
   kind: "listing" | "transaction",
   body: Record<string, unknown>,
-  file: { transactionSide?: string | null } = {},
+  file: { transactionSide?: string | null; listingType?: string | null } = {},
 ): string | null {
   let required: string[];
   if (kind === "listing") {
@@ -49,5 +49,6 @@ export function requiredFieldError(
     required = ["propertyAddress", "city", "zip", "propertyType", isLeaseSide(file.transactionSide) ? "leasePrice" : "salePrice"];
   }
   const cleared = required.find((f) => f in body && blank(body[f]));
-  return cleared ? `${LABELS[cleared]} can't be blank` : null;
+  const label = cleared === "listPrice" && kind === "listing" ? listingPriceLabel(file.listingType) : LABELS[cleared ?? ""];
+  return cleared ? `${label} can't be blank` : null;
 }

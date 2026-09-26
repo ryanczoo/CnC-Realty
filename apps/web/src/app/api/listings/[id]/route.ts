@@ -48,7 +48,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   const body = trimStrings(await req.json());
   const role = isAdmin ? "ADMIN" : "AGENT";
-  const required = requiredFieldError("listing", body);
+  const required = requiredFieldError("listing", body, listing);
   if (required) return NextResponse.json({ error: required }, { status: 400 });
 
   // Only validated when this edit touches a date, so older listings created

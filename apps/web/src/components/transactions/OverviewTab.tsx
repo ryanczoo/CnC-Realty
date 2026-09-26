@@ -4,6 +4,7 @@ import { saveFileField } from "@/lib/file-actions";
 import { digitsOnly, stripDigits, sanitizeCurrencyInput } from "@/lib/form-validation";
 import {
   listingTypeLabel, transactionSideLabel, isLeaseSide, FILE_PROPERTY_TYPES,
+  listingPriceLabel, transactionListPriceLabel, offerDateLabels,
   type ListingFileDetail, type TransactionFileDetail,
 } from "@/types/transaction";
 
@@ -27,6 +28,7 @@ export function OverviewTab({
 }) {
   const isReferral = !isListing && transaction?.transactionSide === "REFERRAL";
   const isLease = !isListing && isLeaseSide(transaction?.transactionSide);
+  const offerLabels = transaction ? offerDateLabels(transaction.transactionSide, transaction.propertyCategory) : null;
 
   const edit = (field: string, raw: unknown, opts: Partial<InfoRowEdit> = {}): InfoRowEdit | undefined =>
     canEdit
@@ -62,7 +64,7 @@ export function OverviewTab({
           )}
           {isListing && listing && (
             <>
-              <InfoRow label="List Price" value={money(listing.listPrice)} edit={moneyEdit("listPrice", listing.listPrice)} />
+              <InfoRow label={listingPriceLabel(listing.listingType)} value={money(listing.listPrice)} edit={moneyEdit("listPrice", listing.listPrice)} />
               <InfoRow label="Type" value={listingTypeLabel(listing.listingType)} pencilSlot={canEdit} />
               {show(listing.listDate) && <InfoRow label="List Date" value={date(listing.listDate)} edit={dateEdit("listDate", listing.listDate)} />}
               {show(listing.expirationDate) && <InfoRow label="Expiration" value={date(listing.expirationDate)} edit={dateEdit("expirationDate", listing.expirationDate)} />}
@@ -83,7 +85,7 @@ export function OverviewTab({
               {show(transaction.yearBuilt) && <InfoRow label="Year Built" value={transaction.yearBuilt ? String(transaction.yearBuilt) : "—"} edit={edit("yearBuilt", transaction.yearBuilt, { restrict: (v) => digitsOnly(v, 4) })} />}
               {!isLease && show(transaction.escrowNumber) && <InfoRow label="Escrow #" value={transaction.escrowNumber || "—"} edit={edit("escrowNumber", transaction.escrowNumber)} />}
               <InfoRow label="Transaction Side" value={transactionSideLabel(transaction.transactionSide)} pencilSlot={canEdit} />
-              <InfoRow label="List Price" value={money(transaction.listPrice)} edit={moneyEdit("listPrice", transaction.listPrice)} />
+              <InfoRow label={transactionListPriceLabel(transaction.transactionSide)} value={money(transaction.listPrice)} edit={moneyEdit("listPrice", transaction.listPrice)} />
               {isLease
                 ? <InfoRow label="Total Lease Amount" value={money(transaction.leasePrice)} edit={moneyEdit("leasePrice", transaction.leasePrice)} />
                 : <InfoRow label="Sale Price" value={money(transaction.salePrice)} edit={moneyEdit("salePrice", transaction.salePrice)} />}
@@ -158,8 +160,9 @@ export function OverviewTab({
         {!isListing && transaction && !isReferral && (
           <div className="rounded-xl border border-[#1B1B1B]/10 bg-white p-5 space-y-3">
             <h2 className="text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Key Dates</h2>
-            <InfoRow label="Offer Date" value={date(transaction.offerDate)} edit={dateEdit("offerDate", transaction.offerDate)} />
-            {show(transaction.offerExpirationDate) && <InfoRow label="Offer Expiration" value={date(transaction.offerExpirationDate)} edit={dateEdit("offerExpirationDate", transaction.offerExpirationDate)} />}
+            {/* Offer dates: sales "Offer", commercial leases "LOI", hidden on residential leases. */}
+            {offerLabels && <InfoRow label={offerLabels.date} value={date(transaction.offerDate)} edit={dateEdit("offerDate", transaction.offerDate)} />}
+            {offerLabels && show(transaction.offerExpirationDate) && <InfoRow label={offerLabels.expiration} value={date(transaction.offerExpirationDate)} edit={dateEdit("offerExpirationDate", transaction.offerExpirationDate)} />}
             {isLease ? (
               <>
                 <InfoRow label="Lease Signed Date" value={date(transaction.leaseSignedDate)} edit={dateEdit("leaseSignedDate", transaction.leaseSignedDate)} />

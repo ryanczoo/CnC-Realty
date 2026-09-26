@@ -56,3 +56,10 @@ describe("requiredFieldError", () => {
     expect(requiredFieldError("listing", { propertyAddress: "" })).toBe("Address can't be blank");
   });
 });
+
+describe("requiredFieldError uses lease wording", () => {
+  it("calls a lease listing's price Monthly Rent", () => {
+    expect(requiredFieldError("listing", { listPrice: "" }, { listingType: "RESIDENTIAL_LEASE" })).toBe("Monthly Rent can't be blank");
+    expect(requiredFieldError("listing", { listPrice: "" }, { listingType: "RESIDENTIAL_SALE" })).toBe("List Price can't be blank");
+  });
+});
