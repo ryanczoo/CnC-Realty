@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
-import { XCircle, Clock, AlertCircle } from "lucide-react";
+import { XCircle } from "lucide-react";
+import { InReviewIcon } from "@/components/ui/InReviewIcon";
+import { NotSubmittedIcon } from "@/components/ui/NotSubmittedIcon";
 import { CheckCircleIcon } from "@/components/ui/CheckCircleIcon";
 import type { FileChecklistItemWithDocs, DocumentReviewStatus } from "@/types/transaction";
 import { Tooltip } from "@/components/ui/Tooltip";
@@ -23,8 +25,8 @@ interface Props {
 const STATUS_ICONS: Record<DocumentReviewStatus, React.ReactNode> = {
   APPROVED:       <CheckCircleIcon size={16} className="text-green-600" />,
   REJECTED:       <XCircle className="h-4 w-4 text-red-500" />,
-  PENDING_REVIEW: <Clock className="h-4 w-4 text-yellow-600" />,
-  NOT_SUBMITTED:  <AlertCircle className="h-4 w-4 text-zinc-400" />,
+  PENDING_REVIEW: <InReviewIcon size={16} className="text-yellow-600" />,
+  NOT_SUBMITTED:  <NotSubmittedIcon size={16} className="text-zinc-400" />,
 };
 
 export function ChecklistPanel({ fileType, fileId, items, onUploaded, readOnly = false, viewerId }: Props) {
@@ -66,22 +68,26 @@ export function ChecklistPanel({ fileType, fileId, items, onUploaded, readOnly =
                 </>
               )}
             </div>
-            {topDoc?.id && viewerId && status === "PENDING_REVIEW" && topDoc.uploadedByAgentId === viewerId && !readOnly && (
-              <button
-                onClick={() => remove(topDoc.id!)}
-                title="Remove from checklist"
-                aria-label="Remove from checklist"
-                className="shrink-0 text-[#1B1B1B]/25 hover:text-red-400"
-              >
-                <TrashIcon size={14} />
-              </button>
-            )}
             <UploadFileButton
               label="Upload"
               uploading={uploadingId === item.id}
               disabled={uploadingId !== null || readOnly}
               onSelect={(f) => upload(item.id, f)}
             />
+            {/* Right of Upload. Rows without a trash icon keep the same slot so the
+                Upload buttons stay in one column. */}
+            {topDoc?.id && viewerId && status === "PENDING_REVIEW" && topDoc.uploadedByAgentId === viewerId && !readOnly ? (
+              <button
+                onClick={() => remove(topDoc.id!)}
+                title="Remove from checklist"
+                aria-label="Remove from checklist"
+                className="w-[14px] shrink-0 text-[#1B1B1B]/25 hover:text-red-400"
+              >
+                <TrashIcon size={14} />
+              </button>
+            ) : viewerId && !readOnly ? (
+              <span aria-hidden="true" className="w-[14px] shrink-0" />
+            ) : null}
           </Tooltip>
         );
       })}

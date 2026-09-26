@@ -1,5 +1,5 @@
 "use client";
-import { Upload } from "lucide-react";
+import { UploadIcon } from "@/components/ui/UploadIcon";
 import { Spinner } from "@/components/ui/Spinner";
 
 // Shared upload-button UI — a label wrapping a hidden file input, matching
@@ -26,7 +26,7 @@ export function UploadFileButton({
 
   return (
     <label className={`${disabled ? "pointer-events-none opacity-40 " : ""}cursor-pointer ${variantClass}`}>
-      {uploading ? <><Spinner className="mr-1 inline h-3 w-3" />Uploading…</> : <><Upload className="mr-1 inline h-3 w-3" />{label}</>}
+      {uploading ? <><Spinner className="mr-1 inline h-3 w-3" />Uploading…</> : <><UploadIcon size={12} className="mr-1 inline" />{label}</>}
       <input
         type="file"
         className="sr-only"
