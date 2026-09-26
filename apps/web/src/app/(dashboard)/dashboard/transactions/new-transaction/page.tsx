@@ -11,7 +11,7 @@ import { transactionDetailsReady } from "@/lib/transaction-wizard";
 import { DateField } from "@/components/ui/DateField";
 import { FormField as Field } from "@/components/ui/FormField";
 import { stripDigits, digitsOnly, formatPhoneInput, sanitizeCurrencyInput, formatCurrencyDisplay, emailError } from "@/lib/form-validation";
-import { SIDES, transactionSideLabel, isLeaseSide, FILE_PROPERTY_TYPES, type TransactionSide } from "@/types/transaction";
+import { SIDES, transactionSideLabel, isLeaseSide, FILE_PROPERTY_TYPES, transactionListPriceLabel, offerDateLabels, type TransactionSide } from "@/types/transaction";
 import { formatDateMDY } from "@/lib/utils";
 import { PartySection, emptyParty, type Party } from "@/components/transactions/PartySection";
 import { CheckIcon } from "@/components/ui/CheckIcon";
@@ -94,6 +94,7 @@ export default function NewTransactionPage() {
 
   const isLease = isLeaseSide(form.transactionSide);
   const underContract = form.stage !== "PRE_CONTRACT";
+  const offerLabels = offerDateLabels(form.transactionSide, form.propertyCategory);
   const isReferral = form.transactionSide === "REFERRAL";
 
   // Lease files have no salePrice to multiply a % against (leases populate
@@ -251,6 +252,8 @@ export default function NewTransactionPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...form,
+        // Offer dates hidden for this side (residential lease) are never saved.
+        ...(!offerLabels && { offerDate: "", offerExpirationDate: "" }),
         tcFeeEnabled,
         agentRelativeSale: isLease ? false : agentRelativeSale,
         brokerProvidedLead: isLease ? false : brokerProvidedLead,
@@ -486,7 +489,7 @@ export default function NewTransactionPage() {
               {isLease ? (
                 <>
                   <Field label="Total Lease Amount *" value={form.leasePrice} onChange={(v) => set("leasePrice", v)} placeholder="$" formatCommas />
-                  <Field label="Deposit" value={form.deposit} onChange={(v) => set("deposit", v)} placeholder="$" formatCommas />
+                  <Field label={transactionListPriceLabel(form.transactionSide)} value={form.listPrice} onChange={(v) => set("listPrice", v)} placeholder="Optional" formatCommas />
                 </>
               ) : (
                 <>
@@ -495,6 +498,11 @@ export default function NewTransactionPage() {
                 </>
               )}
             </div>
+            {isLease && (
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="Deposit" value={form.deposit} onChange={(v) => set("deposit", v)} placeholder="$" formatCommas />
+              </div>
+            )}
             {!isLease && (
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Deposit" value={form.deposit} onChange={(v) => set("deposit", v)} placeholder="$" formatCommas />
@@ -502,14 +510,18 @@ export default function NewTransactionPage() {
               </div>
             )}
             <div className="border-t border-[#1B1B1B]/5 pt-5">
-              <SectionLabel className="text-center">Offer</SectionLabel>
-              <div className="grid grid-cols-2 gap-4">
-                <DateFieldRow label="Offer Date" value={form.offerDate} onChange={(v) => set("offerDate", v)} />
-                <DateFieldRow label="Offer Expiration Date" value={form.offerExpirationDate} onChange={(v) => set("offerExpirationDate", v)} />
-              </div>
+              <SectionLabel className="text-center">{isLease ? "Lease" : "Offer"}</SectionLabel>
+              {/* Offer dates: sales "Offer", commercial leases "LOI", hidden for
+                  residential leases (no offer phase — a rental application). */}
+              {offerLabels && (
+                <div className="mb-4 grid grid-cols-2 gap-4">
+                  <DateFieldRow label={offerLabels.date} value={form.offerDate} onChange={(v) => set("offerDate", v)} />
+                  <DateFieldRow label={offerLabels.expiration} value={form.offerExpirationDate} onChange={(v) => set("offerExpirationDate", v)} />
+                </div>
+              )}
               {/* Required once Under Contract (a ratified contract states them); a lease
                   uses its own signed/start dates instead of acceptance/escrow. */}
-              <div className="mt-4 grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 {isLease ? (
                   <>
                     <DateFieldRow label={`Lease Signed Date${underContract ? " *" : ""}`} value={form.leaseSignedDate} onChange={(v) => set("leaseSignedDate", v)} />
@@ -775,10 +787,11 @@ export default function NewTransactionPage() {
             <ReviewSection title="Transaction Details">
               {form.salePrice && <ReviewRow label="Sale Price" value={`$${Number(form.salePrice).toLocaleString()}`} />}
               {form.leasePrice && <ReviewRow label="Total Lease Amount" value={`$${Number(form.leasePrice).toLocaleString()}`} />}
+              {isLease && form.listPrice && <ReviewRow label="Monthly Rent" value={`$${Number(form.listPrice).toLocaleString()}`} />}
               {form.deposit && <ReviewRow label="Deposit" value={`$${Number(form.deposit).toLocaleString()}`} />}
               {form.closeOfEscrow && <ReviewRow label="Close of Escrow" value={formatDateMDY(form.closeOfEscrow)} />}
-              {form.offerDate && <ReviewRow label="Offer Date" value={formatDateMDY(form.offerDate)} />}
-              {form.offerExpirationDate && <ReviewRow label="Offer Expiration Date" value={formatDateMDY(form.offerExpirationDate)} />}
+              {offerLabels && form.offerDate && <ReviewRow label={offerLabels.date} value={formatDateMDY(form.offerDate)} />}
+              {offerLabels && form.offerExpirationDate && <ReviewRow label={offerLabels.expiration} value={formatDateMDY(form.offerExpirationDate)} />}
               {form.acceptanceDate && <ReviewRow label="Acceptance Date" value={formatDateMDY(form.acceptanceDate)} />}
               {form.leaseSignedDate && <ReviewRow label="Lease Signed Date" value={formatDateMDY(form.leaseSignedDate)} />}
               {form.leaseStartDate && <ReviewRow label="Lease Start Date" value={formatDateMDY(form.leaseStartDate)} />}
