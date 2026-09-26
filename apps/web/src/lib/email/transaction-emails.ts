@@ -11,6 +11,7 @@ export async function sendSubmitForReview(opts: {
   address: string | null;
   agentName: string;
   fileId: string;
+  to?: string;
 }): Promise<void> {
   const address = opts.address ?? NO_ADDRESS_LABEL;
   const safeAgentName = escapeHtml(opts.agentName);
@@ -33,8 +34,8 @@ export async function sendSubmitForReview(opts: {
     ctaHref: `${process.env.NEXTAUTH_URL}/admin/transactions/${opts.fileType.toLowerCase()}/${opts.fileId}`,
   });
   await sendEmail({
-    to: BROKER_EMAIL,
-    subject: `[CnC] ${opts.fileType} File Ready for Review — ${address}`,
+    to: opts.to ?? BROKER_EMAIL,
+    subject: `${opts.fileType} File Ready for Review — ${address}`,
     html,
     stream: "transactional",
   });
@@ -263,7 +264,7 @@ export async function sendCancellationRequested(opts: {
   });
   await sendEmail({
     to: opts.to ?? BROKER_EMAIL,
-    subject: `[CnC] Cancellation Requested — ${address}`,
+    subject: `Cancellation Requested — ${address}`,
     html,
     stream: "transactional",
   });

@@ -5,6 +5,7 @@ vi.mock("@/lib/email/send", () => ({ sendEmail: vi.fn().mockResolvedValue(undefi
 import { sendEmail } from "@/lib/email/send";
 import {
   sendSubmitForReview,
+  sendCancellationRequested,
   sendFileClosed,
   sendDocumentRejected,
   sendAllDocsApproved,
@@ -484,5 +485,19 @@ describe("transaction-emails — wording follows the file type", () => {
     const html = vi.mocked(sendEmail).mock.calls[0][0].html!;
     expect(html).toContain("So close! We wish you the best of luck on your next transaction.");
     expect(html).not.toContain("Congratulations - it's time to celebrate!");
+  });
+});
+
+describe("broker email subjects have no [CnC] prefix", () => {
+  beforeEach(() => vi.mocked(sendEmail).mockClear());
+
+  it("File Ready for Review", async () => {
+    await sendSubmitForReview({ fileType: "Transaction", address: "1 Main St", agentName: "Ann", fileId: "t1" });
+    expect(vi.mocked(sendEmail).mock.calls[0][0].subject).toBe("Transaction File Ready for Review — 1 Main St");
+  });
+
+  it("Cancellation Requested", async () => {
+    await sendCancellationRequested({ address: "1 Main St", agentName: "Ann", reason: "Fell through", fileId: "t1" });
+    expect(vi.mocked(sendEmail).mock.calls[0][0].subject).toBe("Cancellation Requested — 1 Main St");
   });
 });
