@@ -476,6 +476,7 @@ model ListingFile {
   expirationDate    DateTime?
   listDate          DateTime?
   commissionPercent Float?
+  commissionAmount  Float?
   commissionNotes   String?
   awaitingReview    Boolean       @default(false)
   createdAt         DateTime      @default(now())
