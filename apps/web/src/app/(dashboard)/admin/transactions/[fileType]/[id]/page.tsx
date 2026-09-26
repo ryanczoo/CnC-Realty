@@ -235,7 +235,9 @@ export default function AdminFileDetailPage() {
           satisfied={satisfied}
           required={required}
           canEdit={!isReferralFile && file.status !== "PENDING_TRANSFER"}
-          onSaved={load}
+          // A saved detail can resolve an earlier refusal (e.g. extending the
+          // expiration), so clear the old message along with the reload.
+          onSaved={() => { setActionError(null); load(); }}
         />
       )}
 
