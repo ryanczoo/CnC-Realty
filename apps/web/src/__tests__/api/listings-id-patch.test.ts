@@ -5,7 +5,7 @@ vi.mock("@/lib/auth", () => ({ authOptions: {} }));
 vi.mock("@sentry/nextjs", () => ({ captureException: vi.fn() }));
 vi.mock("@/lib/r2", () => ({ deleteR2Object: vi.fn() }));
 vi.mock("@/lib/email/transaction-emails", () => ({ sendFileClosed: vi.fn() }));
-vi.mock("@/lib/auto-status", () => ({ followDates: vi.fn() }));
+vi.mock("@/lib/auto-status", async (orig) => ({ ...(await orig<typeof import("@/lib/auto-status")>()), followDates: vi.fn() }));
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     listingFile: { findUnique: vi.fn(), update: vi.fn() },

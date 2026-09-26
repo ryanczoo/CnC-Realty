@@ -313,3 +313,27 @@ describe("maybeAutoPending", () => {
     expect(prisma.transactionFile.update).not.toHaveBeenCalled();
   });
 });
+
+describe("changeFileStatus: a listing past its expiration can't be made Active or Coming Soon by an agent", () => {
+  const listing = (over: Record<string, unknown> = {}) => ({
+    id: "l1", agentId: "a1", status: "INCOMPLETE", checklistItems: [],
+    listDate: new Date("2011-11-20T00:00:00.000Z"), expirationDate: new Date("2011-12-30T00:00:00.000Z"), ...over,
+  });
+
+  it.each(["ACTIVE", "COMING_SOON"])("refuses %s while the expiration date has passed", async (toStatus) => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(listing() as any);
+    const res = await changeFileStatus({ kind: "listing", fileId: "l1", toStatus, actor: AGENT });
+    expect(res).toEqual({ ok: false, status: 400, error: "Expiration date is in the past!" });
+    expect(prisma.listingFile.update).not.toHaveBeenCalled();
+  });
+
+  it("allows it once the expiration is in the future", async () => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(listing({ expirationDate: new Date("2099-01-01T00:00:00.000Z") }) as any);
+    expect((await changeFileStatus({ kind: "listing", fileId: "l1", toStatus: "ACTIVE", actor: AGENT })).ok).toBe(true);
+  });
+
+  it("still lets an agent withdraw an expired listing, and the broker override", async () => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(listing({ status: "EXPIRED" }) as any);
+    expect((await changeFileStatus({ kind: "listing", fileId: "l1", toStatus: "ACTIVE", actor: ADMIN })).ok).toBe(true);
+  });
+});

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@cnc/database";
+import { dateDrivenStatus, pacificToday } from "@/lib/auto-status";
 import {
   canTransitionListing,
   canTransitionTransaction,
@@ -57,6 +58,15 @@ export async function changeFileStatus({
   // can override that.
   if (!isListing && toStatus === "PENDING" && actor.role !== "ADMIN" && !isReadyForPending(file, file.parties ?? [])) {
     return { ok: false, status: 400, error: "Add the price, dates and parties this transaction needs before it can be Pending" };
+  }
+  // A listing whose expiration has already passed can't go live: the shared date
+  // rule would expire it straight away. The agent extends the date first; the
+  // broker can override.
+  if (
+    isListing && actor.role !== "ADMIN" && (toStatus === "ACTIVE" || toStatus === "COMING_SOON") &&
+    dateDrivenStatus({ kind: "listing", status: toStatus, listDate: file.listDate, expirationDate: file.expirationDate }, pacificToday(new Date())) === "EXPIRED"
+  ) {
+    return { ok: false, status: 400, error: "Expiration date is in the past!" };
   }
   if (toStatus === "CLOSED" && !isReadyToClose((file.checklistItems ?? []) as FileChecklistItemWithDocs[])) {
     return { ok: false, status: 400, error: "Cannot close: not all required documents are approved" };

@@ -12,7 +12,7 @@ vi.mock("@/lib/prisma", () => ({
 }));
 vi.mock("@/lib/email/transaction-emails", () => ({ sendFileClosed: vi.fn(), sendCancellationRequested: vi.fn() }));
 vi.mock("@sentry/nextjs", () => ({ captureException: vi.fn() }));
-vi.mock("@/lib/auto-status", () => ({ followDates: vi.fn() }));
+vi.mock("@/lib/auto-status", async (orig) => ({ ...(await orig<typeof import("@/lib/auto-status")>()), followDates: vi.fn() }));
 vi.mock("@/lib/file-status", async (orig) => ({ ...(await orig<typeof import("@/lib/file-status")>()), maybeAutoPending: vi.fn() }));
 
 import { getServerSession } from "next-auth";
