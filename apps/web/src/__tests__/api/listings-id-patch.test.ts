@@ -160,3 +160,19 @@ describe("PATCH /api/listings/[id] — detail edits", () => {
     expect(followDates).toHaveBeenCalledWith("listing", "lf1", { userId: "u1", role: "AGENT" });
   });
 });
+
+describe("PATCH /api/listings/[id] — commission as % or $", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getServerSession).mockResolvedValue(AGENT as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "lf1", agentId: "a1", status: "ACTIVE" } as any);
+    vi.mocked(prisma.listingFile.update).mockResolvedValue({ id: "lf1" } as any);
+  });
+
+  it("switching to a flat amount clears the percentage (and blanks become null)", async () => {
+    await patch({ commissionAmount: "15000", commissionPercent: "" });
+    const data = vi.mocked(prisma.listingFile.update).mock.calls[0][0].data as any;
+    expect(data.commissionAmount).toBe(15000);
+    expect(data.commissionPercent).toBeNull();
+  });
+});

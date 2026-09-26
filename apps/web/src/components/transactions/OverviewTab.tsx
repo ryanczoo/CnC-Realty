@@ -1,10 +1,10 @@
 import { InfoRow, type InfoRowEdit } from "./InfoRow";
 import { formatDateOnly } from "@/lib/utils";
-import { saveFileField } from "@/lib/file-actions";
-import { digitsOnly, stripDigits, sanitizeCurrencyInput } from "@/lib/form-validation";
+import { saveFileField, saveFileFields } from "@/lib/file-actions";
+import { digitsOnly, stripDigits } from "@/lib/form-validation";
 import {
   listingTypeLabel, transactionSideLabel, isLeaseSide, FILE_PROPERTY_TYPES,
-  listingPriceLabel, transactionListPriceLabel, offerDateLabels,
+  listingPriceLabel, transactionListPriceLabel, offerDateLabels, listingCommissionDisplay,
   type ListingFileDetail, type TransactionFileDetail,
 } from "@/types/transaction";
 
@@ -68,11 +68,23 @@ export function OverviewTab({
               <InfoRow label="Type" value={listingTypeLabel(listing.listingType)} pencilSlot={canEdit} />
               {show(listing.listDate) && <InfoRow label="List Date" value={date(listing.listDate)} edit={dateEdit("listDate", listing.listDate)} />}
               {show(listing.expirationDate) && <InfoRow label="Expiration" value={date(listing.expirationDate)} edit={dateEdit("expirationDate", listing.expirationDate)} />}
-              {show(listing.commissionPercent) && (
+              {show(listing.commissionPercent ?? listing.commissionAmount) && (
                 <InfoRow
                   label="Commission"
-                  value={listing.commissionPercent ? `${listing.commissionPercent}%` : "—"}
-                  edit={edit("commissionPercent", listing.commissionPercent, { restrict: (v) => sanitizeCurrencyInput(v, 3), inputMode: "decimal" })}
+                  value={listingCommissionDisplay(listing.commissionPercent, listing.commissionAmount)}
+                  edit={canEdit ? {
+                    kind: "commission",
+                    mode: listing.commissionAmount ? "flat" : "pct",
+                    raw: String(listing.commissionAmount ?? listing.commissionPercent ?? ""),
+                    // % and $ are two columns — save the chosen one and clear the other.
+                    onSave: async (value, mode) => {
+                      const err = await saveFileFields("listing", file.id, mode === "flat"
+                        ? { commissionAmount: value, commissionPercent: "" }
+                        : { commissionPercent: value, commissionAmount: "" });
+                      if (!err) onSaved?.();
+                      return err;
+                    },
+                  } : undefined}
                 />
               )}
             </>

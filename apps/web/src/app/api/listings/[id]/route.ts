@@ -70,6 +70,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     ...(body.expirationDate !== undefined && { expirationDate: body.expirationDate ? new Date(body.expirationDate) : null }),
     ...(body.listDate !== undefined && { listDate: body.listDate ? new Date(body.listDate) : null }),
     ...(body.commissionPercent !== undefined && { commissionPercent: body.commissionPercent ? parseFloat(body.commissionPercent) : null }),
+    ...(body.commissionAmount !== undefined && { commissionAmount: body.commissionAmount ? parseFloat(body.commissionAmount) : null }),
     ...(body.commissionNotes !== undefined && { commissionNotes: body.commissionNotes || null }),
   };
 

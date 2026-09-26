@@ -107,3 +107,26 @@ describe("POST /api/listings", () => {
     ]);
   });
 });
+
+describe("POST /api/listings — commission as % or $", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u1", agentId: "a1" } } as any);
+    vi.mocked(prisma.checklistTemplate.findFirst).mockResolvedValue(null);
+    vi.mocked(prisma.listingFile.create).mockResolvedValue({ id: "lf1" } as any);
+  });
+
+  it("saves a flat commission amount", async () => {
+    await POST(postJson({ ...VALID_LISTING, commissionAmount: "15000" }));
+    const data = vi.mocked(prisma.listingFile.create).mock.calls[0][0].data as any;
+    expect(data.commissionAmount).toBe(15000);
+    expect(data.commissionPercent).toBeNull();
+  });
+
+  it("stores a blank amount as null", async () => {
+    await POST(postJson({ ...VALID_LISTING, commissionPercent: "2.5", commissionAmount: "" }));
+    const data = vi.mocked(prisma.listingFile.create).mock.calls[0][0].data as any;
+    expect(data.commissionAmount).toBeNull();
+    expect(data.commissionPercent).toBe(2.5);
+  });
+});

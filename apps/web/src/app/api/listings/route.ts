@@ -30,7 +30,7 @@ export async function POST(req: Request) {
   if (!agentId) return NextResponse.json({ error: "Agent not found" }, { status: 404 });
 
   const body = trimStrings(await req.json());
-  const { propertyAddress, city, state, zip, mlsNumber, listPrice, listingType, expirationDate, listDate, commissionPercent, commissionNotes, parties = [] } = body;
+  const { propertyAddress, city, state, zip, mlsNumber, listPrice, listingType, expirationDate, listDate, commissionPercent, commissionAmount, commissionNotes, parties = [] } = body;
 
   if (!propertyAddress || !city || !zip || !listPrice || !listingType) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -58,6 +58,7 @@ export async function POST(req: Request) {
         expirationDate: expirationDate ? new Date(expirationDate) : null,
         listDate: listDate ? new Date(listDate) : null,
         commissionPercent: commissionPercent ? parseFloat(commissionPercent) : null,
+        commissionAmount: commissionAmount ? parseFloat(commissionAmount) : null,
         commissionNotes: commissionNotes || null,
         parties: {
           create: namedParties.map((p: { role: string; name: string; email?: string; phone?: string; company?: string; licenseNumber?: string }) => ({

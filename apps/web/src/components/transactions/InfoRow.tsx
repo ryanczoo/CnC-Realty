@@ -4,16 +4,19 @@ import { FormField } from "@/components/ui/FormField";
 import { DateField } from "@/components/ui/DateField";
 import { PencilIcon } from "@/components/ui/PencilIcon";
 import { CheckIcon } from "@/components/ui/CheckIcon";
+import { CommissionField } from "./CommissionField";
 
 // Opt-in pencil editing for one row (the Overview tab). Reuses the wizards'
 // shared inputs so edits follow the same restrictions and formatting.
 export interface InfoRowEdit {
-  kind: "text" | "currency" | "date" | "select";
+  kind: "text" | "currency" | "date" | "select" | "commission";
   raw: string;
   restrict?: (v: string) => string;
   inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
   options?: readonly string[];
-  onSave: (value: string) => Promise<string | null>;
+  // kind "commission": the %/$ toggle's starting side; onSave gets the side chosen.
+  mode?: "pct" | "flat";
+  onSave: (value: string, mode?: "pct" | "flat") => Promise<string | null>;
 }
 
 // Shared label/value row used across the file-detail tabs — extracted so
@@ -25,11 +28,13 @@ export interface InfoRowEdit {
 export function InfoRow({ label, value, edit, pencilSlot = false }: { label: string; value: string; edit?: InfoRowEdit; pencilSlot?: boolean }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
+  const [mode, setMode] = useState<"pct" | "flat">("pct");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function start() {
     setDraft(edit?.raw ?? "");
+    setMode(edit?.mode ?? "pct");
     setError(null);
     setEditing(true);
   }
@@ -39,7 +44,7 @@ export function InfoRow({ label, value, edit, pencilSlot = false }: { label: str
     setSaving(true);
     setError(null);
     try {
-      const err = await edit.onSave(draft);
+      const err = await edit.onSave(draft, mode);
       if (err) { setError(err); return; }
       setEditing(false);
     } finally {
@@ -54,7 +59,9 @@ export function InfoRow({ label, value, edit, pencilSlot = false }: { label: str
           <span className="shrink-0 text-[#1B1B1B]/50">{label}</span>
           <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
             <div className="w-full max-w-xs">
-              {edit.kind === "date" ? (
+              {edit.kind === "commission" ? (
+                <CommissionField label="" value={draft} onChange={setDraft} mode={mode} onModeChange={setMode} />
+              ) : edit.kind === "date" ? (
                 <DateField value={draft} onChange={setDraft} />
               ) : edit.kind === "select" ? (
                 <select

@@ -5,11 +5,12 @@ import { motion } from "motion/react";
 import { SPRING_HOVER } from "@/lib/motion";
 import { DateField } from "@/components/ui/DateField";
 import { FormField as Field } from "@/components/ui/FormField";
-import { stripDigits, digitsOnly, sanitizeCurrencyInput } from "@/lib/form-validation";
+import { stripDigits, digitsOnly } from "@/lib/form-validation";
 import { Spinner } from "@/components/ui/Spinner";
 import { canAdvanceListingStep } from "@/lib/listing-wizard";
 import { PartySection, emptyParty, type Party } from "@/components/transactions/PartySection";
-import { LISTING_TYPES, listingTypeLabel, listingPriceLabel } from "@/types/transaction";
+import { CommissionField } from "@/components/transactions/CommissionField";
+import { LISTING_TYPES, listingTypeLabel, listingPriceLabel, listingCommissionDisplay } from "@/types/transaction";
 import { listingDatesError } from "@/lib/listing-dates";
 import { formatDateMDY } from "@/lib/utils";
 
@@ -22,9 +23,11 @@ export default function NewListingPage() {
     propertyAddress: "", city: "", state: "CA", zip: "",
     mlsNumber: "", listPrice: "", listingType: "RESIDENTIAL_SALE",
     expirationDate: "", listDate: "",
-    commissionPercent: "", commissionNotes: "",
+    commission: "", commissionNotes: "",
   });
   const [sellers, setSellers] = useState<Party[]>([emptyParty()]);
+  // Commission is entered as a % or a flat $ — one value, sent as whichever field the toggle picks.
+  const [commissionMode, setCommissionMode] = useState<"pct" | "flat">("pct");
 
   // Lease listings represent the owner as a landlord — same relabel the
   // Transaction wizard applies to its Sellers section on lease sides.
@@ -45,6 +48,8 @@ export default function NewListingPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...form,
+        commissionPercent: commissionMode === "pct" ? form.commission : "",
+        commissionAmount: commissionMode === "flat" ? form.commission : "",
         parties: sellers.filter((s) => s.name).map((s) => ({ role: "SELLER", ...s })),
       }),
     });
@@ -134,7 +139,7 @@ export default function NewListingPage() {
 
         {step === 2 && (
           <div className="space-y-4">
-            <Field label="Commission %" value={form.commissionPercent} onChange={(v) => set("commissionPercent", v)} placeholder="e.g. 2.5" inputMode="decimal" restrict={(v) => sanitizeCurrencyInput(v, 3)} />
+            <CommissionField label="Commission" value={form.commission} onChange={(v) => set("commission", v)} mode={commissionMode} onModeChange={setCommissionMode} />
             <div>
               <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">Commission Notes</label>
               <textarea
@@ -157,7 +162,7 @@ export default function NewListingPage() {
             {sellers.filter((s) => s.name).map((s, i) => (
               <ReviewRow key={i} label={`${isLease ? "Landlord" : "Seller"} ${sellers.length > 1 ? i + 1 : ""}`} value={s.name} />
             ))}
-            <ReviewRow label="Commission" value={form.commissionPercent ? `${form.commissionPercent}%` : "—"} />
+            <ReviewRow label="Commission" value={commissionMode === "pct" ? listingCommissionDisplay(Number(form.commission), null) : listingCommissionDisplay(null, Number(form.commission))} />
           </div>
         )}
       </div>
