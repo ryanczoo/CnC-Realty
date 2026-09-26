@@ -10,10 +10,11 @@ import { escrowTypeToRole, sidePartiesReady, type EscrowContactType } from "@/li
 import { transactionDetailsReady } from "@/lib/transaction-wizard";
 import { DateField } from "@/components/ui/DateField";
 import { FormField as Field } from "@/components/ui/FormField";
-import { stripDigits, digitsOnly, formatPhoneInput, sanitizeCurrencyInput, formatCurrencyDisplay, emailError } from "@/lib/form-validation";
+import { stripDigits, digitsOnly, formatPhoneInput, emailError } from "@/lib/form-validation";
 import { SIDES, transactionSideLabel, isLeaseSide, FILE_PROPERTY_TYPES, transactionListPriceLabel, offerDateLabels, type TransactionSide } from "@/types/transaction";
 import { formatDateMDY } from "@/lib/utils";
 import { PartySection, emptyParty, type Party } from "@/components/transactions/PartySection";
+import { CommissionField } from "@/components/transactions/CommissionField";
 import { CheckIcon } from "@/components/ui/CheckIcon";
 import { Spinner } from "@/components/ui/Spinner";
 
@@ -1014,54 +1015,6 @@ function ConditionsSection({
           </div>
         ))}
       </div>
-    </div>
-  );
-}
-
-function CommissionField({
-  label, value, onChange, mode, onModeChange, hideModeToggle = false,
-}: {
-  label: string; value: string; onChange: (v: string) => void;
-  mode: "pct" | "flat"; onModeChange: (m: "pct" | "flat") => void;
-  hideModeToggle?: boolean;
-}) {
-  return (
-    <div>
-      <div className="mb-1.5 flex items-center justify-between">
-        <label className="text-xs font-medium text-[#1B1B1B]/50">{label}</label>
-        {!hideModeToggle && (
-          <div className="flex overflow-hidden rounded-lg border border-[#1B1B1B]/10">
-            {(["pct", "flat"] as const).map((m) => (
-              <button
-                key={m}
-                onClick={() => onModeChange(m)}
-                className={`px-3 py-1 text-xs font-medium transition-colors ${mode === m ? "bg-[#1B1B1B] text-white" : "bg-[#F2F0EF] text-[#1B1B1B]/50 hover:text-[#1B1B1B]"}`}
-              >
-                {m === "pct" ? "%" : "$"}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-      {mode === "flat" ? (
-        <input
-          type="text"
-          inputMode="decimal"
-          value={formatCurrencyDisplay(value)}
-          onChange={(e) => onChange(sanitizeCurrencyInput(e.target.value, 12))}
-          placeholder="e.g. 15,000"
-          className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2.5 text-sm text-[#1B1B1B] placeholder:text-[#1B1B1B]/25 focus:outline-none focus:ring-2 focus:ring-[#9E8C61]/30"
-        />
-      ) : (
-        <input
-          type="text"
-          inputMode="decimal"
-          value={value}
-          onChange={(e) => onChange(sanitizeCurrencyInput(e.target.value, 3))}
-          placeholder="e.g. 2.5"
-          className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2.5 text-sm text-[#1B1B1B] placeholder:text-[#1B1B1B]/25 focus:outline-none focus:ring-2 focus:ring-[#9E8C61]/30"
-        />
-      )}
     </div>
   );
 }
