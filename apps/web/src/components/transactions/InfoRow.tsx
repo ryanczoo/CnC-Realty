@@ -20,7 +20,9 @@ export interface InfoRowEdit {
 // both OverviewTab and CommissionTab (and any consumer that renders either
 // of them, agent-side or admin-side) get the exact same row styling. Pass
 // `edit` to add a pencil; without it the row is display-only.
-export function InfoRow({ label, value, edit }: { label: string; value: string; edit?: InfoRowEdit }) {
+// pencilSlot: in a card where other rows have pencils, a row without one keeps
+// the same empty slot so every value lines up on the same right edge.
+export function InfoRow({ label, value, edit, pencilSlot = false }: { label: string; value: string; edit?: InfoRowEdit; pencilSlot?: boolean }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
@@ -94,11 +96,13 @@ export function InfoRow({ label, value, edit }: { label: string; value: string; 
       <span className="text-[#1B1B1B]/50">{label}</span>
       <span className="flex items-center gap-2 text-right font-medium text-[#1B1B1B]">
         {value}
-        {edit && (
-          <button onClick={start} title={`Edit ${label}`} aria-label={`Edit ${label}`} className="text-[#1B1B1B]/25 hover:text-[#1B1B1B]">
+        {edit ? (
+          <button onClick={start} title={`Edit ${label}`} aria-label={`Edit ${label}`} className="w-[14px] shrink-0 text-[#1B1B1B]/25 hover:text-[#1B1B1B]">
             <PencilIcon size={14} />
           </button>
-        )}
+        ) : pencilSlot ? (
+          <span aria-hidden="true" className="w-[14px] shrink-0" />
+        ) : null}
       </span>
     </div>
   );

@@ -55,7 +55,7 @@ export function OverviewTab({
           <h2 className="text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Property Details</h2>
           <InfoRow label="Address" value={file.propertyAddress ?? "—"} edit={isReferral ? undefined : edit("propertyAddress", file.propertyAddress)} />
           <InfoRow label="City" value={file.city ?? "—"} edit={isReferral ? undefined : edit("city", file.city, { restrict: stripDigits })} />
-          <InfoRow label="State" value={file.state} />
+          <InfoRow label="State" value={file.state} pencilSlot={canEdit && !isReferral} />
           <InfoRow label="ZIP" value={file.zip ?? "—"} edit={isReferral ? undefined : edit("zip", file.zip, { restrict: (v) => digitsOnly(v, 5) })} />
           {!isReferral && show(file.mlsNumber) && (
             <InfoRow label="MLS #" value={file.mlsNumber || "—"} edit={edit("mlsNumber", file.mlsNumber, { restrict: (v) => digitsOnly(v, 10) })} />
@@ -63,7 +63,7 @@ export function OverviewTab({
           {isListing && listing && (
             <>
               <InfoRow label="List Price" value={money(listing.listPrice)} edit={moneyEdit("listPrice", listing.listPrice)} />
-              <InfoRow label="Type" value={listingTypeLabel(listing.listingType)} />
+              <InfoRow label="Type" value={listingTypeLabel(listing.listingType)} pencilSlot={canEdit} />
               {show(listing.listDate) && <InfoRow label="List Date" value={date(listing.listDate)} edit={dateEdit("listDate", listing.listDate)} />}
               {show(listing.expirationDate) && <InfoRow label="Expiration" value={date(listing.expirationDate)} edit={dateEdit("expirationDate", listing.expirationDate)} />}
               {show(listing.commissionPercent) && (
@@ -82,7 +82,7 @@ export function OverviewTab({
               )}
               {show(transaction.yearBuilt) && <InfoRow label="Year Built" value={transaction.yearBuilt ? String(transaction.yearBuilt) : "—"} edit={edit("yearBuilt", transaction.yearBuilt, { restrict: (v) => digitsOnly(v, 4) })} />}
               {!isLease && show(transaction.escrowNumber) && <InfoRow label="Escrow #" value={transaction.escrowNumber || "—"} edit={edit("escrowNumber", transaction.escrowNumber)} />}
-              <InfoRow label="Transaction Side" value={transactionSideLabel(transaction.transactionSide)} />
+              <InfoRow label="Transaction Side" value={transactionSideLabel(transaction.transactionSide)} pencilSlot={canEdit} />
               <InfoRow label="List Price" value={money(transaction.listPrice)} edit={moneyEdit("listPrice", transaction.listPrice)} />
               {isLease
                 ? <InfoRow label="Total Lease Amount" value={money(transaction.leasePrice)} edit={moneyEdit("leasePrice", transaction.leasePrice)} />
