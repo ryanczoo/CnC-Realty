@@ -9,7 +9,7 @@ import { stripDigits, digitsOnly, sanitizeCurrencyInput } from "@/lib/form-valid
 import { Spinner } from "@/components/ui/Spinner";
 import { canAdvanceListingStep } from "@/lib/listing-wizard";
 import { PartySection, emptyParty, type Party } from "@/components/transactions/PartySection";
-import { LISTING_TYPES, listingTypeLabel } from "@/types/transaction";
+import { LISTING_TYPES, listingTypeLabel, listingPriceLabel } from "@/types/transaction";
 import { listingDatesError } from "@/lib/listing-dates";
 import { formatDateMDY } from "@/lib/utils";
 
@@ -90,14 +90,6 @@ export default function NewListingPage() {
       <div className="mx-auto max-w-2xl rounded-2xl border border-[#1B1B1B]/8 bg-white p-10">
         {step === 0 && (
           <div className="space-y-4">
-            <Field label="Property Address *" value={form.propertyAddress} onChange={(v) => set("propertyAddress", v)} placeholder="123 Main St" />
-            <div className="grid grid-cols-3 gap-4">
-              <Field label="City *" value={form.city} onChange={(v) => set("city", v)} restrict={stripDigits} />
-              <Field label="State" value={form.state} onChange={(v) => set("state", v)} />
-              <Field label="ZIP *" value={form.zip} onChange={(v) => set("zip", v)} restrict={(v) => digitsOnly(v, 5)} />
-            </div>
-            <Field label="MLS Number" value={form.mlsNumber} onChange={(v) => set("mlsNumber", v)} placeholder="Optional" restrict={(v) => digitsOnly(v, 10)} />
-            <Field label="List Price *" value={form.listPrice} onChange={(v) => set("listPrice", v)} placeholder="$" formatCommas />
             <div>
               <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">Listing Type *</label>
               <select
@@ -110,6 +102,16 @@ export default function NewListingPage() {
                 ))}
               </select>
             </div>
+            <Field label="Property Address *" value={form.propertyAddress} onChange={(v) => set("propertyAddress", v)} placeholder="123 Main St" />
+            <div className="grid grid-cols-3 gap-4">
+              <Field label="City *" value={form.city} onChange={(v) => set("city", v)} restrict={stripDigits} />
+              <Field label="State" value={form.state} onChange={(v) => set("state", v)} />
+              <Field label="ZIP *" value={form.zip} onChange={(v) => set("zip", v)} restrict={(v) => digitsOnly(v, 5)} />
+            </div>
+            <Field label="MLS Number" value={form.mlsNumber} onChange={(v) => set("mlsNumber", v)} placeholder="Optional" restrict={(v) => digitsOnly(v, 10)} />
+            {/* Label follows the Listing Type live, in any order: a lease listing's price
+                is its asking monthly rent. */}
+            <Field label={`${listingPriceLabel(form.listingType)} *`} value={form.listPrice} onChange={(v) => set("listPrice", v)} placeholder="$" formatCommas />
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">List Date *</label>
@@ -148,7 +150,7 @@ export default function NewListingPage() {
         {step === 3 && (
           <div className="space-y-2 rounded-xl border border-[#1B1B1B]/8 p-4 text-sm">
             <ReviewRow label="Address" value={`${form.propertyAddress}, ${form.city}, ${form.state} ${form.zip}`} />
-            <ReviewRow label="List Price" value={form.listPrice ? `$${Number(form.listPrice).toLocaleString()}` : "—"} />
+            <ReviewRow label={listingPriceLabel(form.listingType)} value={form.listPrice ? `$${Number(form.listPrice).toLocaleString()}` : "—"} />
             <ReviewRow label="Type" value={listingTypeLabel(form.listingType)} />
             <ReviewRow label="List Date" value={formatDateMDY(form.listDate)} />
             <ReviewRow label="Expiration" value={formatDateMDY(form.expirationDate)} />

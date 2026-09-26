@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { listingTypeLabel, transactionSideLabel, isLeaseSide } from "@/types/transaction";
+import { listingTypeLabel, transactionSideLabel, isLeaseSide, listingPriceLabel, transactionListPriceLabel, offerDateLabels } from "@/types/transaction";
 
 describe("listingTypeLabel", () => {
   it.each([
@@ -45,5 +45,42 @@ describe("isLeaseSide", () => {
 
   it.each(["PURCHASE", "LISTING", "DUAL", "REFERRAL", "", null])("does not treat %j as a lease", (s) => {
     expect(isLeaseSide(s)).toBe(false);
+  });
+});
+
+describe("listingPriceLabel", () => {
+  it.each(["RESIDENTIAL_LEASE", "COMMERCIAL_LEASE"])("calls a %s listing's price the Monthly Rent", (t) => {
+    expect(listingPriceLabel(t)).toBe("Monthly Rent");
+  });
+  it.each(["RESIDENTIAL_SALE", "COMMERCIAL_SALE", "", null])("keeps List Price for %j", (t) => {
+    expect(listingPriceLabel(t)).toBe("List Price");
+  });
+});
+
+describe("transactionListPriceLabel", () => {
+  it.each(["LEASE_TENANT", "LEASE_LANDLORD", "LEASE_DUAL"])("shows %s's list-price field as Monthly Rent", (s) => {
+    expect(transactionListPriceLabel(s)).toBe("Monthly Rent");
+  });
+  it.each(["PURCHASE", "LISTING", "DUAL"])("keeps List Price for %s", (s) => {
+    expect(transactionListPriceLabel(s)).toBe("List Price");
+  });
+});
+
+describe("offerDateLabels", () => {
+  it("keeps Offer Date / Offer Expiration Date on sales", () => {
+    for (const s of ["PURCHASE", "LISTING", "DUAL"]) {
+      expect(offerDateLabels(s, "RESIDENTIAL")).toEqual({ date: "Offer Date", expiration: "Offer Expiration Date" });
+      expect(offerDateLabels(s, "COMMERCIAL")).toEqual({ date: "Offer Date", expiration: "Offer Expiration Date" });
+    }
+  });
+  it("uses LOI dates on commercial leases", () => {
+    for (const s of ["LEASE_TENANT", "LEASE_LANDLORD", "LEASE_DUAL"]) {
+      expect(offerDateLabels(s, "COMMERCIAL")).toEqual({ date: "LOI Date", expiration: "LOI Expiration Date" });
+    }
+  });
+  it("hides them on residential leases (no offer phase — a rental application)", () => {
+    for (const s of ["LEASE_TENANT", "LEASE_LANDLORD", "LEASE_DUAL"]) {
+      expect(offerDateLabels(s, "RESIDENTIAL")).toBeNull();
+    }
   });
 });

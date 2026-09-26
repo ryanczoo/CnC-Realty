@@ -44,6 +44,29 @@ export function isLeaseSide(side: string | null | undefined): boolean {
   return !!side && (LEASE_SIDES as readonly string[]).includes(side);
 }
 
+// Lease wording, shared by both wizards and the Overview so every screen names
+// a field the same way. A lease listing's price is the asking monthly rent; a
+// lease transaction keeps Total Lease Amount and shows its list-price field
+// (copied from the listing on Convert) as Monthly Rent.
+export function listingPriceLabel(listingType: string | null | undefined): string {
+  return listingType?.endsWith("_LEASE") ? "Monthly Rent" : "List Price";
+}
+
+export function transactionListPriceLabel(side: string | null | undefined): string {
+  return isLeaseSide(side) ? "Monthly Rent" : "List Price";
+}
+
+// The offer-phase dates (offerDate / offerExpirationDate columns): sales keep
+// Offer Date; commercial leases start from a Letter of Intent; residential
+// leases have no offer phase (a rental application), so the fields are hidden.
+export function offerDateLabels(
+  side: string | null | undefined,
+  propertyCategory: string | null | undefined,
+): { date: string; expiration: string } | null {
+  if (!isLeaseSide(side)) return { date: "Offer Date", expiration: "Offer Expiration Date" };
+  return propertyCategory === "COMMERCIAL" ? { date: "LOI Date", expiration: "LOI Expiration Date" } : null;
+}
+
 // Property types a transaction file can have (New Transaction wizard + the
 // Overview's Property Type row). Not the MLS/IDX subtypes in types/property.
 export const FILE_PROPERTY_TYPES = [
