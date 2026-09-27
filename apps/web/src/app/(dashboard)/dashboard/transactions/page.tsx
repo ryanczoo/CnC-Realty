@@ -30,7 +30,7 @@ export default function TransactionsPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="font-sans text-2xl font-medium text-[#1B1B1B]">Transactions</h1>
-          <p className="mt-1 font-sans text-sm text-[#1B1B1B]/50">Manage your active listings and transaction files</p>
+          <p className="mt-1 font-sans text-sm text-[#1B1B1B]/50">Manage all your listings and transactions in one place</p>
         </div>
         <div className="flex gap-2">
           <Link href="/dashboard/transactions/new-listing" className="flex items-center gap-1.5 rounded-full border border-[#1B1B1B]/20 bg-white px-4 py-2 text-sm text-[#1B1B1B]">
