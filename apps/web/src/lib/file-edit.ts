@@ -35,6 +35,8 @@ export function transactionEditData(body: Record<string, unknown>): Record<strin
 const LABELS: Record<string, string> = {
   propertyAddress: "Address", city: "City", zip: "ZIP", propertyType: "Property Type",
   salePrice: "Sale Price", leasePrice: "Total Lease Amount", listPrice: "List Price",
+  acceptanceDate: "Acceptance Date", closeOfEscrow: "Close of Escrow",
+  leaseSignedDate: "Lease Signed Date", leaseStartDate: "Lease Start Date",
 };
 
 type CommissionFile = {
@@ -114,8 +116,8 @@ export function transactionCommissionEdit(
 }
 
 // The required fields the wizards enforce, which an edit may not clear.
-// Listing dates are covered separately by listingDatesError. Commission is
-// required once a transaction is past Pre-Contract (the wizard's rule).
+// Listing dates are covered separately by listingDatesError. Commission and the
+// Pending dates are required once a transaction is past Pre-Contract.
 export function requiredFieldError(
   kind: "listing" | "transaction",
   body: Record<string, unknown>,
@@ -126,7 +128,13 @@ export function requiredFieldError(
     required = ["propertyAddress", "city", "zip", "listPrice"];
   } else {
     if (file.transactionSide === "REFERRAL") return null;
-    required = ["propertyAddress", "city", "zip", "propertyType", isLeaseSide(file.transactionSide) ? "leasePrice" : "salePrice"];
+    const lease = isLeaseSide(file.transactionSide);
+    required = ["propertyAddress", "city", "zip", "propertyType", lease ? "leasePrice" : "salePrice"];
+    // Past Pre-Contract the file is (or can become) Pending, which needs these
+    // dates (isReadyForPending) — they can change but not be removed.
+    if (file.status && file.status !== "PRE_CONTRACT") {
+      required.push(...(lease ? ["leaseSignedDate", "leaseStartDate"] : ["acceptanceDate", "closeOfEscrow"]));
+    }
   }
   const cleared = required.find((f) => f in body && blank(body[f]));
   const label = cleared === "listPrice" && kind === "listing" ? listingPriceLabel(file.listingType) : LABELS[cleared ?? ""];

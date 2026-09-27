@@ -168,3 +168,22 @@ describe("commissionChanges", () => {
     expect(commissionChanges("transaction", f, { ...f })).toEqual([]);
   });
 });
+
+describe("requiredFieldError keeps the Pending dates once past Pre-Contract", () => {
+  it.each([
+    ["PURCHASE", "acceptanceDate", "Acceptance Date"], ["DUAL", "closeOfEscrow", "Close of Escrow"],
+    ["LEASE_TENANT", "leaseSignedDate", "Lease Signed Date"], ["LEASE_LANDLORD", "leaseStartDate", "Lease Start Date"],
+  ])("%s won't clear %s", (side, field, label) => {
+    expect(requiredFieldError("transaction", { [field]: "" }, { transactionSide: side, status: "PENDING" })).toBe(`${label} can't be blank`);
+    expect(requiredFieldError("transaction", { [field]: "" }, { transactionSide: side, status: "INCOMPLETE" })).toBe(`${label} can't be blank`);
+  });
+
+  it("lets a Pre-Contract file clear them, and lets any file change them", () => {
+    expect(requiredFieldError("transaction", { closeOfEscrow: "" }, { transactionSide: "PURCHASE", status: "PRE_CONTRACT" })).toBeNull();
+    expect(requiredFieldError("transaction", { closeOfEscrow: "2026-12-01" }, { transactionSide: "PURCHASE", status: "PENDING" })).toBeNull();
+  });
+
+  it("only guards the side's own dates (a sale's lease dates stay optional)", () => {
+    expect(requiredFieldError("transaction", { leaseStartDate: "" }, { transactionSide: "PURCHASE", status: "PENDING" })).toBeNull();
+  });
+});

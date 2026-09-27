@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calcReferralFee, canTransitionTransaction, pickDisplayPrice, pickDisplayDate, listingStatusOptions, canDeleteListing, convertBlockedReason, sidePartiesReady, commissionReady, isReadyForPending, transactionStatusOptions, escrowTypeToRole, latestDocument, allowedNextStatuses, canTransitionListing } from "@/lib/transaction-helpers";
+import { calcReferralFee, canTransitionTransaction, pickDisplayPrice, pickDisplayDate, listingStatusOptions, canDeleteListing, convertBlockedReason, sidePartiesReady, commissionReady, clientPartyError, isReadyForPending, transactionStatusOptions, escrowTypeToRole, latestDocument, allowedNextStatuses, canTransitionListing } from "@/lib/transaction-helpers";
 
 describe("calcReferralFee", () => {
   it("takes 10% when 10% of the amount exceeds $200", () => {
@@ -341,5 +341,24 @@ describe("transactionStatusOptions", () => {
   it("lets the server accept an agent's cancellation request from Incomplete and Expired", () => {
     expect(canTransitionTransaction("INCOMPLETE" as any, "CANCELED_PENDING" as any, "AGENT")).toBe(true);
     expect(canTransitionTransaction("EXPIRED" as any, "CANCELED_PENDING" as any, "AGENT")).toBe(true);
+  });
+});
+
+describe("clientPartyError (past Pre-Contract the side's client can't be removed)", () => {
+  const buyer = { role: "BUYER", name: "Bea" };
+  const seller = { role: "SELLER", name: "Sam" };
+
+  it("names the missing client for each side (tenants/landlords on leases)", () => {
+    expect(clientPartyError("PURCHASE", "PENDING", [seller])).toBe("This transaction needs a named buyer");
+    expect(clientPartyError("LISTING", "INCOMPLETE", [buyer])).toBe("This transaction needs a named seller");
+    expect(clientPartyError("DUAL", "PENDING", [buyer])).toBe("This transaction needs a named seller");
+    expect(clientPartyError("LEASE_TENANT", "PENDING", [{ role: "BUYER", name: " " }])).toBe("This transaction needs a named tenant");
+    expect(clientPartyError("LEASE_LANDLORD", "PENDING", [])).toBe("This transaction needs a named landlord");
+  });
+
+  it("allows it when the client is still there, before Pre-Contract ends, and on referrals", () => {
+    expect(clientPartyError("PURCHASE", "PENDING", [buyer])).toBeNull();
+    expect(clientPartyError("PURCHASE", "PRE_CONTRACT", [])).toBeNull();
+    expect(clientPartyError("REFERRAL", "PENDING", [])).toBeNull();
   });
 });

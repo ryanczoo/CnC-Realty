@@ -190,6 +190,24 @@ export function sidePartiesReady(side: string, has: { hasBuyer: boolean; hasSell
   }
 }
 
+// Past Pre-Contract a transaction is (or can become) Pending, which needs the
+// side's own named client (sidePartiesReady) — so a party change that would leave
+// it without one is refused. Tenants are stored as BUYER, landlords as SELLER.
+export function clientPartyError(
+  side: string,
+  status: string | null | undefined,
+  parties: { role: string; name: string }[],
+): string | null {
+  if (side === "REFERRAL" || !status || status === "PRE_CONTRACT") return null;
+  const hasBuyer = parties.some((p) => p.role === "BUYER" && p.name.trim());
+  const hasSeller = parties.some((p) => p.role === "SELLER" && p.name.trim());
+  if (sidePartiesReady(side, { hasBuyer, hasSeller })) return null;
+  const lease = isLeaseSide(side);
+  const needsBuyer = !sidePartiesReady(side, { hasBuyer, hasSeller: true });
+  const who = needsBuyer ? (lease ? "tenant" : "buyer") : (lease ? "landlord" : "seller");
+  return `This transaction needs a named ${who}`;
+}
+
 // Which commission a side needs — the selling (buyer's) agent's on Purchase, the
 // listing agent's on Listing, both on Dual. Lease sides keep their one Lease
 // Commission in the sale fields. Shared by the New Transaction wizard (required

@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { CHECKLIST_ITEMS_WITH_DOCS_INCLUDE, isReadyForPending, commissionReady, fileCommissionHas } from "@/lib/transaction-helpers";
 import { commissionPercentError } from "@/lib/file-edit";
+import { transactionDatesError } from "@/lib/transaction-dates";
 import { trimStrings } from "@/lib/form-validation";
 import { isLeaseSide } from "@/types/transaction";
 
@@ -63,8 +64,8 @@ export async function POST(req: Request) {
   if (transactionSide === "REFERRAL" && !referredToAgentName) {
     return NextResponse.json({ error: "referredToAgentName is required" }, { status: 400 });
   }
-  const pctError = commissionPercentError(body);
-  if (pctError) return NextResponse.json({ error: pctError }, { status: 400 });
+  const invalid = commissionPercentError(body) ?? transactionDatesError(body, {}, { side: transactionSide, propertyCategory });
+  if (invalid) return NextResponse.json({ error: invalid }, { status: 400 });
 
   // The wizard's rule: an Under Contract file needs its side's commission
   // (Pre-Contract can add it later, before it can go Pending).

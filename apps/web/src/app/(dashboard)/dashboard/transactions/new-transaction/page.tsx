@@ -8,6 +8,7 @@ import { SPRING_HOVER } from "@/lib/motion";
 import { TC_FEE, calcNetToAgent, calcTransactionFee } from "@/lib/commission";
 import { escrowTypeToRole, sidePartiesReady, commissionReady, type EscrowContactType } from "@/lib/transaction-helpers";
 import { transactionDetailsReady } from "@/lib/transaction-wizard";
+import { transactionDatesError } from "@/lib/transaction-dates";
 import { DateField } from "@/components/ui/DateField";
 import { FormField as Field } from "@/components/ui/FormField";
 import { stripDigits, digitsOnly, formatPhoneInput, emailError } from "@/lib/form-validation";
@@ -97,6 +98,10 @@ export default function NewTransactionPage() {
   const underContract = form.stage !== "PRE_CONTRACT";
   const req = underContract ? " *" : "";
   const offerLabels = offerDateLabels(form.transactionSide, form.propertyCategory);
+  // The dates Step 2 checks: hidden offer dates (residential lease) never count.
+  const hasOfferDates = !!offerLabels;
+  const detailForm = useMemo(() => (hasOfferDates ? form : { ...form, offerDate: "", offerExpirationDate: "" }), [form, hasOfferDates]);
+  const datesError = transactionDatesError(detailForm, {}, { side: form.transactionSide, propertyCategory: form.propertyCategory });
   const isReferral = form.transactionSide === "REFERRAL";
 
   // Lease files have no salePrice to multiply a % against (leases populate
@@ -195,7 +200,7 @@ export default function NewTransactionPage() {
   const canAdvance = useMemo(() => {
     if (step === 0) return isReferral ? !!form.transactionSide : (!!form.transactionSide && !!form.propertyCategory);
     if (step === 1) return isReferral ? (!!form.referredToAgentName && !emailError(form.referredToContactEmail)) : (!!form.propertyAddress && !!form.city && !!form.zip && !!form.propertyType);
-    if (step === 2) return transactionDetailsReady(form, form.stage, isLease);
+    if (step === 2) return transactionDetailsReady(detailForm, form.stage, isLease);
     if (step === 3) return partiesReady && partyEmailsValid;
     // Commission is required Under Contract (optional Pre-Contract) — the same
     // commissionReady rule the server and the Pending check use.
@@ -203,7 +208,7 @@ export default function NewTransactionPage() {
       hasSale: parseFloat(form.saleCommission) > 0, hasListing: parseFloat(form.listingCommission) > 0,
     });
     return true;
-  }, [step, isReferral, isLease, form, underContract, partiesReady, partyEmailsValid]);
+  }, [step, isReferral, isLease, form, detailForm, underContract, partiesReady, partyEmailsValid]);
 
   function goNext() {
     setStep((s) => {
@@ -541,9 +546,7 @@ export default function NewTransactionPage() {
                   </>
                 )}
               </div>
-              {!isLease && underContract && form.acceptanceDate && form.closeOfEscrow && form.closeOfEscrow < form.acceptanceDate && (
-                <p className="mt-1 text-xs text-red-500">Close of Escrow can&apos;t be before the Acceptance Date.</p>
-              )}
+              {datesError && <p className="mt-1 text-xs text-red-500">{datesError}</p>}
             </div>
             {/* Escrow deadlines are sale-only; a lease's key date is its start date. */}
             {!isLease && (

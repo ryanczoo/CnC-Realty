@@ -338,6 +338,15 @@ describe("POST /api/transactions", () => {
       expect(prisma.transactionFile.create).not.toHaveBeenCalled();
     });
 
+    it("refuses dates out of order, at any stage", async () => {
+      const res = await POST(makeRequest({ ...complete, closeOfEscrow: "2026-09-01" }));
+      expect(res.status).toBe(400);
+      expect((await res.json()).error).toBe("Close of Escrow can't be before the Acceptance Date");
+      const pre = await POST(makeRequest({ ...complete, stage: "PRE_CONTRACT", offerDate: "2026-09-10", offerExpirationDate: "2026-09-05" }));
+      expect(pre.status).toBe(400);
+      expect(prisma.transactionFile.create).not.toHaveBeenCalled();
+    });
+
     it("lets a Pre-Contract file skip commission", async () => {
       const res = await POST(makeRequest({ ...complete, stage: "PRE_CONTRACT", listingCommissionPct: "" }));
       expect(res.status).toBe(201);

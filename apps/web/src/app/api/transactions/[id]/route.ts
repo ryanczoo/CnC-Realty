@@ -7,6 +7,7 @@ import { changeFileStatus, maybeAutoPending } from "@/lib/file-status";
 import { followDates } from "@/lib/auto-status";
 import { transactionEditData, requiredFieldError, commissionPercentError, transactionCommissionEdit, commissionLockedError } from "@/lib/file-edit";
 import { logCommissionChanges } from "@/lib/commission-log";
+import { transactionDatesError } from "@/lib/transaction-dates";
 import { sendCancellationRequested } from "@/lib/email/transaction-emails";
 import { sendSafely } from "@/lib/email/send-safely";
 import { calcReferralFee, FILE_DETAIL_INCLUDE } from "@/lib/transaction-helpers";
@@ -56,7 +57,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   // null, required ones can't be cleared.
   const commissionLocked = commissionLockedError("transaction", body, tx, role);
   if (commissionLocked) return NextResponse.json({ error: commissionLocked }, { status: 403 });
-  const required = requiredFieldError("transaction", body, tx) ?? commissionPercentError(body);
+  const required = requiredFieldError("transaction", body, tx)
+    ?? commissionPercentError(body)
+    ?? transactionDatesError(body, tx, { side: tx.transactionSide, propertyCategory: tx.propertyCategory });
   if (required) return NextResponse.json({ error: required }, { status: 400 });
 
   const fieldData = {

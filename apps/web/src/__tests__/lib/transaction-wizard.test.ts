@@ -29,3 +29,11 @@ describe("transactionDetailsReady (New Transaction wizard, Step 2)", () => {
     expect(transactionDetailsReady({ ...sale, salePrice: "" }, "PRE_CONTRACT", false)).toBe(false);
   });
 });
+
+describe("transactionDetailsReady checks date order at every stage", () => {
+  it("blocks out-of-order dates even on a Pre-Contract file", () => {
+    expect(transactionDetailsReady({ ...sale, closeOfEscrow: "2026-09-01" }, "PRE_CONTRACT", false)).toBe(false);
+    expect(transactionDetailsReady({ ...lease, leaseStartDate: "2026-09-01" }, "UNDER_CONTRACT", true)).toBe(false);
+    expect(transactionDetailsReady({ ...sale, offerDate: "2026-09-10", offerExpirationDate: "2026-09-05" }, "UNDER_CONTRACT", false)).toBe(false);
+  });
+});

@@ -65,3 +65,49 @@ describe("PATCH/DELETE /api/files/[fileType]/[id]/parties/[partyId]", () => {
     expect(prisma.fileParty.delete).not.toHaveBeenCalled();
   });
 });
+
+describe("a transaction's last client can't be removed past Pre-Contract", () => {
+  const TX_PARAMS = { params: { fileType: "transaction", id: "t1", partyId: "p1" } };
+  const txPatch = (body: Record<string, unknown>) =>
+    new Request("http://localhost/api/files/transaction/t1/parties/p1", { method: "PATCH", body: JSON.stringify(body) });
+  const onlyBuyer = { id: "p1", role: "BUYER", name: "Bea", listingFileId: null, transactionFileId: "t1" };
+  const withFile = (status: string, parties: object[]) => {
+    vi.mocked(prisma.transactionFile.findUnique)
+      .mockResolvedValueOnce({ id: "t1", agentId: "a1", status } as any)
+      .mockResolvedValueOnce({ status, transactionSide: "PURCHASE", parties } as any);
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
+    vi.mocked(prisma.fileParty.findUnique).mockResolvedValue(onlyBuyer as any);
+  });
+
+  it("refuses deleting the only buyer on a Pending purchase", async () => {
+    withFile("PENDING", [onlyBuyer]);
+    const res = await DELETE(new Request("http://localhost"), TX_PARAMS);
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("This transaction needs a named buyer");
+    expect(prisma.fileParty.delete).not.toHaveBeenCalled();
+  });
+
+  it("refuses blanking the only buyer's name", async () => {
+    withFile("PENDING", [onlyBuyer]);
+    const res = await PATCH(txPatch({ name: "" }), TX_PARAMS);
+    expect(res.status).toBe(400);
+    expect(prisma.fileParty.update).not.toHaveBeenCalled();
+  });
+
+  it("allows it when another buyer remains, or while still Pre-Contract", async () => {
+    withFile("PENDING", [onlyBuyer, { id: "p2", role: "BUYER", name: "Ben" }]);
+    expect((await DELETE(new Request("http://localhost"), TX_PARAMS)).status).toBe(200);
+    withFile("PRE_CONTRACT", [onlyBuyer]);
+    expect((await DELETE(new Request("http://localhost"), TX_PARAMS)).status).toBe(200);
+  });
+
+  it("allows renaming the buyer (the name stays filled)", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValueOnce({ id: "t1", agentId: "a1", status: "PENDING" } as any);
+    vi.mocked(prisma.fileParty.update).mockResolvedValue(onlyBuyer as any);
+    expect((await PATCH(txPatch({ name: "Beatrice" }), TX_PARAMS)).status).toBe(200);
+  });
+});

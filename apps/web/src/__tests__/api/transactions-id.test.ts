@@ -494,3 +494,36 @@ describe("PATCH /api/transactions/[id] — commission review lock + change log",
     expect(prisma.fileActivity.create).toHaveBeenCalledWith({ data: expect.objectContaining({ actorId: "admin1", actorRole: "ADMIN" }) });
   });
 });
+
+describe("PATCH /api/transactions/[id] — Pending dates and date order", () => {
+  const AGENT = { user: { id: "u1", role: "AGENT", agentId: "a1" } };
+  const patch = (body: unknown) => PATCH(new Request("http://localhost", { method: "PATCH", body: JSON.stringify(body) }), { params: { id: "tf1" } });
+  const PENDING = {
+    id: "tf1", agentId: "a1", status: "PENDING", transactionSide: "PURCHASE", salePrice: 500000, saleCommissionPct: 2.5,
+    acceptanceDate: new Date("2026-09-20"), closeOfEscrow: new Date("2026-10-20"),
+  };
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getServerSession).mockResolvedValue(AGENT as any);
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(PENDING as any);
+    vi.mocked(prisma.transactionFile.update).mockResolvedValue(PENDING as any);
+  });
+
+  it("won't clear Close of Escrow on a Pending file", async () => {
+    const res = await patch({ closeOfEscrow: "" });
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("Close of Escrow can't be blank");
+    expect(prisma.transactionFile.update).not.toHaveBeenCalled();
+  });
+
+  it("refuses a Close of Escrow before the saved Acceptance Date", async () => {
+    const res = await patch({ closeOfEscrow: "2026-09-01" });
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("Close of Escrow can't be before the Acceptance Date");
+    expect(prisma.transactionFile.update).not.toHaveBeenCalled();
+  });
+
+  it("allows moving the date to a valid one", async () => {
+    expect((await patch({ closeOfEscrow: "2026-11-15" })).status).toBe(200);
+  });
+});
