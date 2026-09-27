@@ -5,7 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { checkOwnership, assertFileEditable } from "@/lib/api-auth";
 import { changeFileStatus, maybeAutoPending } from "@/lib/file-status";
 import { followDates } from "@/lib/auto-status";
-import { transactionEditData, requiredFieldError, commissionPercentError, transactionCommissionEdit } from "@/lib/file-edit";
+import { transactionEditData, requiredFieldError, commissionPercentError, transactionCommissionEdit, commissionLockedError } from "@/lib/file-edit";
+import { logCommissionChanges } from "@/lib/commission-log";
 import { sendCancellationRequested } from "@/lib/email/transaction-emails";
 import { sendSafely } from "@/lib/email/send-safely";
 import { calcReferralFee, FILE_DETAIL_INCLUDE } from "@/lib/transaction-helpers";
@@ -53,6 +54,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   // Detail fields follow the shared edit rules (lib/file-edit): parsed, blanks ->
   // null, required ones can't be cleared.
+  const commissionLocked = commissionLockedError("transaction", body, tx, role);
+  if (commissionLocked) return NextResponse.json({ error: commissionLocked }, { status: 403 });
   const required = requiredFieldError("transaction", body, tx) ?? commissionPercentError(body);
   if (required) return NextResponse.json({ error: required }, { status: 400 });
 
@@ -83,6 +86,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       ...(reason && { activityPayloadExtra: { reason } }),
     });
     if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
+    await logCommissionChanges("transaction", params.id, tx, result.file, { userId: session.user.id, role });
     if (isCancellationRequest) {
       await sendSafely(() => sendCancellationRequested({
         address: tx.propertyAddress,
@@ -95,6 +99,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   }
 
   const updated = await prisma.transactionFile.update({ where: { id: params.id }, data: fieldData });
+  await logCommissionChanges("transaction", params.id, tx, updated, { userId: session.user.id, role });
   // A saved date can move the status (Expired -> Pending), and saved details can
   // complete the file (-> Pending).
   const actor = { userId: session.user.id, role } as const;

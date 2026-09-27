@@ -85,3 +85,16 @@ describe("latestCancellationReason", () => {
     expect(latestCancellationReason([change("PENDING"), { type: "NOTE_ADDED", payload: null, createdAt: "2026-09-25T10:00:00.000Z" }])).toBeNull();
   });
 });
+
+describe("describeActivity: commission changes", () => {
+  it("shows each changed commission as old → new", () => {
+    expect(describeActivity({
+      type: "COMMISSION_CHANGED",
+      payload: { changes: [{ label: "Selling Agent Commission", from: "2.5%", to: "$15,000" }, { label: "Listing Agent Commission", from: "—", to: "3%" }] },
+    })).toEqual({ detail: "Selling Agent Commission: 2.5% → $15,000; Listing Agent Commission: — → 3%", reason: null });
+  });
+
+  it("shows nothing extra for a malformed payload", () => {
+    expect(describeActivity({ type: "COMMISSION_CHANGED", payload: {} })).toEqual({ detail: null, reason: null });
+  });
+});

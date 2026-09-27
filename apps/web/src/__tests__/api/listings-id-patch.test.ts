@@ -192,3 +192,43 @@ describe("PATCH /api/listings/[id] — commission % can't exceed 100", () => {
     expect(prisma.listingFile.update).not.toHaveBeenCalled();
   });
 });
+
+describe("PATCH /api/listings/[id] — commission review lock + change log", () => {
+  const BEFORE = { id: "lf1", agentId: "a1", status: "ACTIVE", awaitingReview: false, commissionPercent: 2.5, commissionAmount: null };
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getServerSession).mockResolvedValue(AGENT as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(BEFORE as any);
+    vi.mocked(prisma.listingFile.update).mockResolvedValue({ ...BEFORE, commissionPercent: null, commissionAmount: 15000 } as any);
+  });
+
+  it("logs the change to the Activity tab (old -> new, who)", async () => {
+    expect((await patch({ commissionAmount: "15000", commissionPercent: "" })).status).toBe(200);
+    expect(prisma.fileActivity.create).toHaveBeenCalledWith({
+      data: {
+        fileType: "LISTING", listingFileId: "lf1", actorId: "u1", actorRole: "AGENT", type: "COMMISSION_CHANGED",
+        payload: { changes: [{ label: "Commission", from: "2.5%", to: "$15,000" }] },
+      },
+    });
+  });
+
+  it("doesn't log when commission didn't change", async () => {
+    vi.mocked(prisma.listingFile.update).mockResolvedValue(BEFORE as any);
+    await patch({ city: "Irvine" });
+    expect(prisma.fileActivity.create).not.toHaveBeenCalled();
+  });
+
+  it("refuses an agent's commission edit while Awaiting Review", async () => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ ...BEFORE, awaitingReview: true } as any);
+    const res = await patch({ commissionAmount: "15000", commissionPercent: "" });
+    expect(res.status).toBe(403);
+    expect((await res.json()).error).toBe("Commission is locked while this file is in broker review");
+    expect(prisma.listingFile.update).not.toHaveBeenCalled();
+  });
+
+  it("lets the broker change it during review", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(ADMIN as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ ...BEFORE, awaitingReview: true } as any);
+    expect((await patch({ commissionAmount: "15000", commissionPercent: "" })).status).toBe(200);
+  });
+});

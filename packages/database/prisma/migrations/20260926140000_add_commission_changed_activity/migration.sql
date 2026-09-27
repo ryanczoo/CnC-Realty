@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "FileActivityType" ADD VALUE 'COMMISSION_CHANGED';

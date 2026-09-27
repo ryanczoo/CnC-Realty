@@ -190,6 +190,7 @@ enum FileActivityType {
   CONVERTED_TO_TRANSACTION
   DOCUMENT_REMOVED
   DOCUMENT_DELETED
+  COMMISSION_CHANGED
 }
 
 // ─── Phase 5B: Action Plan enums ──────────────────────────────────────────────

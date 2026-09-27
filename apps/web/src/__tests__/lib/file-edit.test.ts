@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { transactionEditData, requiredFieldError, commissionPercentError, transactionCommissionEdit } from "@/lib/file-edit";
+import { transactionEditData, requiredFieldError, commissionPercentError, transactionCommissionEdit, commissionLockedError, commissionChanges } from "@/lib/file-edit";
 
 describe("transactionEditData", () => {
   it("parses each editable field type and ignores anything not editable", () => {
@@ -124,5 +124,47 @@ describe("requiredFieldError keeps commission once past Pre-Contract", () => {
 
   it("doesn't touch edits that don't include commission", () => {
     expect(requiredFieldError("transaction", { city: "Irvine" }, { transactionSide: "PURCHASE", status: "PENDING" })).toBeNull();
+  });
+});
+
+describe("commissionLockedError", () => {
+  const MSG = "Commission is locked while this file is in broker review";
+
+  it("refuses an agent's commission edit while Awaiting Review (listing and transaction)", () => {
+    expect(commissionLockedError("listing", { commissionPercent: "3" }, { awaitingReview: true }, "AGENT")).toBe(MSG);
+    expect(commissionLockedError("transaction", { saleCommissionAmount: "9000" }, { awaitingReview: true }, "AGENT")).toBe(MSG);
+  });
+
+  it("allows the broker, other fields, and files not in review", () => {
+    expect(commissionLockedError("listing", { commissionPercent: "3" }, { awaitingReview: true }, "ADMIN")).toBeNull();
+    expect(commissionLockedError("transaction", { city: "Irvine" }, { awaitingReview: true }, "AGENT")).toBeNull();
+    expect(commissionLockedError("transaction", { saleCommissionPct: "3" }, { awaitingReview: false }, "AGENT")).toBeNull();
+  });
+});
+
+describe("commissionChanges", () => {
+  it("reports a listing's commission change in display form", () => {
+    expect(commissionChanges("listing", { commissionPercent: 2.5, commissionAmount: null }, { commissionPercent: null, commissionAmount: 15000 }))
+      .toEqual([{ label: "Commission", from: "2.5%", to: "$15,000" }]);
+  });
+
+  it("names each transaction side, and only lists sides that changed", () => {
+    const before = { transactionSide: "DUAL", saleCommissionPct: 2, saleCommissionAmount: 20000, listingCommissionPct: 2.5, listingCommissionAmount: 25000 };
+    expect(commissionChanges("transaction", before, { ...before, saleCommissionPct: 3, saleCommissionAmount: 30000 }))
+      .toEqual([{ label: "Selling Agent Commission", from: "2%", to: "3%" }]);
+    expect(commissionChanges("transaction", before, { ...before, listingCommissionPct: null, listingCommissionAmount: 12000 }))
+      .toEqual([{ label: "Listing Agent Commission", from: "2.5%", to: "$12,000" }]);
+  });
+
+  it("calls a lease's commission Lease Commission (always $)", () => {
+    expect(commissionChanges("transaction",
+      { transactionSide: "LEASE_TENANT", saleCommissionPct: null, saleCommissionAmount: null },
+      { transactionSide: "LEASE_TENANT", saleCommissionPct: null, saleCommissionAmount: 3000 }))
+      .toEqual([{ label: "Lease Commission", from: "—", to: "$3,000" }]);
+  });
+
+  it("is empty when nothing about commission changed", () => {
+    const f = { transactionSide: "PURCHASE", saleCommissionPct: 2.5, saleCommissionAmount: 12500 };
+    expect(commissionChanges("transaction", f, { ...f })).toEqual([]);
   });
 });

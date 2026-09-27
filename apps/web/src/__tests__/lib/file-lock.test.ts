@@ -4,7 +4,7 @@ vi.mock("next-auth", () => ({ getServerSession: vi.fn() }));
 vi.mock("@/lib/auth", () => ({ authOptions: {} }));
 vi.mock("@/lib/prisma", () => ({ prisma: {} }));
 
-import { isFileLocked, isFileReadOnlyFor } from "@/lib/file-lock";
+import { isFileLocked, isFileReadOnlyFor, isCommissionLockedFor } from "@/lib/file-lock";
 import { assertFileEditable } from "@/lib/api-auth";
 import { FILE_LOCKED_MESSAGE, EMAIL_WARNING_TEXT } from "@/lib/file-messages";
 
@@ -63,5 +63,16 @@ describe("shared messages", () => {
   it("uses the exact wording agreed with Ryan", () => {
     expect(FILE_LOCKED_MESSAGE).toBe("This file is closed and can't be changed");
     expect(EMAIL_WARNING_TEXT).toBe("Saved, but the email to the agent couldn't be sent.");
+  });
+});
+
+describe("isCommissionLockedFor (agents can't change commission during broker review)", () => {
+  it("locks an agent while the file is Awaiting Review", () => {
+    expect(isCommissionLockedFor(true, "AGENT")).toBe(true);
+  });
+  it("never locks the broker, and not before review", () => {
+    expect(isCommissionLockedFor(true, "ADMIN")).toBe(false);
+    expect(isCommissionLockedFor(false, "AGENT")).toBe(false);
+    expect(isCommissionLockedFor(undefined, "AGENT")).toBe(false);
   });
 });

@@ -14,7 +14,7 @@ import {
 // get a pencil (and always show, "—" when empty, so a missing value can be
 // added); State, Listing Type and Transaction Side are never editable.
 export function OverviewTab({
-  file, isListing, listing, transaction, progressPct, satisfied, required, canEdit = false, onSaved,
+  file, isListing, listing, transaction, progressPct, satisfied, required, canEdit = false, commissionLocked = false, onSaved,
 }: {
   file: ListingFileDetail | TransactionFileDetail;
   isListing: boolean;
@@ -24,6 +24,9 @@ export function OverviewTab({
   satisfied: number;
   required: number;
   canEdit?: boolean;
+  // Agent viewing a file in broker review (isCommissionLockedFor): commission
+  // rows lose their pencil; the broker's page never passes this.
+  commissionLocked?: boolean;
   onSaved?: () => void;
 }) {
   const isReferral = !isListing && transaction?.transactionSide === "REFERRAL";
@@ -49,7 +52,7 @@ export function OverviewTab({
     pctField: string, amountField: string,
     pct: number | null | undefined, amount: number | null | undefined, flatOnly = false,
   ): InfoRowEdit | undefined =>
-    canEdit
+    canEdit && !commissionLocked
       ? {
           kind: "commission",
           hideModeToggle: flatOnly,
@@ -98,7 +101,7 @@ export function OverviewTab({
                 <InfoRow
                   label="Commission"
                   value={commissionDisplay(listing.commissionPercent, listing.commissionAmount)}
-                  edit={commissionEdit("commissionPercent", "commissionAmount", listing.commissionPercent, listing.commissionAmount)}
+                  pencilSlot={canEdit} edit={commissionEdit("commissionPercent", "commissionAmount", listing.commissionPercent, listing.commissionAmount)}
                 />
               )}
             </>
@@ -119,17 +122,17 @@ export function OverviewTab({
               {isLease ? (
                 show(transaction.saleCommissionAmount) && (
                   <InfoRow label="Lease Commission" value={money(transaction.saleCommissionAmount)}
-                    edit={commissionEdit("saleCommissionPct", "saleCommissionAmount", null, transaction.saleCommissionAmount, true)} />
+                    pencilSlot={canEdit} edit={commissionEdit("saleCommissionPct", "saleCommissionAmount", null, transaction.saleCommissionAmount, true)} />
                 )
               ) : (
                 <>
                   {showsSale && show(transaction.saleCommissionPct ?? transaction.saleCommissionAmount) && (
                     <InfoRow label="Selling Agent Commission" value={commissionDisplay(transaction.saleCommissionPct, transaction.saleCommissionAmount)}
-                      edit={commissionEdit("saleCommissionPct", "saleCommissionAmount", transaction.saleCommissionPct, transaction.saleCommissionAmount)} />
+                      pencilSlot={canEdit} edit={commissionEdit("saleCommissionPct", "saleCommissionAmount", transaction.saleCommissionPct, transaction.saleCommissionAmount)} />
                   )}
                   {showsListing && show(transaction.listingCommissionPct ?? transaction.listingCommissionAmount) && (
                     <InfoRow label="Listing Agent Commission" value={commissionDisplay(transaction.listingCommissionPct, transaction.listingCommissionAmount)}
-                      edit={commissionEdit("listingCommissionPct", "listingCommissionAmount", transaction.listingCommissionPct, transaction.listingCommissionAmount)} />
+                      pencilSlot={canEdit} edit={commissionEdit("listingCommissionPct", "listingCommissionAmount", transaction.listingCommissionPct, transaction.listingCommissionAmount)} />
                   )}
                 </>
               )}

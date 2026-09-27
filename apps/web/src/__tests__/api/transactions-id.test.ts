@@ -446,3 +446,51 @@ describe("PATCH /api/transactions/[id] — commission edits", () => {
     expect((await res.json()).error).toBe("Selling Agent Commission can't be blank");
   });
 });
+
+describe("PATCH /api/transactions/[id] — commission review lock + change log", () => {
+  const AGENT = { user: { id: "u1", role: "AGENT", agentId: "a1" } };
+  const ADMIN = { user: { id: "admin1", role: "ADMIN", agentId: null } };
+  const patch = (body: unknown) => PATCH(new Request("http://localhost", { method: "PATCH", body: JSON.stringify(body) }), { params: { id: "tf1" } });
+  const BEFORE = {
+    id: "tf1", agentId: "a1", status: "PENDING", awaitingReview: false, transactionSide: "PURCHASE", salePrice: 500000,
+    saleCommissionPct: 2.5, saleCommissionAmount: 12500, listingCommissionPct: null, listingCommissionAmount: null,
+  };
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getServerSession).mockResolvedValue(AGENT as any);
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(BEFORE as any);
+    vi.mocked(prisma.transactionFile.update).mockResolvedValue({ ...BEFORE, saleCommissionPct: 3, saleCommissionAmount: 15000 } as any);
+  });
+
+  it("logs the change to the Activity tab (old -> new, who)", async () => {
+    expect((await patch({ saleCommissionPct: "3", saleCommissionAmount: "" })).status).toBe(200);
+    expect(prisma.fileActivity.create).toHaveBeenCalledWith({
+      data: {
+        fileType: "TRANSACTION", transactionFileId: "tf1", actorId: "u1", actorRole: "AGENT", type: "COMMISSION_CHANGED",
+        payload: { changes: [{ label: "Selling Agent Commission", from: "2.5%", to: "3%" }] },
+      },
+    });
+  });
+
+  it("refuses an agent's commission edit while Awaiting Review", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({ ...BEFORE, awaitingReview: true } as any);
+    const res = await patch({ saleCommissionPct: "3", saleCommissionAmount: "" });
+    expect(res.status).toBe(403);
+    expect((await res.json()).error).toBe("Commission is locked while this file is in broker review");
+    expect(prisma.transactionFile.update).not.toHaveBeenCalled();
+  });
+
+  it("still lets the agent edit other details during review", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({ ...BEFORE, awaitingReview: true } as any);
+    vi.mocked(prisma.transactionFile.update).mockResolvedValue({ ...BEFORE, awaitingReview: true } as any);
+    expect((await patch({ escrowNumber: "E-1" })).status).toBe(200);
+    expect(prisma.fileActivity.create).not.toHaveBeenCalled();
+  });
+
+  it("lets the broker change it during review, logged as the broker", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(ADMIN as any);
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({ ...BEFORE, awaitingReview: true } as any);
+    expect((await patch({ saleCommissionPct: "3", saleCommissionAmount: "" })).status).toBe(200);
+    expect(prisma.fileActivity.create).toHaveBeenCalledWith({ data: expect.objectContaining({ actorId: "admin1", actorRole: "ADMIN" }) });
+  });
+});

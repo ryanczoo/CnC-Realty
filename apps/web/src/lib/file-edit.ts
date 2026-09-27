@@ -1,4 +1,5 @@
-import { isLeaseSide, listingPriceLabel } from "@/types/transaction";
+import { isLeaseSide, listingPriceLabel, commissionDisplay } from "@/types/transaction";
+import { isCommissionLockedFor } from "@/lib/file-lock";
 import { commissionReady } from "@/lib/transaction-helpers";
 import { resolveCommission, type CommissionInputs } from "@/lib/commission";
 
@@ -43,6 +44,43 @@ type CommissionFile = {
 const TX_COMMISSION = ["saleCommissionPct", "saleCommissionAmount", "listingCommissionPct", "listingCommissionAmount"] as const;
 const PCT_FIELDS = ["commissionPercent", "saleCommissionPct", "listingCommissionPct"] as const;
 const numOrNull = (v: unknown) => (blank(v) ? null : parseFloat(String(v)));
+
+const LISTING_COMMISSION = ["commissionPercent", "commissionAmount"] as const;
+
+// While the broker reviews a file (Awaiting Review), its commission is theirs to
+// change — an agent's commission edit is refused (SkySlope locks it at approval).
+export function commissionLockedError(
+  kind: "listing" | "transaction",
+  body: Record<string, unknown>,
+  file: { awaitingReview?: boolean | null },
+  role: string,
+): string | null {
+  const fields: readonly string[] = kind === "listing" ? LISTING_COMMISSION : TX_COMMISSION;
+  return isCommissionLockedFor(file.awaitingReview, role) && fields.some((f) => f in body)
+    ? "Commission is locked while this file is in broker review"
+    : null;
+}
+
+type CommissionRow = CommissionFile & { transactionSide?: string | null; commissionPercent?: number | null; commissionAmount?: number | null };
+
+// Each commission that differs between the saved file before and after an edit,
+// in display form ("2.5%" / "$15,000") — for the Activity tab's change log.
+export function commissionChanges(
+  kind: "listing" | "transaction",
+  before: CommissionRow,
+  after: CommissionRow,
+): { label: string; from: string; to: string }[] {
+  const lease = isLeaseSide(before.transactionSide);
+  const rows: [string, (f: CommissionRow) => string][] = kind === "listing"
+    ? [["Commission", (f) => commissionDisplay(f.commissionPercent, f.commissionAmount)]]
+    : [
+        [lease ? "Lease Commission" : "Selling Agent Commission", (f) => commissionDisplay(lease ? null : f.saleCommissionPct, f.saleCommissionAmount)],
+        ["Listing Agent Commission", (f) => commissionDisplay(f.listingCommissionPct, f.listingCommissionAmount)],
+      ];
+  return rows
+    .map(([label, show]) => ({ label, from: show(before), to: show(after) }))
+    .filter((c) => c.from !== c.to);
+}
 
 // A commission % is a share of the price — never more than all of it.
 export function commissionPercentError(body: Record<string, unknown>): string | null {

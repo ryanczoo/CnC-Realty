@@ -14,7 +14,7 @@ import { OverviewTab } from "@/components/transactions/OverviewTab";
 import { CommissionTab } from "@/components/transactions/CommissionTab";
 import { DocumentsTab } from "@/components/transactions/DocumentsTab";
 import { getChecklistProgress, listingStatusOptions, transactionStatusOptions, convertBlockedReason } from "@/lib/transaction-helpers";
-import { isFileReadOnlyFor } from "@/lib/file-lock";
+import { isFileReadOnlyFor, isCommissionLockedFor } from "@/lib/file-lock";
 import { isPlaceholderAddress } from "@/lib/transfer-placeholder";
 import { DateField } from "@/components/ui/DateField";
 import type {
@@ -339,6 +339,7 @@ export default function FileDetailPage() {
           satisfied={satisfied}
           required={required}
           canEdit={canEditDetails}
+          commissionLocked={isCommissionLockedFor(file.awaitingReview, session?.user?.role ?? "AGENT")}
           // A saved detail can resolve an earlier refusal (e.g. extending the
           // expiration), so clear the old message along with the reload.
           onSaved={() => { setActionError(null); load(); }}
