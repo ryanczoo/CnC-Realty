@@ -1,5 +1,6 @@
 "use client";
 import { formatCurrencyDisplay, sanitizeCurrencyInput } from "@/lib/form-validation";
+import { commissionInputError } from "@/lib/file-edit";
 
 // Commission as a percentage or a flat $ amount, with a %/$ toggle — the one
 // commission input: every commission field in the New Transaction and New Listing
@@ -11,6 +12,9 @@ export function CommissionField({
   label: string; value: string; onChange: (v: string) => void;
   mode: "pct" | "flat"; onModeChange: (m: "pct" | "flat") => void;
 }) {
+  // Shown right under the box as a % goes over 100 (the same rule the wizards'
+  // Next gates and the save routes use).
+  const error = commissionInputError(value, mode);
   return (
     <div>
       <div className="mb-1.5 flex items-center justify-between">
@@ -48,6 +52,7 @@ export function CommissionField({
           className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2.5 text-sm text-[#1B1B1B] placeholder:text-[#1B1B1B]/25 focus:outline-none focus:ring-2 focus:ring-[#9E8C61]/30"
         />
       )}
+      {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
     </div>
   );
 }

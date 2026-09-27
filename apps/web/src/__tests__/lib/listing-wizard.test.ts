@@ -71,3 +71,15 @@ describe("canAdvanceListingStep — Commission (step 2)", () => {
     expect(canAdvanceListingStep(2, empty, [])).toBe(true);
   });
 });
+
+describe("canAdvanceListingStep: Commission step (step 2)", () => {
+  it("stays optional — a blank commission still advances", () => {
+    expect(canAdvanceListingStep(2, { ...complete, commission: "" }, [], "pct")).toBe(true);
+  });
+
+  it("blocks Next only for a % over 100", () => {
+    expect(canAdvanceListingStep(2, { ...complete, commission: "333" }, [], "pct")).toBe(false);
+    expect(canAdvanceListingStep(2, { ...complete, commission: "100" }, [], "pct")).toBe(true);
+    expect(canAdvanceListingStep(2, { ...complete, commission: "333000" }, [], "flat")).toBe(true);
+  });
+});

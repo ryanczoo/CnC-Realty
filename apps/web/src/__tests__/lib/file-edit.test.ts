@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { transactionEditData, requiredFieldError, commissionPercentError, transactionCommissionEdit, commissionLockedError, commissionChanges } from "@/lib/file-edit";
+import { transactionEditData, requiredFieldError, commissionPercentError, transactionCommissionEdit, commissionLockedError, commissionChanges, commissionInputError } from "@/lib/file-edit";
 
 describe("transactionEditData", () => {
   it("parses each editable field type and ignores anything not editable", () => {
@@ -194,5 +194,18 @@ describe("commissionChanges logs a lease % as a %", () => {
       { transactionSide: "LEASE_LANDLORD", saleCommissionPct: null, saleCommissionAmount: 1200 },
       { transactionSide: "LEASE_LANDLORD", saleCommissionPct: 5, saleCommissionAmount: 1800 }))
       .toEqual([{ label: "Lease Commission", from: "$1,200", to: "5%" }]);
+  });
+});
+
+describe("commissionInputError (what a commission box shows while typing)", () => {
+  it("flags a % over 100", () => {
+    expect(commissionInputError("333", "pct")).toBe("Commission can't be more than 100%");
+    expect(commissionInputError("100.5", "pct")).toBe("Commission can't be more than 100%");
+  });
+
+  it("allows 100% or less, a blank box, and any $ amount", () => {
+    expect(commissionInputError("100", "pct")).toBeNull();
+    expect(commissionInputError("", "pct")).toBeNull();
+    expect(commissionInputError("333000", "flat")).toBeNull();
   });
 });

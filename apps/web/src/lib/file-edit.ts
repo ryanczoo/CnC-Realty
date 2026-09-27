@@ -91,6 +91,12 @@ export function commissionPercentError(body: Record<string, unknown>): string | 
     : null;
 }
 
+// The same rule for one commission box while it's being typed in (the shared
+// CommissionField and both wizards' Next gates): only a % can be over 100.
+export function commissionInputError(value: string, mode: "pct" | "flat"): string | null {
+  return mode === "pct" ? commissionPercentError({ commissionPercent: value }) : null;
+}
+
 // The four commission fields as they'll stand after this edit: sent values win,
 // the rest come from the saved file.
 function commissionAfterEdit(body: Record<string, unknown>, file: CommissionFile): CommissionInputs {

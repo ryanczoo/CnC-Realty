@@ -5,6 +5,7 @@ import { DateField } from "@/components/ui/DateField";
 import { PencilIcon } from "@/components/ui/PencilIcon";
 import { CheckIcon } from "@/components/ui/CheckIcon";
 import { CommissionField } from "./CommissionField";
+import { commissionInputError } from "@/lib/file-edit";
 
 // Opt-in pencil editing for one row (the Overview tab). Reuses the wizards'
 // shared inputs so edits follow the same restrictions and formatting.
@@ -85,7 +86,7 @@ export function InfoRow({ label, value, edit, pencilSlot = false }: { label: str
                 />
               )}
             </div>
-            <button onClick={save} disabled={saving} title="Save" aria-label={`Save ${label}`} className="shrink-0 text-[#9E8C61] hover:text-[#7a6d4a] disabled:opacity-40">
+            <button onClick={save} disabled={saving || (edit.kind === "commission" && !!commissionInputError(draft, mode))} title="Save" aria-label={`Save ${label}`} className="shrink-0 text-[#9E8C61] hover:text-[#7a6d4a] disabled:opacity-40">
               <CheckIcon size={20} />
             </button>
             <button onClick={() => setEditing(false)} disabled={saving} title="Cancel" aria-label={`Cancel editing ${label}`} className="shrink-0 px-1 text-[#1B1B1B]/40 hover:text-[#1B1B1B]">

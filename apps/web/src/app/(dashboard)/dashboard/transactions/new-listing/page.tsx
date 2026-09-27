@@ -182,7 +182,7 @@ export default function NewListingPage() {
         {step < STEPS.length - 1 ? (
           <motion.button
             onClick={() => setStep((s) => s + 1)}
-            disabled={!canAdvanceListingStep(step, form, sellers)}
+            disabled={!canAdvanceListingStep(step, form, sellers, commissionMode)}
             whileHover={{ scale: 1.1 }}
             transition={SPRING_HOVER}
             className="inline-flex items-center gap-1.5 rounded-full bg-[#1B1B1B] px-7 py-3.5 text-sm font-medium text-white disabled:opacity-40"

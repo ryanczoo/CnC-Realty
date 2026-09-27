@@ -7,6 +7,7 @@ import { TrashIcon } from "@/components/ui/TrashIcon";
 import { SPRING_HOVER } from "@/lib/motion";
 import { TC_FEE, calcNetToAgent, calcTransactionFee, resolveCommission } from "@/lib/commission";
 import { escrowTypeToRole, sidePartiesReady, commissionReady, type EscrowContactType } from "@/lib/transaction-helpers";
+import { commissionInputError } from "@/lib/file-edit";
 import { transactionDetailsReady } from "@/lib/transaction-wizard";
 import { transactionDatesError } from "@/lib/transaction-dates";
 import { DateField } from "@/components/ui/DateField";
@@ -187,11 +188,19 @@ export default function NewTransactionPage() {
     if (step === 3) return partiesReady && partyEmailsValid;
     // Commission is required Under Contract (optional Pre-Contract) — the same
     // commissionReady rule the server and the Pending check use.
-    if (step === 4) return !underContract || commissionReady(form.transactionSide, {
-      hasSale: parseFloat(form.saleCommission) > 0, hasListing: parseFloat(form.listingCommission) > 0,
-    });
+    if (step === 4) {
+      // No commission % over 100 in the fields on screen (the selling / lease
+      // one unless it's a Listing; the listing agent's on Listing and Dual).
+      const showsSale = form.transactionSide !== "LISTING";
+      const showsListing = !isLease && form.transactionSide !== "PURCHASE";
+      if ((showsSale && commissionInputError(form.saleCommission, commissionMode.sale))
+        || (showsListing && commissionInputError(form.listingCommission, commissionMode.listing))) return false;
+      return !underContract || commissionReady(form.transactionSide, {
+        hasSale: parseFloat(form.saleCommission) > 0, hasListing: parseFloat(form.listingCommission) > 0,
+      });
+    }
     return true;
-  }, [step, isReferral, isLease, form, detailForm, underContract, partiesReady, partyEmailsValid]);
+  }, [step, isReferral, isLease, form, detailForm, underContract, commissionMode, partiesReady, partyEmailsValid]);
 
   function goNext() {
     setStep((s) => {
