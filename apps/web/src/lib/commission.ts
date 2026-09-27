@@ -92,7 +92,7 @@ export type CommissionInputs = {
 
 // Each side's commission in dollars plus the combined gross (GCI), the way the
 // Commission tab reads them. A % is priced off the price (so it follows a price
-// change); a flat $ is kept as entered. An agent's gross is their own side's
+// change, and stays empty until there is a price); a flat $ is kept as entered. An agent's gross is their own side's
 // commission — both sides only on Dual (lease sides use the sale fields).
 export function resolveCommission(
   side: string,
@@ -100,7 +100,7 @@ export function resolveCommission(
   c: CommissionInputs,
 ): { saleCommissionAmount: number | null; listingCommissionAmount: number | null; commissionGCI: number | null } {
   const dollars = (pct: number | null, amount: number | null) =>
-    pct ? (price * pct) / 100 : amount || null;
+    pct ? (price ? (price * pct) / 100 : null) : amount || null;
   const sale = dollars(c.salePct, c.saleAmount);
   const listing = dollars(c.listingPct, c.listingAmount);
   const gci =
@@ -108,4 +108,27 @@ export function resolveCommission(
     side === "LISTING" ? listing :
     (sale ?? 0) + (listing ?? 0) || null;
   return { saleCommissionAmount: sale, listingCommissionAmount: listing, commissionGCI: gci };
+}
+
+// A listing's commission carried into the transaction it converts to, exactly as
+// entered (% stays %, $ stays $): the listing agent's side for a sale listing,
+// the Lease Commission (sale fields) for a lease listing. The price isn't known
+// yet, so a % gets its $ once the sale price / lease amount is entered.
+export function convertedCommission(
+  listing: { commissionPercent: number | null; commissionAmount: number | null; commissionNotes: string | null },
+  side: string,
+) {
+  const pct = listing.commissionPercent || null;
+  const amount = pct ? null : listing.commissionAmount || null;
+  const onSale = isLeaseSide(side);
+  const inputs: CommissionInputs = {
+    salePct: onSale ? pct : null, saleAmount: onSale ? amount : null,
+    listingPct: onSale ? null : pct, listingAmount: onSale ? null : amount,
+  };
+  return {
+    saleCommissionPct: inputs.salePct,
+    listingCommissionPct: inputs.listingPct,
+    ...resolveCommission(side, 0, inputs),
+    commissionNotes: listing.commissionNotes || null,
+  };
 }

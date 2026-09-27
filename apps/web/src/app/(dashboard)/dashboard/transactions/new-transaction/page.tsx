@@ -1,11 +1,11 @@
 "use client";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { Plus } from "lucide-react";
 import { TrashIcon } from "@/components/ui/TrashIcon";
 import { SPRING_HOVER } from "@/lib/motion";
-import { TC_FEE, calcNetToAgent, calcTransactionFee } from "@/lib/commission";
+import { TC_FEE, calcNetToAgent, calcTransactionFee, resolveCommission } from "@/lib/commission";
 import { escrowTypeToRole, sidePartiesReady, commissionReady, type EscrowContactType } from "@/lib/transaction-helpers";
 import { transactionDetailsReady } from "@/lib/transaction-wizard";
 import { transactionDatesError } from "@/lib/transaction-dates";
@@ -104,19 +104,6 @@ export default function NewTransactionPage() {
   const datesError = transactionDatesError(detailForm, {}, { side: form.transactionSide, propertyCategory: form.propertyCategory });
   const isReferral = form.transactionSide === "REFERRAL";
 
-  // Lease files have no salePrice to multiply a % against (leases populate
-  // leasePrice instead), so a "%" commission mode silently produces a $0 gross
-  // commission. Force flat-dollar mode the moment the side becomes a lease side —
-  // covers both picking a lease type directly and switching to one after Step 4
-  // was already visited with "%" selected.
-  useEffect(() => {
-    if (isLease) {
-      setCommissionMode((prev) =>
-        prev.sale === "flat" && prev.listing === "flat" ? prev : { sale: "flat", listing: "flat" }
-      );
-    }
-  }, [isLease]);
-
   const STEPS = isReferral
     ? ["File Type", "Referral Details", "Review"]
     : ["File Type", "Property", "Details", "Parties", "Commission", "Review"];
@@ -128,26 +115,22 @@ export default function NewTransactionPage() {
 
   const salePrice = parseFloat(form.salePrice) || 0;
   const leasePrice = parseFloat(form.leasePrice) || 0;
-  const saleCommissionAmt =
-    commissionMode.sale === "pct"
-      ? (salePrice * (parseFloat(form.saleCommission) || 0)) / 100
-      : parseFloat(form.saleCommission) || 0;
-  const listingCommissionAmt =
-    commissionMode.listing === "pct"
-      ? (salePrice * (parseFloat(form.listingCommission) || 0)) / 100
-      : parseFloat(form.listingCommission) || 0;
+  // The shared commission math (lib/commission): a % is priced off the sale price,
+  // or the Total Lease Amount on a lease; a $ is kept as entered. An agent's gross
+  // is their own side's commission — both sides only on Dual.
+  const entered = (mode: "pct" | "flat", value: string) => {
+    const n = parseFloat(value) || null;
+    return mode === "pct" ? { pct: n, amount: null } : { pct: null, amount: n };
+  };
+  const sale = entered(commissionMode.sale, form.saleCommission);
+  const listingSide = entered(commissionMode.listing, form.listingCommission);
+  const resolved = resolveCommission(form.transactionSide, isLease ? leasePrice : salePrice, {
+    salePct: sale.pct, saleAmount: sale.amount, listingPct: listingSide.pct, listingAmount: listingSide.amount,
+  });
+  const saleCommissionAmt = resolved.saleCommissionAmount ?? 0;
+  const listingCommissionAmt = resolved.listingCommissionAmount ?? 0;
   const otherDeductionsAmt = parseFloat(form.otherDeductions) || 0;
-  // An agent only ever gets paid according to their own side's commission
-  // agreement — a Purchase-side (buyer's) agent's Net to Agent is unaffected
-  // by whatever the seller's agent negotiated, and vice versa on Listing side.
-  // Only Dual agency sums both, since the agent has separate agreements with
-  // both parties. Lease sides fall through to the sum too, but that's safe:
-  // listingCommissionAmt is always 0 there (the field is hidden on lease
-  // sides — see the isLease branch below), so it adds nothing.
-  const totalGci =
-    form.transactionSide === "PURCHASE" ? saleCommissionAmt :
-    form.transactionSide === "LISTING" ? listingCommissionAmt :
-    saleCommissionAmt + listingCommissionAmt;
+  const totalGci = resolved.commissionGCI ?? 0;
   const transactionFee = calcTransactionFee({
     side: form.transactionSide as TransactionSide,
     salePrice,
@@ -648,7 +631,6 @@ export default function NewTransactionPage() {
                 onChange={(v) => set("saleCommission", v)}
                 mode={commissionMode.sale}
                 onModeChange={(m) => setCommissionMode((prev) => ({ ...prev, sale: m }))}
-                hideModeToggle
               />
             ) : (
               <>

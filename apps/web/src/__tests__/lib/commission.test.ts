@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { TC_FEE, calcEoSupplement, calcTransactionFee, calcNetToAgent, resolveCommission, type TransactionFeeInput } from "@/lib/commission";
+import { TC_FEE, calcEoSupplement, calcTransactionFee, calcNetToAgent, resolveCommission, convertedCommission, type TransactionFeeInput } from "@/lib/commission";
 
 describe("calcEoSupplement", () => {
   it("is 0 at or under the $1M threshold", () => {
@@ -222,5 +222,48 @@ describe("resolveCommission", () => {
   it("leaves everything empty when nothing is entered", () => {
     expect(resolveCommission("PURCHASE", 500_000, none))
       .toEqual({ saleCommissionAmount: null, listingCommissionAmount: null, commissionGCI: null });
+  });
+});
+
+describe("resolveCommission before a price is known", () => {
+  it("leaves a %'s $ amount empty (not $0) until there's a price", () => {
+    expect(resolveCommission("LISTING", 0, { salePct: null, saleAmount: null, listingPct: 2.5, listingAmount: null }))
+      .toEqual({ saleCommissionAmount: null, listingCommissionAmount: null, commissionGCI: null });
+  });
+
+  it("prices a lease % off the Total Lease Amount", () => {
+    expect(resolveCommission("LEASE_TENANT", 36000, { salePct: 5, saleAmount: null, listingPct: null, listingAmount: null }).commissionGCI).toBe(1800);
+  });
+});
+
+describe("convertedCommission (a listing's commission carried into its transaction)", () => {
+  const none = { commissionPercent: null, commissionAmount: null, commissionNotes: null };
+
+  it("puts a sale listing's % on the Listing Agent side (no $ until the sale price)", () => {
+    expect(convertedCommission({ ...none, commissionPercent: 2.5 }, "LISTING")).toEqual({
+      saleCommissionPct: null, listingCommissionPct: 2.5,
+      saleCommissionAmount: null, listingCommissionAmount: null, commissionGCI: null, commissionNotes: null,
+    });
+  });
+
+  it("puts a sale listing's $ on the Listing Agent side, with the GCI", () => {
+    expect(convertedCommission({ ...none, commissionAmount: 15000, commissionNotes: "Split with co-op" }, "LISTING")).toEqual({
+      saleCommissionPct: null, listingCommissionPct: null,
+      saleCommissionAmount: null, listingCommissionAmount: 15000, commissionGCI: 15000, commissionNotes: "Split with co-op",
+    });
+  });
+
+  it("puts a lease listing's commission on the Lease Commission (sale fields), % or $", () => {
+    expect(convertedCommission({ ...none, commissionPercent: 5 }, "LEASE_LANDLORD"))
+      .toMatchObject({ saleCommissionPct: 5, listingCommissionPct: null, saleCommissionAmount: null });
+    expect(convertedCommission({ ...none, commissionAmount: 1200 }, "LEASE_LANDLORD"))
+      .toMatchObject({ saleCommissionPct: null, saleCommissionAmount: 1200, commissionGCI: 1200 });
+  });
+
+  it("carries nothing when the listing had no commission", () => {
+    expect(convertedCommission(none, "LISTING")).toEqual({
+      saleCommissionPct: null, listingCommissionPct: null,
+      saleCommissionAmount: null, listingCommissionAmount: null, commissionGCI: null, commissionNotes: null,
+    });
   });
 });

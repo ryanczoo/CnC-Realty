@@ -47,7 +47,10 @@ export function CommissionTab({ transaction }: { transaction: TransactionFileDet
         />
         {transaction.deposit && <InfoRow label="Deposit" value={`$${Number(transaction.deposit).toLocaleString()}`} />}
         {isLease ? (
-          <InfoRow label="Lease Commission $" value={fmt(totalGross)} />
+          <>
+            <InfoRow label="Lease Commission" value={fmtPct(salePct)} />
+            <InfoRow label="Lease Commission $" value={fmt(totalGross)} />
+          </>
         ) : (
           <>
             {transaction.transactionSide !== "LISTING" && (

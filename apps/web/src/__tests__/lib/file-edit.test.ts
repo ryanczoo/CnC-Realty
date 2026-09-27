@@ -187,3 +187,12 @@ describe("requiredFieldError keeps the Pending dates once past Pre-Contract", ()
     expect(requiredFieldError("transaction", { leaseStartDate: "" }, { transactionSide: "PURCHASE", status: "PENDING" })).toBeNull();
   });
 });
+
+describe("commissionChanges logs a lease % as a %", () => {
+  it("shows old -> new in the entered form", () => {
+    expect(commissionChanges("transaction",
+      { transactionSide: "LEASE_LANDLORD", saleCommissionPct: null, saleCommissionAmount: 1200 },
+      { transactionSide: "LEASE_LANDLORD", saleCommissionPct: 5, saleCommissionAmount: 1800 }))
+      .toEqual([{ label: "Lease Commission", from: "$1,200", to: "5%" }]);
+  });
+});

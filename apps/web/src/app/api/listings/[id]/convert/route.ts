@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { checkOwnership, assertFileEditable } from "@/lib/api-auth";
 import { convertBlockedReason, CHECKLIST_ITEMS_WITH_DOCS_INCLUDE } from "@/lib/transaction-helpers";
+import { convertedCommission } from "@/lib/commission";
 
 export async function POST(_req: Request, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
@@ -51,6 +52,8 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
         transactionSide,
         propertyCategory,
         listPrice: listing.listPrice,
+        // The listing's commission (and notes), as entered, on the matching side.
+        ...convertedCommission(listing, transactionSide),
         // Carry the listing's sellers/landlords over so the agent doesn't re-enter them.
         parties: listing.parties.length > 0 ? {
           create: listing.parties.map((p) => ({

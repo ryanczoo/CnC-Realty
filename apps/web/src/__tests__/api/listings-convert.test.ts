@@ -216,3 +216,27 @@ describe("POST /api/listings/[id]/convert — commercial propertyCategory", () =
     );
   });
 });
+
+describe("POST /api/listings/[id]/convert — carries the listing's commission", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(prisma.$transaction).mockImplementation(((arr: any[]) => Promise.all(arr)) as any);
+    vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "tf-c" } as any);
+  });
+  const convert = () => POST(new Request("http://localhost", { method: "POST" }), { params: { id: "l1" } });
+  const created = () => vi.mocked(prisma.transactionFile.create).mock.calls[0][0].data as any;
+
+  it("a sale listing's % becomes the Listing Agent commission", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ ...SALE_LISTING, commissionPercent: 2.5, commissionAmount: null, commissionNotes: "Co-op 2%" } as any);
+    expect((await convert()).status).toBe(201);
+    expect(created()).toMatchObject({ listingCommissionPct: 2.5, saleCommissionPct: null, commissionNotes: "Co-op 2%" });
+  });
+
+  it("a lease listing's $ becomes the Lease Commission — including when the broker converts", async () => {
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "admin1", role: "ADMIN", agentId: null } } as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ ...LEASE_LISTING, commissionPercent: null, commissionAmount: 1200, commissionNotes: null } as any);
+    expect((await convert()).status).toBe(201);
+    expect(created()).toMatchObject({ transactionSide: "LEASE_LANDLORD", saleCommissionAmount: 1200, commissionGCI: 1200, agentId: "a1" });
+  });
+});

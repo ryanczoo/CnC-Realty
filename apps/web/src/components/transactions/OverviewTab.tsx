@@ -47,19 +47,18 @@ export function OverviewTab({
         }
       : undefined;
   // A commission pencil: the shared %/$ field; saving writes the chosen column and
-  // clears the other (% and $ are separate columns). Lease commission is $ only.
+  // clears the other (% and $ are separate columns).
   const commissionEdit = (
     pctField: string, amountField: string,
-    pct: number | null | undefined, amount: number | null | undefined, flatOnly = false,
+    pct: number | null | undefined, amount: number | null | undefined,
   ): InfoRowEdit | undefined =>
     canEdit && !commissionLocked
       ? {
           kind: "commission",
-          hideModeToggle: flatOnly,
-          mode: flatOnly || (!pct && amount) ? "flat" : "pct",
-          raw: String((flatOnly || !pct ? amount : pct) ?? ""),
+          mode: !pct && amount ? "flat" : "pct",
+          raw: String((pct || amount) ?? ""),
           onSave: async (value, mode) => {
-            const flat = flatOnly || mode === "flat";
+            const flat = mode === "flat";
             const err = await saveFileFields(isListing ? "listing" : "transaction", file.id, {
               [pctField]: flat ? "" : value,
               [amountField]: flat ? value : "",
@@ -120,9 +119,9 @@ export function OverviewTab({
                 : <InfoRow label="Sale Price" value={money(transaction.salePrice)} edit={moneyEdit("salePrice", transaction.salePrice)} />}
               {show(transaction.deposit) && <InfoRow label="Deposit" value={money(transaction.deposit)} edit={moneyEdit("deposit", transaction.deposit)} />}
               {isLease ? (
-                show(transaction.saleCommissionAmount) && (
-                  <InfoRow label="Lease Commission" value={money(transaction.saleCommissionAmount)}
-                    pencilSlot={canEdit} edit={commissionEdit("saleCommissionPct", "saleCommissionAmount", null, transaction.saleCommissionAmount, true)} />
+                show(transaction.saleCommissionPct ?? transaction.saleCommissionAmount) && (
+                  <InfoRow label="Lease Commission" value={commissionDisplay(transaction.saleCommissionPct, transaction.saleCommissionAmount)}
+                    pencilSlot={canEdit} edit={commissionEdit("saleCommissionPct", "saleCommissionAmount", transaction.saleCommissionPct, transaction.saleCommissionAmount)} />
                 )
               ) : (
                 <>

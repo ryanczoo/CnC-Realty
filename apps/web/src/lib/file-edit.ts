@@ -76,7 +76,7 @@ export function commissionChanges(
   const rows: [string, (f: CommissionRow) => string][] = kind === "listing"
     ? [["Commission", (f) => commissionDisplay(f.commissionPercent, f.commissionAmount)]]
     : [
-        [lease ? "Lease Commission" : "Selling Agent Commission", (f) => commissionDisplay(lease ? null : f.saleCommissionPct, f.saleCommissionAmount)],
+        [lease ? "Lease Commission" : "Selling Agent Commission", (f) => commissionDisplay(f.saleCommissionPct, f.saleCommissionAmount)],
         ["Listing Agent Commission", (f) => commissionDisplay(f.listingCommissionPct, f.listingCommissionAmount)],
       ];
   return rows
