@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { CHECKLIST_ITEMS_WITH_DOCS_INCLUDE } from "@/lib/transaction-helpers";
 import { trimStrings } from "@/lib/form-validation";
 import { listingDatesError } from "@/lib/listing-dates";
+import { commissionPercentError } from "@/lib/file-edit";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -37,6 +38,8 @@ export async function POST(req: Request) {
   }
   const datesError = listingDatesError(listDate, expirationDate);
   if (datesError) return NextResponse.json({ error: datesError }, { status: 400 });
+  const pctError = commissionPercentError(body);
+  if (pctError) return NextResponse.json({ error: pctError }, { status: 400 });
   const namedParties = parties.filter((p: { name?: string }) => p.name);
   if (!namedParties.some((p: { role: string }) => p.role === "SELLER")) {
     return NextResponse.json({ error: "At least one seller is required" }, { status: 400 });

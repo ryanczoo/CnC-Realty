@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { TC_FEE, calcEoSupplement, calcTransactionFee, calcNetToAgent, type TransactionFeeInput } from "@/lib/commission";
+import { TC_FEE, calcEoSupplement, calcTransactionFee, calcNetToAgent, resolveCommission, type TransactionFeeInput } from "@/lib/commission";
 
 describe("calcEoSupplement", () => {
   it("is 0 at or under the $1M threshold", () => {
@@ -191,5 +191,36 @@ describe("calcNetToAgent", () => {
 
   it("handles zero deductions and zero transaction fee", () => {
     expect(calcNetToAgent(5000, 0, 0, false)).toBe(5000);
+  });
+});
+
+describe("resolveCommission", () => {
+  const none = { salePct: null, saleAmount: null, listingPct: null, listingAmount: null };
+
+  it("prices a % off the sale price and uses it as the GCI on a purchase", () => {
+    expect(resolveCommission("PURCHASE", 1_000_000, { ...none, salePct: 2.5 }))
+      .toEqual({ saleCommissionAmount: 25000, listingCommissionAmount: null, commissionGCI: 25000 });
+  });
+
+  it("lets a % win over a stale $ amount (e.g. after the price changed)", () => {
+    expect(resolveCommission("PURCHASE", 800_000, { ...none, salePct: 3, saleAmount: 30000 }).saleCommissionAmount).toBe(24000);
+  });
+
+  it("keeps a flat $ amount as entered", () => {
+    expect(resolveCommission("LISTING", 1_000_000, { ...none, listingAmount: 15000 }))
+      .toEqual({ saleCommissionAmount: null, listingCommissionAmount: 15000, commissionGCI: 15000 });
+  });
+
+  it("sums both sides on Dual", () => {
+    expect(resolveCommission("DUAL", 1_000_000, { ...none, salePct: 2, listingAmount: 10000 }).commissionGCI).toBe(30000);
+  });
+
+  it("uses the lease commission $ as the GCI on a lease", () => {
+    expect(resolveCommission("LEASE_TENANT", 36000, { ...none, saleAmount: 3000 }).commissionGCI).toBe(3000);
+  });
+
+  it("leaves everything empty when nothing is entered", () => {
+    expect(resolveCommission("PURCHASE", 500_000, none))
+      .toEqual({ saleCommissionAmount: null, listingCommissionAmount: null, commissionGCI: null });
   });
 });

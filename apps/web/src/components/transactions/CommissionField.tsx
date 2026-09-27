@@ -19,7 +19,9 @@ export function CommissionField({
             {(["pct", "flat"] as const).map((m) => (
               <button
                 key={m}
-                onClick={() => onModeChange(m)}
+                // A number typed as % means nothing as $ (and vice versa), so
+                // switching clears it rather than carrying it across.
+                onClick={() => { if (m !== mode) { onModeChange(m); onChange(""); } }}
                 className={`px-3 py-1 text-xs font-medium transition-colors ${mode === m ? "bg-[#1B1B1B] text-white" : "bg-[#F2F0EF] text-[#1B1B1B]/50 hover:text-[#1B1B1B]"}`}
               >
                 {m === "pct" ? "%" : "$"}

@@ -6,7 +6,7 @@ import { Plus } from "lucide-react";
 import { TrashIcon } from "@/components/ui/TrashIcon";
 import { SPRING_HOVER } from "@/lib/motion";
 import { TC_FEE, calcNetToAgent, calcTransactionFee } from "@/lib/commission";
-import { escrowTypeToRole, sidePartiesReady, type EscrowContactType } from "@/lib/transaction-helpers";
+import { escrowTypeToRole, sidePartiesReady, commissionReady, type EscrowContactType } from "@/lib/transaction-helpers";
 import { transactionDetailsReady } from "@/lib/transaction-wizard";
 import { DateField } from "@/components/ui/DateField";
 import { FormField as Field } from "@/components/ui/FormField";
@@ -95,6 +95,7 @@ export default function NewTransactionPage() {
 
   const isLease = isLeaseSide(form.transactionSide);
   const underContract = form.stage !== "PRE_CONTRACT";
+  const req = underContract ? " *" : "";
   const offerLabels = offerDateLabels(form.transactionSide, form.propertyCategory);
   const isReferral = form.transactionSide === "REFERRAL";
 
@@ -196,8 +197,13 @@ export default function NewTransactionPage() {
     if (step === 1) return isReferral ? (!!form.referredToAgentName && !emailError(form.referredToContactEmail)) : (!!form.propertyAddress && !!form.city && !!form.zip && !!form.propertyType);
     if (step === 2) return transactionDetailsReady(form, form.stage, isLease);
     if (step === 3) return partiesReady && partyEmailsValid;
+    // Commission is required Under Contract (optional Pre-Contract) — the same
+    // commissionReady rule the server and the Pending check use.
+    if (step === 4) return !underContract || commissionReady(form.transactionSide, {
+      hasSale: parseFloat(form.saleCommission) > 0, hasListing: parseFloat(form.listingCommission) > 0,
+    });
     return true;
-  }, [step, isReferral, isLease, form, partiesReady, partyEmailsValid]);
+  }, [step, isReferral, isLease, form, underContract, partiesReady, partyEmailsValid]);
 
   function goNext() {
     setStep((s) => {
@@ -629,12 +635,12 @@ export default function NewTransactionPage() {
           </div>
         )}
 
-        {/* ── Step 4: Commission ── */}
+        {/* ── Step 4: Commission (asterisks only when Under Contract) ── */}
         {step === 4 && (
           <div className="space-y-5">
             {isLease ? (
               <CommissionField
-                label="Lease Commission"
+                label={`Lease Commission${req}`}
                 value={form.saleCommission}
                 onChange={(v) => set("saleCommission", v)}
                 mode={commissionMode.sale}
@@ -645,7 +651,7 @@ export default function NewTransactionPage() {
               <>
                 {form.transactionSide !== "LISTING" && (
                   <CommissionField
-                    label="Selling Agent Commission"
+                    label={`Selling Agent Commission${req}`}
                     value={form.saleCommission}
                     onChange={(v) => set("saleCommission", v)}
                     mode={commissionMode.sale}
@@ -654,7 +660,7 @@ export default function NewTransactionPage() {
                 )}
                 {form.transactionSide !== "PURCHASE" && (
                   <CommissionField
-                    label="Listing Agent Commission"
+                    label={`Listing Agent Commission${req}`}
                     value={form.listingCommission}
                     onChange={(v) => set("listingCommission", v)}
                     mode={commissionMode.listing}

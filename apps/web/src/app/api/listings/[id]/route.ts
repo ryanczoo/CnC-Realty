@@ -7,7 +7,7 @@ import { changeFileStatus } from "@/lib/file-status";
 import { FILE_DETAIL_INCLUDE } from "@/lib/transaction-helpers";
 import { trimStrings } from "@/lib/form-validation";
 import { listingDatesError } from "@/lib/listing-dates";
-import { requiredFieldError } from "@/lib/file-edit";
+import { requiredFieldError, commissionPercentError } from "@/lib/file-edit";
 import { followDates } from "@/lib/auto-status";
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
@@ -48,7 +48,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   const body = trimStrings(await req.json());
   const role = isAdmin ? "ADMIN" : "AGENT";
-  const required = requiredFieldError("listing", body, listing);
+  const required = requiredFieldError("listing", body, listing) ?? commissionPercentError(body);
   if (required) return NextResponse.json({ error: required }, { status: 400 });
 
   // Only validated when this edit touches a date, so older listings created

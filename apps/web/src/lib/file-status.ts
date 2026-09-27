@@ -57,7 +57,7 @@ export async function changeFileStatus({
   // Pending means the deal is fully described (isReadyForPending); only the broker
   // can override that.
   if (!isListing && toStatus === "PENDING" && actor.role !== "ADMIN" && !isReadyForPending(file, file.parties ?? [])) {
-    return { ok: false, status: 400, error: "Add the price, dates and parties this transaction needs before it can be Pending" };
+    return { ok: false, status: 400, error: "Add the price, dates, parties and commission this transaction needs before it can be Pending" };
   }
   // A listing whose expiration has already passed can't go live: the shared date
   // rule would expire it straight away. The agent extends the date first; the

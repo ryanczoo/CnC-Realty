@@ -327,8 +327,27 @@ describe("POST /api/transactions", () => {
       transactionSide: "LISTING", stage: "UNDER_CONTRACT",
       propertyAddress: "1 Test St", city: "Test", zip: "00000", propertyType: "Condo",
       salePrice: "900000", acceptanceDate: "2026-09-20", closeOfEscrow: "2026-10-20",
+      listingCommissionPct: "2.5",
       parties: [{ role: "SELLER", name: "Sam Seller" }],
     };
+
+    it("refuses an Under Contract file without its side's commission", async () => {
+      const res = await POST(makeRequest({ ...complete, listingCommissionPct: "" }));
+      expect(res.status).toBe(400);
+      expect((await res.json()).error).toBe("Commission is required for an Under Contract file");
+      expect(prisma.transactionFile.create).not.toHaveBeenCalled();
+    });
+
+    it("lets a Pre-Contract file skip commission", async () => {
+      const res = await POST(makeRequest({ ...complete, stage: "PRE_CONTRACT", listingCommissionPct: "" }));
+      expect(res.status).toBe(201);
+    });
+
+    it("rejects a commission % over 100", async () => {
+      const res = await POST(makeRequest({ ...complete, listingCommissionPct: "150" }));
+      expect(res.status).toBe(400);
+      expect((await res.json()).error).toBe("Commission can't be more than 100%");
+    });
     const created = () => (vi.mocked(prisma.transactionFile.create).mock.calls[0][0].data as any).status;
     beforeEach(() => vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "t-new" } as any));
 

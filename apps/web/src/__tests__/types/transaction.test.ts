@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { listingTypeLabel, transactionSideLabel, isLeaseSide, listingPriceLabel, transactionListPriceLabel, offerDateLabels, listingCommissionDisplay } from "@/types/transaction";
+import { listingTypeLabel, transactionSideLabel, isLeaseSide, listingPriceLabel, transactionListPriceLabel, offerDateLabels, commissionDisplay } from "@/types/transaction";
 
 describe("listingTypeLabel", () => {
   it.each([
@@ -85,10 +85,10 @@ describe("offerDateLabels", () => {
   });
 });
 
-describe("listingCommissionDisplay", () => {
+describe("commissionDisplay", () => {
   it("shows a percentage, a flat amount, or a dash", () => {
-    expect(listingCommissionDisplay(2.5, null)).toBe("2.5%");
-    expect(listingCommissionDisplay(null, 15000)).toBe("$15,000");
-    expect(listingCommissionDisplay(null, null)).toBe("—");
+    expect(commissionDisplay(2.5, null)).toBe("2.5%");
+    expect(commissionDisplay(null, 15000)).toBe("$15,000");
+    expect(commissionDisplay(null, null)).toBe("—");
   });
 });

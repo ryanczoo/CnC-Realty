@@ -16,6 +16,7 @@ export interface InfoRowEdit {
   options?: readonly string[];
   // kind "commission": the %/$ toggle's starting side; onSave gets the side chosen.
   mode?: "pct" | "flat";
+  hideModeToggle?: boolean;
   onSave: (value: string, mode?: "pct" | "flat") => Promise<string | null>;
 }
 
@@ -60,7 +61,7 @@ export function InfoRow({ label, value, edit, pencilSlot = false }: { label: str
           <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
             <div className="w-full max-w-xs">
               {edit.kind === "commission" ? (
-                <CommissionField label="" value={draft} onChange={setDraft} mode={mode} onModeChange={setMode} />
+                <CommissionField label="" value={draft} onChange={setDraft} mode={mode} onModeChange={setMode} hideModeToggle={edit.hideModeToggle} />
               ) : edit.kind === "date" ? (
                 <DateField value={draft} onChange={setDraft} />
               ) : edit.kind === "select" ? (

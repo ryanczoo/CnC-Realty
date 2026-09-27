@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calcReferralFee, canTransitionTransaction, pickDisplayPrice, pickDisplayDate, listingStatusOptions, canDeleteListing, convertBlockedReason, sidePartiesReady, isReadyForPending, transactionStatusOptions, escrowTypeToRole, latestDocument, allowedNextStatuses, canTransitionListing } from "@/lib/transaction-helpers";
+import { calcReferralFee, canTransitionTransaction, pickDisplayPrice, pickDisplayDate, listingStatusOptions, canDeleteListing, convertBlockedReason, sidePartiesReady, commissionReady, isReadyForPending, transactionStatusOptions, escrowTypeToRole, latestDocument, allowedNextStatuses, canTransitionListing } from "@/lib/transaction-helpers";
 
 describe("calcReferralFee", () => {
   it("takes 10% when 10% of the amount exceeds $200", () => {
@@ -268,11 +268,30 @@ describe("sidePartiesReady (the wizard's rule: each side needs its own client)",
   });
 });
 
+describe("commissionReady (each side needs its own commission)", () => {
+  it.each([
+    ["PURCHASE", true, false, true], ["PURCHASE", false, true, false],
+    ["LISTING", false, true, true], ["LISTING", true, false, false],
+    ["DUAL", true, false, false], ["DUAL", true, true, true],
+    ["LEASE_TENANT", true, false, true], ["LEASE_LANDLORD", true, false, true],
+    ["LEASE_DUAL", true, false, true], ["LEASE_DUAL", false, false, false],
+    ["REFERRAL", false, false, true],
+  ] as const)("%s with sale=%s listing=%s -> %s", (side, hasSale, hasListing, expected) => {
+    expect(commissionReady(side, { hasSale, hasListing })).toBe(expected);
+  });
+});
+
 describe("isReadyForPending", () => {
   const seller = { role: "SELLER", name: "Sam Seller" };
   const buyer = { role: "BUYER", name: "Bea Buyer" };
-  const sale = { transactionSide: "LISTING", salePrice: 900000, acceptanceDate: "2026-09-20", closeOfEscrow: "2026-10-20" };
-  const lease = { transactionSide: "LEASE_TENANT", leasePrice: 36000, leaseSignedDate: "2026-09-20", leaseStartDate: "2026-10-01" };
+  const sale = { transactionSide: "LISTING", salePrice: 900000, acceptanceDate: "2026-09-20", closeOfEscrow: "2026-10-20", listingCommissionPct: 2.5 };
+  const lease = { transactionSide: "LEASE_TENANT", leasePrice: 36000, leaseSignedDate: "2026-09-20", leaseStartDate: "2026-10-01", saleCommissionAmount: 3000 };
+
+  it("is not ready without the side's commission (% or $ both count)", () => {
+    expect(isReadyForPending({ ...sale, listingCommissionPct: null }, [seller])).toBe(false);
+    expect(isReadyForPending({ ...sale, listingCommissionPct: null, listingCommissionAmount: 20000 }, [seller])).toBe(true);
+    expect(isReadyForPending({ ...lease, saleCommissionAmount: null }, [buyer])).toBe(false);
+  });
 
   it("is ready when a sale has price, acceptance date, close of escrow and its client", () => {
     expect(isReadyForPending(sale, [seller])).toBe(true);

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { transactionEditData, requiredFieldError } from "@/lib/file-edit";
+import { transactionEditData, requiredFieldError, commissionPercentError, transactionCommissionEdit } from "@/lib/file-edit";
 
 describe("transactionEditData", () => {
   it("parses each editable field type and ignores anything not editable", () => {
@@ -61,5 +61,68 @@ describe("requiredFieldError uses lease wording", () => {
   it("calls a lease listing's price Monthly Rent", () => {
     expect(requiredFieldError("listing", { listPrice: "" }, { listingType: "RESIDENTIAL_LEASE" })).toBe("Monthly Rent can't be blank");
     expect(requiredFieldError("listing", { listPrice: "" }, { listingType: "RESIDENTIAL_SALE" })).toBe("List Price can't be blank");
+  });
+});
+
+describe("commissionPercentError", () => {
+  it.each(["commissionPercent", "saleCommissionPct", "listingCommissionPct"])("rejects %s over 100", (field) => {
+    expect(commissionPercentError({ [field]: "15000" })).toBe("Commission can't be more than 100%");
+    expect(commissionPercentError({ [field]: 100.5 })).toBe("Commission can't be more than 100%");
+  });
+
+  it("allows 100 or less, and blanks", () => {
+    expect(commissionPercentError({ saleCommissionPct: "100", listingCommissionPct: 2.5, commissionPercent: "" })).toBeNull();
+    expect(commissionPercentError({})).toBeNull();
+  });
+});
+
+describe("transactionCommissionEdit", () => {
+  const tx = {
+    transactionSide: "PURCHASE", salePrice: 500000, leasePrice: null,
+    saleCommissionPct: 2, saleCommissionAmount: 10000, listingCommissionPct: null, listingCommissionAmount: null,
+  };
+
+  it("changes nothing when neither commission nor price is in the edit", () => {
+    expect(transactionCommissionEdit({ city: "Irvine" }, tx)).toEqual({});
+  });
+
+  it("saves a new % and recomputes the $ amount and GCI", () => {
+    expect(transactionCommissionEdit({ saleCommissionPct: "3", saleCommissionAmount: "" }, tx)).toEqual({
+      saleCommissionPct: 3, saleCommissionAmount: 15000, listingCommissionPct: null, listingCommissionAmount: null, commissionGCI: 15000,
+    });
+  });
+
+  it("switching to $ clears the % and keeps the amount", () => {
+    expect(transactionCommissionEdit({ saleCommissionPct: "", saleCommissionAmount: "12000" }, tx))
+      .toMatchObject({ saleCommissionPct: null, saleCommissionAmount: 12000, commissionGCI: 12000 });
+  });
+
+  it("re-prices a % commission when the sale price changes", () => {
+    expect(transactionCommissionEdit({ salePrice: "600000" }, tx)).toMatchObject({ saleCommissionAmount: 12000, commissionGCI: 12000 });
+  });
+});
+
+describe("requiredFieldError keeps commission once past Pre-Contract", () => {
+  const pending = { transactionSide: "PURCHASE", status: "PENDING", saleCommissionPct: 2.5 };
+
+  it("won't clear the side's commission", () => {
+    expect(requiredFieldError("transaction", { saleCommissionPct: "", saleCommissionAmount: "" }, pending))
+      .toBe("Selling Agent Commission can't be blank");
+    expect(requiredFieldError("transaction", { listingCommissionPct: "", listingCommissionAmount: "" }, { transactionSide: "LISTING", status: "INCOMPLETE" }))
+      .toBe("Listing Agent Commission can't be blank");
+    expect(requiredFieldError("transaction", { saleCommissionAmount: "" }, { transactionSide: "LEASE_TENANT", status: "PENDING" }))
+      .toBe("Lease Commission can't be blank");
+  });
+
+  it("allows switching % to $ (one of the two stays filled)", () => {
+    expect(requiredFieldError("transaction", { saleCommissionPct: "", saleCommissionAmount: "5000" }, pending)).toBeNull();
+  });
+
+  it("lets a Pre-Contract file leave commission empty", () => {
+    expect(requiredFieldError("transaction", { saleCommissionPct: "", saleCommissionAmount: "" }, { ...pending, status: "PRE_CONTRACT" })).toBeNull();
+  });
+
+  it("doesn't touch edits that don't include commission", () => {
+    expect(requiredFieldError("transaction", { city: "Irvine" }, { transactionSide: "PURCHASE", status: "PENDING" })).toBeNull();
   });
 });

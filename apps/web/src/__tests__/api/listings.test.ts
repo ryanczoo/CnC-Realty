@@ -130,3 +130,19 @@ describe("POST /api/listings — commission as % or $", () => {
     expect(data.commissionPercent).toBe(2.5);
   });
 });
+
+describe("listing commission % can't exceed 100", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u1", agentId: "a1" } } as any);
+    vi.mocked(prisma.checklistTemplate.findFirst).mockResolvedValue(null);
+    vi.mocked(prisma.listingFile.create).mockResolvedValue({ id: "lf1" } as any);
+  });
+
+  it("rejects a create with a commission % over 100", async () => {
+    const res = await POST(postJson({ ...VALID_LISTING, commissionPercent: "15000" }));
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("Commission can't be more than 100%");
+    expect(prisma.listingFile.create).not.toHaveBeenCalled();
+  });
+});

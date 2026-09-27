@@ -48,8 +48,9 @@ export function isLeaseSide(side: string | null | undefined): boolean {
 // a field the same way. A lease listing's price is the asking monthly rent; a
 // lease transaction keeps Total Lease Amount and shows its list-price field
 // (copied from the listing on Convert) as Monthly Rent.
-// A listing's commission, entered as a percentage or a flat $ amount.
-export function listingCommissionDisplay(percent: number | null | undefined, amount: number | null | undefined): string {
+// A commission entered as a percentage or a flat $ amount (listings and each
+// transaction side); a % shows first when both are stored.
+export function commissionDisplay(percent: number | null | undefined, amount: number | null | undefined): string {
   if (percent) return `${percent}%`;
   if (amount) return `$${Number(amount).toLocaleString()}`;
   return "—";

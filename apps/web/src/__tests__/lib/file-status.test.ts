@@ -272,12 +272,12 @@ describe("changeFileStatus: keeps the originating listing in step", () => {
 });
 
 describe("changeFileStatus: Pending needs a complete transaction", () => {
-  const COMPLETE = { transactionSide: "LISTING", salePrice: 900000, acceptanceDate: new Date("2026-09-20"), closeOfEscrow: new Date("2026-10-20"), parties: [{ role: "SELLER", name: "Sam" }] };
+  const COMPLETE = { transactionSide: "LISTING", salePrice: 900000, acceptanceDate: new Date("2026-09-20"), closeOfEscrow: new Date("2026-10-20"), listingCommissionPct: 2.5, parties: [{ role: "SELLER", name: "Sam" }] };
 
   it("refuses an agent moving an incomplete transaction to Pending", async () => {
     vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx({ status: "INCOMPLETE", ...COMPLETE, closeOfEscrow: null }) as any);
     const res = await changeFileStatus({ kind: "transaction", fileId: "f1", toStatus: "PENDING", actor: AGENT });
-    expect(res).toEqual({ ok: false, status: 400, error: "Add the price, dates and parties this transaction needs before it can be Pending" });
+    expect(res).toEqual({ ok: false, status: 400, error: "Add the price, dates, parties and commission this transaction needs before it can be Pending" });
     expect(prisma.transactionFile.update).not.toHaveBeenCalled();
   });
 
@@ -296,7 +296,7 @@ describe("changeFileStatus: Pending needs a complete transaction", () => {
 });
 
 describe("maybeAutoPending", () => {
-  const COMPLETE = { transactionSide: "LISTING", salePrice: 900000, acceptanceDate: new Date("2026-09-20"), closeOfEscrow: new Date("2026-10-20"), parties: [{ role: "SELLER", name: "Sam" }] };
+  const COMPLETE = { transactionSide: "LISTING", salePrice: 900000, acceptanceDate: new Date("2026-09-20"), closeOfEscrow: new Date("2026-10-20"), listingCommissionPct: 2.5, parties: [{ role: "SELLER", name: "Sam" }] };
 
   it.each(["INCOMPLETE", "PRE_CONTRACT"])("moves a complete %s transaction to Pending, logged as automatic", async (status) => {
     vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx({ status, ...COMPLETE }) as any);

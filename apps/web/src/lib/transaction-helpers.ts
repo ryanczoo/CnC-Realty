@@ -190,9 +190,33 @@ export function sidePartiesReady(side: string, has: { hasBuyer: boolean; hasSell
   }
 }
 
+// Which commission a side needs — the selling (buyer's) agent's on Purchase, the
+// listing agent's on Listing, both on Dual. Lease sides keep their one Lease
+// Commission in the sale fields. Shared by the New Transaction wizard (required
+// when Under Contract), isReadyForPending and the Overview edit rules.
+export function commissionReady(side: string, has: { hasSale: boolean; hasListing: boolean }): boolean {
+  if (side === "REFERRAL") return true;
+  if (isLeaseSide(side) || side === "PURCHASE") return has.hasSale;
+  if (side === "LISTING") return has.hasListing;
+  if (side === "DUAL") return has.hasSale && has.hasListing;
+  return true;
+}
+
+// A side's commission counts when either its % or its $ is filled in.
+export function fileCommissionHas(tx: {
+  saleCommissionPct?: number | null; saleCommissionAmount?: number | null;
+  listingCommissionPct?: number | null; listingCommissionAmount?: number | null;
+}): { hasSale: boolean; hasListing: boolean } {
+  return {
+    hasSale: !!tx.saleCommissionPct || !!tx.saleCommissionAmount,
+    hasListing: !!tx.listingCommissionPct || !!tx.listingCommissionAmount,
+  };
+}
+
 // A transaction is Pending once its deal is fully described: a sale needs its
 // price, Acceptance Date and Close of Escrow; a lease its total amount, Lease
-// Signed Date and Lease Start Date; both need the side's client. Referrals never.
+// Signed Date and Lease Start Date; both need the side's client and commission.
+// Referrals never.
 export function isReadyForPending(
   tx: {
     transactionSide: string;
@@ -202,6 +226,10 @@ export function isReadyForPending(
     closeOfEscrow?: unknown;
     leaseSignedDate?: unknown;
     leaseStartDate?: unknown;
+    saleCommissionPct?: number | null;
+    saleCommissionAmount?: number | null;
+    listingCommissionPct?: number | null;
+    listingCommissionAmount?: number | null;
   },
   parties: { role: string; name: string }[],
 ): boolean {
@@ -210,7 +238,9 @@ export function isReadyForPending(
   const details = isLeaseSide(tx.transactionSide)
     ? !!tx.leasePrice && !!tx.leaseSignedDate && !!tx.leaseStartDate
     : !!tx.salePrice && !!tx.acceptanceDate && !!tx.closeOfEscrow;
-  return details && sidePartiesReady(tx.transactionSide, { hasBuyer: named("BUYER"), hasSeller: named("SELLER") });
+  return details
+    && sidePartiesReady(tx.transactionSide, { hasBuyer: named("BUYER"), hasSeller: named("SELLER") })
+    && commissionReady(tx.transactionSide, fileCommissionHas(tx));
 }
 
 // Mirrors DELETE /api/listings/[id]: only an empty, never-converted listing.

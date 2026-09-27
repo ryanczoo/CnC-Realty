@@ -10,7 +10,7 @@ import { Spinner } from "@/components/ui/Spinner";
 import { canAdvanceListingStep } from "@/lib/listing-wizard";
 import { PartySection, emptyParty, type Party } from "@/components/transactions/PartySection";
 import { CommissionField } from "@/components/transactions/CommissionField";
-import { LISTING_TYPES, listingTypeLabel, listingPriceLabel, listingCommissionDisplay } from "@/types/transaction";
+import { LISTING_TYPES, listingTypeLabel, listingPriceLabel, commissionDisplay } from "@/types/transaction";
 import { listingDatesError } from "@/lib/listing-dates";
 import { formatDateMDY } from "@/lib/utils";
 
@@ -162,7 +162,7 @@ export default function NewListingPage() {
             {sellers.filter((s) => s.name).map((s, i) => (
               <ReviewRow key={i} label={`${isLease ? "Landlord" : "Seller"} ${sellers.length > 1 ? i + 1 : ""}`} value={s.name} />
             ))}
-            <ReviewRow label="Commission" value={commissionMode === "pct" ? listingCommissionDisplay(Number(form.commission), null) : listingCommissionDisplay(null, Number(form.commission))} />
+            <ReviewRow label="Commission" value={commissionMode === "pct" ? commissionDisplay(Number(form.commission), null) : commissionDisplay(null, Number(form.commission))} />
           </div>
         )}
       </div>

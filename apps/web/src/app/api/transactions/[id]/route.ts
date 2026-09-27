@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { checkOwnership, assertFileEditable } from "@/lib/api-auth";
 import { changeFileStatus, maybeAutoPending } from "@/lib/file-status";
 import { followDates } from "@/lib/auto-status";
-import { transactionEditData, requiredFieldError } from "@/lib/file-edit";
+import { transactionEditData, requiredFieldError, commissionPercentError, transactionCommissionEdit } from "@/lib/file-edit";
 import { sendCancellationRequested } from "@/lib/email/transaction-emails";
 import { sendSafely } from "@/lib/email/send-safely";
 import { calcReferralFee, FILE_DETAIL_INCLUDE } from "@/lib/transaction-helpers";
@@ -53,11 +53,12 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   // Detail fields follow the shared edit rules (lib/file-edit): parsed, blanks ->
   // null, required ones can't be cleared.
-  const required = requiredFieldError("transaction", body, tx);
+  const required = requiredFieldError("transaction", body, tx) ?? commissionPercentError(body);
   if (required) return NextResponse.json({ error: required }, { status: 400 });
 
   const fieldData = {
     ...transactionEditData(body),
+    ...transactionCommissionEdit(body, tx),
     ...(body.commissionGCI !== undefined && { commissionGCI: body.commissionGCI ? parseFloat(body.commissionGCI) : null }),
     ...(body.commissionSplit !== undefined && { commissionSplit: body.commissionSplit ? parseFloat(body.commissionSplit) : null }),
     ...(body.commissionNotes !== undefined && { commissionNotes: body.commissionNotes || null }),

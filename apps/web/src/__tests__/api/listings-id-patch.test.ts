@@ -176,3 +176,19 @@ describe("PATCH /api/listings/[id] — commission as % or $", () => {
     expect(data.commissionPercent).toBeNull();
   });
 });
+
+describe("PATCH /api/listings/[id] — commission % can't exceed 100", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getServerSession).mockResolvedValue(AGENT as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "lf1", agentId: "a1", status: "ACTIVE" } as any);
+    vi.mocked(prisma.listingFile.update).mockResolvedValue({ id: "lf1" } as any);
+  });
+
+  it("rejects a commission % over 100", async () => {
+    const res = await patch({ commissionPercent: "15000", commissionAmount: "" });
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("Commission can't be more than 100%");
+    expect(prisma.listingFile.update).not.toHaveBeenCalled();
+  });
+});

@@ -82,3 +82,30 @@ export function calcNetToAgent(
 ): number {
   return grossCommission - transactionFee - otherDeductions - (tcFeeEnabled ? TC_FEE : 0);
 }
+
+export type CommissionInputs = {
+  salePct: number | null;
+  saleAmount: number | null;
+  listingPct: number | null;
+  listingAmount: number | null;
+};
+
+// Each side's commission in dollars plus the combined gross (GCI), the way the
+// Commission tab reads them. A % is priced off the price (so it follows a price
+// change); a flat $ is kept as entered. An agent's gross is their own side's
+// commission — both sides only on Dual (lease sides use the sale fields).
+export function resolveCommission(
+  side: string,
+  price: number,
+  c: CommissionInputs,
+): { saleCommissionAmount: number | null; listingCommissionAmount: number | null; commissionGCI: number | null } {
+  const dollars = (pct: number | null, amount: number | null) =>
+    pct ? (price * pct) / 100 : amount || null;
+  const sale = dollars(c.salePct, c.saleAmount);
+  const listing = dollars(c.listingPct, c.listingAmount);
+  const gci =
+    side === "PURCHASE" ? sale :
+    side === "LISTING" ? listing :
+    (sale ?? 0) + (listing ?? 0) || null;
+  return { saleCommissionAmount: sale, listingCommissionAmount: listing, commissionGCI: gci };
+}

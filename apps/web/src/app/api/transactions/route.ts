@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { CHECKLIST_ITEMS_WITH_DOCS_INCLUDE, isReadyForPending } from "@/lib/transaction-helpers";
+import { CHECKLIST_ITEMS_WITH_DOCS_INCLUDE, isReadyForPending, commissionReady, fileCommissionHas } from "@/lib/transaction-helpers";
+import { commissionPercentError } from "@/lib/file-edit";
 import { trimStrings } from "@/lib/form-validation";
 import { isLeaseSide } from "@/types/transaction";
 
@@ -62,11 +63,25 @@ export async function POST(req: Request) {
   if (transactionSide === "REFERRAL" && !referredToAgentName) {
     return NextResponse.json({ error: "referredToAgentName is required" }, { status: 400 });
   }
+  const pctError = commissionPercentError(body);
+  if (pctError) return NextResponse.json({ error: pctError }, { status: 400 });
+
+  // The wizard's rule: an Under Contract file needs its side's commission
+  // (Pre-Contract can add it later, before it can go Pending).
+  const commission = {
+    saleCommissionPct: saleCommissionPct ? parseFloat(saleCommissionPct) : null,
+    saleCommissionAmount: saleCommissionAmount ? parseFloat(saleCommissionAmount) : null,
+    listingCommissionPct: listingCommissionPct ? parseFloat(listingCommissionPct) : null,
+    listingCommissionAmount: listingCommissionAmount ? parseFloat(listingCommissionAmount) : null,
+  };
+  if (stage === "UNDER_CONTRACT" && !commissionReady(transactionSide, fileCommissionHas(commission))) {
+    return NextResponse.json({ error: "Commission is required for an Under Contract file" }, { status: 400 });
+  }
 
   // An Under Contract file whose deal is already fully described starts Pending
   // (the same isReadyForPending rule later edits use); Pre-Contract stays put.
   const readyForPending = isReadyForPending(
-    { transactionSide, salePrice: salePrice ? parseFloat(salePrice) : null, leasePrice: leasePrice ? parseFloat(leasePrice) : null, acceptanceDate, closeOfEscrow, leaseSignedDate, leaseStartDate },
+    { transactionSide, salePrice: salePrice ? parseFloat(salePrice) : null, leasePrice: leasePrice ? parseFloat(leasePrice) : null, acceptanceDate, closeOfEscrow, leaseSignedDate, leaseStartDate, ...commission },
     (parties as { role: string; name?: string }[]).map((p) => ({ role: p.role, name: p.name ?? "" })),
   );
   const initialStatus = transactionSide === "REFERRAL"

@@ -414,3 +414,35 @@ describe("PATCH /api/transactions/[id] — cancellation requests", () => {
     }));
   });
 });
+
+describe("PATCH /api/transactions/[id] — commission edits", () => {
+  const AGENT = { user: { id: "u1", role: "AGENT", agentId: "a1" } };
+  const patch = (body: unknown) => PATCH(new Request("http://localhost", { method: "PATCH", body: JSON.stringify(body) }), { params: { id: "tf1" } });
+  const PURCHASE = { id: "tf1", agentId: "a1", status: "PRE_CONTRACT", transactionSide: "PURCHASE", salePrice: 500000 };
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getServerSession).mockResolvedValue(AGENT as any);
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(PURCHASE as any);
+    vi.mocked(prisma.transactionFile.update).mockResolvedValue({ id: "tf1" } as any);
+  });
+
+  it("saves a commission % and recomputes the $ amount and GCI the Commission tab reads", async () => {
+    expect((await patch({ saleCommissionPct: "3", saleCommissionAmount: "" })).status).toBe(200);
+    const data = vi.mocked(prisma.transactionFile.update).mock.calls[0][0].data as any;
+    expect(data).toMatchObject({ saleCommissionPct: 3, saleCommissionAmount: 15000, commissionGCI: 15000 });
+  });
+
+  it("rejects a commission % over 100", async () => {
+    const res = await patch({ saleCommissionPct: "15000", saleCommissionAmount: "" });
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("Commission can't be more than 100%");
+    expect(prisma.transactionFile.update).not.toHaveBeenCalled();
+  });
+
+  it("won't clear the commission once past Pre-Contract", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({ ...PURCHASE, status: "PENDING", saleCommissionPct: 2.5 } as any);
+    const res = await patch({ saleCommissionPct: "", saleCommissionAmount: "" });
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("Selling Agent Commission can't be blank");
+  });
+});

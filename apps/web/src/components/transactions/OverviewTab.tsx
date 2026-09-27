@@ -4,7 +4,7 @@ import { saveFileField, saveFileFields } from "@/lib/file-actions";
 import { digitsOnly, stripDigits } from "@/lib/form-validation";
 import {
   listingTypeLabel, transactionSideLabel, isLeaseSide, FILE_PROPERTY_TYPES,
-  listingPriceLabel, transactionListPriceLabel, offerDateLabels, listingCommissionDisplay,
+  listingPriceLabel, transactionListPriceLabel, offerDateLabels, commissionDisplay,
   type ListingFileDetail, type TransactionFileDetail,
 } from "@/types/transaction";
 
@@ -43,6 +43,32 @@ export function OverviewTab({
           },
         }
       : undefined;
+  // A commission pencil: the shared %/$ field; saving writes the chosen column and
+  // clears the other (% and $ are separate columns). Lease commission is $ only.
+  const commissionEdit = (
+    pctField: string, amountField: string,
+    pct: number | null | undefined, amount: number | null | undefined, flatOnly = false,
+  ): InfoRowEdit | undefined =>
+    canEdit
+      ? {
+          kind: "commission",
+          hideModeToggle: flatOnly,
+          mode: flatOnly || (!pct && amount) ? "flat" : "pct",
+          raw: String((flatOnly || !pct ? amount : pct) ?? ""),
+          onSave: async (value, mode) => {
+            const flat = flatOnly || mode === "flat";
+            const err = await saveFileFields(isListing ? "listing" : "transaction", file.id, {
+              [pctField]: flat ? "" : value,
+              [amountField]: flat ? value : "",
+            });
+            if (!err) onSaved?.();
+            return err;
+          },
+        }
+      : undefined;
+  // Which commission rows a sale side shows — the wizard's Commission step.
+  const showsSale = transaction?.transactionSide !== "LISTING";
+  const showsListing = transaction?.transactionSide !== "PURCHASE";
   const dateEdit = (field: string, iso: string | null | undefined) => edit(field, iso ? iso.slice(0, 10) : "", { kind: "date" });
   const moneyEdit = (field: string, n: number | null | undefined) => edit(field, n ?? "", { kind: "currency" });
   const money = (n: number | null | undefined) => (n ? `$${Number(n).toLocaleString()}` : "—");
@@ -71,20 +97,8 @@ export function OverviewTab({
               {show(listing.commissionPercent ?? listing.commissionAmount) && (
                 <InfoRow
                   label="Commission"
-                  value={listingCommissionDisplay(listing.commissionPercent, listing.commissionAmount)}
-                  edit={canEdit ? {
-                    kind: "commission",
-                    mode: listing.commissionAmount ? "flat" : "pct",
-                    raw: String(listing.commissionAmount ?? listing.commissionPercent ?? ""),
-                    // % and $ are two columns — save the chosen one and clear the other.
-                    onSave: async (value, mode) => {
-                      const err = await saveFileFields("listing", file.id, mode === "flat"
-                        ? { commissionAmount: value, commissionPercent: "" }
-                        : { commissionPercent: value, commissionAmount: "" });
-                      if (!err) onSaved?.();
-                      return err;
-                    },
-                  } : undefined}
+                  value={commissionDisplay(listing.commissionPercent, listing.commissionAmount)}
+                  edit={commissionEdit("commissionPercent", "commissionAmount", listing.commissionPercent, listing.commissionAmount)}
                 />
               )}
             </>
@@ -102,6 +116,23 @@ export function OverviewTab({
                 ? <InfoRow label="Total Lease Amount" value={money(transaction.leasePrice)} edit={moneyEdit("leasePrice", transaction.leasePrice)} />
                 : <InfoRow label="Sale Price" value={money(transaction.salePrice)} edit={moneyEdit("salePrice", transaction.salePrice)} />}
               {show(transaction.deposit) && <InfoRow label="Deposit" value={money(transaction.deposit)} edit={moneyEdit("deposit", transaction.deposit)} />}
+              {isLease ? (
+                show(transaction.saleCommissionAmount) && (
+                  <InfoRow label="Lease Commission" value={money(transaction.saleCommissionAmount)}
+                    edit={commissionEdit("saleCommissionPct", "saleCommissionAmount", null, transaction.saleCommissionAmount, true)} />
+                )
+              ) : (
+                <>
+                  {showsSale && show(transaction.saleCommissionPct ?? transaction.saleCommissionAmount) && (
+                    <InfoRow label="Selling Agent Commission" value={commissionDisplay(transaction.saleCommissionPct, transaction.saleCommissionAmount)}
+                      edit={commissionEdit("saleCommissionPct", "saleCommissionAmount", transaction.saleCommissionPct, transaction.saleCommissionAmount)} />
+                  )}
+                  {showsListing && show(transaction.listingCommissionPct ?? transaction.listingCommissionAmount) && (
+                    <InfoRow label="Listing Agent Commission" value={commissionDisplay(transaction.listingCommissionPct, transaction.listingCommissionAmount)}
+                      edit={commissionEdit("listingCommissionPct", "listingCommissionAmount", transaction.listingCommissionPct, transaction.listingCommissionAmount)} />
+                  )}
+                </>
+              )}
               {show(transaction.legalDescription) && <InfoRow label="Legal Description" value={transaction.legalDescription || "—"} edit={edit("legalDescription", transaction.legalDescription)} />}
               {show(transaction.propertyIncludes) && <InfoRow label="Property Includes" value={transaction.propertyIncludes || "—"} edit={edit("propertyIncludes", transaction.propertyIncludes)} />}
               {show(transaction.propertyExcludes) && <InfoRow label="Property Excludes" value={transaction.propertyExcludes || "—"} edit={edit("propertyExcludes", transaction.propertyExcludes)} />}
