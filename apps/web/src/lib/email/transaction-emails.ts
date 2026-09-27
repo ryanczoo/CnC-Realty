@@ -18,6 +18,7 @@ export async function sendSubmitForReview(opts: {
   const safeAddress = escapeHtml(address);
   const bodyHtml = buildHeadingBodyHtml({
     heading: `${opts.fileType} File Ready for Review`,
+    photoUrl: `${process.env.NEXTAUTH_URL}/submit-review-photo.jpg`,
     bodyHtml: `
       <p style="color: #4b4b4b; font-size: 15px; line-height: 1.6; text-align: center; margin: 0;">
         <strong style="color: #1B1B1B;">${safeAgentName}</strong> has submitted a

@@ -501,3 +501,18 @@ describe("broker email subjects have no [CnC] prefix", () => {
     expect(vi.mocked(sendEmail).mock.calls[0][0].subject).toBe("Cancellation Requested — 1 Main St");
   });
 });
+
+describe("sendSubmitForReview photo", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("shows the review photo between the logo and the heading, like the other photo emails", async () => {
+    await sendSubmitForReview({ fileType: "Listing", address: "12 Oak Ave", agentName: "Jane Agent", fileId: "l1" });
+    const html = vi.mocked(sendEmail).mock.calls[0][0].html!;
+    const logoIndex = html.indexOf("logo-black.png");
+    const photoIndex = html.indexOf("/submit-review-photo.jpg");
+    const headingIndex = html.indexOf("Listing File Ready for Review");
+    expect(logoIndex).toBeGreaterThan(-1);
+    expect(photoIndex).toBeGreaterThan(logoIndex);
+    expect(headingIndex).toBeGreaterThan(photoIndex);
+  });
+});
