@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatCompactCurrency, formatDateOnly, formatDateMDY, formatDate, isDateOnlyPast } from "@/lib/utils";
+import { formatMoney, formatCompactCurrency, formatDateOnly, formatDateMDY, formatDate, isDateOnlyPast } from "@/lib/utils";
 
 describe("formatCompactCurrency", () => {
   it("strips a trailing .0 for whole millions", () => {
@@ -81,5 +81,17 @@ describe("isDateOnlyPast", () => {
 
   it("is overdue the day after the due day", () => {
     expect(isDateOnlyPast(due, new Date("2026-09-21T17:00:00.000Z"))).toBe(true); // Sep 21, 10 AM Pacific
+  });
+});
+
+describe("formatMoney", () => {
+  it("puts the minus sign before the $ (-$990.00, never $-990.00)", () => {
+    expect(formatMoney(-990)).toBe("-$990.00");
+    expect(formatMoney(-1234.5)).toBe("-$1,234.50");
+  });
+
+  it("formats positives with cents and commas", () => {
+    expect(formatMoney(28610.01)).toBe("$28,610.01");
+    expect(formatMoney(0)).toBe("$0.00");
   });
 });

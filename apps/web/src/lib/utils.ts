@@ -38,6 +38,12 @@ export function isDateOnlyPast(d: Date | string, now: Date = new Date()): boolea
   return dueDay < today;
 }
 
+// Dollars with cents; a negative reads "-$990.00" (sign before the $).
+export function formatMoney(n: number): string {
+  const abs = Math.abs(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return `${n < 0 ? "-" : ""}$${abs}`;
+}
+
 export function formatCompactCurrency(n: number | null): string {
   if (n === null) return "—";
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;

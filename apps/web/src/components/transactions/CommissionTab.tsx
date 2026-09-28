@@ -1,6 +1,7 @@
 import { InfoRow } from "./InfoRow";
 import { TC_FEE, calcNetToAgent, calcTransactionFee } from "@/lib/commission";
 import { isLeaseSide, type TransactionFileDetail } from "@/types/transaction";
+import { formatMoney } from "@/lib/utils";
 
 
 // Shared Commission tab — renders identically for agent and admin viewers of
@@ -34,7 +35,7 @@ export function CommissionTab({ transaction }: { transaction: TransactionFileDet
   });
   const netToAgent = calcNetToAgent(totalGross, transactionFee.fee, deductions, transaction.tcFeeEnabled);
 
-  const fmt = (n: number) => n !== 0 ? `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—";
+  const fmt = (n: number) => n !== 0 ? formatMoney(n) : "—";
   const fmtPct = (n: number) => n !== 0 ? `${n}%` : "—";
 
   return (
@@ -85,16 +86,16 @@ export function CommissionTab({ transaction }: { transaction: TransactionFileDet
         </div>
         <div className="flex items-center justify-between border-b border-[#1B1B1B]/5 pb-3">
           <span className="text-sm text-[#1B1B1B]/50">{transactionFee.label}</span>
-          <span className="font-medium text-red-500">{transactionFee.fee > 0 ? `-${fmt(transactionFee.fee)}` : "—"}</span>
+          <span className="font-medium text-cnc-red">{transactionFee.fee > 0 ? `-${fmt(transactionFee.fee)}` : "—"}</span>
         </div>
         <div className="flex items-center justify-between border-b border-[#1B1B1B]/5 pb-3">
           <span className="text-sm text-[#1B1B1B]/50">Deductions</span>
-          <span className="font-medium text-red-500">{deductions > 0 ? `-${fmt(deductions)}` : "—"}</span>
+          <span className="font-medium text-cnc-red">{deductions > 0 ? `-${fmt(deductions)}` : "—"}</span>
         </div>
         {transaction.tcFeeEnabled && (
           <div className="flex items-center justify-between border-b border-[#1B1B1B]/5 pb-3">
             <span className="text-sm text-[#1B1B1B]/50">CnC TC Service</span>
-            <span className="font-medium text-red-500">-{fmt(TC_FEE)}</span>
+            <span className="font-medium text-cnc-red">-{fmt(TC_FEE)}</span>
           </div>
         )}
         <div className="flex items-center justify-between pt-1">

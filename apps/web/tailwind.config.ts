@@ -52,6 +52,7 @@ const config: Config = {
         "cnc-gold": "var(--cnc-gold)",
         "cnc-dark": "var(--cnc-dark)",
         "cnc-bg": "var(--cnc-bg)",
+        "cnc-red": "var(--cnc-red)",
       },
       borderRadius: {
         lg: "var(--radius)",
