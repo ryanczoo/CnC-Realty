@@ -3,7 +3,7 @@ import { RequiredMark } from "@/components/ui/RequiredMark";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
-import { formatPhoneInput, isValidEmail } from "@/lib/form-validation";
+import { formatPhoneInput, isValidEmail, emailError } from "@/lib/form-validation";
 
 const SOURCE_OPTIONS = [
   { value: "OTHER", label: "Other" },
@@ -63,6 +63,10 @@ export function NewLeadModal({ open, onClose, onSaved }: Props) {
     reset();
     onClose();
   }
+
+  // Flagged under the field while typing — the same shared rule as the
+  // transaction wizard's party emails.
+  const emailErr = emailError(form.email);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -144,7 +148,8 @@ export function NewLeadModal({ open, onClose, onSaved }: Props) {
               </div>
               <div>
                 <label className="mb-1 block text-xs text-[#1B1B1B]/50">Email<RequiredMark /></label>
-                <input required type="email" className={INPUT_CLS} value={form.email} onChange={set("email")} />
+                <input required type="email" className={emailErr ? INPUT_CLS.replace("border-[#1B1B1B]/15", "border-red-400") : INPUT_CLS} value={form.email} onChange={set("email")} />
+                {emailErr && <p className="mt-1 text-xs text-red-500">{emailErr}</p>}
               </div>
               <div>
                 <label className="mb-1 block text-xs text-[#1B1B1B]/50">Phone</label>
@@ -176,7 +181,7 @@ export function NewLeadModal({ open, onClose, onSaved }: Props) {
                 </motion.button>
                 <motion.button
                   type="submit"
-                  disabled={saving}
+                  disabled={saving || !!emailErr}
                   className="rounded-full bg-[#9E8C61] px-6 py-2 text-sm text-white disabled:opacity-50"
                   {...(!saving && { animate: PULSE_ANIMATE, transition: PULSE_TRANSITION, whileHover: { scale: 1.05, transition: SPRING_HOVER } })}
                 >
