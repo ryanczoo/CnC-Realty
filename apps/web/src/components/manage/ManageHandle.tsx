@@ -61,6 +61,7 @@ function CardRow({
           className="manage-handle-card relative overflow-hidden h-[400px] md:h-[470px] rounded-2xl md:rounded-xl grid content-end gap-5 p-8 md:p-[50px]"
         >
           <div className="absolute inset-0">
+            {/* eslint-disable-next-line @next/next/no-img-element -- next/image fill fails inside Framer Motion cards; source files are pre-sized */}
             <img
               src={card.image}
               alt={card.title}

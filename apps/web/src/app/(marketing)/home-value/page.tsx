@@ -177,6 +177,7 @@ export default function HomeValuePage() {
                 off the geocoded lat/lng */}
             <div className="aspect-[4/3] w-full shrink-0 overflow-hidden rounded-2xl bg-[#E0DDD8] md:w-3/5">
               {housePhotoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element -- remote MLS/Mapbox photo; the site serves remote photos unoptimized
                 <img src={housePhotoUrl} alt={address} className="h-full w-full object-cover" />
               ) : (
                 <div className="flex h-full items-center justify-center text-xs text-[#1B1B1B]/30">

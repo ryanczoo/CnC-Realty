@@ -31,6 +31,7 @@ function PropCard({ prop, sub }: { prop: PropertyCard; sub: string }) {
   return (
     <div className="rounded-xl border border-[#1B1B1B]/10 overflow-hidden">
       {photo ? (
+        // eslint-disable-next-line @next/next/no-img-element -- remote MLS photo; the site serves remote photos unoptimized
         <img src={photo} alt={prop.address} className="h-32 w-full object-cover" />
       ) : (
         <div className="h-32 w-full bg-[#F2F0EF]" />

@@ -184,6 +184,7 @@ function ServiceCard({
               className="absolute bottom-4 right-4 flex h-9 w-9 items-center justify-center rounded-full bg-white/25 backdrop-blur-sm transition-colors hover:bg-white/40"
               aria-label="More info"
             >
+              {/* eslint-disable-next-line @next/next/no-img-element -- 386-byte SVG icon, nothing to optimize */}
               <img src="/icons/plus-thin.svg" alt="" className="h-4 w-4 invert" />
             </button>
           </motion.div>

@@ -68,6 +68,7 @@ export function ComparableSales({ comps }: { comps: CompDisplay[] }) {
             <div key={c.mlsNumber} className="overflow-hidden rounded-xl border border-[#1B1B1B]/10 bg-white">
               <div className="relative aspect-[4/3] w-full bg-[#eae7e3]">
                 {thumb ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- remote MLS photo; the site serves remote photos unoptimized
                   <img src={thumb} alt={c.address} className="h-full w-full object-cover" />
                 ) : (
                   <div className="flex h-full items-center justify-center text-xs text-[#1B1B1B]/30">
