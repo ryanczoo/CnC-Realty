@@ -67,7 +67,7 @@ async function applySuppression(email: string) {
   await Promise.all([
     prisma.lead.updateMany({
       where,
-      data: { campaignOptOut: true, actionPlanOptOut: true },
+      data: { campaignOptOut: true, actionPlanOptOut: true, newsletterOptOut: true },
     }),
     prisma.user.updateMany({
       where,

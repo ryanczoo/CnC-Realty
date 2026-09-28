@@ -116,10 +116,10 @@ describe("category-carrying unsubscribe token", () => {
     expect(verifyUnsubscribeToken(`${payload}.deadbeef`)).toBeNull();
   });
 
-  it("rejects a category that is not one of the three known values", () => {
+  it("rejects a category that is not one of the known values", () => {
     // Signed correctly, so this passes the HMAC check and can only be caught
     // by validating the category itself.
-    const forged = makeUnsubscribeToken("lead", "lead_123", "newsletter" as EmailCategory);
+    const forged = makeUnsubscribeToken("lead", "lead_123", "weekly_digest" as EmailCategory);
     expect(verifyUnsubscribeToken(forged)).toBeNull();
   });
 

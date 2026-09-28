@@ -2,15 +2,26 @@ import { createHmac, timingSafeEqual } from "crypto";
 
 export type OptOutKind = "lead" | "user";
 
-export type EmailCategory = "campaign" | "action_plan" | "property_alert";
+export type EmailCategory = "campaign" | "action_plan" | "newsletter" | "property_alert";
 
 // Which table each category's recipient lives in. Users only ever receive
-// property alerts; leads receive campaigns and drips.
+// property alerts; leads receive campaigns, drips and the newsletter.
 export const CATEGORY_KIND: Record<EmailCategory, OptOutKind> = {
   campaign: "lead",
   action_plan: "lead",
+  newsletter: "lead",
   property_alert: "user",
 };
+
+// The opt-out column each category writes (on the table CATEGORY_KIND names).
+// One map for the unsubscribe routes, so a click on one list can never turn off
+// another.
+export const OPT_OUT_COLUMN = {
+  campaign: "campaignOptOut",
+  action_plan: "actionPlanOptOut",
+  newsletter: "newsletterOptOut",
+  property_alert: "propertyAlertOptOut",
+} as const satisfies Record<EmailCategory, string>;
 
 // Derived, not a second hand-maintained list: a category added to CATEGORY_KIND
 // is allowed here automatically, and the two can no longer disagree.

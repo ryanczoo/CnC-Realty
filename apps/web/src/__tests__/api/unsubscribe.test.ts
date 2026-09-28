@@ -52,6 +52,19 @@ describe("POST /api/unsubscribe", () => {
     });
   });
 
+  it("sets only newsletterOptOut for a newsletter token", async () => {
+    const token = makeUnsubscribeToken("lead", "lead_1", "newsletter");
+
+    await POST(
+      new Request(`http://localhost:3000/api/unsubscribe?t=${token}`, { method: "POST" })
+    );
+
+    expect(prisma.lead.update).toHaveBeenCalledWith({
+      where: { id: "lead_1" },
+      data: { newsletterOptOut: true },
+    });
+  });
+
   it("sets propertyAlertOptOut on the User table for a property_alert token", async () => {
     const token = makeUnsubscribeToken("user", "user_1", "property_alert");
 

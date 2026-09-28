@@ -81,7 +81,7 @@ export type SendOptions = {
 } & BodyParts &
   StreamRouting;
 
-type LeadOptOutFlags = { campaignOptOut: boolean; actionPlanOptOut: boolean };
+type LeadOptOutFlags = { campaignOptOut: boolean; actionPlanOptOut: boolean; newsletterOptOut: boolean };
 
 // Total by construction: adding a value to EmailCategory is a compile error
 // until it names the Lead column it reads, or `null` for a category leads
@@ -91,6 +91,7 @@ type LeadOptOutFlags = { campaignOptOut: boolean; actionPlanOptOut: boolean };
 const LEAD_OPT_OUT_COLUMN: Record<EmailCategory, keyof LeadOptOutFlags | null> = {
   campaign: "campaignOptOut",
   action_plan: "actionPlanOptOut",
+  newsletter: "newsletterOptOut",
   property_alert: null,
 };
 
@@ -109,7 +110,7 @@ async function isOptedOut(
 
     const row = await prisma.lead.findUnique({
       where: { id: recipient.id },
-      select: { campaignOptOut: true, actionPlanOptOut: true },
+      select: { campaignOptOut: true, actionPlanOptOut: true, newsletterOptOut: true },
     });
     if (!row) return false;
     return row[column];

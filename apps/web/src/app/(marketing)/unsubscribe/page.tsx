@@ -20,6 +20,10 @@ const LABELS: Record<EmailCategory, CategoryLabel> = {
     title: "Follow-up from your agent",
     blurb: "Messages your agent sends as part of staying in touch.",
   },
+  newsletter: {
+    title: "The CnC Newsletter",
+    blurb: "Market updates, new listings and home tips from CnC Realty.",
+  },
   property_alert: {
     title: "New listing alerts",
     blurb: "Homes matching the searches you saved.",

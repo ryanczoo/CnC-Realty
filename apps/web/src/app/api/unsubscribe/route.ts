@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { verifyUnsubscribeToken } from "@/lib/email/unsubscribe";
+import { verifyUnsubscribeToken, OPT_OUT_COLUMN } from "@/lib/email/unsubscribe";
 
 // POST, not GET. Mail scanners and link-preview bots fetch URLs they find in
 // email; a mutating GET would opt out people who never clicked.
@@ -28,10 +28,7 @@ export async function POST(req: Request) {
   if (claim.kind === "lead") {
     await prisma.lead.update({
       where: { id: claim.id },
-      data:
-        claim.category === "action_plan"
-          ? { actionPlanOptOut: true }
-          : { campaignOptOut: true },
+      data: { [OPT_OUT_COLUMN[claim.category]]: true },
     });
   } else {
     await prisma.user.update({

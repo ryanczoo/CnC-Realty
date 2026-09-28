@@ -4,6 +4,7 @@ import {
   verifyUnsubscribeToken,
   CATEGORY_KIND,
   type EmailCategory,
+  OPT_OUT_COLUMN,
 } from "@/lib/email/unsubscribe";
 
 // Values are "is subscribed", not "is opted out". The UI shows checkboxes the
@@ -25,7 +26,7 @@ export async function GET(req: Request) {
   if (claim.kind === "lead") {
     const row = await prisma.lead.findUnique({
       where: { id: claim.id },
-      select: { campaignOptOut: true, actionPlanOptOut: true },
+      select: { campaignOptOut: true, actionPlanOptOut: true, newsletterOptOut: true },
     });
     if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -35,6 +36,7 @@ export async function GET(req: Request) {
       preferences: {
         campaign: !row.campaignOptOut,
         action_plan: !row.actionPlanOptOut,
+        newsletter: !row.newsletterOptOut,
       },
     });
   }
@@ -68,11 +70,7 @@ export async function POST(req: Request) {
   // Only categories this recipient's table can actually receive. A lead has no
   // property alerts to manage, so a stray key is dropped rather than trusted.
   const allowed = claim.kind === "lead" ? LEAD_CATEGORIES : USER_CATEGORIES;
-  const column: Record<EmailCategory, string> = {
-    campaign: "campaignOptOut",
-    action_plan: "actionPlanOptOut",
-    property_alert: "propertyAlertOptOut",
-  };
+  const column = OPT_OUT_COLUMN;
 
   const data: Record<string, boolean> = {};
   for (const category of allowed) {

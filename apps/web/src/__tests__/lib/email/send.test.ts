@@ -45,6 +45,7 @@ function optedOut(value: boolean) {
   vi.mocked(prisma.lead.findUnique).mockResolvedValue({
     campaignOptOut: value,
     actionPlanOptOut: value,
+    newsletterOptOut: value,
   } as never);
 }
 
@@ -368,6 +369,23 @@ describe("sendEmail", () => {
 
       expect(result).toEqual({ sent: true });
       expect(sendEmailMock).toHaveBeenCalledOnce();
+    });
+
+    it("suppresses a newsletter only for someone who left the newsletter", async () => {
+      vi.mocked(prisma.lead.findUnique).mockResolvedValue({
+        campaignOptOut: false, actionPlanOptOut: false, newsletterOptOut: true,
+      } as never);
+      const newsletter = await sendEmail({
+        to: "a@b.com", subject: "Hi", html: "<p>x</p>",
+        stream: "broadcast", recipient: LEAD, category: "newsletter",
+      });
+      const campaign = await sendEmail({
+        to: "a@b.com", subject: "Hi", html: "<p>x</p>",
+        stream: "broadcast", recipient: LEAD, category: "campaign",
+      });
+
+      expect(newsletter).toEqual({ sent: false, reason: "opted_out" });
+      expect(campaign).toEqual({ sent: true });
     });
 
     it("reads propertyAlertOptOut from the User table for a property alert", async () => {

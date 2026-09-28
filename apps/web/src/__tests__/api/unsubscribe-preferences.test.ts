@@ -17,6 +17,7 @@ describe("GET /api/unsubscribe/preferences", () => {
     vi.mocked(prisma.lead.findUnique).mockReset().mockResolvedValue({
       campaignOptOut: true,
       actionPlanOptOut: false,
+      newsletterOptOut: true,
     } as never);
     vi.mocked(prisma.user.findUnique).mockReset().mockResolvedValue({
       propertyAlertOptOut: false,
@@ -36,7 +37,7 @@ describe("GET /api/unsubscribe/preferences", () => {
     expect(await res.json()).toEqual({
       kind: "lead",
       category: "campaign",
-      preferences: { campaign: false, action_plan: true },
+      preferences: { campaign: false, action_plan: true, newsletter: false },
     });
   });
 
@@ -125,6 +126,23 @@ describe("POST /api/unsubscribe/preferences", () => {
     expect(prisma.lead.update).toHaveBeenCalledWith({
       where: { id: "lead_1" },
       data: { campaignOptOut: true, actionPlanOptOut: false },
+    });
+  });
+
+  it("writes the newsletter flag too", async () => {
+    const token = makeUnsubscribeToken("lead", "lead_1", "newsletter");
+
+    await POST(
+      new Request("http://localhost:3000/api/unsubscribe/preferences", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ token, preferences: { newsletter: false } }),
+      })
+    );
+
+    expect(prisma.lead.update).toHaveBeenCalledWith({
+      where: { id: "lead_1" },
+      data: { newsletterOptOut: true },
     });
   });
 

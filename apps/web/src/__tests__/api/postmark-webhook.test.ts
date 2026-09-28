@@ -66,7 +66,7 @@ describe("POST /api/webhooks/postmark — SubscriptionChange", () => {
     expect(res.status).toBe(200);
     expect(prisma.lead.updateMany).toHaveBeenCalledWith({
       where: INSENSITIVE("dead@example.com"),
-      data: { campaignOptOut: true, actionPlanOptOut: true },
+      data: { campaignOptOut: true, actionPlanOptOut: true, newsletterOptOut: true },
     });
     expect(prisma.user.updateMany).toHaveBeenCalledWith({
       where: INSENSITIVE("dead@example.com"),
@@ -92,7 +92,7 @@ describe("POST /api/webhooks/postmark — SubscriptionChange", () => {
     // Matched by address so all matching rows are written in one statement.
     expect(prisma.lead.updateMany).toHaveBeenCalledWith({
       where: INSENSITIVE("twice@example.com"),
-      data: { campaignOptOut: true, actionPlanOptOut: true },
+      data: { campaignOptOut: true, actionPlanOptOut: true, newsletterOptOut: true },
     });
     // No single-row path may exist: findFirst + update would flag only one of
     // the two rows and quietly leave the other mailable.
@@ -114,7 +114,7 @@ describe("POST /api/webhooks/postmark — SubscriptionChange", () => {
 
     expect(prisma.lead.updateMany).toHaveBeenCalledWith({
       where: INSENSITIVE("john@example.com"),
-      data: { campaignOptOut: true, actionPlanOptOut: true },
+      data: { campaignOptOut: true, actionPlanOptOut: true, newsletterOptOut: true },
     });
     expect(prisma.user.updateMany).toHaveBeenCalledWith({
       where: INSENSITIVE("john@example.com"),
@@ -140,7 +140,7 @@ describe("POST /api/webhooks/postmark — SubscriptionChange", () => {
 
       expect(prisma.lead.updateMany).toHaveBeenCalledWith({
         where: INSENSITIVE("a\\_b@example.com"),
-        data: { campaignOptOut: true, actionPlanOptOut: true },
+        data: { campaignOptOut: true, actionPlanOptOut: true, newsletterOptOut: true },
       });
       expect(prisma.user.updateMany).toHaveBeenCalledWith({
         where: INSENSITIVE("a\\_b@example.com"),
@@ -161,7 +161,7 @@ describe("POST /api/webhooks/postmark — SubscriptionChange", () => {
 
       expect(prisma.lead.updateMany).toHaveBeenCalledWith({
         where: INSENSITIVE("a\\%@example.com"),
-        data: { campaignOptOut: true, actionPlanOptOut: true },
+        data: { campaignOptOut: true, actionPlanOptOut: true, newsletterOptOut: true },
       });
       expect(prisma.user.updateMany).toHaveBeenCalledWith({
         where: INSENSITIVE("a\\%@example.com"),
@@ -183,7 +183,7 @@ describe("POST /api/webhooks/postmark — SubscriptionChange", () => {
 
       expect(prisma.lead.updateMany).toHaveBeenCalledWith({
         where: INSENSITIVE("a\\\\\\%@example.com"),
-        data: { campaignOptOut: true, actionPlanOptOut: true },
+        data: { campaignOptOut: true, actionPlanOptOut: true, newsletterOptOut: true },
       });
     });
 
@@ -200,7 +200,7 @@ describe("POST /api/webhooks/postmark — SubscriptionChange", () => {
 
       expect(prisma.lead.updateMany).toHaveBeenCalledWith({
         where: INSENSITIVE("plain.name+tag@example.co.uk"),
-        data: { campaignOptOut: true, actionPlanOptOut: true },
+        data: { campaignOptOut: true, actionPlanOptOut: true, newsletterOptOut: true },
       });
     });
   });
@@ -219,7 +219,7 @@ describe("POST /api/webhooks/postmark — SubscriptionChange", () => {
 
     expect(prisma.lead.updateMany).toHaveBeenCalledWith({
       where: INSENSITIVE("angry@example.com"),
-      data: { campaignOptOut: true, actionPlanOptOut: true },
+      data: { campaignOptOut: true, actionPlanOptOut: true, newsletterOptOut: true },
     });
   });
 
