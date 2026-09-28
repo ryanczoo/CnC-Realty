@@ -38,6 +38,7 @@ enum LeadSource {
   COLD_CALL
   HOME_VALUATION
   OTHER
+  NEWSLETTER
 }
 
 enum ActivityType {
@@ -422,6 +423,10 @@ model Lead {
   assignmentSeenAt  DateTime?
   campaignOptOut    Boolean   @default(false)
   actionPlanOptOut  Boolean   @default(false)
+  // Footer newsletter: when they joined (kept as history after an opt-out) and
+  // the newsletter unsubscribe category. Subscriber = joined and not opted out.
+  newsletterSubscribedAt DateTime?
+  newsletterOptOut  Boolean   @default(false)
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 
@@ -717,6 +722,11 @@ model FileActivity {
 
 // ─── Campaign models (unchanged) ─────────────────────────────────────────────
 
+enum CampaignAudience {
+  SELECTED_LEADS
+  NEWSLETTER
+}
+
 model Campaign {
   id          String         @id @default(cuid())
   name        String
@@ -728,6 +738,9 @@ model Campaign {
   scheduledAt DateTime?
   sentAt      DateTime?
   agentId     String?
+  // Who a send goes to: the leads picked on the Recipients step, or (admin only)
+  // every current newsletter subscriber, resolved at send time.
+  audience    CampaignAudience @default(SELECTED_LEADS)
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
