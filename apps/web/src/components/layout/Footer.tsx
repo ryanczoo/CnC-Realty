@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { FieldError } from "@/components/ui/FieldError";
 import { emailError } from "@/lib/form-validation";
 import { motion, useScroll, useTransform } from "motion/react";
-import { SPRING_HOVER } from "@/lib/motion";
+import { SPRING_HOVER, PULSE_ANIMATE, PULSE_TRANSITION } from "@/lib/motion";
 
 function EmailIcon() {
   return (
@@ -70,6 +70,34 @@ const LEGAL_LINKS = [
 
 export function Footer() {
   const [newsletterEmail, setNewsletterEmail] = useState("");
+  const [newsletterState, setNewsletterState] = useState<"idle" | "loading" | "done">("idle");
+  const [newsletterError, setNewsletterError] = useState<string | null>(null);
+  const canSubscribe = !!newsletterEmail.trim() && !emailError(newsletterEmail) && newsletterState !== "loading";
+
+  // Footer newsletter (single opt-in): /api/newsletter/subscribe adds the visitor
+  // to the brokerage's newsletter list and sends the welcome email.
+  async function subscribeNewsletter(e: React.FormEvent) {
+    e.preventDefault();
+    if (!canSubscribe) return;
+    setNewsletterState("loading");
+    setNewsletterError(null);
+    try {
+      const res = await fetch("/api/newsletter/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: newsletterEmail }),
+      });
+      if (res.ok) {
+        setNewsletterState("done");
+        return;
+      }
+      const body = await res.json().catch(() => ({}));
+      setNewsletterError(body.error ?? "Something went wrong. Please try again.");
+    } catch {
+      setNewsletterError("Something went wrong. Please try again.");
+    }
+    setNewsletterState("idle");
+  }
   const ref = useRef<HTMLElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -149,19 +177,26 @@ export function Footer() {
               <p className="font-sans text-base font-light text-white">
                 Subscribe to our Newsletter:
               </p>
-              <div className="relative flex items-center border-b border-white/40 pb-1 transition-colors focus-within:border-white/80">
+              {newsletterState === "done" ? (
+                <p className="font-sans text-base font-light text-white">You&apos;re subscribed!</p>
+              ) : (
+              <form
+                onSubmit={subscribeNewsletter}
+                className="relative flex items-center border-b border-white/40 pb-1 transition-colors focus-within:border-white/80"
+              >
                 <input
                   type="email"
                   value={newsletterEmail}
-                  onChange={(e) => setNewsletterEmail(e.target.value)}
+                  onChange={(e) => { setNewsletterEmail(e.target.value); setNewsletterError(null); }}
                   placeholder="Enter Email"
                   className="w-full bg-transparent font-sans text-base font-light text-white placeholder-white/40 outline-none"
                 />
-                <button
-                  type="button"
+                <motion.button
+                  type="submit"
                   aria-label="Subscribe"
-                  disabled={!!emailError(newsletterEmail)}
-                  className="ml-2 flex-shrink-0 text-white/60 transition-colors hover:text-white"
+                  disabled={!canSubscribe}
+                  className="ml-2 flex-shrink-0 text-white/60 transition-colors hover:text-white disabled:opacity-40"
+                  {...(canSubscribe && { animate: PULSE_ANIMATE, transition: PULSE_TRANSITION, whileHover: { scale: 1.2, transition: SPRING_HOVER } })}
                 >
                   <svg
                     width="16"
@@ -173,9 +208,10 @@ export function Footer() {
                   >
                     <path d="M16 20.488c0-.13.053-.253.146-.344l13-13.002c.42-.44 1.174.24.706.707l-13 13c-.302.31-.853.096-.853-.362zM.852 7.142l14 14.002c.447.447-.273 1.16-.707.707l-14-14c-.444-.445.26-1.155.707-.708z" />
                   </svg>
-                </button>
-              </div>
-              <FieldError message={emailError(newsletterEmail)} />
+                </motion.button>
+              </form>
+              )}
+              <FieldError message={emailError(newsletterEmail) ?? newsletterError} />
             </div>
 
             {/* Social icons */}
