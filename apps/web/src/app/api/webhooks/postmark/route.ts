@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isAuthorizedPostmarkWebhook } from "@/lib/postmark-webhook-auth";
+import { emailMatchWhere } from "@/lib/email-match";
 
 type PostmarkEvent = {
   RecordType?: string;
@@ -47,17 +48,8 @@ function contactUpdate(event: PostmarkEvent, leadId: string) {
 const SUPPRESSING_REASONS = new Set(["HardBounce", "SpamComplaint"]);
 
 async function applySuppression(email: string) {
-  // Case-insensitive because nothing lowercases on write, so a lead who typed
-  // `John@Example.com` is stored with that casing and a `=` match would miss
-  // them entirely — Postgres `=` on TEXT is case-sensitive.
-  //
-  // But `mode: "insensitive"` makes Prisma emit ILIKE, not `=`, and it passes
-  // the value straight through as the *pattern*. Both `_` and `%` are legal in
-  // a local part, so an unescaped address would act as a wildcard: a bounce for
-  // `a%@example.com` would suppress every address at that domain. Escape them —
-  // backslash is Postgres's default LIKE escape character.
-  const pattern = email.replace(/[\\%_]/g, "\\$&");
-  const where = { email: { equals: pattern, mode: "insensitive" as const } };
+  // Exact address, any capitalization, with LIKE wildcards escaped (shared rule).
+  const where = emailMatchWhere(email);
 
   // updateMany, not findFirst + update: `Lead.email` is not unique and no
   // creation path dedupes, so one person who submitted two forms has two rows.
