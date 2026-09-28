@@ -1,11 +1,12 @@
 "use client";
 import { RequiredMark } from "@/components/ui/RequiredMark";
+import { FieldError } from "@/components/ui/FieldError";
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Loader2 } from "lucide-react";
 import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
-import { formatPhoneInput, isValidEmail } from "@/lib/form-validation";
+import { formatPhoneInput, isValidEmail, emailError } from "@/lib/form-validation";
 
 interface Props {
   address: string;
@@ -155,6 +156,7 @@ export function RevealEstimateForm({ address, zip, beds, sqft }: Props) {
                     onChange={(e) => setEmail(e.target.value)}
                     className="border-b border-[#1B1B1B]/20 bg-transparent py-2 font-sans text-base text-[#1B1B1B] outline-none transition-colors focus:border-[#1B1B1B]/60"
                   />
+                  <FieldError message={emailError(email)} />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
@@ -172,7 +174,7 @@ export function RevealEstimateForm({ address, zip, beds, sqft }: Props) {
 
                 <motion.button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || !!emailError(email)}
                   animate={PULSE_ANIMATE}
                   transition={PULSE_TRANSITION}
                   whileHover={{ scale: 1.02, transition: SPRING_HOVER }}

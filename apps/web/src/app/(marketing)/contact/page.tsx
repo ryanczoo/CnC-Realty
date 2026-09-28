@@ -1,5 +1,7 @@
 "use client";
 import { RequiredMark } from "@/components/ui/RequiredMark";
+import { FieldError } from "@/components/ui/FieldError";
+import { emailError } from "@/lib/form-validation";
 import { useCallback, useRef, useState } from "react";
 import Image from "next/image";
 import { motion } from "motion/react";
@@ -35,6 +37,8 @@ export default function ContactPage() {
     }
   }
 
+  // Flagged under the field while typing (the shared email rule).
+  const emailErr = emailError(form.email);
   const field = (name: keyof typeof form, label: string, type = "text", required = false) => (
     <div className="flex flex-col gap-1.5">
       <label className="font-sans text-sm text-left text-[#1B1B1B]/60">{label}{required && <RequiredMark />}</label>
@@ -45,6 +49,7 @@ export default function ContactPage() {
         onChange={(e) => setForm((f) => ({ ...f, [name]: e.target.value }))}
         className="border-b border-[#1B1B1B]/20 bg-transparent py-2 font-sans text-base text-[#1B1B1B] outline-none transition-colors focus:border-[#1B1B1B]/60"
       />
+      {name === "email" && <FieldError message={emailErr} />}
     </div>
   );
 
@@ -122,7 +127,7 @@ export default function ContactPage() {
             )}
             <motion.button
               type="submit"
-              disabled={status === "loading"}
+              disabled={status === "loading" || !!emailErr}
               animate={PULSE_ANIMATE}
               whileHover={{ scale: 1.15, transition: SPRING_HOVER }}
               transition={PULSE_TRANSITION}

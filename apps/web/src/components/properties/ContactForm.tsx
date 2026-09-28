@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { FieldError } from "@/components/ui/FieldError";
+import { emailError } from "@/lib/form-validation";
 
 interface Props {
   mlsNumber: string;
@@ -81,6 +83,7 @@ export function ContactForm({ mlsNumber, address }: Props) {
           onChange={update("email")}
           className={inputClass}
         />
+        <FieldError message={emailError(form.email)} />
         <input
           required
           type="tel"
@@ -101,7 +104,7 @@ export function ContactForm({ mlsNumber, address }: Props) {
         )}
         <button
           type="submit"
-          disabled={state === "loading"}
+          disabled={state === "loading" || !!emailError(form.email)}
           className="rounded-full bg-[#9E8C61] py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#b09870] disabled:opacity-60"
         >
           {state === "loading" ? "Sending…" : "Contact Agent"}

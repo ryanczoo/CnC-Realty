@@ -1,5 +1,6 @@
 "use client";
 import { RequiredMark } from "@/components/ui/RequiredMark";
+import { FieldError } from "@/components/ui/FieldError";
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -10,7 +11,7 @@ import { RevealLine } from "@/components/ui/reveal-text";
 import { DateField } from "@/components/ui/DateField";
 import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
 import { namesMatch } from "@/lib/ica-signature";
-import { formatPhoneInput, isValidEmail, stripDigits, digitsOnly } from "@/lib/form-validation";
+import { formatPhoneInput, isValidEmail, emailError, stripDigits, digitsOnly } from "@/lib/form-validation";
 
 const inputClass =
   "w-full rounded-lg border border-[#1B1B1B]/10 bg-white px-4 py-3 text-sm text-[#1B1B1B] placeholder-[#1B1B1B]/40 focus:outline-none focus:ring-2 focus:ring-[#9E8C61]/40";
@@ -249,6 +250,7 @@ function FormInner() {
           <div>
             <label className={labelClass}>Email<RequiredMark /></label>
             <input className={`${inputClass} ${ring("email")}`} type="email" value={form.email} onChange={(e) => set("email", e.target.value)} />
+            <FieldError message={emailError(form.email)} />
           </div>
           <div>
             <label className={labelClass}>Cell Phone<RequiredMark /></label>

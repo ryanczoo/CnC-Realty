@@ -2,6 +2,7 @@
 
 import { sanitizeCurrencyInput, formatCurrencyDisplay } from "@/lib/form-validation";
 import { RequiredMark } from "@/components/ui/RequiredMark";
+import { FieldError } from "@/components/ui/FieldError";
 
 export function FormField({
   label, required = false, value, onChange, type = "text", placeholder = "", restrict, labelClassName = "text-[#1B1B1B]/50", formatCommas = false, inputMode, error,
@@ -46,7 +47,7 @@ export function FormField({
           placeholder={placeholder}
           className={`w-full rounded-lg border ${borderClass} bg-[#F2F0EF] px-3 py-2.5 text-sm text-[#1B1B1B] placeholder:text-[#1B1B1B]/25 focus:outline-none focus:ring-2 focus:ring-[#9E8C61]/30`}
         />
-        {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+        <FieldError message={error} />
       </div>
     );
   }
@@ -62,7 +63,7 @@ export function FormField({
         placeholder={placeholder}
         className={`w-full rounded-lg border ${borderClass} bg-[#F2F0EF] px-3 py-2.5 text-sm text-[#1B1B1B] placeholder:text-[#1B1B1B]/25 focus:outline-none focus:ring-2 focus:ring-[#9E8C61]/30`}
       />
-      {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+      <FieldError message={error} />
     </div>
   );
 }

@@ -1,5 +1,7 @@
 "use client";
 import { RequiredMark } from "@/components/ui/RequiredMark";
+import { FieldError } from "@/components/ui/FieldError";
+import { emailError } from "@/lib/form-validation";
 
 import {
   motion,
@@ -349,6 +351,7 @@ export function ServicesSection() {
                       onChange={(e) => setModalForm((f) => ({ ...f, [k]: e.target.value }))}
                       className="border-b border-[#1B1B1B]/20 bg-transparent py-1.5 font-sans text-sm text-[#1B1B1B] outline-none focus:border-[#1B1B1B]/60"
                     />
+                    {k === "email" && <FieldError message={emailError(modalForm.email)} />}
                   </div>
                 ))}
                 <div className="flex flex-col gap-1">
@@ -368,7 +371,7 @@ export function ServicesSection() {
                 )}
                 <button
                   type="submit"
-                  disabled={modalStatus === "loading"}
+                  disabled={modalStatus === "loading" || !!emailError(modalForm.email)}
                   className="w-full rounded-full bg-[#1B1B1B] py-3 font-sans text-sm font-medium text-white transition-opacity hover:opacity-80 disabled:opacity-40"
                 >
                   {modalStatus === "loading" ? "Sending…" : "Next →"}

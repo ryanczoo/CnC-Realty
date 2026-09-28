@@ -5,6 +5,8 @@ import { PasswordInput, inputClass } from "@/components/ui/PasswordInput";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { FieldError } from "@/components/ui/FieldError";
+import { emailError } from "@/lib/form-validation";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -69,6 +71,7 @@ export default function RegisterPage() {
             onChange={(e) => setEmail(e.target.value)}
             className={inputClass}
           />
+          <FieldError message={emailError(email)} />
           <PasswordInput
             placeholder="Password"
             value={password}
@@ -82,7 +85,7 @@ export default function RegisterPage() {
           />
           <Button
             type="submit"
-            disabled={loading}
+            disabled={loading || !!emailError(email)}
             className="w-full"
             style={{ backgroundColor: "#9E8C61", color: "white" }}
           >

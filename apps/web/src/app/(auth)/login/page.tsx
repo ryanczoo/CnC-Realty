@@ -6,6 +6,8 @@ import { signIn, getSession } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { FieldError } from "@/components/ui/FieldError";
+import { emailError } from "@/lib/form-validation";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -50,6 +52,7 @@ export default function LoginPage() {
             onChange={(e) => setEmail(e.target.value)}
             className={inputClass}
           />
+          <FieldError message={emailError(email)} />
           <PasswordInput
             placeholder="Password"
             value={password}
@@ -62,7 +65,7 @@ export default function LoginPage() {
           </div>
           <Button
             type="submit"
-            disabled={loading}
+            disabled={loading || !!emailError(email)}
             className="w-full"
             style={{ backgroundColor: "#9E8C61", color: "white" }}
           >

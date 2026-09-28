@@ -1,5 +1,7 @@
 "use client";
 import { RequiredMark } from "@/components/ui/RequiredMark";
+import { FieldError } from "@/components/ui/FieldError";
+import { emailError } from "@/lib/form-validation";
 
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
@@ -141,6 +143,7 @@ export function ContactModal({ open, source, onClose }: ContactModalProps) {
                     className="border-b border-[#1B1B1B]/20 bg-transparent py-2 font-sans text-base text-[#1B1B1B] outline-none transition-colors focus:border-[#1B1B1B]/60"
                     placeholder=""
                   />
+                  <FieldError message={emailError(form.email)} />
                 </div>
 
                 <div className="flex flex-col gap-1.5" ref={roleRef}>
@@ -197,7 +200,7 @@ export function ContactModal({ open, source, onClose }: ContactModalProps) {
 
                 <motion.button
                   type="submit"
-                  disabled={status === "loading"}
+                  disabled={status === "loading" || !!emailError(form.email)}
                   animate={PULSE_ANIMATE}
                   transition={PULSE_TRANSITION}
                   whileHover={{ scale: 1.02, transition: SPRING_HOVER }}

@@ -2,7 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { FieldError } from "@/components/ui/FieldError";
+import { emailError } from "@/lib/form-validation";
 import { motion, useScroll, useTransform } from "motion/react";
 import { SPRING_HOVER } from "@/lib/motion";
 
@@ -67,6 +69,7 @@ const LEGAL_LINKS = [
 ];
 
 export function Footer() {
+  const [newsletterEmail, setNewsletterEmail] = useState("");
   const ref = useRef<HTMLElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -149,12 +152,15 @@ export function Footer() {
               <div className="relative flex items-center border-b border-white/40 pb-1 transition-colors focus-within:border-white/80">
                 <input
                   type="email"
+                  value={newsletterEmail}
+                  onChange={(e) => setNewsletterEmail(e.target.value)}
                   placeholder="Enter Email"
                   className="w-full bg-transparent font-sans text-base font-light text-white placeholder-white/40 outline-none"
                 />
                 <button
                   type="button"
                   aria-label="Subscribe"
+                  disabled={!!emailError(newsletterEmail)}
                   className="ml-2 flex-shrink-0 text-white/60 transition-colors hover:text-white"
                 >
                   <svg
@@ -169,6 +175,7 @@ export function Footer() {
                   </svg>
                 </button>
               </div>
+              <FieldError message={emailError(newsletterEmail)} />
             </div>
 
             {/* Social icons */}

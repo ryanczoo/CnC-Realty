@@ -3,6 +3,8 @@
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useState } from "react";
+import { FieldError } from "@/components/ui/FieldError";
+import { emailError } from "@/lib/form-validation";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -52,10 +54,11 @@ export default function ForgotPasswordPage() {
                   autoComplete="email"
                   className="w-full rounded-md border border-[#1B1B1B]/20 bg-transparent px-3 py-2 text-sm text-[#1B1B1B] focus:border-[#1B1B1B]/60 focus:outline-none focus:ring-2 focus:ring-[#9E8C61]/40"
                 />
+                <FieldError message={emailError(email)} />
               </div>
               <Button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !!emailError(email)}
                 className="w-full"
                 style={{ backgroundColor: "#9E8C61", color: "white" }}
               >

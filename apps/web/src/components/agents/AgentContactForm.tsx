@@ -1,5 +1,7 @@
 "use client";
 import { useState } from "react";
+import { FieldError } from "@/components/ui/FieldError";
+import { emailError } from "@/lib/form-validation";
 
 export function AgentContactForm({ slug }: { slug: string }) {
   const [name, setName] = useState("");
@@ -69,6 +71,7 @@ export function AgentContactForm({ slug }: { slug: string }) {
           placeholder="you@example.com"
           className="rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-4 py-2.5 font-sans text-sm text-[#1B1B1B] outline-none focus:border-[#9E8C61] placeholder:text-[#1B1B1B]/30"
         />
+        <FieldError message={emailError(email)} />
       </div>
       <div className="flex flex-col gap-1.5">
         <label className="font-sans text-xs font-medium uppercase tracking-wide text-[#1B1B1B]/60">
@@ -98,7 +101,7 @@ export function AgentContactForm({ slug }: { slug: string }) {
       )}
       <button
         type="submit"
-        disabled={submitting}
+        disabled={submitting || !!emailError(email)}
         className="rounded-full bg-[#9E8C61] py-3 font-sans text-sm font-medium text-white transition-colors hover:bg-[#9E8C61]/80 disabled:pointer-events-none disabled:opacity-40"
       >
         {submitting ? "Sending…" : "Send Message"}

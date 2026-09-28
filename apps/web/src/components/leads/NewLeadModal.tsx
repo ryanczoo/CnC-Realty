@@ -1,5 +1,6 @@
 "use client";
 import { RequiredMark } from "@/components/ui/RequiredMark";
+import { FieldError } from "@/components/ui/FieldError";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
@@ -149,7 +150,7 @@ export function NewLeadModal({ open, onClose, onSaved }: Props) {
               <div>
                 <label className="mb-1 block text-xs text-[#1B1B1B]/50">Email<RequiredMark /></label>
                 <input required type="email" className={emailErr ? INPUT_CLS.replace("border-[#1B1B1B]/15", "border-red-400") : INPUT_CLS} value={form.email} onChange={set("email")} />
-                {emailErr && <p className="mt-1 text-xs text-red-500">{emailErr}</p>}
+                <FieldError message={emailErr} />
               </div>
               <div>
                 <label className="mb-1 block text-xs text-[#1B1B1B]/50">Phone</label>
