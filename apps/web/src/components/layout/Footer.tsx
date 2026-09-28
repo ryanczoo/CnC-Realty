@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { FieldError } from "@/components/ui/FieldError";
 import { emailError } from "@/lib/form-validation";
-import { motion, useScroll, useTransform } from "motion/react";
+import { motion, useMotionValueEvent, useScroll, useTransform } from "motion/react";
 import { SPRING_HOVER, PULSE_ANIMATE, PULSE_TRANSITION } from "@/lib/motion";
 
 function EmailIcon() {
@@ -68,6 +68,11 @@ const LEGAL_LINKS = [
   { href: "/terms", label: "Terms" },
 ];
 
+// True once scroll position y is within two screen heights of the page bottom.
+function isNearBottom(y: number) {
+  return document.documentElement.scrollHeight - (y + window.innerHeight) < window.innerHeight * 2;
+}
+
 export function Footer() {
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [newsletterState, setNewsletterState] = useState<"idle" | "loading" | "done">("idle");
@@ -110,6 +115,22 @@ export function Footer() {
     offset: ["start end", "end end"],
   });
 
+  // The background video (~6MB) only gets its src once the visitor is within
+  // two screens of the bottom, instead of downloading on every page view.
+  // An IntersectionObserver can't be used for this: the footer is sticky to
+  // the viewport bottom behind the page, so it reports as visible from the
+  // first paint. Page scroll position is the real signal. The poster covers
+  // the footer if someone reaches it before the video is ready.
+  const [videoWanted, setVideoWanted] = useState(false);
+  const { scrollY } = useScroll();
+  useMotionValueEvent(scrollY, "change", (y) => {
+    if (!videoWanted && isNearBottom(y)) setVideoWanted(true);
+  });
+  // Short pages (login, contact) start within range and may never scroll.
+  useEffect(() => {
+    if (isNearBottom(window.scrollY)) setVideoWanted(true);
+  }, []);
+
   const clipPath = useTransform(
     scrollYProgress,
     [0, 1],
@@ -122,14 +143,14 @@ export function Footer() {
       <motion.div className="absolute inset-0" style={{ clipPath }}>
         <video
           ref={videoRef}
+          src={videoWanted ? "/videos/footer-bg.mp4" : undefined}
+          poster="/images/footer-bg-poster.jpg"
           autoPlay
           muted
           loop
           playsInline
           className="h-full w-full object-cover object-center"
-        >
-          <source src="/videos/footer-bg.mp4" type="video/mp4" />
-        </video>
+        />
         <div className="absolute inset-0 bg-black/55" />
       </motion.div>
 
