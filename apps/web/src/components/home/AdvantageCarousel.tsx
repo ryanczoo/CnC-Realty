@@ -65,7 +65,10 @@ export function AdvantageCarousel() {
 
   return (
     <div>
-      <div className="relative mx-auto" style={{ width: "78vw", maxWidth: 1050 }}>
+      {/* Width is also capped by viewport height so the whole stack (1.21x
+          card height with the ±10.5% offsets) plus the arrows (~142px) fits
+          below the 64px navbar: (100vh - 185px) * 1.2 */}
+      <div className="relative mx-auto" style={{ width: "min(78vw, calc((100vh - 185px) * 1.2))", maxWidth: 1050 }}>
         <div className="relative w-full" style={{ aspectRatio: "1.45", maxWidth: 1050 }}>
           <div className="absolute inset-0">
             {SLIDES.map((slide, i) => {
