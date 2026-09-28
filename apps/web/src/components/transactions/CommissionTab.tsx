@@ -82,7 +82,7 @@ export function CommissionTab({ transaction }: { transaction: TransactionFileDet
         <h2 className="text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Net to Agent</h2>
         <div className="flex items-center justify-between border-b border-[#1B1B1B]/5 pb-3">
           <span className="text-sm text-[#1B1B1B]/50">Gross Commission</span>
-          <span className="font-medium text-[#1B1B1B]">{fmt(totalGross)}</span>
+          <span className="font-medium text-cnc-green">{fmt(totalGross)}</span>
         </div>
         <div className="flex items-center justify-between border-b border-[#1B1B1B]/5 pb-3">
           <span className="text-sm text-[#1B1B1B]/50">{transactionFee.label}</span>
