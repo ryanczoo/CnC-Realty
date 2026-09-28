@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendLeadNotification } from "@/lib/email";
 import { publicFormRateLimit } from "@/lib/rate-limit";
+import { isValidEmail } from "@/lib/form-validation";
 
 export async function POST(req: Request, { params }: { params: { slug: string } }) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "anonymous";
@@ -18,6 +19,9 @@ export async function POST(req: Request, { params }: { params: { slug: string } 
 
     if (!name?.trim() || !email?.trim()) {
       return NextResponse.json({ error: "Name and email are required" }, { status: 400 });
+    }
+    if (!isValidEmail((email as string).trim())) {
+      return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
     }
 
     const agent = await prisma.agent.findUnique({ where: { slug: params.slug } });
