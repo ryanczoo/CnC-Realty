@@ -26,6 +26,7 @@ export function BlogHero({ post }: { post: BlogPostSummary }) {
             alt={post.title}
             fill
             priority
+            sizes="(min-width: 1600px) 900px, (min-width: 1024px) 58vw, 100vw"
             className="object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (

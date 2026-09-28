@@ -91,6 +91,7 @@ export default async function PressPostPage({ params }: Props) {
               alt={post.title}
               fill
               priority
+              sizes="(min-width: 1280px) 1216px, 100vw"
               className="object-cover"
             />
           </div>
