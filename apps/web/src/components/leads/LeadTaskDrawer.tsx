@@ -1,4 +1,5 @@
 "use client";
+import { RequiredMark } from "@/components/ui/RequiredMark";
 
 import { useEffect, useState } from "react";
 import { PULSE_ANIMATE, PULSE_TRANSITION } from "@/lib/motion";
@@ -110,7 +111,7 @@ export function LeadTaskDrawer({ open, task, leadId, onClose, onSaved, onDeleted
           {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
 
           <div>
-            <label className="mb-1 block text-xs text-[#1B1B1B]/50">Title *</label>
+            <label className="mb-1 block text-xs text-[#1B1B1B]/50">Title<RequiredMark /></label>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}

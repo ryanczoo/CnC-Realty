@@ -11,6 +11,7 @@ import { useFileUpload } from "@/hooks/useFileUpload";
 import { latestDocument } from "@/lib/transaction-helpers";
 import { removeFromChecklist } from "@/lib/document-actions";
 import { TrashIcon } from "@/components/ui/TrashIcon";
+import { RequiredMark } from "@/components/ui/RequiredMark";
 
 interface Props {
   fileType: "LISTING" | "TRANSACTION";
@@ -59,7 +60,7 @@ export function ChecklistPanel({ fileType, fileId, items, onUploaded, readOnly =
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-[#1B1B1B]">
                 {item.name}
-                {item.isRequired && <span className="ml-1 text-red-500">*</span>}
+                {item.isRequired && <RequiredMark />}
               </p>
               {status === "REJECTED" && (
                 <>

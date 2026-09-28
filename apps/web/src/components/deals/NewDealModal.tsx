@@ -1,4 +1,5 @@
 "use client";
+import { RequiredMark } from "@/components/ui/RequiredMark";
 
 import { useState, useEffect, useRef } from "react";
 import type { DealRow } from "@/lib/deal-pipeline";
@@ -105,7 +106,7 @@ export function NewDealModal({ open, onClose, onSaved, initialLeadId, initialLea
 
         <div className="space-y-4">
           <div className="relative">
-            <label className="mb-1 block font-sans text-xs font-medium text-[#1B1B1B]/60">Lead *</label>
+            <label className="mb-1 block font-sans text-xs font-medium text-[#1B1B1B]/60">Lead<RequiredMark /></label>
             <input
               value={leadQuery}
               onChange={(e) => onLeadSearch(e.target.value)}
@@ -129,7 +130,7 @@ export function NewDealModal({ open, onClose, onSaved, initialLeadId, initialLea
           </div>
 
           <div>
-            <label className="mb-1 block font-sans text-xs font-medium text-[#1B1B1B]/60">Pipeline *</label>
+            <label className="mb-1 block font-sans text-xs font-medium text-[#1B1B1B]/60">Pipeline<RequiredMark /></label>
             <div className="flex gap-2">
               {(["BUYERS", "SELLERS", "LEASE_TENANT", "LEASE_LANDLORD"] as const).map((p) => (
                 <button

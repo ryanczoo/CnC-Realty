@@ -1,11 +1,14 @@
 "use client";
 
 import { sanitizeCurrencyInput, formatCurrencyDisplay } from "@/lib/form-validation";
+import { RequiredMark } from "@/components/ui/RequiredMark";
 
 export function FormField({
-  label, value, onChange, type = "text", placeholder = "", restrict, labelClassName = "text-[#1B1B1B]/50", formatCommas = false, inputMode, error,
+  label, required = false, value, onChange, type = "text", placeholder = "", restrict, labelClassName = "text-[#1B1B1B]/50", formatCommas = false, inputMode, error,
 }: {
   label: string;
+  // Adds the shared required-field asterisk after the label.
+  required?: boolean;
   value: string;
   onChange: (v: string) => void;
   type?: string;
@@ -34,7 +37,7 @@ export function FormField({
   if (formatCommas) {
     return (
       <div>
-        <label className={`mb-1.5 block text-xs font-medium ${labelClassName}`}>{label}</label>
+        <label className={`mb-1.5 block text-xs font-medium ${labelClassName}`}>{label}{required && <RequiredMark />}</label>
         <input
           type="text"
           inputMode="decimal"
@@ -50,7 +53,7 @@ export function FormField({
 
   return (
     <div>
-      <label className={`mb-1.5 block text-xs font-medium ${labelClassName}`}>{label}</label>
+      <label className={`mb-1.5 block text-xs font-medium ${labelClassName}`}>{label}{required && <RequiredMark />}</label>
       <input
         type={type}
         inputMode={inputMode}

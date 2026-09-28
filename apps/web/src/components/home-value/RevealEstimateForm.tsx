@@ -1,4 +1,5 @@
 "use client";
+import { RequiredMark } from "@/components/ui/RequiredMark";
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
@@ -123,7 +124,7 @@ export function RevealEstimateForm({ address, zip, beds, sqft }: Props) {
               <form onSubmit={handleSubmit} className="flex flex-col gap-6">
                 <div className="grid grid-cols-2 gap-6">
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-left font-sans text-sm text-[#1B1B1B]/60">First Name *</label>
+                    <label className="text-left font-sans text-sm text-[#1B1B1B]/60">First Name<RequiredMark /></label>
                     <input
                       type="text"
                       required
@@ -134,7 +135,7 @@ export function RevealEstimateForm({ address, zip, beds, sqft }: Props) {
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-left font-sans text-sm text-[#1B1B1B]/60">Last Name *</label>
+                    <label className="text-left font-sans text-sm text-[#1B1B1B]/60">Last Name<RequiredMark /></label>
                     <input
                       type="text"
                       required
@@ -146,7 +147,7 @@ export function RevealEstimateForm({ address, zip, beds, sqft }: Props) {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-left font-sans text-sm text-[#1B1B1B]/60">Email *</label>
+                  <label className="text-left font-sans text-sm text-[#1B1B1B]/60">Email<RequiredMark /></label>
                   <input
                     type="email"
                     required
@@ -157,7 +158,7 @@ export function RevealEstimateForm({ address, zip, beds, sqft }: Props) {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-left font-sans text-sm text-[#1B1B1B]/60">Phone *</label>
+                  <label className="text-left font-sans text-sm text-[#1B1B1B]/60">Phone<RequiredMark /></label>
                   <input
                     type="tel"
                     required

@@ -1,4 +1,5 @@
 "use client";
+import { RequiredMark } from "@/components/ui/RequiredMark";
 
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
@@ -106,7 +107,7 @@ export function ContactModal({ open, source, onClose }: ContactModalProps) {
             ) : (
               <form onSubmit={handleSubmit} className="flex flex-col gap-6">
                 <div className="flex flex-col gap-1.5">
-                  <label className="font-sans text-sm text-left text-[#1B1B1B]/60">First Name *</label>
+                  <label className="font-sans text-sm text-left text-[#1B1B1B]/60">First Name<RequiredMark /></label>
                   <input
                     type="text"
                     required
@@ -119,7 +120,7 @@ export function ContactModal({ open, source, onClose }: ContactModalProps) {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="font-sans text-sm text-left text-[#1B1B1B]/60">Last Name *</label>
+                  <label className="font-sans text-sm text-left text-[#1B1B1B]/60">Last Name<RequiredMark /></label>
                   <input
                     type="text"
                     required
@@ -131,7 +132,7 @@ export function ContactModal({ open, source, onClose }: ContactModalProps) {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="font-sans text-sm text-left text-[#1B1B1B]/60">Email *</label>
+                  <label className="font-sans text-sm text-left text-[#1B1B1B]/60">Email<RequiredMark /></label>
                   <input
                     type="email"
                     required
@@ -144,7 +145,7 @@ export function ContactModal({ open, source, onClose }: ContactModalProps) {
 
                 <div className="flex flex-col gap-1.5" ref={roleRef}>
                   <label className={`font-sans text-sm text-left ${roleError ? "text-red-500" : "text-[#1B1B1B]/60"}`}>
-                    I am a *
+                    I am a<RequiredMark />
                   </label>
                   <button
                     type="button"
@@ -179,7 +180,7 @@ export function ContactModal({ open, source, onClose }: ContactModalProps) {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="font-sans text-sm text-left text-[#1B1B1B]/60">Message *</label>
+                  <label className="font-sans text-sm text-left text-[#1B1B1B]/60">Message<RequiredMark /></label>
                   <textarea
                     rows={4}
                     required

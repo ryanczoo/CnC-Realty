@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
+import { RequiredMark } from "@/components/ui/RequiredMark";
 
 type Plan = { id: string; name: string; isActive: boolean };
 
@@ -136,7 +137,7 @@ export function TriggerDrawer({ open, trigger, onClose, onSaved }: Props) {
 
           {/* Name */}
           <div>
-            <label className="mb-1 block text-xs text-[#1B1B1B]/50">Trigger Name *</label>
+            <label className="mb-1 block text-xs text-[#1B1B1B]/50">Trigger Name<RequiredMark /></label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -147,7 +148,7 @@ export function TriggerDrawer({ open, trigger, onClose, onSaved }: Props) {
 
           {/* Status trigger */}
           <div>
-            <label className="mb-1 block text-xs text-[#1B1B1B]/50">When status changes to *</label>
+            <label className="mb-1 block text-xs text-[#1B1B1B]/50">When status changes to<RequiredMark /></label>
             <select
               value={statusTrigger}
               onChange={(e) => setStatusTrigger(e.target.value)}
@@ -161,7 +162,7 @@ export function TriggerDrawer({ open, trigger, onClose, onSaved }: Props) {
 
           {/* Action type pills */}
           <div>
-            <label className="mb-2 block text-xs text-[#1B1B1B]/50">Action *</label>
+            <label className="mb-2 block text-xs text-[#1B1B1B]/50">Action<RequiredMark /></label>
             <div className="flex gap-2">
               {(["ENROLL_PLAN", "SEND_EMAIL"] as const).map((type) => (
                 <button
@@ -182,7 +183,7 @@ export function TriggerDrawer({ open, trigger, onClose, onSaved }: Props) {
 
           {/* ENROLL_PLAN fields — always mounted, CSS hidden */}
           <div className={actionType === "ENROLL_PLAN" ? "" : "hidden"}>
-            <label className="mb-1 block text-xs text-[#1B1B1B]/50">Action Plan *</label>
+            <label className="mb-1 block text-xs text-[#1B1B1B]/50">Action Plan<RequiredMark /></label>
             <select
               value={actionPlanId}
               onChange={(e) => setActionPlanId(e.target.value)}
@@ -198,7 +199,7 @@ export function TriggerDrawer({ open, trigger, onClose, onSaved }: Props) {
           {/* SEND_EMAIL fields — always mounted, CSS hidden */}
           <div className={actionType === "SEND_EMAIL" ? "" : "hidden"}>
             <div className="mb-3">
-              <label className="mb-1 block text-xs text-[#1B1B1B]/50">Email Subject *</label>
+              <label className="mb-1 block text-xs text-[#1B1B1B]/50">Email Subject<RequiredMark /></label>
               <input
                 value={emailSubject}
                 onChange={(e) => setEmailSubject(e.target.value)}
@@ -207,7 +208,7 @@ export function TriggerDrawer({ open, trigger, onClose, onSaved }: Props) {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs text-[#1B1B1B]/50">Email Body *</label>
+              <label className="mb-1 block text-xs text-[#1B1B1B]/50">Email Body<RequiredMark /></label>
               <textarea
                 value={emailBody}
                 onChange={(e) => setEmailBody(e.target.value)}

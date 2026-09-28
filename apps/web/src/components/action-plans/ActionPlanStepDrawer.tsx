@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
+import { RequiredMark } from "@/components/ui/RequiredMark";
 
 type PlanStep = {
   id: string;
@@ -131,7 +132,7 @@ export function ActionPlanStepDrawer({ open, planId, step, onClose, onSaved, onD
           {stepType === "EMAIL" && (
             <>
               <div>
-                <label className="mb-1 block text-xs text-[#1B1B1B]/50">Subject *</label>
+                <label className="mb-1 block text-xs text-[#1B1B1B]/50">Subject<RequiredMark /></label>
                 <input value={subject} onChange={(e) => setSubject(e.target.value)}
                   className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm outline-none focus:border-[#9E8C61]"
                   placeholder="e.g. Hi {{first_name}}, welcome to CnC!" />
@@ -143,7 +144,7 @@ export function ActionPlanStepDrawer({ open, planId, step, onClose, onSaved, onD
                   placeholder="e.g. A Warm Welcome" />
               </div>
               <div>
-                <label className="mb-1 block text-xs text-[#1B1B1B]/50">Body *</label>
+                <label className="mb-1 block text-xs text-[#1B1B1B]/50">Body<RequiredMark /></label>
                 <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={6}
                   className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm outline-none focus:border-[#9E8C61] resize-none"
                   placeholder={`Email body...\n\n${HINTS}`} />
@@ -153,7 +154,7 @@ export function ActionPlanStepDrawer({ open, planId, step, onClose, onSaved, onD
           )}
           {stepType === "TASK" && (
             <div>
-              <label className="mb-1 block text-xs text-[#1B1B1B]/50">Task Title *</label>
+              <label className="mb-1 block text-xs text-[#1B1B1B]/50">Task Title<RequiredMark /></label>
               <input value={taskTitle} onChange={(e) => setTaskTitle(e.target.value)}
                 className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm outline-none focus:border-[#9E8C61]"
                 placeholder="e.g. Call {{first_name}} to check in" />

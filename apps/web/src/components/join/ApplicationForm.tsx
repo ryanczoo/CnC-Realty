@@ -1,4 +1,5 @@
 "use client";
+import { RequiredMark } from "@/components/ui/RequiredMark";
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -236,35 +237,35 @@ function FormInner() {
         <p className={sectionHeadingClass}>Personal Information</p>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className={labelClass}>First Name *</label>
+            <label className={labelClass}>First Name<RequiredMark /></label>
             <input className={`${inputClass} ${ring("firstName")}`} value={form.firstName} onChange={(e) => set("firstName", e.target.value)} />
           </div>
           <div>
-            <label className={labelClass}>Last Name *</label>
+            <label className={labelClass}>Last Name<RequiredMark /></label>
             <input className={`${inputClass} ${ring("lastName")}`} value={form.lastName} onChange={(e) => set("lastName", e.target.value)} />
           </div>
         </div>
         <div className="mt-4 grid grid-cols-2 gap-4">
           <div>
-            <label className={labelClass}>Email *</label>
+            <label className={labelClass}>Email<RequiredMark /></label>
             <input className={`${inputClass} ${ring("email")}`} type="email" value={form.email} onChange={(e) => set("email", e.target.value)} />
           </div>
           <div>
-            <label className={labelClass}>Cell Phone *</label>
+            <label className={labelClass}>Cell Phone<RequiredMark /></label>
             <input className={`${inputClass} ${ring("phone")}`} type="tel" value={form.phone} onChange={handlePhoneChange} />
           </div>
         </div>
         <div className="mt-4">
-          <label className={labelClass}>Street Address *</label>
+          <label className={labelClass}>Street Address<RequiredMark /></label>
           <input className={inputClass} value={form.address} onChange={(e) => set("address", e.target.value)} />
         </div>
         <div className="mt-4 grid grid-cols-3 gap-4">
           <div>
-            <label className={labelClass}>City *</label>
+            <label className={labelClass}>City<RequiredMark /></label>
             <input className={inputClass} value={form.city} onChange={(e) => set("city", stripDigits(e.target.value))} />
           </div>
           <div>
-            <label className={labelClass}>State *</label>
+            <label className={labelClass}>State<RequiredMark /></label>
             <input
               className={`${inputClass} cursor-not-allowed bg-[#1B1B1B]/5 text-[#1B1B1B]/60`}
               value="CA"
@@ -273,13 +274,13 @@ function FormInner() {
             />
           </div>
           <div>
-            <label className={labelClass}>ZIP Code *</label>
+            <label className={labelClass}>ZIP Code<RequiredMark /></label>
             <input className={inputClass} value={form.zip} maxLength={5} onChange={(e) => set("zip", digitsOnly(e.target.value, 5))} />
           </div>
         </div>
         <div className="mt-4 grid grid-cols-3 gap-4">
           <div>
-            <label className={labelClass}>Date of Birth *</label>
+            <label className={labelClass}>Date of Birth<RequiredMark /></label>
             <DateField
               value={form.dateOfBirth}
               onChange={(v) => set("dateOfBirth", v)}
@@ -288,14 +289,14 @@ function FormInner() {
             />
           </div>
         </div>
-        <p className="mt-3 font-sans text-sm text-[#1B1B1B]/50">* indicates required</p>
+        <p className="mt-3 font-sans text-sm text-[#1B1B1B]/50"><RequiredMark className="mr-1" />indicates required</p>
       </div>
 
       {/* ── Section 2: License Information ── */}
       <div className={sectionClass}>
         <p className={sectionHeadingClass}>License Information</p>
         <div>
-          <label className={labelClass}>License Type *</label>
+          <label className={labelClass}>License Type<RequiredMark /></label>
           <div className={`mt-2 flex gap-6 rounded-lg p-1 -m-1 ${ring("licenseType")}`}>
             {(["SALESPERSON", "BROKER_ASSOCIATE"] as LicenseType[]).map((t) => (
               <label key={t} className="flex cursor-pointer items-center gap-2 font-sans text-sm text-[#1B1B1B]">
@@ -314,11 +315,11 @@ function FormInner() {
         </div>
         <div className="mt-8 grid grid-cols-2 gap-4">
           <div>
-            <label className={labelClass}>CA DRE License # *</label>
+            <label className={labelClass}>CA DRE License #<RequiredMark /></label>
             <input className={`${inputClass} ${ring("licenseNumber")}`} value={form.licenseNumber} maxLength={8} onChange={(e) => set("licenseNumber", digitsOnly(e.target.value, 8))} />
           </div>
           <div>
-            <label className={labelClass}>License Expiration Date *</label>
+            <label className={labelClass}>License Expiration Date<RequiredMark /></label>
             <div className={`rounded-lg ${ring("licenseExpDate")}`}>
               <DateField value={form.licenseExpDate} onChange={(v) => set("licenseExpDate", v)} />
             </div>
@@ -326,7 +327,7 @@ function FormInner() {
         </div>
         <div className="mt-4 grid grid-cols-2 gap-4">
           <div>
-            <label className={labelClass}>Years Licensed *</label>
+            <label className={labelClass}>Years Licensed<RequiredMark /></label>
             <input className={`${inputClass} ${ring("yearsLicensed")}`} type="number" min={0} max={99} value={form.yearsLicensed} onChange={(e) => set("yearsLicensed", e.target.value.slice(0, 2))} />
           </div>
           <div>
@@ -336,7 +337,7 @@ function FormInner() {
         </div>
         <div className="mt-4 grid grid-cols-2 gap-4">
           <div>
-            <label className={labelClass}>Current Membership Association *</label>
+            <label className={labelClass}>Current Membership Association<RequiredMark /></label>
             <div className="relative">
               <select
                 className={`${inputClass} appearance-none pr-10 ${ring("boardOfRealtors")}`}
@@ -400,7 +401,7 @@ function FormInner() {
             onChange={(e) => set("icaAgreed", e.target.checked)}
             className="mt-0.5 accent-[#9E8C61]"
           />
-          I have read and agree to the CnC Realty Independent Contractor Agreement. *
+          I have read and agree to the CnC Realty Independent Contractor Agreement.<RequiredMark />
         </label>
         <div className="mt-8">
           <input
@@ -421,12 +422,12 @@ function FormInner() {
         <p className={sectionHeadingClass}>Active Listings & Sales</p>
         {(
           [
-            { field: "hasActiveListings", countField: "activeListingsCount", label: "Do you have active listings to transfer? *", countLabel: "How many listings do you have to transfer? *" },
-            { field: "hasActiveSales", countField: "activeSalesCount", label: "Do you have pending sales to transfer? *", countLabel: "How many pending sales do you have to transfer? *" },
+            { field: "hasActiveListings", countField: "activeListingsCount", label: "Do you have active listings to transfer?", countLabel: "How many listings do you have to transfer?" },
+            { field: "hasActiveSales", countField: "activeSalesCount", label: "Do you have pending sales to transfer?", countLabel: "How many pending sales do you have to transfer?" },
           ] as const
         ).map(({ field, countField, label, countLabel }) => (
           <div key={field} className="mb-4">
-            <label className={labelClass}>{label}</label>
+            <label className={labelClass}>{label}<RequiredMark /></label>
             <div className={`mt-2 flex gap-6 rounded-lg p-1 -m-1 ${ring(field)}`}>
               {([true, false] as const).map((val) => (
                 <label key={String(val)} className="flex cursor-pointer items-center gap-2 font-sans text-sm text-[#1B1B1B]">
@@ -452,7 +453,7 @@ function FormInner() {
                 <p className="mt-2 font-sans text-sm text-[#1B1B1B]/50">
                   Please request your current brokerage to release active listings to CnC Realty after submission
                 </p>
-                <label className={`${labelClass} mt-3`}>{countLabel}</label>
+                <label className={`${labelClass} mt-3`}>{countLabel}<RequiredMark /></label>
                 <select
                   className={`${inputClass} ${ring(countField)}`}
                   value={form[countField]}
@@ -472,7 +473,7 @@ function FormInner() {
       {/* ── Section 5: Business & Tax ── */}
       <div className={sectionClass}>
         <p className={sectionHeadingClass}>Business & Tax Information</p>
-        <label className={labelClass}>Where is your commission deposited to (For W-9 purposes)? *</label>
+        <label className={labelClass}>Where is your commission deposited to (For W-9 purposes)?<RequiredMark /></label>
         <div className={`mt-2 flex flex-wrap gap-x-10 gap-y-2 rounded-lg p-1 -m-1 ${ring("commissionEntity")}`}>
           {(
             [
@@ -502,7 +503,7 @@ function FormInner() {
         <p className={sectionHeadingClass}>Background</p>
         <div className="mb-4">
           <label className={labelClass}>
-            Have you ever been disciplined by any Local, State, or Federal entity? *
+            Have you ever been disciplined by any Local, State, or Federal entity?<RequiredMark />
           </label>
           <div className={`mt-2 flex gap-6 rounded-lg p-1 -m-1 ${ring("hasDisciplinaryHistory")}`}>
             {([true, false] as const).map((val) => (
@@ -530,7 +531,7 @@ function FormInner() {
         </div>
         <div className="mb-8">
           <label className={labelClass}>
-            Are you currently under investigation or prosecution by the DRE or any government agency? *
+            Are you currently under investigation or prosecution by the DRE or any government agency?<RequiredMark />
           </label>
           <div className={`mt-2 flex gap-6 rounded-lg p-1 -m-1 ${ring("hasInvestigationHistory")}`}>
             {([true, false] as const).map((val) => (

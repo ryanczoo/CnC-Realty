@@ -1,4 +1,5 @@
 "use client";
+import { RequiredMark } from "@/components/ui/RequiredMark";
 
 import {
   motion,
@@ -328,7 +329,7 @@ export function ServicesSection() {
                 <div className="grid grid-cols-2 gap-4">
                   {(["firstName", "lastName"] as const).map((k) => (
                     <div key={k} className="flex flex-col gap-1">
-                      <label className="font-sans text-xs text-[#1B1B1B]/50">{k === "firstName" ? "First Name *" : "Last Name *"}</label>
+                      <label className="font-sans text-xs text-[#1B1B1B]/50">{k === "firstName" ? "First Name" : "Last Name"}<RequiredMark /></label>
                       <input
                         required
                         value={modalForm[k]}
@@ -340,7 +341,7 @@ export function ServicesSection() {
                 </div>
                 {(["email", "phone"] as const).map((k) => (
                   <div key={k} className="flex flex-col gap-1">
-                    <label className="font-sans text-xs text-[#1B1B1B]/50">{k === "email" ? "Email *" : "Phone"}</label>
+                    <label className="font-sans text-xs text-[#1B1B1B]/50">{k === "email" ? <>Email<RequiredMark /></> : "Phone"}</label>
                     <input
                       type={k === "email" ? "email" : "tel"}
                       required={k === "email"}

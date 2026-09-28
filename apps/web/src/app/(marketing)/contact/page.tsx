@@ -1,4 +1,5 @@
 "use client";
+import { RequiredMark } from "@/components/ui/RequiredMark";
 import { useCallback, useRef, useState } from "react";
 import Image from "next/image";
 import { motion } from "motion/react";
@@ -36,7 +37,7 @@ export default function ContactPage() {
 
   const field = (name: keyof typeof form, label: string, type = "text", required = false) => (
     <div className="flex flex-col gap-1.5">
-      <label className="font-sans text-sm text-left text-[#1B1B1B]/60">{label}{required && " *"}</label>
+      <label className="font-sans text-sm text-left text-[#1B1B1B]/60">{label}{required && <RequiredMark />}</label>
       <input
         type={type}
         required={required}
@@ -69,7 +70,7 @@ export default function ContactPage() {
             {field("phone", "Phone (optional)")}
 
             <div className="flex flex-col gap-1.5" ref={roleRef}>
-              <label className={`font-sans text-sm text-left ${roleError ? "text-red-500" : "text-[#1B1B1B]/60"}`}>I am a *</label>
+              <label className={`font-sans text-sm text-left ${roleError ? "text-red-500" : "text-[#1B1B1B]/60"}`}>I am a<RequiredMark /></label>
               <button
                 type="button"
                 onClick={() => { setRoleOpen((o) => !o); setRoleError(false); }}
@@ -106,7 +107,7 @@ export default function ContactPage() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="font-sans text-sm text-left text-[#1B1B1B]/60">Message *</label>
+              <label className="font-sans text-sm text-left text-[#1B1B1B]/60">Message<RequiredMark /></label>
               <textarea
                 rows={4}
                 required

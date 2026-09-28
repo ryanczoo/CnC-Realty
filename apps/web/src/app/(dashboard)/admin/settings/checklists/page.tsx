@@ -1,4 +1,5 @@
 "use client";
+import { RequiredMark } from "@/components/ui/RequiredMark";
 import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import { ChecklistTemplateEditor } from "@/components/transactions/ChecklistTemplateEditor";
@@ -70,7 +71,7 @@ export default function ChecklistTemplatesPage() {
         <div className="mb-6 rounded-xl border border-[#1B1B1B]/10 bg-white p-5 space-y-4">
           <h2 className="text-sm font-medium text-[#1B1B1B]">New Template</h2>
           <div>
-            <label className="mb-1 block text-xs font-medium text-[#1B1B1B]/60">Template Name *</label>
+            <label className="mb-1 block text-xs font-medium text-[#1B1B1B]/60">Template Name<RequiredMark /></label>
             <input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
@@ -79,7 +80,7 @@ export default function ChecklistTemplatesPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-[#1B1B1B]/60">File Type *</label>
+            <label className="mb-1 block text-xs font-medium text-[#1B1B1B]/60">File Type<RequiredMark /></label>
             <select value={newFileType} onChange={(e) => setNewFileType(e.target.value)} className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2 text-sm">
               <option value="LISTING">Listing File (pre-contract, matched by Listing Type)</option>
               <option value="TRANSACTION">Transaction File (matched by Transaction Side)</option>

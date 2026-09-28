@@ -13,6 +13,7 @@ import { CommissionField } from "@/components/transactions/CommissionField";
 import { LISTING_TYPES, listingTypeLabel, listingPriceLabel, commissionDisplay } from "@/types/transaction";
 import { listingDatesError } from "@/lib/listing-dates";
 import { formatDateMDY } from "@/lib/utils";
+import { RequiredMark } from "@/components/ui/RequiredMark";
 
 export default function NewListingPage() {
   const router = useRouter();
@@ -96,7 +97,7 @@ export default function NewListingPage() {
         {step === 0 && (
           <div className="space-y-4">
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">Listing Type *</label>
+              <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">Listing Type<RequiredMark /></label>
               <select
                 value={form.listingType}
                 onChange={(e) => set("listingType", e.target.value)}
@@ -107,23 +108,23 @@ export default function NewListingPage() {
                 ))}
               </select>
             </div>
-            <Field label="Property Address *" value={form.propertyAddress} onChange={(v) => set("propertyAddress", v)} placeholder="123 Main St" />
+            <Field label="Property Address" required value={form.propertyAddress} onChange={(v) => set("propertyAddress", v)} placeholder="123 Main St" />
             <div className="grid grid-cols-3 gap-4">
-              <Field label="City *" value={form.city} onChange={(v) => set("city", v)} restrict={stripDigits} />
+              <Field label="City" required value={form.city} onChange={(v) => set("city", v)} restrict={stripDigits} />
               <Field label="State" value={form.state} onChange={(v) => set("state", v)} />
-              <Field label="ZIP *" value={form.zip} onChange={(v) => set("zip", v)} restrict={(v) => digitsOnly(v, 5)} />
+              <Field label="ZIP" required value={form.zip} onChange={(v) => set("zip", v)} restrict={(v) => digitsOnly(v, 5)} />
             </div>
             <Field label="MLS Number" value={form.mlsNumber} onChange={(v) => set("mlsNumber", v)} placeholder="Optional" restrict={(v) => digitsOnly(v, 10)} />
             {/* Label follows the Listing Type live, in any order: a lease listing's price
                 is its asking monthly rent. */}
-            <Field label={`${listingPriceLabel(form.listingType)} *`} value={form.listPrice} onChange={(v) => set("listPrice", v)} placeholder="$" formatCommas />
+            <Field label={listingPriceLabel(form.listingType)} required value={form.listPrice} onChange={(v) => set("listPrice", v)} placeholder="$" formatCommas />
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">List Date *</label>
+                <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">List Date<RequiredMark /></label>
                 <DateField value={form.listDate} onChange={(v) => set("listDate", v)} />
               </div>
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">Expiration Date *</label>
+                <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">Expiration Date<RequiredMark /></label>
                 <DateField value={form.expirationDate} onChange={(v) => set("expirationDate", v)} />
                 {dateOrderError && (
                   <p className="mt-1 text-xs text-red-500">{dateOrderError}</p>

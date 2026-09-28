@@ -1,4 +1,5 @@
 "use client";
+import { RequiredMark } from "@/components/ui/RequiredMark";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
@@ -133,16 +134,16 @@ export function NewLeadModal({ open, onClose, onSaved }: Props) {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="mb-1 block text-xs text-[#1B1B1B]/50">First Name *</label>
+                  <label className="mb-1 block text-xs text-[#1B1B1B]/50">First Name<RequiredMark /></label>
                   <input required className={INPUT_CLS} value={form.firstName} onChange={set("firstName")} />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs text-[#1B1B1B]/50">Last Name *</label>
+                  <label className="mb-1 block text-xs text-[#1B1B1B]/50">Last Name<RequiredMark /></label>
                   <input required className={INPUT_CLS} value={form.lastName} onChange={set("lastName")} />
                 </div>
               </div>
               <div>
-                <label className="mb-1 block text-xs text-[#1B1B1B]/50">Email *</label>
+                <label className="mb-1 block text-xs text-[#1B1B1B]/50">Email<RequiredMark /></label>
                 <input required type="email" className={INPUT_CLS} value={form.email} onChange={set("email")} />
               </div>
               <div>

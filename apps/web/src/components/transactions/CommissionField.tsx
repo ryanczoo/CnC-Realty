@@ -1,15 +1,16 @@
 "use client";
 import { formatCurrencyDisplay, sanitizeCurrencyInput } from "@/lib/form-validation";
 import { commissionInputError } from "@/lib/file-edit";
+import { RequiredMark } from "@/components/ui/RequiredMark";
 
 // Commission as a percentage or a flat $ amount, with a %/$ toggle — the one
 // commission input: every commission field in the New Transaction and New Listing
 // wizards and every Overview commission pencil (listings and all transaction
 // sides, leases included) uses it.
 export function CommissionField({
-  label, value, onChange, mode, onModeChange,
+  label, value, onChange, mode, onModeChange, required = false,
 }: {
-  label: string; value: string; onChange: (v: string) => void;
+  label: string; required?: boolean; value: string; onChange: (v: string) => void;
   mode: "pct" | "flat"; onModeChange: (m: "pct" | "flat") => void;
 }) {
   // Shown right under the box as a % goes over 100 (the same rule the wizards'
@@ -18,7 +19,7 @@ export function CommissionField({
   return (
     <div>
       <div className="mb-1.5 flex items-center justify-between">
-        <label className="text-xs font-medium text-[#1B1B1B]/50">{label}</label>
+        <label className="text-xs font-medium text-[#1B1B1B]/50">{label}{required && <RequiredMark />}</label>
         <div className="flex overflow-hidden rounded-lg border border-[#1B1B1B]/10">
           {(["pct", "flat"] as const).map((m) => (
             <button

@@ -485,7 +485,7 @@ function TasksTab({
           <input
             type="text"
             required
-            placeholder="Task title *"
+            placeholder="Task title"
             value={form.title}
             onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
             className="w-full rounded-lg border border-[#1B1B1B]/15 bg-[#F2F0EF] px-3 py-2 text-sm text-[#1B1B1B] outline-none focus:border-[#1B1B1B]/40"

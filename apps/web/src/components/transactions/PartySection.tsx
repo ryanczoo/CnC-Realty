@@ -32,7 +32,7 @@ export function PartySection({
               </button>
             )}
             <div className="grid grid-cols-2 gap-3">
-              <Field label={`${singular} Name${required ? " *" : ""}`} value={p.name} onChange={(v) => update(i, "name", v)} restrict={stripDigits} />
+              <Field label={`${singular} Name`} required={required} value={p.name} onChange={(v) => update(i, "name", v)} restrict={stripDigits} />
               <Field label="Email" type="email" value={p.email} onChange={(v) => update(i, "email", v)} error={emailError(p.email)} />
               <Field label="Phone" type="tel" value={p.phone} onChange={(v) => update(i, "phone", v)} restrict={formatPhoneInput} />
             </div>

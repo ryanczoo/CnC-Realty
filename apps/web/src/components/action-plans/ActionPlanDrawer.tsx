@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
+import { RequiredMark } from "@/components/ui/RequiredMark";
 
 type ActionPlan = { id: string; name: string; description: string | null };
 
@@ -71,7 +72,7 @@ export function ActionPlanDrawer({ open, plan, onClose, onSaved }: Props) {
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
           {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
           <div>
-            <label className="mb-1 block text-xs text-[#1B1B1B]/50">Plan Name *</label>
+            <label className="mb-1 block text-xs text-[#1B1B1B]/50">Plan Name<RequiredMark /></label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}

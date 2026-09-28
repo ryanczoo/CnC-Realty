@@ -19,6 +19,7 @@ import { PartySection, emptyParty, type Party } from "@/components/transactions/
 import { CommissionField } from "@/components/transactions/CommissionField";
 import { CheckIcon } from "@/components/ui/CheckIcon";
 import { Spinner } from "@/components/ui/Spinner";
+import { RequiredMark } from "@/components/ui/RequiredMark";
 
 const STAGES = [
   { value: "UNDER_CONTRACT", label: "Under Contract", desc: "You have a signed agreement" },
@@ -97,7 +98,6 @@ export default function NewTransactionPage() {
 
   const isLease = isLeaseSide(form.transactionSide);
   const underContract = form.stage !== "PRE_CONTRACT";
-  const req = underContract ? " *" : "";
   const offerLabels = offerDateLabels(form.transactionSide, form.propertyCategory);
   // The dates Step 2 checks: hidden offer dates (residential lease) never count.
   const hasOfferDates = !!offerLabels;
@@ -381,7 +381,7 @@ export default function NewTransactionPage() {
         {step === 1 && (
           isReferral ? (
             <div className="space-y-5">
-              <Field label="Referred-To Agent Name *" value={form.referredToAgentName} onChange={(v) => set("referredToAgentName", v)} />
+              <Field label="Referred-To Agent Name" required value={form.referredToAgentName} onChange={(v) => set("referredToAgentName", v)} />
               <Field label="Referred-To Brokerage Name" value={form.referredToBrokerageName} onChange={(v) => set("referredToBrokerageName", v)} />
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Contact Email" type="email" value={form.referredToContactEmail} onChange={(v) => set("referredToContactEmail", v)} error={emailError(form.referredToContactEmail)} />
@@ -394,14 +394,14 @@ export default function NewTransactionPage() {
             </div>
           ) : (
           <div className="space-y-4">
-            <Field label="Property Address *" value={form.propertyAddress} onChange={(v) => set("propertyAddress", v)} placeholder="123 Main St" />
+            <Field label="Property Address" required value={form.propertyAddress} onChange={(v) => set("propertyAddress", v)} placeholder="123 Main St" />
             <div className="grid grid-cols-3 gap-4">
-              <Field label="City *" value={form.city} onChange={(v) => set("city", v)} restrict={stripDigits} />
+              <Field label="City" required value={form.city} onChange={(v) => set("city", v)} restrict={stripDigits} />
               <Field label="State" value={form.state} onChange={(v) => set("state", v)} />
-              <Field label="ZIP *" value={form.zip} onChange={(v) => set("zip", v)} restrict={(v) => digitsOnly(v, 5)} />
+              <Field label="ZIP" required value={form.zip} onChange={(v) => set("zip", v)} restrict={(v) => digitsOnly(v, 5)} />
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">Property Type *</label>
+              <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">Property Type<RequiredMark /></label>
               <select
                 value={form.propertyType}
                 onChange={(e) => set("propertyType", e.target.value)}
@@ -492,13 +492,13 @@ export default function NewTransactionPage() {
             <div className="grid grid-cols-2 gap-4">
               {isLease ? (
                 <>
-                  <Field label="Total Lease Amount *" value={form.leasePrice} onChange={(v) => set("leasePrice", v)} placeholder="$" formatCommas />
+                  <Field label="Total Lease Amount" required value={form.leasePrice} onChange={(v) => set("leasePrice", v)} placeholder="$" formatCommas />
                   <Field label={transactionListPriceLabel(form.transactionSide)} value={form.listPrice} onChange={(v) => set("listPrice", v)} placeholder="Optional" formatCommas />
                 </>
               ) : (
                 <>
                   <Field label="List Price" value={form.listPrice} onChange={(v) => set("listPrice", v)} placeholder="$" formatCommas />
-                  <Field label="Sale / Purchase Price *" value={form.salePrice} onChange={(v) => set("salePrice", v)} placeholder="$" formatCommas />
+                  <Field label="Sale / Purchase Price" required value={form.salePrice} onChange={(v) => set("salePrice", v)} placeholder="$" formatCommas />
                 </>
               )}
             </div>
@@ -528,13 +528,13 @@ export default function NewTransactionPage() {
               <div className="grid grid-cols-2 gap-4">
                 {isLease ? (
                   <>
-                    <DateFieldRow label={`Lease Signed Date${underContract ? " *" : ""}`} value={form.leaseSignedDate} onChange={(v) => set("leaseSignedDate", v)} />
-                    <DateFieldRow label={`Lease Start Date${underContract ? " *" : ""}`} value={form.leaseStartDate} onChange={(v) => set("leaseStartDate", v)} />
+                    <DateFieldRow label="Lease Signed Date" required={underContract} value={form.leaseSignedDate} onChange={(v) => set("leaseSignedDate", v)} />
+                    <DateFieldRow label="Lease Start Date" required={underContract} value={form.leaseStartDate} onChange={(v) => set("leaseStartDate", v)} />
                   </>
                 ) : (
                   <>
-                    <DateFieldRow label={`Acceptance Date${underContract ? " *" : ""}`} value={form.acceptanceDate} onChange={(v) => set("acceptanceDate", v)} />
-                    <DateFieldRow label={`Close of Escrow${underContract ? " *" : ""}`} value={form.closeOfEscrow} onChange={(v) => set("closeOfEscrow", v)} />
+                    <DateFieldRow label="Acceptance Date" required={underContract} value={form.acceptanceDate} onChange={(v) => set("acceptanceDate", v)} />
+                    <DateFieldRow label="Close of Escrow" required={underContract} value={form.closeOfEscrow} onChange={(v) => set("closeOfEscrow", v)} />
                   </>
                 )}
               </div>
@@ -635,7 +635,7 @@ export default function NewTransactionPage() {
           <div className="space-y-5">
             {isLease ? (
               <CommissionField
-                label={`Lease Commission${req}`}
+                label="Lease Commission" required={underContract}
                 value={form.saleCommission}
                 onChange={(v) => set("saleCommission", v)}
                 mode={commissionMode.sale}
@@ -645,7 +645,7 @@ export default function NewTransactionPage() {
               <>
                 {form.transactionSide !== "LISTING" && (
                   <CommissionField
-                    label={`Selling Agent Commission${req}`}
+                    label="Selling Agent Commission" required={underContract}
                     value={form.saleCommission}
                     onChange={(v) => set("saleCommission", v)}
                     mode={commissionMode.sale}
@@ -654,7 +654,7 @@ export default function NewTransactionPage() {
                 )}
                 {form.transactionSide !== "PURCHASE" && (
                   <CommissionField
-                    label={`Listing Agent Commission${req}`}
+                    label="Listing Agent Commission" required={underContract}
                     value={form.listingCommission}
                     onChange={(v) => set("listingCommission", v)}
                     mode={commissionMode.listing}
@@ -909,10 +909,10 @@ function OptionCard({
   );
 }
 
-function DateFieldRow({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+function DateFieldRow({ label, value, onChange, required = false }: { label: string; value: string; onChange: (v: string) => void; required?: boolean }) {
   return (
     <div>
-      <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">{label}</label>
+      <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">{label}{required && <RequiredMark />}</label>
       <DateField value={value} onChange={onChange} />
     </div>
   );
