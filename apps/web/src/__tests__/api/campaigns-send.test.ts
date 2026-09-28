@@ -15,8 +15,9 @@ vi.mock("@/lib/email/send", () => ({ sendEmail: vi.fn().mockResolvedValue({ sent
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     campaign: { findUnique: vi.fn(), update: vi.fn() },
-    campaignContact: { updateMany: vi.fn() },
+    campaignContact: { updateMany: vi.fn(), createMany: vi.fn(), findMany: vi.fn() },
     agent: { updateMany: vi.fn() },
+    lead: { findMany: vi.fn() },
   },
 }));
 
@@ -538,5 +539,71 @@ describe("POST /api/campaigns/[id]/send — suppressed contacts", () => {
     // recipient) = 4 total. Not 3 (missing the reset) and not 6 (reset
     // called redundantly per recipient).
     expect(prisma.agent.updateMany).toHaveBeenCalledTimes(4);
+  });
+});
+
+describe("POST /api/campaigns/[id]/send — newsletter audience", () => {
+  const ADMIN = {
+    session: { user: { id: "u3", email: "admin@cnc.com", role: "ADMIN", agentId: "a1" } },
+    error: null,
+  } as any;
+  const NEWSLETTER_CAMPAIGN = { ...CAMPAIGN, audience: "NEWSLETTER", contacts: [] };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetSeamMocks();
+    process.env.POSTMARK_SERVER_TOKEN = "test-key";
+    process.env.POSTMARK_BROADCAST_STREAM = "test-broadcast-stream";
+    vi.mocked(requireAuth).mockResolvedValue(ADMIN);
+    vi.mocked(prisma.campaign.findUnique).mockResolvedValue(NEWSLETTER_CAMPAIGN as any);
+    vi.mocked(prisma.campaign.update).mockResolvedValue({} as any);
+    vi.mocked(prisma.lead.findMany).mockResolvedValue([{ id: "lead_1" }, { id: "lead_2" }] as any);
+    vi.mocked(prisma.campaignContact.createMany).mockResolvedValue({ count: 2 } as any);
+    vi.mocked(prisma.campaignContact.findMany).mockResolvedValue([contact(1), contact(2)] as any);
+  });
+
+  it("resolves current subscribers at send time and adds them as contacts", async () => {
+    await POST(request(), { params: { id: "c1" } });
+    expect(prisma.lead.findMany).toHaveBeenCalledWith({
+      where: { newsletterSubscribedAt: { not: null }, newsletterOptOut: false },
+      select: { id: true },
+    });
+    expect(prisma.campaignContact.createMany).toHaveBeenCalledWith({
+      data: [{ campaignId: "c1", leadId: "lead_1" }, { campaignId: "c1", leadId: "lead_2" }],
+      skipDuplicates: true,
+    });
+  });
+
+  it("sends only to contacts still on the newsletter, under the newsletter category", async () => {
+    const res = await POST(request(), { params: { id: "c1" } });
+    expect(await res.json()).toMatchObject({ sent: 2 });
+    expect(prisma.campaignContact.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { campaignId: "c1", status: "PENDING", lead: { newsletterOptOut: false } },
+      })
+    );
+    for (const [call] of vi.mocked(sendEmail).mock.calls) {
+      expect(call.category).toBe("newsletter");
+      expect(footerCategory(call.html!)).toBe("newsletter");
+    }
+  });
+
+  it("pre-marks newsletter leavers, not campaign opt-outs", async () => {
+    await POST(request(), { params: { id: "c1" } });
+    expect(prisma.campaignContact.updateMany).toHaveBeenCalledWith({
+      where: { campaignId: "c1", status: "PENDING", lead: { newsletterOptOut: true } },
+      data: { status: "UNSUBSCRIBED" },
+    });
+  });
+
+  it("refuses a newsletter send to a non-admin, even the owning agent", async () => {
+    vi.mocked(requireAuth).mockResolvedValue({
+      session: { user: { id: "u1", email: "a@cnc.com", role: "AGENT", agentId: "a1" } },
+      error: null,
+    } as any);
+    const res = await POST(request(), { params: { id: "c1" } });
+    expect(res.status).toBe(403);
+    expect(sendEmail).not.toHaveBeenCalled();
+    expect(prisma.campaignContact.createMany).not.toHaveBeenCalled();
   });
 });

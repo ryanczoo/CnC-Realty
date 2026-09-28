@@ -175,3 +175,35 @@ describe("POST /api/campaigns/[id]/contacts — ownership", () => {
     expect(res.status).toBe(404);
   });
 });
+
+describe("POST /api/campaigns — newsletter audience", () => {
+  const ADMIN_SESSION = {
+    session: { user: { id: "admin-1", email: "admin@cnc.com", role: "ADMIN", agentId: "a9" } },
+    error: null,
+  } as any;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(prisma.campaign.create).mockResolvedValue({ id: "c1" } as any);
+  });
+
+  it("lets an admin create a campaign addressed to all newsletter subscribers", async () => {
+    vi.mocked(requireAuth).mockResolvedValue(ADMIN_SESSION);
+    const res = await createCampaign(
+      makeRequest("http://localhost/api/campaigns", { name: "Sept News", type: "EMAIL", audience: "NEWSLETTER" })
+    );
+    expect(res.status).toBe(201);
+    expect(prisma.campaign.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ audience: "NEWSLETTER" }) })
+    );
+  });
+
+  it("refuses the newsletter audience to an agent (the list belongs to the brokerage)", async () => {
+    vi.mocked(requireAuth).mockResolvedValue(AGENT_SESSION);
+    const res = await createCampaign(
+      makeRequest("http://localhost/api/campaigns", { name: "Sept News", type: "EMAIL", audience: "NEWSLETTER" })
+    );
+    expect(res.status).toBe(403);
+    expect(prisma.campaign.create).not.toHaveBeenCalled();
+  });
+});

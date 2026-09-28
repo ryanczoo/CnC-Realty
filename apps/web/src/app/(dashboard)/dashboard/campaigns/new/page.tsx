@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { TiptapEditor } from "@/components/campaigns/TiptapEditor";
 import { RecipientPicker } from "@/components/campaigns/RecipientPicker";
 import { DripSequenceEditor, type DripStepData } from "@/components/dashboard/DripSequenceEditor";
@@ -24,6 +25,11 @@ export default function NewCampaignPage() {
   const [body, setBody] = useState("");
   const [dripSteps, setDripSteps] = useState<DripStepData[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const isAdmin = useSession().data?.user?.role === "ADMIN";
+  const [audience, setAudience] = useState<"SELECTED_LEADS" | "NEWSLETTER">("SELECTED_LEADS");
+  // Newsletter is a one-off EMAIL sent now: subscribers are resolved by the
+  // send route, which the scheduler and drip engine don't go through.
+  const toNewsletter = isAdmin && type === "EMAIL" && audience === "NEWSLETTER";
   const [sendNow, setSendNow] = useState(true);
   const [scheduledAt, setScheduledAt] = useState("");
 
@@ -35,7 +41,7 @@ export default function NewCampaignPage() {
       }
       return body.trim().length > 0 && body !== "<p></p>";
     }
-    if (step === 3) return selectedIds.length > 0;
+    if (step === 3) return toNewsletter || selectedIds.length > 0;
     return true;
   };
 
@@ -46,7 +52,7 @@ export default function NewCampaignPage() {
       const createRes = await fetch("/api/campaigns", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, type, subject: type === "DRIP" ? "" : subject, heading: type === "DRIP" ? "" : heading }),
+        body: JSON.stringify({ name, type, subject: type === "DRIP" ? "" : subject, heading: type === "DRIP" ? "" : heading, ...(toNewsletter && { audience: "NEWSLETTER" }) }),
       });
       if (!createRes.ok) {
         const data = await createRes.json();
@@ -69,14 +75,16 @@ export default function NewCampaignPage() {
 
       await Promise.all([
         contentSave,
-        fetch(`/api/campaigns/${campaign.id}/contacts`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ leadIds: selectedIds }),
-        }),
+        toNewsletter
+          ? null
+          : fetch(`/api/campaigns/${campaign.id}/contacts`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ leadIds: selectedIds }),
+            }),
       ]);
 
-      if (sendNow && type === "EMAIL") {
+      if ((sendNow || toNewsletter) && type === "EMAIL") {
         // Unchanged, still the synchronous immediate-send path.
         await fetch(`/api/campaigns/${campaign.id}/send`, { method: "POST" });
       } else {
@@ -206,7 +214,32 @@ export default function NewCampaignPage() {
         {step === 3 && (
           <div className="flex flex-col gap-5">
             <h2 className="font-sans text-xl font-light text-[#1B1B1B]">Select Recipients</h2>
-            <RecipientPicker selectedIds={selectedIds} onChange={setSelectedIds} />
+            {isAdmin && type === "EMAIL" && (
+              <div className="flex flex-col gap-3">
+                {([
+                  ["SELECTED_LEADS", "Selected leads", "Choose who receives this campaign."],
+                  ["NEWSLETTER", "All newsletter subscribers", "Everyone subscribed when you click Finish."],
+                ] as const).map(([value, label, hint]) => (
+                  <label
+                    key={value}
+                    className="flex cursor-pointer items-center gap-3 rounded-xl border border-[#1B1B1B]/10 p-4 hover:bg-[#F2F0EF]"
+                  >
+                    <input
+                      type="radio"
+                      name="audience"
+                      checked={audience === value}
+                      onChange={() => setAudience(value)}
+                      className="accent-[#9E8C61]"
+                    />
+                    <div>
+                      <p className="font-sans text-sm font-medium text-[#1B1B1B]">{label}</p>
+                      <p className="font-sans text-xs text-[#1B1B1B]/50">{hint}</p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            )}
+            {!toNewsletter && <RecipientPicker selectedIds={selectedIds} onChange={setSelectedIds} />}
           </div>
         )}
 
@@ -218,7 +251,7 @@ export default function NewCampaignPage() {
                 <input
                   type="radio"
                   name="schedule"
-                  checked={sendNow}
+                  checked={sendNow || toNewsletter}
                   onChange={() => setSendNow(true)}
                   className="accent-[#9E8C61]"
                 />
@@ -233,6 +266,7 @@ export default function NewCampaignPage() {
                   </p>
                 </div>
               </label>
+              {!toNewsletter && (
               <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-[#1B1B1B]/10 p-4 hover:bg-[#F2F0EF]">
                 <input
                   type="radio"
@@ -246,7 +280,8 @@ export default function NewCampaignPage() {
                   <p className="font-sans text-xs text-[#1B1B1B]/50">Choose a date and time.</p>
                 </div>
               </label>
-              {!sendNow && <DateField value={scheduledAt} onChange={setScheduledAt} withTime />}
+              )}
+              {!sendNow && !toNewsletter && <DateField value={scheduledAt} onChange={setScheduledAt} withTime />}
             </div>
             {error && (
               <p className="rounded-lg bg-red-50 px-4 py-3 font-sans text-sm text-red-600">{error}</p>

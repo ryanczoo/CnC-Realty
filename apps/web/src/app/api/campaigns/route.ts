@@ -9,6 +9,9 @@ const createSchema = z.object({
   type: z.enum(["EMAIL", "DRIP"]),
   subject: z.string().optional(),
   heading: z.string().optional(),
+  // NEWSLETTER addresses every current subscriber, resolved at send time. The
+  // list belongs to the brokerage, so only an admin may pick it.
+  audience: z.enum(["SELECTED_LEADS", "NEWSLETTER"]).optional(),
 });
 
 export async function GET() {
@@ -39,6 +42,9 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const data = createSchema.parse(body);
+    if (data.audience === "NEWSLETTER" && session.user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Only an admin can send to newsletter subscribers" }, { status: 403 });
+    }
 
     const campaign = await prisma.campaign.create({
       data: {
@@ -49,6 +55,7 @@ export async function POST(req: Request) {
         body: "",
         status: "DRAFT",
         agentId,
+        ...(data.audience && { audience: data.audience }),
       },
     });
 

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth, checkOwnership } from "@/lib/api-auth";
 import { emailLayout, buildHeadingBodyHtml } from "@/lib/email";
 import { sendEmail } from "@/lib/email/send";
-import { unsubscribeFooterHtml } from "@/lib/email/unsubscribe";
+import { unsubscribeFooterHtml, OPT_OUT_COLUMN } from "@/lib/email/unsubscribe";
 import { ensureQuotaReset, tryConsumeEmailQuota } from "@/lib/email-quota";
 
 export async function POST(
@@ -32,6 +32,15 @@ export async function POST(
   const { exists, forbidden, record: campaign } = checkOwnership(campaignRecord, session.user.agentId, session.user.role);
   if (!exists || !campaign) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (forbidden) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  // A newsletter goes to the brokerage's subscriber list, not leads the agent
+  // picked, so it follows the newsletter opt-out rather than the campaign one.
+  const isNewsletter = campaign.audience === "NEWSLETTER";
+  if (isNewsletter && session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  const category = isNewsletter ? "newsletter" : "campaign";
+  const optOutColumn = OPT_OUT_COLUMN[category];
 
   if (!campaign.subject || !campaign.body) {
     return NextResponse.json(
@@ -95,11 +104,30 @@ export async function POST(
   // Deliberately placed after the ownership and validation gates above. Run
   // earlier, this would mutate contacts on a campaign the caller does not own,
   // and mutate state on a request that then 400s.
+  // Newsletter recipients are whoever is subscribed right now, so their
+  // CampaignContact rows (which carry the stats) are created at send time.
+  // skipDuplicates keeps a re-send from duplicating anyone already added.
+  let contacts = campaign.contacts;
+  if (isNewsletter) {
+    const subscribers = await prisma.lead.findMany({
+      where: { newsletterSubscribedAt: { not: null }, newsletterOptOut: false },
+      select: { id: true },
+    });
+    await prisma.campaignContact.createMany({
+      data: subscribers.map((s) => ({ campaignId: params.id, leadId: s.id })),
+      skipDuplicates: true,
+    });
+    contacts = await prisma.campaignContact.findMany({
+      where: { campaignId: params.id, status: "PENDING", lead: { newsletterOptOut: false } },
+      include: { lead: { select: { id: true, email: true, firstName: true, lastName: true } } },
+    });
+  }
+
   const preMarked = await prisma.campaignContact.updateMany({
     where: {
       campaignId: params.id,
       status: "PENDING",
-      lead: { campaignOptOut: true },
+      lead: { [optOutColumn]: true },
     },
     data: { status: "UNSUBSCRIBED" },
   });
@@ -109,7 +137,7 @@ export async function POST(
   await ensureQuotaReset(agentId, now);
 
   const results = await Promise.allSettled(
-    campaign.contacts.map(async (contact) => {
+    contacts.map(async (contact) => {
       const quotaAvailable = await tryConsumeEmailQuota(agentId, monthlyEmailLimit);
       if (!quotaAvailable) {
         return { contactId: contact.id, outcome: "limit" as const };
@@ -123,7 +151,7 @@ export async function POST(
           buildHeadingBodyHtml({
             heading: campaign.heading || campaign.subject!,
             bodyHtml: campaign.body!,
-          }) + unsubscribeFooterHtml("lead", contact.lead.id, "campaign"),
+          }) + unsubscribeFooterHtml("lead", contact.lead.id, category),
       });
 
       const result = await sendEmail({
@@ -132,7 +160,7 @@ export async function POST(
         html,
         stream: "broadcast",
         recipient: { kind: "lead", id: contact.lead.id },
-        category: "campaign",
+        category,
       });
 
       return { contactId: contact.id, outcome: result.sent ? ("sent" as const) : ("suppressed" as const) };
