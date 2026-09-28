@@ -177,6 +177,23 @@ export function WhyCnC() {
               </AnimatePresence>
             </div>
 
+            {/* Invisible copies of every front image, at the same box size and
+                `sizes` as the real one below, so the browser fetches the exact
+                same optimized files as the section scrolls near. When a panel's
+                wipe mounts its image it comes straight from cache instead of
+                the wipe sweeping over an empty box while it downloads. */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute opacity-0"
+              style={{ left: "2%", top: "25%", width: "40%", height: "52%" }}
+            >
+              {ITEMS.map((item) =>
+                item.imgFront ? (
+                  <Image key={item.imgFront} src={item.imgFront} alt="" fill className="object-cover" sizes="40vw" />
+                ) : null
+              )}
+            </div>
+
             {/* Front image — scroll-direction wipe */}
             <AnimatePresence mode="wait">
               <motion.div
