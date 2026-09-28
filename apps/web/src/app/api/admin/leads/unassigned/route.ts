@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/api-auth";
+import { UNASSIGNED_LEADS_WHERE } from "@/lib/unassigned-leads";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +10,7 @@ export async function GET() {
   if (error) return error;
 
   const leads = await prisma.lead.findMany({
-    where: { agentId: null },
+    where: UNASSIGNED_LEADS_WHERE,
     orderBy: { createdAt: "desc" },
     take: 500,
     select: {

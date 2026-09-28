@@ -81,10 +81,10 @@ describe("buildLeadWhere", () => {
 });
 
 describe("PREBUILT_LISTS", () => {
-  it("has 5 lists with unique slugs", () => {
-    expect(PREBUILT_LISTS).toHaveLength(5);
+  it("has 6 lists with unique slugs", () => {
+    expect(PREBUILT_LISTS).toHaveLength(6);
     const slugs = PREBUILT_LISTS.map(l => l.slug);
-    expect(new Set(slugs).size).toBe(5);
+    expect(new Set(slugs).size).toBe(6);
   });
 
   it("each list has at least one filter", () => {
@@ -115,5 +115,23 @@ describe("resolveListFilters", () => {
 
   it("returns null for unknown slug", () => {
     expect(resolveListFilters("unknown", [])).toBeNull();
+  });
+});
+
+describe("newsletter subscribers", () => {
+  it("matches leads currently on the newsletter (joined and not left)", () => {
+    const where = buildLeadWhere([{ field: "newsletter", operator: "is", value: true }], null);
+    expect(where).toEqual({
+      AND: [{ newsletterSubscribedAt: { not: null }, newsletterOptOut: false }],
+    });
+  });
+
+  it("ships a prebuilt Newsletter Subscribers list", () => {
+    const list = PREBUILT_LISTS.find((l) => l.slug === "newsletter-subscribers");
+    expect(list).toEqual({
+      slug: "newsletter-subscribers",
+      name: "Newsletter Subscribers",
+      filters: [{ field: "newsletter", operator: "is", value: true }],
+    });
   });
 });

@@ -10,7 +10,8 @@ export type FilterCondition =
   | { field: "priceMin";       operator: "atLeast";                   value: number }
   | { field: "priceMax";       operator: "atMost";                    value: number }
   | { field: "hasPendingTask"; operator: "is";                        value: boolean }
-  | { field: "createdDate";    operator: "withinLast" | "moreThan";   value: number };
+  | { field: "createdDate";    operator: "withinLast" | "moreThan";   value: number }
+  | { field: "newsletter";     operator: "is";                        value: true };
 
 export const PREBUILT_LISTS: Array<{ slug: string; name: string; filters: FilterCondition[] }> = [
   { slug: "new-this-week",  name: "New This Week",         filters: [{ field: "createdDate",   operator: "withinLast", value: 7 }] },
@@ -18,6 +19,7 @@ export const PREBUILT_LISTS: Array<{ slug: string; name: string; filters: Filter
   { slug: "hot-prospects",  name: "Hot Prospects",          filters: [{ field: "status",        operator: "is",         value: ["HOT_PROSPECT"] }] },
   { slug: "nurture",        name: "Nurture",                filters: [{ field: "status",        operator: "is",         value: ["NURTURE"] }] },
   { slug: "sphere",         name: "Sphere",                 filters: [{ field: "status",        operator: "is",         value: ["SPHERE"] }] },
+  { slug: "newsletter-subscribers", name: "Newsletter Subscribers", filters: [{ field: "newsletter", operator: "is", value: true }] },
 ];
 
 function daysAgo(n: number): Date {
@@ -85,6 +87,11 @@ export function buildLeadWhere(
             ? { createdAt: { gte: daysAgo(f.value) } }
             : { createdAt: { lt: daysAgo(f.value) } },
         );
+        break;
+      case "newsletter":
+        // Joined and hasn't left. The join date is kept after an opt-out, so
+        // both columns are needed.
+        filterConditions.push({ newsletterSubscribedAt: { not: null }, newsletterOptOut: false });
         break;
     }
   }

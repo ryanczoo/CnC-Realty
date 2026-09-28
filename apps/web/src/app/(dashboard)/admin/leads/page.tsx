@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { requireAdminPage } from "@/lib/server-utils";
+import { UNASSIGNED_LEADS_WHERE } from "@/lib/unassigned-leads";
 import { AdminLeadsClient } from "./AdminLeadsClient";
 
 export const metadata = { title: "All Leads | CnC Realty Admin" };
@@ -50,7 +51,7 @@ export default async function AdminLeadsPage() {
         take: 100,
       }),
       prisma.lead.findMany({
-        where: { agentId: null },
+        where: UNASSIGNED_LEADS_WHERE,
         orderBy: { createdAt: "desc" },
         select: {
           id: true,
