@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { Mail, Phone } from "lucide-react";
+import { Mail } from "lucide-react";
+import { PhoneIcon } from "@/components/ui/PhoneIcon";
 import { useScrollWordLight } from "@/hooks/useScrollWordLight";
 
 type Props = {
@@ -99,7 +100,7 @@ export function AgentHeroSection({ name, title, headshot, phone, onPhotoRef, pho
               href={`tel:${phone}`}
               className="flex items-center gap-2 rounded-full border border-[#1B1B1B]/25 px-5 py-2.5 font-sans text-sm text-[#1B1B1B]/70 transition-colors hover:border-[#1B1B1B]/50 hover:text-[#1B1B1B]"
             >
-              <Phone size={14} />
+              <PhoneIcon size={14} />
               {phone}
             </a>
           )}

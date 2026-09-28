@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { motion } from "motion/react";
 import { AgentAboutLineArt } from "./AgentAboutLineArt";
-import { Phone } from "lucide-react";
+import { PhoneIcon } from "@/components/ui/PhoneIcon";
 import { StatCards } from "./StatCards";
 import type { StatCardData } from "./StatCards";
 
@@ -232,7 +232,7 @@ export function AgentAboutSection({
               href={`tel:${phone}`}
               className="flex items-center gap-2 rounded-full border border-white/20 px-5 py-2.5 font-sans text-sm text-white/75 transition-colors hover:border-white/45 hover:text-white"
             >
-              <Phone size={14} />
+              <PhoneIcon size={14} />
               {phone}
             </a>
           </div>
