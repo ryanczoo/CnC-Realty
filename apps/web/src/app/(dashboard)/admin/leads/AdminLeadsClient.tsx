@@ -10,6 +10,7 @@ import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
 import { ArrowIcon } from "@/components/ui/ArrowIcon";
 import { NewLeadModal } from "@/components/leads/NewLeadModal";
 import { AssignLeadModal, type AgentOption } from "@/components/leads/AssignLeadModal";
+import { PageNumbers } from "@/components/ui/PageNumbers";
 
 type LeadRow = {
   id: string;
@@ -35,12 +36,16 @@ type UnassignedLead = {
 };
 
 interface Props {
+  page: number;
+  totalPages: number;
   leads: LeadRow[];
   unassignedLeads: UnassignedLead[];
   agents: AgentOption[];
 }
 
 export function AdminLeadsClient({
+  page,
+  totalPages,
   leads,
   unassignedLeads: initialUnassigned,
   agents,
@@ -245,6 +250,11 @@ export function AdminLeadsClient({
             </p>
           )}
         </div>
+        <PageNumbers
+          current={page}
+          total={totalPages}
+          hrefFor={(p) => `/admin/leads?page=${p}`}
+        />
       </div>
 
       {/* ── Unassigned tab ── */}

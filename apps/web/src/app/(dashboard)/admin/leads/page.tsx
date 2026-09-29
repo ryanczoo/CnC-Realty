@@ -1,12 +1,21 @@
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireAdminPage } from "@/lib/server-utils";
 import { UNASSIGNED_LEADS_WHERE } from "@/lib/unassigned-leads";
+import { parsePage } from "@/lib/pagination";
 import { AdminLeadsClient } from "./AdminLeadsClient";
 
 export const metadata = { title: "All Leads | CnC Realty Admin" };
 
-export default async function AdminLeadsPage() {
+const PAGE_SIZE = 100;
+
+export default async function AdminLeadsPage({
+  searchParams,
+}: {
+  searchParams: { page?: string | string[] };
+}) {
   await requireAdminPage();
+  const page = parsePage(searchParams.page);
 
   type LeadRow = {
     id: string;
@@ -40,16 +49,19 @@ export default async function AdminLeadsPage() {
   let leads: LeadRow[] = [];
   let unassignedLeads: UnassignedRow[] = [];
   let agents: AgentRow[] = [];
+  let totalLeads = 0;
 
   try {
-    [leads, unassignedLeads, agents] = await Promise.all([
+    [leads, totalLeads, unassignedLeads, agents] = await Promise.all([
       prisma.lead.findMany({
         include: {
           agent: { include: { user: { select: { email: true } } } },
         },
         orderBy: { createdAt: "desc" },
-        take: 100,
+        skip: (page - 1) * PAGE_SIZE,
+        take: PAGE_SIZE,
       }),
+      prisma.lead.count(),
       prisma.lead.findMany({
         where: UNASSIGNED_LEADS_WHERE,
         orderBy: { createdAt: "desc" },
@@ -77,6 +89,10 @@ export default async function AdminLeadsPage() {
   } catch {
     // DB unreachable — show empty state
   }
+
+  // Outside the try: redirect() works by throwing, which the catch would swallow.
+  const totalPages = Math.ceil(totalLeads / PAGE_SIZE);
+  if (totalPages > 0 && page > totalPages) redirect(`/admin/leads?page=${totalPages}`);
 
   const serializedLeads = leads.map((l) => ({
     id: l.id,
@@ -106,7 +122,7 @@ export default async function AdminLeadsPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="font-sans text-2xl font-light text-[#1B1B1B]">All Leads</h1>
-          <p className="mt-1 text-sm text-[#1B1B1B]/40">{leads.length} total leads</p>
+          <p className="mt-1 text-sm text-[#1B1B1B]/40">{totalLeads} total leads</p>
         </div>
         <a
           href="/api/leads/export"
@@ -116,7 +132,11 @@ export default async function AdminLeadsPage() {
         </a>
       </div>
 
+      {/* Keyed by page so a Merge selection never carries over to another page. */}
       <AdminLeadsClient
+        key={page}
+        page={page}
+        totalPages={totalPages}
         leads={serializedLeads}
         unassignedLeads={serializedUnassigned}
         agents={agents}

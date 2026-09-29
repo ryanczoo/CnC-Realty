@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { RevealLine } from "@/components/ui/reveal-text";
+import { PageNumbers } from "@/components/ui/PageNumbers";
 import type { TransactionSide } from "@/types/transaction";
 import { ROLE_LABELS } from "@/types/transaction";
 import { formatDateOnly } from "@/lib/utils";
@@ -49,18 +50,6 @@ function fmtPrice(n: number) {
   return "$" + n.toLocaleString("en-US");
 }
 
-function getPageNums(cur: number, total: number): (number | "...")[] {
-  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
-  const out: (number | "...")[] = [1];
-  if (cur > 3) out.push("...");
-  const lo = Math.max(2, cur - 1);
-  const hi = Math.min(total - 1, cur + 1);
-  for (let i = lo; i <= hi; i++) out.push(i);
-  if (cur < total - 2) out.push("...");
-  out.push(total);
-  return out;
-}
-
 function HousePlaceholder() {
   return (
     <svg
@@ -88,7 +77,6 @@ export function AgentTransactionsSection({
 
   const totalPages = Math.ceil(items.length / PER_PAGE);
   const pageItems = items.slice((page - 1) * PER_PAGE, page * PER_PAGE);
-  const pageNums = getPageNums(page, totalPages);
 
   return (
     <section className="relative bg-white px-6 py-20 md:px-12 lg:px-20">
@@ -144,33 +132,7 @@ export function AgentTransactionsSection({
         )}
 
         {/* Pagination — FIND style, no arrows */}
-        {hasData && totalPages > 1 && (
-          <div className="mt-10 flex items-center justify-center gap-1">
-            {pageNums.map((p, i) =>
-              p === "..." ? (
-                <span
-                  key={`dots-${i}`}
-                  className="flex h-9 w-7 items-center justify-center font-sans text-sm text-[#1B1B1B]/30"
-                >
-                  ...
-                </span>
-              ) : (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => setPage(p)}
-                  className={
-                    p === page
-                      ? "flex h-9 w-9 items-center justify-center rounded-full bg-[#1B1B1B] font-sans text-sm font-medium text-white"
-                      : "flex h-9 w-9 items-center justify-center rounded-full font-sans text-sm text-[#1B1B1B]/50 transition-colors hover:text-[#1B1B1B]"
-                  }
-                >
-                  {p}
-                </button>
-              )
-            )}
-          </div>
-        )}
+        {hasData && <PageNumbers current={page} total={totalPages} onSelect={setPage} />}
 
       </div>
     </section>
