@@ -173,4 +173,13 @@ describe("POST /api/leads — newsletter consent", () => {
     const res = await submit({ newsletterConsent: true });
     expect(res.status).toBe(201);
   });
+
+  it("accepts newsletterConsent: false without a 400 and does not enroll", async () => {
+    const res = await submit({ newsletterConsent: false });
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body.id).toBe("lead-9");
+    expect(prisma.lead.create).toHaveBeenCalledWith({ data: expect.not.objectContaining({ newsletterConsent: expect.anything() }) });
+    expect(subscribeToNewsletter).not.toHaveBeenCalled();
+  });
 });

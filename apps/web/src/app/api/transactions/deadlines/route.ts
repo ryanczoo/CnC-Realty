@@ -13,11 +13,8 @@ export async function GET() {
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() + DEADLINE_WINDOW_DAYS);
 
-  let scopedAgentId: string | undefined;
-  if (session.user.role === "AGENT") {
-    if (!session.user.agentId) return NextResponse.json({ deadlines: [] });
-    scopedAgentId = session.user.agentId;
-  }
+  const agentId = session.user.agentId;
+  if (!agentId) return NextResponse.json({ deadlines: [] });
 
   const where = {
     status: { not: TransactionFileStatus.CLOSED },
@@ -27,7 +24,7 @@ export async function GET() {
       { appraisalDeadline: { gte: now, lte: cutoff } },
       { loanApprovalDeadline: { gte: now, lte: cutoff } },
     ],
-    ...(scopedAgentId !== undefined && { agentId: scopedAgentId }),
+    agentId,
   };
 
   const files = await prisma.transactionFile.findMany({

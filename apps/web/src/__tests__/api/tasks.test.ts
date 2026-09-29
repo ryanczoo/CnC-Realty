@@ -59,11 +59,12 @@ describe("GET /api/tasks", () => {
     );
   });
 
-  it("returns 404 when agent session has no agentId", async () => {
+  it("returns 200 with an empty array when agent session has no agentId", async () => {
     vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u3", role: "AGENT", agentId: null } } as any);
 
     const res = await GET(new Request("http://localhost/api/tasks"));
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual([]);
   });
 
   it("filters by done=false", async () => {
@@ -100,12 +101,13 @@ describe("GET /api/tasks", () => {
     );
   });
 
-  it("returns 404, never every task, for an ADMIN with no agentId", async () => {
+  it("returns 200 with an empty array, never every task, for an ADMIN with no agentId", async () => {
     vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u2", role: "ADMIN", agentId: null } } as any);
 
     const res = await GET(new Request("http://localhost/api/tasks"));
 
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual([]);
     expect(prisma.leadTask.findMany).not.toHaveBeenCalled();
   });
 });

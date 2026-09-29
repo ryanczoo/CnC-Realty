@@ -18,7 +18,7 @@ const createSchema = z.object({
   source: z.enum(["WEBSITE", "REFERRAL", "SOCIAL", "OPEN_HOUSE", "COLD_CALL", "OTHER"]).default("WEBSITE"),
   utmSource: z.string().optional(),
   role: z.string().optional(),
-  newsletterConsent: z.literal(true).optional(),
+  newsletterConsent: z.boolean().optional(),
 });
 
 // Public — no auth required. Authenticated users skip rate limiting.

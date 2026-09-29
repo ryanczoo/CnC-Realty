@@ -34,7 +34,7 @@ export async function GET(req: Request) {
 
   // Tasks are personal for everyone, admins included.
   const agentId = session.user.agentId;
-  if (!agentId) return NextResponse.json({ error: "Agent profile not found" }, { status: 404 });
+  if (!agentId) return NextResponse.json([]);
 
   const tasks = await prisma.leadTask.findMany({
     where: {

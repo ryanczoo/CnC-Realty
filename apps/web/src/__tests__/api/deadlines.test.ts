@@ -82,13 +82,22 @@ describe('GET /api/transactions/deadlines', () => {
     expect(prisma.transactionFile.findMany).not.toHaveBeenCalled();
   });
 
-  it('returns deadlines for ALL agents when ADMIN', async () => {
-    vi.mocked(requireAuth).mockResolvedValue(mockSession('ADMIN', 'admin-1', null) as any);
+  it('scopes deadlines to the admin\'s own agentId when the admin has one', async () => {
+    vi.mocked(requireAuth).mockResolvedValue(mockSession('ADMIN', 'admin-1', 'agent-cuid-admin') as any);
     vi.mocked(prisma.transactionFile.findMany).mockResolvedValue([] as any);
     const res = await GET();
     expect(res.status).toBe(200);
     expect(prisma.transactionFile.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: expect.not.objectContaining({ agentId: expect.anything() }) })
+      expect.objectContaining({ where: expect.objectContaining({ agentId: 'agent-cuid-admin' }) })
     );
+  });
+
+  it('returns the empty shape and never queries when an admin has no agentId', async () => {
+    vi.mocked(requireAuth).mockResolvedValue(mockSession('ADMIN', 'admin-1', null) as any);
+    const res = await GET();
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(body.deadlines).toHaveLength(0);
+    expect(prisma.transactionFile.findMany).not.toHaveBeenCalled();
   });
 });
