@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import { NAV_PANEL_CLS, NAV_ITEM_CLS, PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
 import { ROLE_OPTIONS } from "@/lib/role-options";
+import { ContactConsentNotice } from "@/components/ui/ContactConsentNotice";
 
 export { ROLE_OPTIONS };
 
@@ -56,7 +57,7 @@ export function ContactModal({ open, source, onClose }: ContactModalProps) {
       const res = await fetch("/api/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, source: "WEBSITE", utmSource: source }),
+        body: JSON.stringify({ ...form, source: "WEBSITE", utmSource: source, newsletterConsent: true }),
       });
       if (!res.ok) throw new Error();
       setStatus("success");
@@ -197,6 +198,8 @@ export function ContactModal({ open, source, onClose }: ContactModalProps) {
                 {status === "error" && (
                   <p className="font-sans text-sm text-red-500">Something went wrong. Please try again.</p>
                 )}
+
+                <ContactConsentNotice />
 
                 <motion.button
                   type="submit"

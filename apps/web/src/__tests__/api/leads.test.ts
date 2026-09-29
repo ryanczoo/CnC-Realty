@@ -8,9 +8,12 @@ vi.mock("@/lib/rate-limit", () => ({
   publicFormRateLimit: { limit: vi.fn().mockResolvedValue({ success: true, reset: Date.now() + 60000 }) },
 }));
 vi.mock("@/lib/email", () => ({ sendLeadNotification: vi.fn().mockResolvedValue(undefined) }));
+vi.mock("@/lib/newsletter", () => ({ subscribeToNewsletter: vi.fn().mockResolvedValue(undefined) }));
+vi.mock("@sentry/nextjs", () => ({ captureException: vi.fn() }));
 
 import { requireAuth } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
+import { subscribeToNewsletter } from "@/lib/newsletter";
 import { GET, POST } from "../../app/api/leads/route";
 
 function makeRequest(body: object) {
@@ -140,5 +143,34 @@ describe("GET /api/leads — personal scope", () => {
     const res = await GET(new Request(`http://localhost/api/leads?filters=${newsletter}`));
     expect(res.status).toBe(403);
     expect(prisma.lead.findMany).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/leads — newsletter consent", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(requireAuth).mockResolvedValue({ session: null, error: null as any });
+    vi.mocked(prisma.lead.create).mockResolvedValue({ id: "lead-9", email: "jane@example.com" } as any);
+  });
+
+  const submit = (extra: object) =>
+    POST(makeRequest({ firstName: "Jane", lastName: "Doe", email: "jane@example.com", role: "Buyer", ...extra }));
+
+  it("enrolls the new lead when the form shows the consent disclaimer", async () => {
+    const res = await submit({ newsletterConsent: true });
+    expect(res.status).toBe(201);
+    expect(subscribeToNewsletter).toHaveBeenCalledWith({ email: "jane@example.com", leadId: "lead-9", source: "contact-form" });
+    expect(prisma.lead.create).toHaveBeenCalledWith({ data: expect.not.objectContaining({ newsletterConsent: true }) });
+  });
+
+  it("does not enroll forms without the disclaimer (Let's Start, tour requests, Add Lead)", async () => {
+    await submit({});
+    expect(subscribeToNewsletter).not.toHaveBeenCalled();
+  });
+
+  it("still accepts the inquiry when enrollment fails", async () => {
+    vi.mocked(subscribeToNewsletter).mockRejectedValueOnce(new Error("db down"));
+    const res = await submit({ newsletterConsent: true });
+    expect(res.status).toBe(201);
   });
 });

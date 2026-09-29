@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { FieldError } from "@/components/ui/FieldError";
 import { emailError } from "@/lib/form-validation";
+import { ContactConsentNotice } from "@/components/ui/ContactConsentNotice";
 
 export function AgentContactForm({ slug }: { slug: string }) {
   const [name, setName] = useState("");
@@ -99,6 +100,7 @@ export function AgentContactForm({ slug }: { slug: string }) {
       {error && (
         <p className="rounded-lg bg-red-50 px-4 py-3 font-sans text-sm text-red-600">{error}</p>
       )}
+      <ContactConsentNotice />
       <button
         type="submit"
         disabled={submitting || !!emailError(email)}

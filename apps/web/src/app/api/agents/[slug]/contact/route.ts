@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/prisma";
 import { sendLeadNotification } from "@/lib/email";
 import { publicFormRateLimit } from "@/lib/rate-limit";
 import { isValidEmail } from "@/lib/form-validation";
+import { subscribeToNewsletter } from "@/lib/newsletter";
 
 export async function POST(req: Request, { params }: { params: { slug: string } }) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "anonymous";
@@ -44,6 +46,12 @@ export async function POST(req: Request, { params }: { params: { slug: string } 
     });
 
     sendLeadNotification(lead).catch(console.error);
+
+    // The agent-profile form shows the consent disclaimer. Subscribes this new
+    // lead, so the visitor stays the agent's lead. Never fails the inquiry.
+    await subscribeToNewsletter({ email: (email as string).trim(), leadId: lead.id, source: "contact-form" }).catch((err) =>
+      Sentry.captureException(err)
+    );
 
     return NextResponse.json({ ok: true });
   } catch (err) {

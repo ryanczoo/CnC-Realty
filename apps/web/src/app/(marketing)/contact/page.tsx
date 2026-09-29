@@ -9,6 +9,7 @@ import { RevealText } from "@/components/ui/reveal-text";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import { NAV_PANEL_CLS, NAV_ITEM_CLS, SPRING_HOVER, PULSE_ANIMATE, PULSE_TRANSITION } from "@/lib/motion";
 import { ROLE_OPTIONS } from "@/lib/role-options";
+import { ContactConsentNotice } from "@/components/ui/ContactConsentNotice";
 
 export default function ContactPage() {
   const [form, setForm] = useState({ firstName: "", lastName: "", email: "", phone: "", role: "", notes: "" });
@@ -27,7 +28,7 @@ export default function ContactPage() {
       const res = await fetch("/api/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, source: "WEBSITE" }),
+        body: JSON.stringify({ ...form, source: "WEBSITE", newsletterConsent: true }),
       });
       if (!res.ok) throw new Error();
       setStatus("success");
@@ -125,6 +126,7 @@ export default function ContactPage() {
             {status === "error" && (
               <p className="font-sans text-sm text-red-500">Something went wrong. Please try again.</p>
             )}
+            <ContactConsentNotice />
             <motion.button
               type="submit"
               disabled={status === "loading" || !!emailErr}

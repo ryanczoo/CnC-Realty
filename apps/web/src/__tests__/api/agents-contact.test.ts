@@ -9,8 +9,11 @@ vi.mock('@/lib/prisma', () => ({
 vi.mock('@/lib/rate-limit', () => ({
   publicFormRateLimit: { limit: vi.fn().mockResolvedValue({ success: true, reset: Date.now() + 60000 }) },
 }));
+vi.mock("@/lib/newsletter", () => ({ subscribeToNewsletter: vi.fn().mockResolvedValue(undefined) }));
+vi.mock("@sentry/nextjs", () => ({ captureException: vi.fn() }));
 
 import { prisma } from '@/lib/prisma';
+import { subscribeToNewsletter } from '@/lib/newsletter';
 import { POST } from '../../app/api/agents/[slug]/contact/route';
 
 describe('POST /api/agents/[slug]/contact', () => {
@@ -60,5 +63,31 @@ describe('POST /api/agents/[slug]/contact — email check', () => {
     expect(res.status).toBe(400);
     expect((await res.json()).error).toBe('Please enter a valid email address.');
     expect(prisma.lead.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('POST /api/agents/[slug]/contact — newsletter', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  const send = () => POST(new Request('http://localhost/api/agents/ryan-chong/contact', {
+    method: 'POST',
+    body: JSON.stringify({ name: 'Jane Smith', email: ' jane@example.com ', phone: '', message: 'Hi' }),
+    headers: { 'Content-Type': 'application/json' },
+  }), { params: { slug: 'ryan-chong' } });
+
+  it("enrolls the visitor into the newsletter on the agent's own lead", async () => {
+    vi.mocked(prisma.agent.findUnique).mockResolvedValue({ id: 'agent-1', slug: 'ryan-chong' } as any);
+    vi.mocked(prisma.lead.create).mockResolvedValue({ id: 'lead-7' } as any);
+    const res = await send();
+    expect(res.status).toBe(200);
+    expect(subscribeToNewsletter).toHaveBeenCalledWith({ email: 'jane@example.com', leadId: 'lead-7', source: 'contact-form' });
+  });
+
+  it('still succeeds when enrollment fails', async () => {
+    vi.mocked(prisma.agent.findUnique).mockResolvedValue({ id: 'agent-1', slug: 'ryan-chong' } as any);
+    vi.mocked(prisma.lead.create).mockResolvedValue({ id: 'lead-7' } as any);
+    vi.mocked(subscribeToNewsletter).mockRejectedValueOnce(new Error('db down'));
+    const res = await send();
+    expect(res.status).toBe(200);
   });
 });
