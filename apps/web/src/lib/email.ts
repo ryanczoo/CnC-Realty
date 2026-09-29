@@ -65,6 +65,9 @@ export function emailLayout(opts: {
   bodyHtml: string;
   ctaLabel?: string;
   ctaHref?: string;
+  // Optional content rendered directly under the CTA button (e.g. a marketing
+  // email's unsubscribe line). Emails that omit it render exactly as before.
+  afterCtaHtml?: string;
   footer?: string;
 }): string {
   const logoUrl = `${process.env.NEXTAUTH_URL}/logo-black.png`;
@@ -99,6 +102,7 @@ export function emailLayout(opts: {
                    </div>`
                 : ""
             }
+            ${opts.afterCtaHtml ?? ""}
           </div>
           <div style="padding: 24px 32px 40px; text-align: center;">
             <p style="color: #8a8a8a; font-size: 13px; margin: 0 0 12px;">

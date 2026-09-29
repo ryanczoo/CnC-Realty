@@ -746,6 +746,19 @@ describe("emailLayout", () => {
     expect(iconsIndex).toBeGreaterThan(footerIndex);
   });
 
+  it("renders afterCtaHtml directly below the CTA button, above the footer", () => {
+    const result = emailLayout({ bodyHtml: "<p>Body</p>", ctaLabel: "Go", ctaHref: "https://x.test", afterCtaHtml: "<p>AFTER-CTA</p>" });
+    const cta = result.indexOf("https://x.test");
+    const after = result.indexOf("AFTER-CTA");
+    expect(cta).toBeGreaterThan(-1);
+    expect(after).toBeGreaterThan(cta);
+    expect(after).toBeLessThan(result.indexOf("CnC Realty Team"));
+  });
+
+  it("renders nothing extra when afterCtaHtml is omitted", () => {
+    expect(html()).toBe(emailLayout({ bodyHtml: "<p>Body</p>", afterCtaHtml: undefined }));
+  });
+
   it("stays off-white everywhere -- no separate white section anywhere in the layout", () => {
     const result = html();
     expect(result).toMatch(/<body[^>]*background-color:\s*#F2F0EF/i);
