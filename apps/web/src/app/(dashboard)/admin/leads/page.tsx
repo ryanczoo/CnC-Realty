@@ -110,7 +110,7 @@ export default async function AdminLeadsPage() {
         </div>
         <a
           href="/api/leads/export"
-          className="rounded-lg border border-[#1B1B1B]/10 px-4 py-2 font-sans text-sm text-[#1B1B1B] transition-colors hover:bg-[#F2F0EF]"
+          className="flex items-center gap-1.5 rounded-full border border-[#1B1B1B]/20 bg-white px-4 py-2 text-sm text-[#1B1B1B]"
         >
           Export CSV
         </a>
