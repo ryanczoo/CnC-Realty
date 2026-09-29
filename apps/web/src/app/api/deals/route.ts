@@ -43,9 +43,13 @@ export async function GET(req: Request) {
   const leadId = url.searchParams.get("leadId");
 
   const role = (session.user as any).role;
-  const agentId = role !== "ADMIN" ? session.user.agentId : null;
+  // The Pipeline board is personal for everyone, admins included. The one
+  // exception: the Deals box on a lead's page (?leadId=) — an admin can open
+  // any agent's lead from All Leads and must see that lead's deals.
+  const adminLeadLookup = role === "ADMIN" && !!leadId;
+  const agentId = adminLeadLookup ? null : session.user.agentId;
 
-  if (role !== "ADMIN" && !agentId) return NextResponse.json([]);
+  if (!adminLeadLookup && !agentId) return NextResponse.json([]);
 
   const where: Record<string, unknown> = {};
   if (agentId) where.agentId = agentId;

@@ -32,18 +32,14 @@ export async function GET(req: Request) {
   const doneParam = url.searchParams.get("done");
   const doneFilter = doneParam === "true" ? true : doneParam === "false" ? false : undefined;
 
-  const isAdmin = session.user.role === "ADMIN";
-
-  let agentId: string | undefined;
-  if (!isAdmin) {
-    if (!session.user.agentId) return NextResponse.json({ error: "Agent profile not found" }, { status: 404 });
-    agentId = session.user.agentId;
-  }
+  // Tasks are personal for everyone, admins included.
+  const agentId = session.user.agentId;
+  if (!agentId) return NextResponse.json({ error: "Agent profile not found" }, { status: 404 });
 
   const tasks = await prisma.leadTask.findMany({
     where: {
       ...(doneFilter !== undefined ? { done: doneFilter } : {}),
-      ...(!isAdmin ? { lead: { agentId } } : {}),
+      lead: { agentId },
     },
     include: { lead: { select: { firstName: true, lastName: true } } },
     orderBy: [{ done: "asc" }, { dueDate: "asc" }, { createdAt: "asc" }],

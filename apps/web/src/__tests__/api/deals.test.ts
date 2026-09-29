@@ -87,7 +87,7 @@ describe("GET /api/deals", () => {
   });
 
   it("caps GET results at 500 even for ADMIN with no filters", async () => {
-    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u1", role: "ADMIN", agentId: null } } as any);
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u1", role: "ADMIN", agentId: "a9" } } as any);
     vi.mocked(prisma.deal.findMany).mockResolvedValue([]);
 
     await GET(new Request("http://localhost/api/deals"));
@@ -99,7 +99,7 @@ describe("GET /api/deals", () => {
 
   it("logs a warning when the result is exactly capped at 500", async () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u1", role: "ADMIN", agentId: null } } as any);
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u1", role: "ADMIN", agentId: "a9" } } as any);
     vi.mocked(prisma.deal.findMany).mockResolvedValue(Array(500).fill({
       id: "d1", agentId: "a1", leadId: "l1", pipeline: "BUYERS", stage: "TOURING",
       propertyAddress: null, price: null, expectedCloseDate: null, notes: null,
@@ -115,13 +115,55 @@ describe("GET /api/deals", () => {
 
   it("does not log when the result is under 500", async () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u1", role: "ADMIN", agentId: null } } as any);
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u1", role: "ADMIN", agentId: "a9" } } as any);
     vi.mocked(prisma.deal.findMany).mockResolvedValue([] as any);
 
     await GET(new Request("http://localhost/api/deals"));
 
     expect(warnSpy).not.toHaveBeenCalled();
     warnSpy.mockRestore();
+  });
+
+  it("scopes an ADMIN's Pipeline board to their own deals", async () => {
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u1", role: "ADMIN", agentId: "a9" } } as any);
+    vi.mocked(prisma.deal.findMany).mockResolvedValue([] as any);
+
+    await GET(new Request("http://localhost/api/deals?pipeline=BUYERS"));
+
+    expect(prisma.deal.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { agentId: "a9", pipeline: "BUYERS" } })
+    );
+  });
+
+  it("lets an ADMIN see any lead's deals on that lead's page (?leadId=)", async () => {
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u1", role: "ADMIN", agentId: "a9" } } as any);
+    vi.mocked(prisma.deal.findMany).mockResolvedValue([] as any);
+
+    await GET(new Request("http://localhost/api/deals?leadId=l-other"));
+
+    expect(prisma.deal.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { leadId: "l-other" } })
+    );
+  });
+
+  it("keeps an AGENT's ?leadId= lookup limited to their own deals", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
+    vi.mocked(prisma.deal.findMany).mockResolvedValue([] as any);
+
+    await GET(new Request("http://localhost/api/deals?leadId=l-other"));
+
+    expect(prisma.deal.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { agentId: "a1", leadId: "l-other" } })
+    );
+  });
+
+  it("returns an empty board, never every deal, for an ADMIN with no agentId", async () => {
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u1", role: "ADMIN", agentId: null } } as any);
+
+    const res = await GET(new Request("http://localhost/api/deals?pipeline=BUYERS"));
+
+    expect(await res.json()).toEqual([]);
+    expect(prisma.deal.findMany).not.toHaveBeenCalled();
   });
 });
 

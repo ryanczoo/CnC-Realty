@@ -14,7 +14,7 @@ import { prisma } from "@/lib/prisma";
 import { GET } from "../../app/api/tasks/route";
 
 const SESSION_AGENT = { user: { id: "u1", role: "AGENT", agentId: "a1" } };
-const SESSION_ADMIN = { user: { id: "u2", role: "ADMIN", agentId: null } };
+const SESSION_ADMIN = { user: { id: "u2", role: "ADMIN", agentId: "a9" } };
 const AGENT = { id: "a1" };
 
 const TASK_DB = {
@@ -88,14 +88,24 @@ describe("GET /api/tasks", () => {
     );
   });
 
-  it("admin sees all tasks (no agentId filter)", async () => {
+  it("scopes an ADMIN's Tasks to their own leads (the Agent section is personal)", async () => {
     vi.mocked(getServerSession).mockResolvedValue(SESSION_ADMIN as any);
     vi.mocked(prisma.leadTask.findMany).mockResolvedValue([] as any);
 
-    await GET(new Request("http://localhost/api/tasks"));
-    expect(prisma.agent.findUnique).not.toHaveBeenCalled();
+    const res = await GET(new Request("http://localhost/api/tasks"));
+
+    expect(res.status).toBe(200);
     expect(prisma.leadTask.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: expect.not.objectContaining({ lead: expect.anything() }) })
+      expect.objectContaining({ where: expect.objectContaining({ lead: { agentId: "a9" } }) })
     );
+  });
+
+  it("returns 404, never every task, for an ADMIN with no agentId", async () => {
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u2", role: "ADMIN", agentId: null } } as any);
+
+    const res = await GET(new Request("http://localhost/api/tasks"));
+
+    expect(res.status).toBe(404);
+    expect(prisma.leadTask.findMany).not.toHaveBeenCalled();
   });
 });
