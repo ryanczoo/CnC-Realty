@@ -9,14 +9,7 @@ import { CampaignCard } from "@/components/campaigns/CampaignCard";
 
 export default async function CampaignsPage() {
   const session = await getServerSession(authOptions);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const role = (session!.user as any).role;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const agentId = role !== "ADMIN" ? ((session!.user as any).agentId as string | null) : null;
-  // Unfiltered by role — an ADMIN can have their own Agent record (e.g. a
-  // broker who also sends campaigns personally) and still has a real quota
-  // to see, even though `agentId` above is deliberately nulled for them so
-  // the campaign LIST stays brokerage-wide instead of scoped to just them.
+  // Campaigns are personal for everyone, admins included (the list and the quota line).
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const personalAgentId = (session!.user as any).agentId as string | null;
 
@@ -34,9 +27,10 @@ export default async function CampaignsPage() {
   // one side never delays or blanks out the other. Two async functions keep
   // each side's try/catch scoped exactly as before the parallelization.
   async function fetchCampaigns(): Promise<CampaignRow[]> {
+    if (!personalAgentId) return [];
     try {
       return await prisma.campaign.findMany({
-        where: agentId ? { agentId } : {},
+        where: { agentId: personalAgentId },
         include: { _count: { select: { contacts: true } } },
         orderBy: { createdAt: "desc" },
         take: 500,

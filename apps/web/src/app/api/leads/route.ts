@@ -57,7 +57,7 @@ export async function POST(req: Request) {
   }
 }
 
-// Agents see their own leads; ADMIN sees all.
+// Personal for everyone, admins included (Leads smart lists and the lead pickers).
 export async function GET(req: Request) {
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
@@ -69,14 +69,6 @@ export async function GET(req: Request) {
   const pageSize = Math.min(100, Math.max(1, Number(url.searchParams.get("pageSize") ?? "25")));
 
   if (!filtersParam) {
-    if (role === "ADMIN") {
-      const leads = await prisma.lead.findMany({
-        include: { agent: { include: { user: { select: { name: true } } } } },
-        orderBy: { createdAt: "desc" },
-        take: 200,
-      });
-      return NextResponse.json(leads);
-    }
     if (!sessionAgentId) return NextResponse.json([]);
     const leads = await prisma.lead.findMany({
       where: { agentId: sessionAgentId },
@@ -94,11 +86,8 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Invalid filters" }, { status: 400 });
   }
 
-  let agentId: string | null = null;
-  if (role !== "ADMIN") {
-    if (!sessionAgentId) return NextResponse.json({ leads: [], total: 0, page, pageSize });
-    agentId = sessionAgentId;
-  }
+  if (!sessionAgentId) return NextResponse.json({ leads: [], total: 0, page, pageSize });
+  let agentId: string | null = sessionAgentId;
 
   const where = buildLeadWhere(filters, agentId);
 

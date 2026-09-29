@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/api-auth", () => ({ requireAuth: vi.fn() }));
 vi.mock("@/lib/prisma", () => ({
-  prisma: { lead: { create: vi.fn() } },
+  prisma: { lead: { create: vi.fn(), findMany: vi.fn(), count: vi.fn() } },
 }));
 vi.mock("@/lib/rate-limit", () => ({
   publicFormRateLimit: { limit: vi.fn().mockResolvedValue({ success: true, reset: Date.now() + 60000 }) },
@@ -11,7 +11,7 @@ vi.mock("@/lib/email", () => ({ sendLeadNotification: vi.fn().mockResolvedValue(
 
 import { requireAuth } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
-import { POST } from "../../app/api/leads/route";
+import { GET, POST } from "../../app/api/leads/route";
 
 function makeRequest(body: object) {
   return new Request("http://localhost/api/leads", {
@@ -90,5 +90,38 @@ describe("POST /api/leads — visitor role", () => {
     expect(prisma.lead.create).toHaveBeenCalledWith({
       data: expect.objectContaining({ visitorRole: "Owner" }),
     });
+  });
+});
+
+describe("GET /api/leads — personal scope", () => {
+  const as = (role: string, agentId: string | null) =>
+    vi.mocked(requireAuth).mockResolvedValue({ session: { user: { id: "u", role, agentId } }, error: null } as any);
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(prisma.lead.findMany).mockResolvedValue([]);
+    vi.mocked(prisma.lead.count).mockResolvedValue(0);
+  });
+
+  it("gives an ADMIN's lead pickers only their own leads", async () => {
+    as("ADMIN", "agent-2");
+    await GET(new Request("http://localhost/api/leads"));
+    expect(prisma.lead.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { agentId: "agent-2" } }));
+  });
+
+  it("scopes an ADMIN's smart-list results to their own leads", async () => {
+    as("ADMIN", "agent-2");
+    const filters = encodeURIComponent(JSON.stringify([{ field: "status", operator: "is", value: ["NEW"] }]));
+    await GET(new Request(`http://localhost/api/leads?filters=${filters}`));
+    expect(prisma.lead.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { AND: [{ agentId: "agent-2" }, { status: { in: ["NEW"] } }] } })
+    );
+  });
+
+  it("returns nothing, never the whole brokerage, for an ADMIN with no agentId", async () => {
+    as("ADMIN", null);
+    const res = await GET(new Request("http://localhost/api/leads"));
+    expect(await res.json()).toEqual([]);
+    expect(prisma.lead.findMany).not.toHaveBeenCalled();
   });
 });

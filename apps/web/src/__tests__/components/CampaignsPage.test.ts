@@ -49,7 +49,7 @@ describe("CampaignsPage", () => {
     await expect(CampaignsPage()).resolves.toBeDefined();
   });
 
-  it("shows brokerage-wide campaigns for ADMIN, but still shows that admin's own quota if they have an Agent record", async () => {
+  it("shows an ADMIN only their own campaigns, plus their own quota", async () => {
     vi.mocked(getServerSession).mockResolvedValue({
       user: { id: "user-2", role: "ADMIN", agentId: "agent-2" },
     } as any);
@@ -62,10 +62,8 @@ describe("CampaignsPage", () => {
 
     await CampaignsPage();
 
-    // Campaign list scoping is unaffected by this change — an admin with an
-    // Agent record still sees every agent's campaigns, not just their own.
     expect(prisma.campaign.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: {} })
+      expect.objectContaining({ where: { agentId: "agent-2" } })
     );
     // But their own quota IS looked up now, using their own agentId — this
     // is the behavior that was missing before this test was updated.
@@ -84,5 +82,7 @@ describe("CampaignsPage", () => {
     await CampaignsPage();
 
     expect(prisma.agent.findUnique).not.toHaveBeenCalled();
+    // No agent record → no campaigns listed, never every agent's campaigns.
+    expect(prisma.campaign.findMany).not.toHaveBeenCalled();
   });
 });
