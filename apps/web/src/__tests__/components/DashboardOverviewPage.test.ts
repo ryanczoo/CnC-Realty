@@ -35,7 +35,7 @@ describe("DashboardPage (Overview)", () => {
     expect(tabs.props.role).toBe("AGENT");
   });
 
-  it("shows brokerage-wide (unscoped) counts for ADMIN", async () => {
+  it("scopes an ADMIN's Overview to their own leads (the Agent section is personal)", async () => {
     vi.mocked(getServerSession).mockResolvedValue({
       user: { id: "user-2", role: "ADMIN", agentId: "agent-2" },
     } as any);
@@ -43,9 +43,19 @@ describe("DashboardPage (Overview)", () => {
 
     await DashboardPage();
 
-    expect(prisma.agent.findUnique).not.toHaveBeenCalled();
     expect(prisma.lead.count).toHaveBeenCalledWith(
-      expect.objectContaining({ where: {} })
+      expect.objectContaining({ where: expect.objectContaining({ agentId: "agent-2" }) })
     );
+    expect(prisma.lead.count).not.toHaveBeenCalledWith(expect.objectContaining({ where: {} }));
+  });
+
+  it("shows zeros, never the whole brokerage, when the session has no agentId", async () => {
+    vi.mocked(getServerSession).mockResolvedValue({
+      user: { id: "user-3", role: "ADMIN", agentId: null },
+    } as any);
+
+    await DashboardPage();
+
+    expect(prisma.lead.count).not.toHaveBeenCalled();
   });
 });

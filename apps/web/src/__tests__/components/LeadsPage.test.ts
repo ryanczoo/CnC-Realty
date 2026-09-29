@@ -45,18 +45,34 @@ describe("LeadsPage", () => {
     );
   });
 
-  it("does not scope by agent for ADMIN (brokerage-wide view)", async () => {
+  it("scopes an ADMIN's Leads board, custom lists and banner to their own agentId", async () => {
     vi.mocked(getServerSession).mockResolvedValue({
       user: { id: "user-2", role: "ADMIN", agentId: "agent-2" },
     } as any);
+    vi.mocked(prisma.smartList.findMany).mockResolvedValue([]);
     vi.mocked(prisma.lead.findMany).mockResolvedValue([]);
 
     await LeadsPage({ searchParams: {} });
 
-    expect(prisma.agent.findUnique).not.toHaveBeenCalled();
-    expect(prisma.smartList.findMany).not.toHaveBeenCalled();
-    expect(prisma.lead.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: {} })
+    expect(prisma.smartList.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { agentId: "agent-2" } })
     );
+    expect(prisma.lead.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ agentId: "agent-2", brokerageFed: true }) })
+    );
+    expect(prisma.lead.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { agentId: "agent-2" } })
+    );
+  });
+
+  it("shows an empty board, never the whole brokerage, when the session has no agentId", async () => {
+    vi.mocked(getServerSession).mockResolvedValue({
+      user: { id: "user-3", role: "ADMIN", agentId: null },
+    } as any);
+
+    await LeadsPage({ searchParams: {} });
+
+    expect(prisma.lead.findMany).not.toHaveBeenCalled();
+    expect(prisma.smartList.findMany).not.toHaveBeenCalled();
   });
 });

@@ -18,7 +18,11 @@ export default async function LeadsPage({
 }) {
   const session = await getServerSession(authOptions);
   const role = (session!.user as any).role;
-  const agentId = role !== "ADMIN" ? ((session!.user as any).agentId as string | null) : null;
+  // The Agent section is personal for everyone, admins included; the admin's
+  // brokerage-wide view is Admin → All Leads.
+  const agentId = (session!.user as any).agentId as string | null;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- used by the smart-list components (next task)
+  const isAdmin = role === "ADMIN";
 
   const [customLists, unseenBrokerageLeads] = await Promise.all([
     agentId
@@ -51,10 +55,10 @@ export default async function LeadsPage({
     createdAt: string;
   }[] = [];
 
-  if (!list || !isValidList) {
+  if (agentId && (!list || !isValidList)) {
     try {
       const leads = await prisma.lead.findMany({
-        where: agentId ? { agentId } : {},
+        where: { agentId },
         orderBy: { createdAt: "desc" },
         take: 500,
         select: {
