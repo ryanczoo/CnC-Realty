@@ -14,6 +14,7 @@ export async function sendNewsletterWelcome(opts: { to: string; leadId: string }
   const bodyHtml =
     buildHeadingBodyHtml({
       heading: HEADING,
+      photoUrl: `${process.env.NEXTAUTH_URL}/newsletter-welcome-photo.jpg`,
       bodyHtml: `
         <p style="color: #4b4b4b; font-size: 22.5px; line-height: 1.6; text-align: center; margin: 0;">
           Thanks for subscribing! You&rsquo;ll get California market updates, new listings, and home tips from CnC Realty.

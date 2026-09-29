@@ -38,6 +38,13 @@ describe("sendNewsletterWelcome", () => {
     expect(html).toContain("Visit CnC Realty");
   });
 
+  it("shows the newsletter hero photo like the other photo emails", async () => {
+    await sendNewsletterWelcome({ to: "sam@example.com", leadId: "lead-9" });
+    expect(vi.mocked(sendEmail).mock.calls[0][0].html).toContain(
+      '<img src="http://localhost:3000/newsletter-welcome-photo.jpg"'
+    );
+  });
+
   it("carries an unsubscribe link that opts out of the newsletter only", async () => {
     await sendNewsletterWelcome({ to: "sam@example.com", leadId: "lead-9" });
     expect(footerCategory(vi.mocked(sendEmail).mock.calls[0][0].html!)).toBe("newsletter");
