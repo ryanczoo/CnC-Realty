@@ -21,7 +21,6 @@ export default async function LeadsPage({
   // The Agent section is personal for everyone, admins included; the admin's
   // brokerage-wide view is Admin → All Leads.
   const agentId = (session!.user as any).agentId as string | null;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- used by the smart-list components (next task)
   const isAdmin = role === "ADMIN";
 
   const [customLists, unseenBrokerageLeads] = await Promise.all([
@@ -43,7 +42,7 @@ export default async function LeadsPage({
   ]);
 
   const list = searchParams.list ?? null;
-  const isValidList = list ? resolveListFilters(list, customLists) !== null : false;
+  const isValidList = list ? resolveListFilters(list, customLists, isAdmin) !== null : false;
 
   let kanbanLeads: {
     id: string;
@@ -82,12 +81,12 @@ export default async function LeadsPage({
 
   return (
     <div className="-m-8 flex min-h-[calc(100vh-4rem)]">
-      <SmartListSidebar customLists={customLists} />
+      <SmartListSidebar customLists={customLists} isAdmin={isAdmin} />
 
       <div className="flex-1 overflow-auto p-8">
         <BrokerageLeadsBanner leads={unseenBrokerageLeads} />
         {list && isValidList ? (
-          <SmartListResults activeList={list} customLists={customLists} />
+          <SmartListResults activeList={list} customLists={customLists} isAdmin={isAdmin} />
         ) : (
           <>
             <div className="mb-8">

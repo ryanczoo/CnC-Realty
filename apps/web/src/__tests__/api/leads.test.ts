@@ -124,4 +124,21 @@ describe("GET /api/leads — personal scope", () => {
     expect(await res.json()).toEqual([]);
     expect(prisma.lead.findMany).not.toHaveBeenCalled();
   });
+
+  const newsletter = encodeURIComponent(JSON.stringify([{ field: "newsletter", operator: "is", value: true }]));
+
+  it("shows an ADMIN every newsletter subscriber in the brokerage", async () => {
+    as("ADMIN", "agent-2");
+    await GET(new Request(`http://localhost/api/leads?filters=${newsletter}`));
+    expect(prisma.lead.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { AND: [{ newsletterSubscribedAt: { not: null }, newsletterOptOut: false }] } })
+    );
+  });
+
+  it("refuses the newsletter list to an AGENT", async () => {
+    as("AGENT", "agent-1");
+    const res = await GET(new Request(`http://localhost/api/leads?filters=${newsletter}`));
+    expect(res.status).toBe(403);
+    expect(prisma.lead.findMany).not.toHaveBeenCalled();
+  });
 });

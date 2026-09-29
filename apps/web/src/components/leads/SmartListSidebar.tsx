@@ -2,16 +2,17 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { PREBUILT_LISTS } from "@/lib/smart-list-filters";
+import { visiblePrebuiltLists } from "@/lib/smart-list-filters";
 import { SmartListDrawer } from "./SmartListDrawer";
 
 type CustomList = { id: string; name: string; filters: unknown };
 
 type Props = {
   customLists: CustomList[];
+  isAdmin: boolean;
 };
 
-export function SmartListSidebar({ customLists: initialLists }: Props) {
+export function SmartListSidebar({ customLists: initialLists, isAdmin }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const selected = searchParams.get("list");
@@ -63,7 +64,7 @@ export function SmartListSidebar({ customLists: initialLists }: Props) {
           <p className="mb-1 px-3 font-sans text-xs font-semibold uppercase tracking-wider text-[#1B1B1B]/30">
             Smart Lists
           </p>
-          {PREBUILT_LISTS.map(list => (
+          {visiblePrebuiltLists(isAdmin).map(list => (
             <button
               key={list.slug}
               onClick={() => selectList(list.slug)}

@@ -13,14 +13,23 @@ export type FilterCondition =
   | { field: "createdDate";    operator: "withinLast" | "moreThan";   value: number }
   | { field: "newsletter";     operator: "is";                        value: true };
 
-export const PREBUILT_LISTS: Array<{ slug: string; name: string; filters: FilterCondition[] }> = [
+export const PREBUILT_LISTS: Array<{ slug: string; name: string; filters: FilterCondition[]; adminOnly?: boolean }> = [
   { slug: "new-this-week",  name: "New This Week",         filters: [{ field: "createdDate",   operator: "withinLast", value: 7 }] },
   { slug: "no-contact-30",  name: "No Contact in 30 Days", filters: [{ field: "lastContacted", operator: "moreThan",   value: 30 }] },
   { slug: "hot-prospects",  name: "Hot Prospects",          filters: [{ field: "status",        operator: "is",         value: ["HOT_PROSPECT"] }] },
   { slug: "nurture",        name: "Nurture",                filters: [{ field: "status",        operator: "is",         value: ["NURTURE"] }] },
   { slug: "sphere",         name: "Sphere",                 filters: [{ field: "status",        operator: "is",         value: ["SPHERE"] }] },
-  { slug: "newsletter-subscribers", name: "Newsletter Subscribers", filters: [{ field: "newsletter", operator: "is", value: true }] },
+  // Admin-only and brokerage-wide: only admins control the newsletter.
+  { slug: "newsletter-subscribers", name: "Newsletter", adminOnly: true, filters: [{ field: "newsletter", operator: "is", value: true }] },
 ];
+
+export function visiblePrebuiltLists(isAdmin: boolean) {
+  return PREBUILT_LISTS.filter((l) => !l.adminOnly || isAdmin);
+}
+
+export function hasNewsletterFilter(filters: FilterCondition[]): boolean {
+  return filters.some((f) => f.field === "newsletter");
+}
 
 function daysAgo(n: number): Date {
   return new Date(Date.now() - n * 86400_000);
@@ -113,9 +122,10 @@ export function buildLeadWhere(
 export function resolveListFilters(
   slug: string | null,
   customLists: Array<{ id: string; filters: unknown }>,
+  isAdmin = false,
 ): FilterCondition[] | null {
   if (!slug) return null;
-  const prebuilt = PREBUILT_LISTS.find(l => l.slug === slug);
+  const prebuilt = visiblePrebuiltLists(isAdmin).find(l => l.slug === slug);
   if (prebuilt) return prebuilt.filters;
   const custom = customLists.find(l => l.id === slug);
   if (custom) return custom.filters as FilterCondition[];

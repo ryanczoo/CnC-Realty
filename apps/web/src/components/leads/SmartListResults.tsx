@@ -48,6 +48,7 @@ type CustomList = { id: string; name: string; filters: unknown };
 type Props = {
   activeList: string;
   customLists: CustomList[];
+  isAdmin: boolean;
 };
 
 const PAGE_SIZE = 25;
@@ -76,7 +77,7 @@ function resolveListName(activeList: string, customLists: CustomList[]): string 
   return "Smart List";
 }
 
-export function SmartListResults({ activeList, customLists }: Props) {
+export function SmartListResults({ activeList, customLists, isAdmin }: Props) {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -85,10 +86,10 @@ export function SmartListResults({ activeList, customLists }: Props) {
 
   // Resolve filters whenever activeList or customLists change
   useEffect(() => {
-    const resolved = resolveListFilters(activeList, customLists);
+    const resolved = resolveListFilters(activeList, customLists, isAdmin);
     setFilters(resolved);
     setPage(1);
-  }, [activeList, customLists]);
+  }, [activeList, customLists, isAdmin]);
 
   // Fetch leads whenever filters or page change
   useEffect(() => {

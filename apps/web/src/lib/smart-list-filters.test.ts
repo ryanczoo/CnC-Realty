@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildLeadWhere, PREBUILT_LISTS, resolveListFilters } from "./smart-list-filters";
+import { buildLeadWhere, PREBUILT_LISTS, resolveListFilters, visiblePrebuiltLists, hasNewsletterFilter } from "./smart-list-filters";
 
 describe("buildLeadWhere", () => {
   it("returns empty object when no filters and no agentId", () => {
@@ -126,12 +126,28 @@ describe("newsletter subscribers", () => {
     });
   });
 
-  it("ships a prebuilt Newsletter Subscribers list", () => {
+  it("ships an admin-only prebuilt Newsletter list", () => {
     const list = PREBUILT_LISTS.find((l) => l.slug === "newsletter-subscribers");
     expect(list).toEqual({
       slug: "newsletter-subscribers",
-      name: "Newsletter Subscribers",
+      name: "Newsletter",
+      adminOnly: true,
       filters: [{ field: "newsletter", operator: "is", value: true }],
     });
+  });
+
+  it("hides the Newsletter list from agents and shows it to admins", () => {
+    expect(visiblePrebuiltLists(false).map((l) => l.slug)).not.toContain("newsletter-subscribers");
+    expect(visiblePrebuiltLists(true).map((l) => l.slug)).toContain("newsletter-subscribers");
+  });
+
+  it("treats a stale Newsletter link as invalid for an agent (falls back to the board)", () => {
+    expect(resolveListFilters("newsletter-subscribers", [])).toBeNull();
+    expect(resolveListFilters("newsletter-subscribers", [], true)).toEqual([{ field: "newsletter", operator: "is", value: true }]);
+  });
+
+  it("detects a newsletter filter", () => {
+    expect(hasNewsletterFilter([{ field: "newsletter", operator: "is", value: true }])).toBe(true);
+    expect(hasNewsletterFilter([{ field: "status", operator: "is", value: ["NEW"] }])).toBe(false);
   });
 });

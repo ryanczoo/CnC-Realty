@@ -5,7 +5,7 @@ import { requireAuth } from "@/lib/api-auth";
 import { sendLeadNotification } from "@/lib/email";
 import { publicFormRateLimit } from "@/lib/rate-limit";
 import { applyTag } from "@/lib/tags";
-import { buildLeadWhere, FilterCondition } from "@/lib/smart-list-filters";
+import { buildLeadWhere, hasNewsletterFilter, FilterCondition } from "@/lib/smart-list-filters";
 
 const createSchema = z.object({
   firstName: z.string().min(1, "First name required"),
@@ -86,8 +86,16 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Invalid filters" }, { status: 400 });
   }
 
-  if (!sessionAgentId) return NextResponse.json({ leads: [], total: 0, page, pageSize });
-  let agentId: string | null = sessionAgentId;
+  // The newsletter list is admin-only and brokerage-wide (only admins run the
+  // newsletter); every other list is personal.
+  const isNewsletterList = hasNewsletterFilter(filters);
+  if (isNewsletterList && role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  if (!isNewsletterList && !sessionAgentId) {
+    return NextResponse.json({ leads: [], total: 0, page, pageSize });
+  }
+  const agentId: string | null = isNewsletterList ? null : sessionAgentId;
 
   const where = buildLeadWhere(filters, agentId);
 
