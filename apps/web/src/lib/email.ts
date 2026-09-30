@@ -355,6 +355,7 @@ export async function sendPasswordReset(to: string, resetUrl: string) {
 
   const bodyHtml = buildHeadingBodyHtml({
     heading: "Here's a link to reset your password. It will expire in 2 hours!",
+    photoUrl: `${process.env.NEXTAUTH_URL}/password-reset-photo.jpg`,
     bodyHtml: `
       <div style="text-align: center; margin: 32px 0;">
         <a href="${safeUrl}" style="display: inline-block; background-color: #9E8C61; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; padding: 14px 36px; border-radius: 9999px;">

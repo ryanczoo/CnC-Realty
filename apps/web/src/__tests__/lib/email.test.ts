@@ -326,6 +326,20 @@ describe("sendAnnouncement", () => {
 describe("sendPasswordReset", () => {
   beforeEach(() => vi.clearAllMocks());
 
+  it("includes the password-reset photo, sized like the other emails' photos, above the heading", async () => {
+    await sendPasswordReset("jane@example.com", "http://localhost:3000/reset-password?token=abc123");
+
+    const html = vi.mocked(sendEmail).mock.calls[0][0].html!;
+    const photoIndex = html.indexOf("password-reset-photo.jpg");
+    const headingIndex = html.indexOf("a link to reset your password", photoIndex);
+
+    expect(photoIndex).toBeGreaterThan(html.indexOf("logo-black.png"));
+    expect(headingIndex).toBeGreaterThan(photoIndex);
+    expect(html).toContain(
+      '<img src="http://localhost:3000/password-reset-photo.jpg" alt="" width="100%" style="display: block; width: 100%; border-radius: 8px; border: 0;" />'
+    );
+  });
+
   it("emails the reset link to the given address", async () => {
     await sendPasswordReset("jane@example.com", "http://localhost:3000/reset-password?token=abc123");
 
