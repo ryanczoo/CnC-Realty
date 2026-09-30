@@ -331,10 +331,16 @@ describe("sendPasswordReset", () => {
 
     const html = vi.mocked(sendEmail).mock.calls[0][0].html!;
     const photoIndex = html.indexOf("password-reset-photo.jpg");
-    const headingIndex = html.indexOf("a link to reset your password", photoIndex);
+    const headingIndex = html.indexOf("worry, we got you.", photoIndex);
+    const bodyIndex = html.indexOf(
+      "Here is a link to reset your password. This will expire in 2 hours!",
+      headingIndex
+    );
 
     expect(photoIndex).toBeGreaterThan(html.indexOf("logo-black.png"));
     expect(headingIndex).toBeGreaterThan(photoIndex);
+    expect(bodyIndex).toBeGreaterThan(headingIndex);
+    expect(html).not.toContain("Here&#39;s a link to reset your password");
     expect(html).toContain(
       '<img src="http://localhost:3000/password-reset-photo.jpg" alt="" width="100%" style="display: block; width: 100%; border-radius: 8px; border: 0;" />'
     );
@@ -358,7 +364,7 @@ describe("sendPasswordReset", () => {
 
     const html = vi.mocked(sendEmail).mock.calls[0][0].html!;
     expect(html).toContain("font-size: 33px");
-    expect(html).toContain("Here&#39;s a link to reset your password. It will expire in 2 hours!");
+    expect(html).toContain("Don&#39;t worry, we got you.");
     expect(html).not.toContain("font-size: 22px");
   });
 });
