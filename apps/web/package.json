@@ -53,6 +53,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@prisma/nextjs-monorepo-workaround-plugin": "5.22.0",
     "@types/bcryptjs": "^3.0.0",
     "@types/mapbox-gl": "^3.5.0",
     "@types/node": "^20",

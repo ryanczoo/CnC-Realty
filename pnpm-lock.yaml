@@ -144,6 +144,9 @@ importers:
         specifier: ^4.4.3
         version: 4.4.3
     devDependencies:
+      '@prisma/nextjs-monorepo-workaround-plugin':
+        specifier: 5.22.0
+        version: 5.22.0
       '@types/bcryptjs':
         specifier: ^3.0.0
         version: 3.0.0
@@ -1295,6 +1298,9 @@ packages:
 
   '@prisma/get-platform@5.22.0':
     resolution: {integrity: sha512-pHhpQdr1UPFpt+zFfnPazhulaZYCUqeIcPpJViYoq9R+D/yw4fjE+CtnsnKzPYm0ddUbeXUzjGVGIRVgPDCk4Q==}
+
+  '@prisma/nextjs-monorepo-workaround-plugin@5.22.0':
+    resolution: {integrity: sha512-wuKp7FqhETHP2MJJu5y//ac83/EpDpoupcjlmp/Ijv3fnG576EIxY4SU4j24xXPIBOTuApkCk4RkgonkeAOXuQ==}
 
   '@rolldown/binding-android-arm64@1.0.1':
     resolution: {integrity: sha512-fJI3I0r3C3Oj/zdBCpaCmBRZYf07xpaq4yCfDDoSFm+beWNzbIl26puW8RraUdugoJw/95zerNOn6jasAhzSmg==}
@@ -6620,6 +6626,8 @@ snapshots:
   '@prisma/get-platform@5.22.0':
     dependencies:
       '@prisma/debug': 5.22.0
+
+  '@prisma/nextjs-monorepo-workaround-plugin@5.22.0': {}
 
   '@rolldown/binding-android-arm64@1.0.1':
     optional: true

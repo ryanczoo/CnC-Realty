@@ -1,7 +1,14 @@
 import { withSentryConfig } from "@sentry/nextjs";
+import { PrismaPlugin } from "@prisma/nextjs-monorepo-workaround-plugin";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Prisma lives in packages/database; without this plugin the file tracer can
+  // leave its query engine out of the server bundle when deployed from a monorepo.
+  webpack: (config, { isServer }) => {
+    if (isServer) config.plugins = [...config.plugins, new PrismaPlugin()];
+    return config;
+  },
   typescript: { ignoreBuildErrors: true },
   eslint: { ignoreDuringBuilds: true },
   experimental: {
