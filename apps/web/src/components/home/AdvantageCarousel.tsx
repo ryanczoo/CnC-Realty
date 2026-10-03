@@ -68,7 +68,7 @@ export function AdvantageCarousel() {
       {/* Width is also capped by viewport height so the whole stack (1.21x
           card height with the ±10.5% offsets) plus the arrows (~142px) fits
           below the 64px navbar: (100vh - 185px) * 1.2 */}
-      <div className="relative mx-auto max-lg:portrait:!w-[90vw]" style={{ width: "min(78vw, calc((100vh - 185px) * 1.2))", maxWidth: 1050 }}>
+      <div className="relative mx-auto max-lg:portrait:!w-[84vw]" style={{ width: "min(78vw, calc((100vh - 185px) * 1.2))", maxWidth: 1050 }}>
         <div className="relative w-full max-lg:portrait:!aspect-[1.1]" style={{ aspectRatio: "1.45", maxWidth: 1050 }}>
           <div className="absolute inset-0">
             {SLIDES.map((slide, i) => {
@@ -104,7 +104,7 @@ export function AdvantageCarousel() {
         </div>
       </div>
 
-      <div className="mt-24 flex justify-center gap-6 max-lg:mt-16">
+      <div className="mt-24 flex justify-center gap-6 max-lg:mt-16 max-lg:portrait:mt-[calc(8vw+1.5rem)]">
         <motion.button
           onClick={goPrev}
           animate={PULSE_ANIMATE}
