@@ -12,8 +12,9 @@ import {
   useTransform,
 } from "motion/react";
 import type { CSSProperties } from "react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { RevealText, RevealLine } from "@/components/ui/reveal-text";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { SPRING_HOVER, PULSE_ANIMATE, PULSE_TRANSITION } from "@/lib/motion";
 
 const CARDS = [
@@ -64,6 +65,15 @@ const BACKFACE_HIDDEN: CSSProperties = {
   backfaceVisibility: "hidden",
   WebkitBackfaceVisibility: "hidden",
 } as CSSProperties;
+
+// Phones stack the cards in one column, so the collage's large parallax
+// distances would drag neighbouring cards into each other.
+export const MOBILE_PARALLAX = 0.15;
+
+// Same curve as useTransform(scrollYProgress, [0, 1], [p, -p]).
+export function parallaxY(parallax: number, t: number, mobile: boolean): number {
+  return (mobile ? parallax * MOBILE_PARALLAX : parallax) * (1 - 2 * t);
+}
 
 function HouseIcon() {
   return (
@@ -119,13 +129,13 @@ function ServiceCard({
 
   return (
     <motion.div
-      className="absolute"
+      className="absolute max-lg:!static max-lg:mx-auto max-lg:!w-full max-lg:max-w-[400px]"
       style={{ width, y, ...style } as CSSProperties}
     >
       {/* Entry animation wrapper */}
       <motion.div
         ref={cardRef}
-        className="relative aspect-[3/4] w-full rounded-2xl"
+        className="relative aspect-[3/4] w-full rounded-2xl max-lg:aspect-square"
         initial={{ opacity: 0, y: 52 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay }}
@@ -220,7 +230,7 @@ function ServiceCard({
         {/* Custom cursor — outside overflow-hidden so it's never clipped */}
         {hovered && !flipped && (
           <motion.div
-            className="pointer-events-none absolute z-50"
+            className="pointer-events-none absolute z-50 max-lg:hidden"
             style={{
               x: springX,
               y: springY,
@@ -273,24 +283,27 @@ export function ServicesSection() {
 
   // Buy card has parallax=0 — use a static MotionValue instead of a transform
   const y0 = useMotionValue(0);
-  const y1 = useTransform(scrollYProgress, [0, 1], [CARDS[1].parallax, -CARDS[1].parallax]);
-  const y2 = useTransform(scrollYProgress, [0, 1], [CARDS[2].parallax, -CARDS[2].parallax]);
-  const y3 = useTransform(scrollYProgress, [0, 1], [CARDS[3].parallax, -CARDS[3].parallax]);
+  const isMobile = useIsMobile();
+  const mobileMV = useMotionValue(isMobile ? 1 : 0);
+  useEffect(() => { mobileMV.set(isMobile ? 1 : 0); }, [isMobile, mobileMV]);
+  const y1 = useTransform([scrollYProgress, mobileMV], ([t, m]: number[]) => parallaxY(CARDS[1].parallax, t, m === 1));
+  const y2 = useTransform([scrollYProgress, mobileMV], ([t, m]: number[]) => parallaxY(CARDS[2].parallax, t, m === 1));
+  const y3 = useTransform([scrollYProgress, mobileMV], ([t, m]: number[]) => parallaxY(CARDS[3].parallax, t, m === 1));
   const yValues = [y0, y1, y2, y3];
 
   return (
-    <section data-navbar-theme="light" ref={sectionRef} className="relative bg-[#F2F0EF]" style={{ minHeight: "108vh" }}>
+    <section data-navbar-theme="light" ref={sectionRef} className="relative bg-[#F2F0EF] max-lg:flex max-lg:!min-h-0 max-lg:flex-col max-lg:gap-8 max-lg:px-6 max-lg:py-16" style={{ minHeight: "108vh" }}>
       {/* Heading — top right */}
       <motion.div
-        className="absolute right-[8%] top-[14%] text-right"
+        className="absolute right-[8%] top-[14%] text-right max-lg:static max-lg:text-left"
         initial={{ opacity: 0, y: 24 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
         viewport={{ once: true }}
       >
         <h2 className="font-sans font-light leading-[1.0]">
-          <span className="block text-[2.5rem] xl:text-[3rem]"><RevealText>See the difference,</RevealText></span>
-          <span className="block text-[3.5rem] xl:text-[4.2rem] font-medium">
+          <span className="block text-[2.5rem] xl:text-[3rem] max-lg:text-[clamp(1.9rem,8vw,2.5rem)]"><RevealText>See the difference,</RevealText></span>
+          <span className="block text-[3.5rem] xl:text-[4.2rem] font-medium max-lg:text-[clamp(2.6rem,11vw,3.5rem)]">
             <RevealLine delay={0.1}>with <span style={{ color: "#9E8C61" }}>CnC</span></RevealLine>
           </span>
         </h2>
@@ -299,7 +312,7 @@ export function ServicesSection() {
           animate={PULSE_ANIMATE}
           whileHover={{ scale: 1.1, transition: SPRING_HOVER }}
           transition={PULSE_TRANSITION}
-          className="ml-auto mt-6 flex w-fit items-center rounded-full bg-[#1B1B1B] px-7 py-3.5 text-sm font-medium text-white"
+          className="ml-auto mt-6 flex w-fit items-center rounded-full bg-[#1B1B1B] px-7 py-3.5 text-sm font-medium text-white max-lg:ml-0"
         >
           Let&apos;s Start
         </motion.button>
@@ -312,10 +325,10 @@ export function ServicesSection() {
       {/* Lead capture modal */}
       {modalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm max-lg:px-4"
           onClick={(e) => { if (e.target === e.currentTarget) { setModalOpen(false); setModalStatus("idle"); setModalForm({ firstName: "", lastName: "", email: "", phone: "", dealType: "Buy" });} }}
         >
-          <div className="relative w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl">
+          <div className="relative w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl max-lg:max-h-[90dvh] max-lg:overflow-y-auto max-lg:p-6">
             <button
               onClick={() => { setModalOpen(false); setModalStatus("idle"); setModalForm({ firstName: "", lastName: "", email: "", phone: "", dealType: "Buy" });}}
               className="absolute right-4 top-4 text-[#1B1B1B]/40 hover:text-[#1B1B1B]"
