@@ -8,15 +8,15 @@ export function TestimonialCards() {
   return (
     <section data-navbar-theme="light" className="relative bg-[#F2F0EF] pt-16">
       {/* Staggered layout: all 6 boxes same fixed height, side columns offset downward */}
-      <div style={{ display: "flex", gap: "1px", backgroundColor: "#F2F0EF", alignItems: "flex-start" }}>
+      <div className="max-lg:flex-col max-lg:!items-stretch" style={{ display: "flex", gap: "1px", backgroundColor: "#F2F0EF", alignItems: "flex-start" }}>
         {/* Left column — offset down by 200px */}
-        <div className="flex flex-1 flex-col" style={{ marginTop: "200px", gap: "1px" }}>
-          <motion.div {...fadeUp(0)} style={{ height: "420px", overflow: "hidden", position: "relative" }}>
+        <div className="flex flex-1 flex-col max-lg:!mt-0" style={{ marginTop: "200px", gap: "1px" }}>
+          <motion.div {...fadeUp(0)} className="max-lg:!h-[300px]" style={{ height: "420px", overflow: "hidden", position: "relative" }}>
             <Image src="/images/testimonials-left.jpg" alt="" fill className="object-cover" />
           </motion.div>
           <motion.div
             {...fadeUp(0.06)}
-            className="flex flex-col bg-white px-10 py-10"
+            className="flex flex-col bg-white px-10 py-10 max-lg:!h-auto max-lg:px-6"
             style={{ height: "420px" }}
           >
             <p className="font-sans text-[1.05rem] leading-[1.85] text-[#1B1B1B]">
@@ -39,7 +39,7 @@ export function TestimonialCards() {
         <div className="flex flex-1 flex-col" style={{ gap: "1px" }}>
           <motion.div
             {...fadeUp(0.08)}
-            className="flex flex-col bg-[#1B1B1B] px-10 py-10"
+            className="flex flex-col bg-[#1B1B1B] px-10 py-10 max-lg:!h-auto max-lg:px-6"
             style={{ height: "420px" }}
           >
             <p className="font-sans text-[1.05rem] leading-[1.85] text-white">
@@ -53,12 +53,12 @@ export function TestimonialCards() {
               <p className="font-sans text-xs text-white/40">First Time Homeowner</p>
             </div>
           </motion.div>
-          <motion.div {...fadeUp(0.12)} style={{ height: "420px", overflow: "hidden", position: "relative" }}>
+          <motion.div {...fadeUp(0.12)} className="max-lg:!h-[300px]" style={{ height: "420px", overflow: "hidden", position: "relative" }}>
             <Image src="/images/testimonials-center.jpg" alt="" fill className="object-cover" />
           </motion.div>
           <motion.div
             {...fadeUp(0.16)}
-            className="flex flex-col bg-[#1B1B1B] px-10 py-10"
+            className="flex flex-col bg-[#1B1B1B] px-10 py-10 max-lg:!h-auto max-lg:px-6"
             style={{ height: "420px" }}
           >
             <p className="font-sans text-[1.05rem] leading-[1.85] text-white">
@@ -75,13 +75,13 @@ export function TestimonialCards() {
         </div>
 
         {/* Right column — offset down by 200px */}
-        <div className="flex flex-1 flex-col" style={{ marginTop: "200px", gap: "1px" }}>
-          <motion.div {...fadeUp(0.04)} style={{ height: "420px", overflow: "hidden", position: "relative" }}>
+        <div className="flex flex-1 flex-col max-lg:!mt-0" style={{ marginTop: "200px", gap: "1px" }}>
+          <motion.div {...fadeUp(0.04)} className="max-lg:!h-[300px]" style={{ height: "420px", overflow: "hidden", position: "relative" }}>
             <Image src="/images/testimonials-right.jpg" alt="" fill className="object-cover" />
           </motion.div>
           <motion.div
             {...fadeUp(0.10)}
-            className="flex flex-col bg-white px-10 py-10"
+            className="flex flex-col bg-white px-10 py-10 max-lg:!h-auto max-lg:px-6"
             style={{ height: "420px" }}
           >
             <p className="font-sans text-[1.05rem] leading-[1.85] text-[#1B1B1B]">
