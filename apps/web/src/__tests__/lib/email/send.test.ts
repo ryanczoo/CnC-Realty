@@ -224,6 +224,32 @@ describe("sendEmail", () => {
     expect(sentMessage().MessageStream).not.toBe("outbound");
   });
 
+  describe("open and link tracking", () => {
+    it("tracks opens and html links on broadcast sends", async () => {
+      await sendEmail({
+        to: "a@b.com", subject: "Hi", html: "<p>x</p>", stream: "broadcast", recipient: LEAD,
+        category: "campaign",
+      });
+
+      const msg = sentMessage();
+      expect(msg.TrackOpens).toBe(true);
+      expect(msg.TrackLinks).toBe("HtmlOnly");
+    });
+
+    // Explicit rather than omitted: a per-message value overrides the server
+    // default, so turning tracking on server-wide later cannot rewrite the
+    // links in a password-reset or account-setup email.
+    it("explicitly disables tracking on transactional sends", async () => {
+      await sendEmail({
+        to: "a@b.com", subject: "Hi", html: "<p>x</p>", stream: "transactional",
+      });
+
+      const msg = sentMessage();
+      expect(msg.TrackOpens).toBe(false);
+      expect(msg.TrackLinks).toBe("None");
+    });
+  });
+
   describe("when POSTMARK_BROADCAST_STREAM is not configured", () => {
     let original: string | undefined;
 

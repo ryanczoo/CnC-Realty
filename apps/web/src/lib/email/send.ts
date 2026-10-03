@@ -1,4 +1,4 @@
-import { ServerClient } from "postmark";
+import { ServerClient, type Models } from "postmark";
 import { FROM, htmlToPlainText } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
 import {
@@ -26,6 +26,18 @@ function getClient(): ServerClient {
 }
 
 export type MessageStream = "transactional" | "broadcast";
+
+// Per-message tracking overrides the server default, so both streams state it
+// explicitly. Broadcast mail is tracked for campaign stats (the Postmark
+// webhook maps Open/Click events onto CampaignContact). Transactional mail is
+// never tracked: rewriting a password-reset link through Postmark's tracking
+// domain looks suspicious to spam filters and to the person clicking it.
+// Links are tracked in the html part only, so the plain-text part keeps
+// readable URLs. Cast from literals because the SDK's enum is type-only here.
+const TRACKING = {
+  broadcast: { TrackOpens: true, TrackLinks: "HtmlOnly" as Models.LinkTrackingOptions },
+  transactional: { TrackOpens: false, TrackLinks: "None" as Models.LinkTrackingOptions },
+} as const;
 
 // Refuses rather than falls back. An unset variable would serialize
 // MessageStream as undefined, which Postmark drops — routing the send to the
@@ -152,6 +164,7 @@ export async function sendEmail(opts: SendOptions): Promise<SendResult> {
     To: opts.to,
     Subject: opts.subject,
     MessageStream: messageStream,
+    ...TRACKING[opts.stream],
     ...(unsubscribe
       ? {
           Headers: [
