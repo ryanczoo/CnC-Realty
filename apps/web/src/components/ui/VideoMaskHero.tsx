@@ -20,6 +20,7 @@ interface Props {
   videoSrc: string;
   lines: string[];
   heightClass?: string;
+  mobileHeightClass?: string;
   playbackRate?: number;
   overlayOpacity?: number;
   videoPosition?: string;
@@ -30,11 +31,23 @@ const LINE_Y: Record<number, number[]> = {
   2: [400, 710],
 };
 
-export function VideoMaskHero({ maskId, videoSrc, lines, heightClass = "h-[95vh]", playbackRate = 1, overlayOpacity = 0, videoPosition = "object-center" }: Props) {
+// Phone (portrait) lettering: one word per line on a 1080×1920 canvas.
+// 180 keeps the longest word ("MANAGE") inside the visible width of a folded
+// Galaxy Fold (~344px wide), where the "slice" crop hides the most width.
+const PHONE_TEXT_SIZE = "180";
+const PHONE_LINE_GAP = 260;
+
+export function phoneWordLayout(lines: string[]): { word: string; y: number }[] {
+  const words = lines.flatMap((line) => line.split(" ").filter(Boolean));
+  const mid = (words.length - 1) / 2;
+  return words.map((word, i) => ({ word, y: 960 + (i - mid) * PHONE_LINE_GAP }));
+}
+
+export function VideoMaskHero({ maskId, videoSrc, lines, heightClass = "h-[95vh]", mobileHeightClass = "max-lg:h-[95svh]", playbackRate = 1, overlayOpacity = 0, videoPosition = "object-center" }: Props) {
   const yPositions = LINE_Y[lines.length] ?? LINE_Y[2];
 
   return (
-    <section data-navbar-theme="dark" className={`relative overflow-hidden bg-black ${heightClass}`}>
+    <section data-navbar-theme="dark" className={`relative overflow-hidden bg-black ${heightClass} ${mobileHeightClass}`}>
       <video
         autoPlay
         muted
@@ -53,7 +66,7 @@ export function VideoMaskHero({ maskId, videoSrc, lines, heightClass = "h-[95vh]
       )}
 
       <svg
-        className="absolute inset-0 h-full w-full"
+        className="absolute inset-0 h-full w-full max-lg:portrait:hidden"
         viewBox="0 0 1920 1080"
         preserveAspectRatio="xMidYMid slice"
         xmlns="http://www.w3.org/2000/svg"
@@ -71,6 +84,34 @@ export function VideoMaskHero({ maskId, videoSrc, lines, heightClass = "h-[95vh]
           </mask>
         </defs>
         <rect width="1920" height="1080" fill="black" fillOpacity="0.72" mask={`url(#${maskId})`} />
+      </svg>
+
+      <svg
+        className="absolute inset-0 hidden h-full w-full max-lg:portrait:block"
+        viewBox="0 0 1080 1920"
+        preserveAspectRatio="xMidYMid slice"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <defs>
+          <mask id={`${maskId}-mobile`}>
+            <rect width="1080" height="1920" fill="white" />
+            <motion.g initial="hidden" animate="visible" variants={container}>
+              {phoneWordLayout(lines).map(({ word, y }, i) => (
+                <motion.text
+                  key={`${word}-${i}`}
+                  {...TEXT_PROPS}
+                  x="540"
+                  fontSize={PHONE_TEXT_SIZE}
+                  y={y}
+                  variants={WORD_VARIANT}
+                >
+                  {word}
+                </motion.text>
+              ))}
+            </motion.g>
+          </mask>
+        </defs>
+        <rect width="1080" height="1920" fill="black" fillOpacity="0.72" mask={`url(#${maskId}-mobile)`} />
       </svg>
 
       <DownArrow />
