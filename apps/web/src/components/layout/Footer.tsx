@@ -138,7 +138,7 @@ export function Footer() {
   );
 
   return (
-    <footer ref={ref} className="sticky bottom-0 min-h-[600px] w-full overflow-hidden">
+    <footer ref={ref} className="sticky bottom-0 min-h-[600px] w-full overflow-hidden max-lg:relative">
       {/* Video background */}
       <motion.div className="absolute inset-0" style={{ clipPath }}>
         <video
