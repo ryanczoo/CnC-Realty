@@ -97,10 +97,13 @@ by Ryan before any code.
 
 - **Problem:** lettering is drawn on a 1920×1080 SVG with `preserveAspectRatio="xMidYMid slice"`;
   on a tall narrow screen the slice crops the sides of the words.
-- **Phone treatment:** the existing desktop SVG gets `max-lg:hidden` (no other change). A second
-  SVG with `lg:hidden` renders a portrait canvas (e.g. 1080×1920 viewBox) with one word per line
-  ("SELL / WITH / US", "PRESS"), sized so the longest word ("MANAGE") fits the width. Same video,
-  same mask technique, same word-by-word fade-in (`wordContainer`, `WORD_VARIANT`).
+- **Phone treatment:** the existing desktop SVG gets `max-lg:portrait:hidden` (no other change).
+  A second SVG with `hidden max-lg:portrait:block` renders a portrait canvas (1080×1920 viewBox)
+  with one word per line ("SELL / WITH / US", "PRESS"), sized so the longest word ("MANAGE") fits
+  a folded Galaxy Fold. Same video, same mask technique, same word-by-word fade-in
+  (`wordContainer`, `WORD_VARIANT`). **Sideways phones keep the desktop lettering** — its wide
+  1920×1080 canvas suits a wide, short screen, where the tall phone canvas would be cropped top and
+  bottom.
 - **Mask ids:** the phone mask uses a distinct id (`${maskId}-mobile`) so the two masks never
   collide.
 - **Height:** the section keeps its desktop `heightClass`; phones get the same percentage in `svh`
