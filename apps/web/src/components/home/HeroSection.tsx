@@ -52,7 +52,7 @@ export function HeroSection() {
   };
 
   return (
-    <section data-navbar-theme="dark" className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden">
+    <section data-navbar-theme="dark" className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden max-lg:min-h-[100svh]">
       <video
         ref={videoRef}
         autoPlay
@@ -65,7 +65,7 @@ export function HeroSection() {
       />
       <div className="absolute inset-0 bg-black/65" />
 
-      <div className="relative z-10 flex flex-col items-center gap-6 px-4 text-center mt-72">
+      <div className="relative z-10 flex flex-col items-center gap-6 px-4 text-center mt-72 max-lg:mt-24">
         {/*
           Invisible spacer sized to LONGEST_PHRASE forces the container width
           to stay constant regardless of which phrase is active. The search

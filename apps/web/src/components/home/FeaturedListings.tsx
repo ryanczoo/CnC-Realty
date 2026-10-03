@@ -31,10 +31,10 @@ export function FeaturedListings({ listings: propListings, city, count }: Props)
     <section data-navbar-theme="light" className="overflow-hidden bg-[#F2F0EF] py-10">
       <div ref={titleRef} className="mb-12 text-center">
         <h2 className="font-sans font-light leading-[1.05]">
-          <span className="-ml-[1.6in] block text-[2.4rem] xl:text-[2.9rem] text-[#1B1B1B] tabular-nums">
+          <span className="-ml-[1.6in] block text-[2.4rem] xl:text-[2.9rem] text-[#1B1B1B] tabular-nums max-lg:-ml-[18vw] max-lg:text-[clamp(1.6rem,7.5vw,2.4rem)]">
             <RevealLine delay={0}>{scrambledCount} Listings in</RevealLine>
           </span>
-          <span className="ml-[1.6in] block text-[3.2rem] xl:text-[3.8rem]">
+          <span className="ml-[1.6in] block text-[3.2rem] xl:text-[3.8rem] max-lg:ml-[18vw] max-lg:text-[clamp(2.1rem,10vw,3.2rem)]">
             <RevealLine delay={0.15}>
               <span className="text-cnc-gold font-medium">{city}</span>
             </RevealLine>
