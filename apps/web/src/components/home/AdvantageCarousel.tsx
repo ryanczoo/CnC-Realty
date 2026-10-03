@@ -68,8 +68,8 @@ export function AdvantageCarousel() {
       {/* Width is also capped by viewport height so the whole stack (1.21x
           card height with the ±10.5% offsets) plus the arrows (~142px) fits
           below the 64px navbar: (100vh - 185px) * 1.2 */}
-      <div className="relative mx-auto" style={{ width: "min(78vw, calc((100vh - 185px) * 1.2))", maxWidth: 1050 }}>
-        <div className="relative w-full" style={{ aspectRatio: "1.45", maxWidth: 1050 }}>
+      <div className="relative mx-auto max-lg:portrait:!w-[90vw]" style={{ width: "min(78vw, calc((100vh - 185px) * 1.2))", maxWidth: 1050 }}>
+        <div className="relative w-full max-lg:portrait:!aspect-[1.1]" style={{ aspectRatio: "1.45", maxWidth: 1050 }}>
           <div className="absolute inset-0">
             {SLIDES.map((slide, i) => {
               const depth = getStackDepth(i, activeIdx, SLIDES.length);
@@ -89,7 +89,7 @@ export function AdvantageCarousel() {
                     priority={i === 0}
                   />
                   <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/20 to-transparent" />
-                  <div className="absolute left-8 top-8 max-w-[70%]">
+                  <div className="absolute left-8 top-8 max-w-[70%] max-lg:left-5 max-lg:top-5 max-lg:max-w-[85%]">
                     <p className="font-sans text-2xl font-medium text-white xl:text-3xl">
                       {slide.title}
                     </p>
@@ -104,7 +104,7 @@ export function AdvantageCarousel() {
         </div>
       </div>
 
-      <div className="mt-24 flex justify-center gap-6">
+      <div className="mt-24 flex justify-center gap-6 max-lg:mt-16">
         <motion.button
           onClick={goPrev}
           animate={PULSE_ANIMATE}

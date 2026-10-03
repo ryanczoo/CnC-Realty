@@ -39,9 +39,9 @@ export function TestimonialsIntro() {
   return (
     <section data-navbar-theme="light" className="relative bg-[#F2F0EF]">
       {/* Sticky headline — stays fixed while the carousel below scrolls over it */}
-      <div className="sticky top-[32vh] z-0 px-4 text-center">
+      <div className="sticky top-[32vh] z-0 px-4 text-center max-lg:top-[32svh]">
         <h2
-          className="font-sans font-light text-[#1B1B1B]"
+          className="font-sans font-light text-[#1B1B1B] max-lg:!text-[clamp(2rem,9vw,2.8rem)]"
           style={{ fontSize: "clamp(2.8rem, 5.5vw, 5rem)", lineHeight: 1.15 }}
         >
           We create{" "}
@@ -51,6 +51,7 @@ export function TestimonialsIntro() {
             shifting as the cycling word changes length
           */}
           <span
+            className="max-lg:!text-[clamp(2.4rem,11vw,3.5rem)]"
             style={{
               display: "inline-grid",
               overflow: "visible",
@@ -76,7 +77,7 @@ export function TestimonialsIntro() {
       </div>
 
       {/* Carousel — covers the sticky headline as the user scrolls (same mechanic Testimonials.tsx used to run with the review cards) */}
-      <div className="relative z-10 mt-[52vh] bg-[#F2F0EF] pb-20">
+      <div className="relative z-10 mt-[52vh] bg-[#F2F0EF] pb-20 max-lg:mt-[52svh]">
         <AdvantageCarousel />
       </div>
     </section>
