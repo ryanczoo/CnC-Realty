@@ -48,6 +48,9 @@ No new shared components.
 - **Scroll length:** section height becomes ~2 screens on phones instead of 4
   (`max-lg:!h-[200svh]` overriding the inline `${ITEMS.length * 100}vh`); the sticky panel uses
   `max-lg:h-[100svh]`. `useScrollStepper` works off scroll progress, so it needs no change.
+- **Sideways phones** (`max-lg:landscape:`) keep the side-by-side layout with smaller padding — a
+  stacked panel would leave ~175px for text on a 390px-tall screen. Title sizes are capped by
+  screen height as well as width (`min(…vw, …svh)`).
 - **Progress bar:** stays vertical, repositioned beside the text block on phones.
 - **Titles:** scale with `clamp()` on phones so "COMMISSION" fits at 320px.
 - Media positions (inline `%` styles) get `max-lg:!` overrides for the stacked layout.
@@ -64,8 +67,9 @@ No new shared components.
 ### 5. "We create trust" + Advantage carousel — `TestimonialsIntro.tsx`, `AdvantageCarousel.tsx`
 - Sticky headline and cover-up effect kept; `top-[32vh]` / `mt-[52vh]` get `svh` phone
   equivalents.
-- Carousel cards widen on phones to ~90vw and use a taller aspect ratio so title + subtitle are
-  not cramped; arrows stay below and clear the stacked back cards.
+- Carousel cards widen on upright phones to ~90vw and use a taller aspect ratio so title +
+  subtitle are not cramped; sideways phones keep the existing height-capped sizing (full-width
+  cards would be taller than the screen). Arrows stay below and clear the stacked back cards.
 
 ### 6. Testimonial cards — `components/home/TestimonialCards.tsx`
 - Below 1024px the three columns stack into one column in reading order; the side columns' 200px
