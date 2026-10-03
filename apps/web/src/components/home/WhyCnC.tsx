@@ -63,16 +63,16 @@ export function WhyCnC() {
       data-navbar-theme="light"
       ref={containerRef}
       style={{ height: `${ITEMS.length * 100}vh` }}
-      className="relative"
+      className="relative max-lg:!h-[200svh]"
     >
-      <div className="sticky top-0 h-screen overflow-hidden bg-[#F2F0EF]">
-        <div className="flex h-full">
+      <div className="sticky top-0 h-screen overflow-hidden bg-[#F2F0EF] max-lg:h-[100svh]">
+        <div className="flex h-full max-lg:portrait:flex-col-reverse">
 
           {/* Left: text panel */}
-          <div className="relative flex w-[42%] flex-col justify-center pl-28 pr-16">
+          <div className="relative flex w-[42%] flex-col justify-center pl-28 pr-16 max-lg:portrait:w-full max-lg:portrait:flex-1 max-lg:portrait:justify-start max-lg:portrait:pb-8 max-lg:portrait:pl-14 max-lg:portrait:pr-6 max-lg:portrait:pt-6 max-lg:landscape:pl-14 max-lg:landscape:pr-6">
             {/* Segmented vertical progress — 4 equal segments, each fills top-to-bottom */}
             <div
-              className="absolute left-14 top-1/2 flex -translate-y-1/2 flex-col gap-1"
+              className="absolute left-14 top-1/2 flex -translate-y-1/2 flex-col gap-1 max-lg:left-6 max-lg:!h-[120px]"
               style={{ width: 2, height: 220 }}
             >
               {ITEMS.map((_, i) => (
@@ -100,7 +100,7 @@ export function WhyCnC() {
                   hidden: {},
                   visible: { transition: { staggerChildren: 0.18 } },
                 }}
-                className="flex flex-col gap-12"
+                className="flex flex-col gap-12 max-lg:gap-5"
               >
                 <h2 className="font-sans font-light uppercase leading-[0.90] tracking-wide text-[#1B1B1B]">
                   {active.title.map((part, i) => {
@@ -108,7 +108,7 @@ export function WhyCnC() {
                     return (
                       <span
                         key={i}
-                        className={`block ${part.size ?? (part.sm ? "text-[3rem] xl:text-[3.6rem]" : "text-[4rem] xl:text-[4.8rem]")}`}
+                        className={`block ${part.size ?? (part.sm ? "text-[3rem] xl:text-[3.6rem]" : "text-[4rem] xl:text-[4.8rem]")} ${part.sm ? "max-lg:text-[clamp(1.2rem,min(7vw,6svh),2.8rem)]" : "max-lg:text-[clamp(1.5rem,min(9vw,8svh),3.6rem)]"}`}
                       >
                         <RevealLine triggerOnMount delay={i * 0.15}>
                           <span className={isLastPart ? "text-cnc-gold font-medium" : undefined}>
@@ -150,11 +150,11 @@ export function WhyCnC() {
           </div>
 
           {/* Right: overlapping images */}
-          <div className="relative flex-1">
+          <div className="relative flex-1 max-lg:portrait:h-[45%] max-lg:portrait:flex-none">
 
             {/* Back media — venetian blind for images, crossfade for video */}
             <div
-              className="absolute overflow-hidden rounded-2xl"
+              className="absolute overflow-hidden rounded-2xl max-lg:portrait:!right-[6%] max-lg:portrait:!top-[10%] max-lg:portrait:!h-[82%] max-lg:portrait:!w-[62%]"
               style={{ right: "12%", top: "13%", width: "60%", height: "80%" }}
             >
               <AnimatePresence>
@@ -184,7 +184,7 @@ export function WhyCnC() {
                 the wipe sweeping over an empty box while it downloads. */}
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute opacity-0"
+              className="pointer-events-none absolute opacity-0 max-lg:portrait:!left-[6%] max-lg:portrait:!top-[30%] max-lg:portrait:!h-[62%] max-lg:portrait:!w-[44%]"
               style={{ left: "2%", top: "25%", width: "40%", height: "52%" }}
             >
               {ITEMS.map((item) =>
@@ -198,7 +198,7 @@ export function WhyCnC() {
             <AnimatePresence mode="wait">
               <motion.div
                 key={`front-${activeIdx}`}
-                className="absolute z-10 overflow-hidden rounded-2xl"
+                className="absolute z-10 overflow-hidden rounded-2xl max-lg:portrait:!left-[6%] max-lg:portrait:!top-[30%] max-lg:portrait:!h-[62%] max-lg:portrait:!w-[44%]"
                 style={{ left: "2%", top: "25%", width: "40%", height: "52%" }}
                 initial={{ clipPath: scrollDirRef.current === "down" ? "inset(100% 0 0 0)" : "inset(0 0 100% 0)" }}
                 animate={{ clipPath: "inset(0 0 0 0)" }}
