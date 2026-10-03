@@ -48,8 +48,7 @@ export function FAQ({ faqs = FAQS, className }: { faqs?: { question: string; ans
           return (
             <motion.div
               key={i}
-              className="relative grid cursor-pointer py-6"
-              style={{ gridTemplateColumns: "26% 52% 22%" }}
+              className="relative grid cursor-pointer py-6 lg:[grid-template-columns:26%_52%_22%] max-lg:grid-cols-[1fr_auto] max-lg:gap-x-4"
               initial="rest"
               animate={isOpen ? "hover" : "rest"}
               whileHover="hover"
@@ -70,13 +69,13 @@ export function FAQ({ faqs = FAQS, className }: { faqs?: { question: string; ans
                 transition={{ duration: 0.2 }}
               />
 
-              <p className="font-sans text-[1.15rem] font-light leading-tight text-[#1B1B1B] xl:text-[1.3rem]">
+              <p className="font-sans text-[1.15rem] font-light leading-tight text-[#1B1B1B] xl:text-[1.3rem] max-lg:col-start-1 max-lg:row-start-1">
                 {faq.question}
               </p>
 
               {/* Answer — revealed on hover/open */}
               <motion.p
-                className="pl-24 pr-8 font-sans text-base leading-relaxed text-[#1B1B1B]/50"
+                className={`pl-24 pr-8 font-sans text-base leading-relaxed text-[#1B1B1B]/50 max-lg:col-span-2 max-lg:row-start-2 max-lg:pl-0 max-lg:pr-0 max-lg:pt-4 ${isOpen ? "" : "max-lg:hidden"}`}
                 variants={{
                   rest: { opacity: 0, y: 6 },
                   hover: { opacity: 1, y: 0 },
@@ -86,7 +85,7 @@ export function FAQ({ faqs = FAQS, className }: { faqs?: { question: string; ans
                 {faq.answer}
               </motion.p>
 
-              <span className="pt-1 text-right font-sans text-sm text-[#1B1B1B]/25">( {i + 1} )</span>
+              <span className="pt-1 text-right font-sans text-sm text-[#1B1B1B]/25 max-lg:col-start-2 max-lg:row-start-1">( {i + 1} )</span>
             </motion.div>
           );
         })}
