@@ -156,11 +156,11 @@ export function Footer() {
 
       {/* Content */}
       <motion.div
-        className="absolute inset-0 flex flex-col justify-end"
+        className="absolute inset-0 flex flex-col justify-end max-lg:relative"
         style={{ clipPath }}
       >
         {/* Main 3-column row */}
-        <div className="flex items-end justify-between px-8 pb-6 pt-12 lg:px-16">
+        <div className="flex items-end justify-between px-8 pb-6 pt-12 lg:px-16 max-lg:flex-col max-lg:items-center max-lg:gap-10 max-lg:pt-16">
 
           {/* Left — large logo */}
           <div className="flex-shrink-0">
@@ -169,7 +169,7 @@ export function Footer() {
               alt="CnC Realty Group"
               width={280}
               height={280}
-              className="object-contain object-left"
+              className="object-contain object-left max-lg:h-auto max-lg:w-[180px] max-lg:object-center"
             />
           </div>
 
@@ -265,7 +265,7 @@ export function Footer() {
           </div>
 
           {/* Right — nav links */}
-          <div className="flex flex-col items-end gap-2">
+          <div className="flex flex-col items-end gap-2 max-lg:items-center">
             {NAV_LINKS.map((link) => (
               <Link
                 key={link.href}
@@ -279,8 +279,8 @@ export function Footer() {
         </div>
 
         {/* Bottom legal bar */}
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 px-8 py-4 lg:px-16">
-          <div className="flex flex-wrap items-center gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 px-8 py-4 lg:px-16 max-lg:flex-col max-lg:justify-center max-lg:text-center">
+          <div className="flex flex-wrap items-center gap-4 max-lg:justify-center">
             <Link href="/fair-housing" aria-label="Equal Housing Opportunity">
               <Image
                 src="/eho-logo.png"
