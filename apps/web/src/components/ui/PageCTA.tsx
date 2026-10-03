@@ -55,11 +55,11 @@ export function PageCTA({
     <section data-navbar-theme="light" className="relative overflow-hidden bg-[#F2F0EF] px-8 py-28 lg:px-20">
       <CTALineArt />
       <div className="relative z-10 mx-auto max-w-3xl text-center">
-        <h2 className={`font-sans text-[2.5rem] font-light leading-tight ${body ? "mb-4" : "mb-10"}`}>
+        <h2 className={`font-sans text-[2.5rem] font-light leading-tight max-lg:text-[clamp(1.9rem,8vw,2.5rem)] ${body ? "mb-4" : "mb-10"}`}>
           <RevealLine>{heading}</RevealLine>
         </h2>
         {body && <p className="mb-10 font-sans text-base text-[#1B1B1B]/60">{body}</p>}
-        <div className="flex justify-center gap-4">
+        <div className="flex justify-center gap-4 max-lg:flex-col max-lg:items-stretch max-lg:[&>*]:justify-center">
           {primaryLabel && (
             primaryShowContactModal ? (
               <motion.button

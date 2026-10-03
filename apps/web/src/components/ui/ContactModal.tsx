@@ -83,7 +83,7 @@ export function ContactModal({ open, source, onClose }: ContactModalProps) {
             exit={{ opacity: 0, y: 8 }}
             transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-lg rounded-2xl bg-white p-10"
+            className="relative w-full max-w-lg rounded-2xl bg-white p-10 max-lg:max-h-[90dvh] max-lg:overflow-y-auto max-lg:p-6"
           >
             <button
               onClick={onClose}
