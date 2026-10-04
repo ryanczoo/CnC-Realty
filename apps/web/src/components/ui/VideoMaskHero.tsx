@@ -34,7 +34,7 @@ const LINE_Y: Record<number, number[]> = {
 // Phone (portrait) lettering: one word per line on a 1080×1920 canvas.
 // 180 keeps the longest word ("MANAGE") inside the visible width of a folded
 // Galaxy Fold (~344px wide), where the "slice" crop hides the most width.
-const PHONE_TEXT_SIZE = "180";
+export const PHONE_TEXT_SIZE = "180";
 const PHONE_LINE_GAP = 260;
 
 export function phoneWordLayout(lines: string[]): { word: string; y: number }[] {
