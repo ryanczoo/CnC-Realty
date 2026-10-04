@@ -110,7 +110,7 @@ export function RentCitiesSlider() {
                     alt={city.name}
                     fill
                     className="object-cover"
-                    sizes="(max-width: 1023px) 84vw, 900px"
+                    sizes="(max-width: 1023px) and (orientation: portrait) 84vw, (max-width: 900px) 65vw, 900px"
                     priority={i === 0}
                   />
                   <div className="absolute inset-0 bg-black/50" />

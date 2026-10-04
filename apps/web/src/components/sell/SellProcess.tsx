@@ -88,18 +88,18 @@ function SlidePanel({ step, shiftLeft = 0 }: { step: Step; shiftLeft?: number })
       className="relative flex h-full items-center justify-center max-lg:!w-[85vw] max-lg:shrink-0 max-lg:[scroll-snap-align:start]"
       style={{ width: `${SLIDE_VW}vw` }}
     >
-      <div className="relative max-lg:portrait:!h-[64vw] max-lg:portrait:!w-[57vw] max-lg:portrait:!transform-none" style={{ width: "30.8vw", height: "34.6vw", transform: shiftLeft ? `translateX(-${shiftLeft}px)` : undefined }}>
+      <div className="relative max-lg:portrait:!h-[64vw] max-lg:portrait:!w-[57vw] max-lg:portrait:!transform-none max-lg:landscape:!h-[66svh] max-lg:landscape:!w-[59svh] max-lg:landscape:!transform-none" style={{ width: "30.8vw", height: "34.6vw", transform: shiftLeft ? `translateX(-${shiftLeft}px)` : undefined }}>
         <div
-          className="relative overflow-hidden rounded-2xl max-lg:portrait:!h-[43vw] max-lg:portrait:!w-[35vw]"
+          className="relative overflow-hidden rounded-2xl max-lg:portrait:!h-[43vw] max-lg:portrait:!w-[35vw] max-lg:landscape:!h-[44svh] max-lg:landscape:!w-[36svh]"
           style={{ width: "18.8vw", height: "23.3vw", transform: "translateX(20%)" }}
         >
-          <Image src={step.slideTop!} alt={`${step.title} top`} fill sizes="(max-width: 1023px) 35vw, 18.8vw" className="object-cover" />
+          <Image src={step.slideTop!} alt={`${step.title} top`} fill sizes="(max-width: 1023px) and (orientation: portrait) 35vw, 18.8vw" className="object-cover" />
         </div>
         <div
-          className="absolute overflow-hidden rounded-2xl max-lg:portrait:!left-[30vw] max-lg:portrait:!top-[30vw] max-lg:portrait:!h-[34vw] max-lg:portrait:!w-[27vw]"
+          className="absolute overflow-hidden rounded-2xl max-lg:portrait:!left-[30vw] max-lg:portrait:!top-[30vw] max-lg:portrait:!h-[34vw] max-lg:portrait:!w-[27vw] max-lg:landscape:!left-[31svh] max-lg:landscape:!top-[31svh] max-lg:landscape:!h-[35svh] max-lg:landscape:!w-[28svh]"
           style={{ width: "14.8vw", height: "18.4vw", left: "16.1vw", top: "16.3vw", zIndex: 1 }}
         >
-          <Image src={step.slideBottom!} alt={`${step.title} bottom`} fill sizes="(max-width: 1023px) 27vw, 14.8vw" className="object-cover" />
+          <Image src={step.slideBottom!} alt={`${step.title} bottom`} fill sizes="(max-width: 1023px) and (orientation: portrait) 27vw, 14.8vw" className="object-cover" />
         </div>
       </div>
     </div>
@@ -163,7 +163,7 @@ export function SellProcess() {
 
         {/* Horizontal scroll row */}
         <motion.div
-          className="flex h-full max-lg:h-[75svh] max-lg:gap-3 max-lg:overflow-x-auto max-lg:px-6 max-lg:!transform-none max-lg:!w-auto max-lg:[scroll-snap-type:x_mandatory] max-lg:[scrollbar-width:none]"
+          className="flex h-full max-lg:h-[75svh] max-lg:gap-3 max-lg:overflow-x-auto max-lg:px-6 max-lg:!transform-none max-lg:!w-auto max-lg:[scroll-snap-type:x_mandatory] max-lg:[scrollbar-width:none] max-lg:overflow-y-hidden max-lg:landscape:h-[85svh]"
           style={{ x, width: `${TOTAL_VW}vw` }}
         >
           {/* Intro panel — 55vw */}
@@ -171,7 +171,7 @@ export function SellProcess() {
             className="flex h-full flex-col items-start justify-center px-16 lg:px-28 max-lg:!w-[85vw] max-lg:shrink-0 max-lg:px-2 max-lg:[scroll-snap-align:start]"
             style={{ width: `${INTRO_VW}vw` }}
           >
-            <h2 className="mb-6 max-w-2xl font-sans text-[3rem] font-light leading-tight text-white lg:text-[4.5rem] max-lg:text-[clamp(2rem,8vw,3rem)]">
+            <h2 className="mb-6 max-w-2xl font-sans text-[3rem] font-light leading-tight text-white lg:text-[4.5rem] max-lg:text-[clamp(2rem,8vw,3rem)] max-lg:landscape:text-[clamp(1.6rem,8svh,2.4rem)]">
               We're here for you,<br />start to close
             </h2>
             <p className="max-w-md font-sans text-base font-light leading-relaxed text-white/40">
@@ -213,10 +213,10 @@ export function SellProcess() {
                 style={{ width: `${TEXT_VW}vw` }}
               >
                 <div className="relative z-10 px-16 lg:px-28 max-lg:px-2">
-                  <div className="mb-10 max-lg:mb-4">
+                  <div className="mb-10 max-lg:mb-4 max-lg:landscape:mb-2">
                     <span className="font-sans text-sm font-medium text-[#9E8C61]">{step.num}</span>
                   </div>
-                  <h3 className="mb-6 font-sans text-[2.8rem] font-light leading-tight text-white lg:text-[3.8rem] max-lg:text-[clamp(2rem,8vw,2.8rem)]">
+                  <h3 className="mb-6 font-sans text-[2.8rem] font-light leading-tight text-white lg:text-[3.8rem] max-lg:text-[clamp(2rem,8vw,2.8rem)] max-lg:landscape:mb-3 max-lg:landscape:text-[clamp(1.5rem,7svh,2.2rem)]">
                     {step.title}
                   </h3>
                   <p className="max-w-sm font-sans text-base font-light leading-relaxed text-white/50">
@@ -230,7 +230,7 @@ export function SellProcess() {
                         animate={PULSE_ANIMATE}
                         whileHover={{ scale: 1.1, transition: SPRING_HOVER }}
                         transition={PULSE_TRANSITION}
-                        className="mt-20 inline-flex rounded-full bg-white px-8 py-3.5 font-sans text-sm font-medium text-[#1B1B1B] max-lg:mt-8"
+                        className="mt-20 inline-flex rounded-full bg-white px-8 py-3.5 font-sans text-sm font-medium text-[#1B1B1B] max-lg:mt-8 max-lg:landscape:mt-4"
                       >
                         {step.cta.label}
                       </motion.button>
@@ -240,7 +240,7 @@ export function SellProcess() {
                         animate={PULSE_ANIMATE}
                         whileHover={{ scale: 1.1, transition: SPRING_HOVER }}
                         transition={PULSE_TRANSITION}
-                        className="mt-20 inline-flex rounded-full bg-white px-8 py-3.5 font-sans text-sm font-medium text-[#1B1B1B] max-lg:mt-8"
+                        className="mt-20 inline-flex rounded-full bg-white px-8 py-3.5 font-sans text-sm font-medium text-[#1B1B1B] max-lg:mt-8 max-lg:landscape:mt-4"
                       >
                         {step.cta.label}
                       </MotionLink>

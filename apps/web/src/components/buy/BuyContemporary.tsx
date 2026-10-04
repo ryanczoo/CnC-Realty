@@ -49,6 +49,21 @@ const CW_PHONE = { center: 0.62, left: 0.44, right: 0.44 };
 
 type Move = { dx: number; dy: number; scale: number };
 
+// The timeline below assumes the panel unpins at progress 0.75 (400vh section,
+// 100vh panel). The shorter phone section unpins earlier (pinEnd), so phones
+// remap that moment to 0.75 — the fly-in and hold finish while still pinned.
+export function phoneProgress(p: number, pinEnd: number): number {
+  return Math.min(1, (p * 0.75) / pinEnd);
+}
+
+// Height used for vertical flight distances. Corner boxes are sized in CSS vh,
+// i.e. the pinned panel's height; on phones innerHeight is shorter whenever the
+// browser toolbar shows, so phones use the panel's own height. Desktop keeps
+// innerHeight exactly as before.
+export function flightHeight(isMobile: boolean, panelPx: number, innerPx: number): number {
+  return isMobile ? panelPx : innerPx;
+}
+
 // Fly-in geometry: how far (as viewport fractions) and how much each image
 // grows from its corner to its cluster spot. Desktop values are the original
 // (K - C) offsets and SC ratios.
@@ -121,11 +136,16 @@ export function BuyContemporary() {
   // 1 on upright phones/iPads (matches the max-lg:portrait: CSS), 0 otherwise.
   const isMobile = useIsMobile();
   const portraitMV = useMotionValue(0);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const pinEndRef = useRef(0.75);
 
   useEffect(() => {
     const onResize = () => {
+      const panelPx = panelRef.current?.clientHeight ?? window.innerHeight;
       vwRef.current = window.innerWidth;
-      vhRef.current = window.innerHeight;
+      vhRef.current = flightHeight(isMobile, panelPx, window.innerHeight);
+      const sectionPx = sectionRef.current?.offsetHeight ?? 0;
+      if (sectionPx > panelPx) pinEndRef.current = (sectionPx - panelPx) / sectionPx;
       portraitMV.set(isMobile && window.innerHeight >= window.innerWidth ? 1 : 0);
     };
     onResize();
@@ -138,47 +158,53 @@ export function BuyContemporary() {
     offset: ["start start", "end start"],
   });
 
+  // Desktop: exactly scrollYProgress. Upright phones: remapped so the panel
+  // stays pinned through the fly-in and hold (see phoneProgress).
+  const prog = useTransform([scrollYProgress, portraitMV], ([p, m]: number[]) =>
+    m === 1 ? phoneProgress(p, pinEndRef.current) : p
+  );
+
   // Each image flies from its corner to its cluster spot; offsets/scales come
   // from clusterGeometry (desktop values unchanged, portrait phones re-tuned).
   const geo = (m: number) => clusterGeometry(m === 1);
 
   // ── Center image: from top-left corner → cluster center ─────────────────────
-  const ctrX  = useTransform([scrollYProgress, portraitMV], ([p, m]: number[]) => ramp(p, 0.45, 0.70, 0, geo(m).ctr.dx * vwRef.current));
-  const ctrY  = useTransform([scrollYProgress, portraitMV], ([p, m]: number[]) => ramp(p, 0.45, 0.70, 0, geo(m).ctr.dy * vhRef.current));
-  const ctrSc = useTransform([scrollYProgress, portraitMV], ([p, m]: number[]) => ramp(p, 0.45, 0.70, 1, geo(m).ctr.scale));
+  const ctrX  = useTransform([prog, portraitMV], ([p, m]: number[]) => ramp(p, 0.45, 0.70, 0, geo(m).ctr.dx * vwRef.current));
+  const ctrY  = useTransform([prog, portraitMV], ([p, m]: number[]) => ramp(p, 0.45, 0.70, 0, geo(m).ctr.dy * vhRef.current));
+  const ctrSc = useTransform([prog, portraitMV], ([p, m]: number[]) => ramp(p, 0.45, 0.70, 1, geo(m).ctr.scale));
 
   // ── Left image: from bottom-left corner → cluster left ──────────────────────
-  const lftX  = useTransform([scrollYProgress, portraitMV], ([p, m]: number[]) => ramp(p, 0.45, 0.70, 0, geo(m).lft.dx * vwRef.current));
-  const lftY  = useTransform([scrollYProgress, portraitMV], ([p, m]: number[]) => ramp(p, 0.45, 0.70, 0, geo(m).lft.dy * vhRef.current));
-  const lftSc = useTransform([scrollYProgress, portraitMV], ([p, m]: number[]) => ramp(p, 0.45, 0.70, 1, geo(m).lft.scale));
-  const lftRot = useTransform(scrollYProgress, (p) => ramp(p, 0.45, 0.70, 0, -3.5));
+  const lftX  = useTransform([prog, portraitMV], ([p, m]: number[]) => ramp(p, 0.45, 0.70, 0, geo(m).lft.dx * vwRef.current));
+  const lftY  = useTransform([prog, portraitMV], ([p, m]: number[]) => ramp(p, 0.45, 0.70, 0, geo(m).lft.dy * vhRef.current));
+  const lftSc = useTransform([prog, portraitMV], ([p, m]: number[]) => ramp(p, 0.45, 0.70, 1, geo(m).lft.scale));
+  const lftRot = useTransform(prog, (p) => ramp(p, 0.45, 0.70, 0, -3.5));
 
   // ── Right image: from top-right corner → cluster right ──────────────────────
-  const rgtX  = useTransform([scrollYProgress, portraitMV], ([p, m]: number[]) => ramp(p, 0.45, 0.70, 0, geo(m).rgt.dx * vwRef.current));
-  const rgtY  = useTransform([scrollYProgress, portraitMV], ([p, m]: number[]) => ramp(p, 0.45, 0.70, 0, geo(m).rgt.dy * vhRef.current));
-  const rgtSc = useTransform([scrollYProgress, portraitMV], ([p, m]: number[]) => ramp(p, 0.45, 0.70, 1, geo(m).rgt.scale));
-  const rgtRot = useTransform(scrollYProgress, (p) => ramp(p, 0.45, 0.70, 0, 3.5));
+  const rgtX  = useTransform([prog, portraitMV], ([p, m]: number[]) => ramp(p, 0.45, 0.70, 0, geo(m).rgt.dx * vwRef.current));
+  const rgtY  = useTransform([prog, portraitMV], ([p, m]: number[]) => ramp(p, 0.45, 0.70, 0, geo(m).rgt.dy * vhRef.current));
+  const rgtSc = useTransform([prog, portraitMV], ([p, m]: number[]) => ramp(p, 0.45, 0.70, 1, geo(m).rgt.scale));
+  const rgtRot = useTransform(prog, (p) => ramp(p, 0.45, 0.70, 0, 3.5));
 
   // ── Back image: from bottom-right corner → cluster center (behind) ───────────
-  const bckX  = useTransform([scrollYProgress, portraitMV], ([p, m]: number[]) => ramp(p, 0.45, 0.70, 0, geo(m).bck.dx * vwRef.current));
-  const bckY  = useTransform([scrollYProgress, portraitMV], ([p, m]: number[]) => ramp(p, 0.45, 0.70, 0, geo(m).bck.dy * vhRef.current));
-  const bckSc = useTransform([scrollYProgress, portraitMV], ([p, m]: number[]) => ramp(p, 0.45, 0.70, 1, geo(m).bck.scale));
+  const bckX  = useTransform([prog, portraitMV], ([p, m]: number[]) => ramp(p, 0.45, 0.70, 0, geo(m).bck.dx * vwRef.current));
+  const bckY  = useTransform([prog, portraitMV], ([p, m]: number[]) => ramp(p, 0.45, 0.70, 0, geo(m).bck.dy * vhRef.current));
+  const bckSc = useTransform([prog, portraitMV], ([p, m]: number[]) => ramp(p, 0.45, 0.70, 1, geo(m).bck.scale));
 
   // Gradient overlays: absent at corners, fade in as images cluster.
-  const overlayOp = useTransform(scrollYProgress, (p) => ramp(p, 0.45, 0.68, 0, 1));
+  const overlayOp = useTransform(prog, (p) => ramp(p, 0.45, 0.68, 0, 1));
 
   // RESULTS heading: invisible at start, fades in as cluster forms.
-  const contemporaryOp = useTransform(scrollYProgress, (p) => ramp(p, 0.50, 0.68, 0, 1));
+  const contemporaryOp = useTransform(prog, (p) => ramp(p, 0.50, 0.68, 0, 1));
 
   // Watermark text: invisible at start, fades in as cluster forms.
-  const floatOp = useTransform(scrollYProgress, (p) => ramp(p, 0.55, 0.70, 0, 0.12));
+  const floatOp = useTransform(prog, (p) => ramp(p, 0.55, 0.70, 0, 0.12));
 
   // WHY CHOOSE CnC?: fully visible at start, fades out as lines reach logo.
-  const whyOp = useTransform(scrollYProgress, (p) => ramp(p, 0.20, 0.45, 1, 0));
+  const whyOp = useTransform(prog, (p) => ramp(p, 0.20, 0.45, 1, 0));
 
   // Lines draw in over first phase, then fade out as images start collapsing.
-  const lineProgress = useTransform(scrollYProgress, [0, 0.45], [0, 1]);
-  const lineOpacity  = useTransform(scrollYProgress, (p) => ramp(p, 0.45, 0.58, 1, 0));
+  const lineProgress = useTransform(prog, [0, 0.45], [0, 1]);
+  const lineOpacity  = useTransform(prog, (p) => ramp(p, 0.45, 0.58, 1, 0));
 
   return (
     <section
@@ -187,7 +213,7 @@ export function BuyContemporary() {
       className="bg-[#1B1B1B] max-lg:portrait:!h-[300svh]"
       style={{ height: "400vh" }}
     >
-      <div className="sticky top-0 h-screen overflow-hidden bg-[#1B1B1B]">
+      <div ref={panelRef} className="sticky top-0 h-screen overflow-hidden bg-[#1B1B1B]">
 
         {/* Connector lines — draw in, then fade out as images collapse */}
         <motion.svg
@@ -244,12 +270,12 @@ export function BuyContemporary() {
 
         {/* ── Center image → top-left corner ── */}
         <motion.div className="max-lg:portrait:!left-[7vw] max-lg:portrait:!top-[9vh] max-lg:portrait:!h-[22vh] max-lg:portrait:!w-[40vw]" style={{ ...POS_TOP_LEFT, x: ctrX, y: ctrY, scale: ctrSc, zIndex: 2 }}>
-          <Image src="/images/contemporary/contemporary-01.jpg" fill className="object-cover" alt="" sizes="(max-width: 1023px) 62vw, 25vw" />
+          <Image src="/images/contemporary/contemporary-01.jpg" fill className="object-cover" alt="" sizes="(max-width: 1023px) and (orientation: portrait) 62vw, 25vw" />
         </motion.div>
 
         {/* ── Right image → top-right corner (overlay shares parent transform) ── */}
         <motion.div className="max-lg:portrait:!left-[53vw] max-lg:portrait:!top-[15vh] max-lg:portrait:!h-[22vh] max-lg:portrait:!w-[40vw]" style={{ ...POS_TOP_RIGHT, x: rgtX, y: rgtY, scale: rgtSc, rotate: rgtRot, zIndex: 1 }}>
-          <Image src="/images/contemporary/contemporary-02.jpg" fill className="object-cover" alt="" sizes="(max-width: 1023px) 44vw, 18vw" />
+          <Image src="/images/contemporary/contemporary-02.jpg" fill className="object-cover" alt="" sizes="(max-width: 1023px) and (orientation: portrait) 44vw, 18vw" />
           <motion.div
             aria-hidden
             style={{ position: "absolute", inset: 0, opacity: overlayOp, background: OVERLAY_GRADIENT, pointerEvents: "none" }}
@@ -258,7 +284,7 @@ export function BuyContemporary() {
 
         {/* ── Left image → bottom-left corner (overlay shares parent transform) ── */}
         <motion.div className="max-lg:portrait:!left-[7vw] max-lg:portrait:!top-[65vh] max-lg:portrait:!h-[22vh] max-lg:portrait:!w-[40vw]" style={{ ...POS_BTM_LEFT, x: lftX, y: lftY, scale: lftSc, rotate: lftRot, zIndex: 1 }}>
-          <Image src="/images/contemporary/contemporary-03.jpg" fill className="object-cover" alt="" sizes="(max-width: 1023px) 44vw, 18vw" />
+          <Image src="/images/contemporary/contemporary-03.jpg" fill className="object-cover" alt="" sizes="(max-width: 1023px) and (orientation: portrait) 44vw, 18vw" />
           <motion.div
             aria-hidden
             style={{ position: "absolute", inset: 0, opacity: overlayOp, background: OVERLAY_GRADIENT, pointerEvents: "none" }}
@@ -267,7 +293,7 @@ export function BuyContemporary() {
 
         {/* ── Back image → bottom-right corner ── */}
         <motion.div className="max-lg:portrait:!left-[53vw] max-lg:portrait:!top-[71vh] max-lg:portrait:!h-[22vh] max-lg:portrait:!w-[40vw]" style={{ ...POS_BTM_RIGHT, x: bckX, y: bckY, scale: bckSc, zIndex: 0 }}>
-          <Image src="/images/contemporary/contemporary-04.jpg" fill className="object-cover" alt="" sizes="(max-width: 1023px) 62vw, 18vw" />
+          <Image src="/images/contemporary/contemporary-04.jpg" fill className="object-cover" alt="" sizes="(max-width: 1023px) and (orientation: portrait) 62vw, 18vw" />
         </motion.div>
 
         {/* WHY CHOOSE CnC? */}

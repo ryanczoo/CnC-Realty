@@ -1,5 +1,31 @@
 import { describe, it, expect } from "vitest";
-import { clusterGeometry } from "@/components/buy/BuyContemporary";
+import { clusterGeometry, phoneProgress, flightHeight } from "@/components/buy/BuyContemporary";
+
+describe("phoneProgress", () => {
+  // The desktop timeline assumes the panel unpins at progress 0.75. On phones
+  // the shorter section unpins earlier, so that moment is remapped to 0.75 and
+  // the fly-in + hold finish while the panel is still pinned.
+  it("maps the unpin moment to 0.75", () => {
+    expect(phoneProgress(0.667, 0.667)).toBeCloseTo(0.75);
+    expect(phoneProgress(0.63, 0.63)).toBeCloseTo(0.75);
+  });
+  it("starts at 0 and clamps at 1", () => {
+    expect(phoneProgress(0, 0.667)).toBe(0);
+    expect(phoneProgress(1, 0.667)).toBe(1);
+  });
+});
+
+describe("flightHeight", () => {
+  // Corner boxes are sized in CSS vh (the panel's height); on phones the
+  // visible innerHeight is shorter while the toolbar shows, so flights use the
+  // panel's own height. Desktop keeps innerHeight exactly as before.
+  it("desktop: innerHeight", () => {
+    expect(flightHeight(false, 900, 880)).toBe(880);
+  });
+  it("phone: the pinned panel's height", () => {
+    expect(flightHeight(true, 844, 764)).toBe(844);
+  });
+});
 
 describe("clusterGeometry", () => {
   // Desktop must equal the original (K - C) offsets and SC scale ratios.
