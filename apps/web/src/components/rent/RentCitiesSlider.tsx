@@ -85,12 +85,12 @@ export function RentCitiesSlider() {
       </div>
 
       <div
-        className="relative mx-auto"
+        className="relative mx-auto max-lg:portrait:!w-[84vw]"
         style={{ width: "65vw", maxWidth: 900 }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <div className="relative w-full" style={{ paddingTop: "calc(65vw * 9 / 16)", maxHeight: 506 }}>
+        <div className="relative w-full max-lg:portrait:!pt-[calc(84vw*9/16)]" style={{ paddingTop: "calc(65vw * 9 / 16)", maxHeight: 506 }}>
           <div className="absolute inset-0">
             {CITIES.map((city, i) => {
               const pos = getSlideState(i, activeIdx, CITIES.length);
@@ -110,12 +110,12 @@ export function RentCitiesSlider() {
                     alt={city.name}
                     fill
                     className="object-cover"
-                    sizes="(max-width: 900px) 65vw, 900px"
+                    sizes="(max-width: 1023px) 84vw, 900px"
                     priority={i === 0}
                   />
                   <div className="absolute inset-0 bg-black/50" />
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <p className="font-sans font-light text-white text-[4.4rem] xl:text-[5.2rem]">
+                    <p className="font-sans font-light text-white text-[4.4rem] xl:text-[5.2rem] max-lg:text-[clamp(2rem,9vw,4.4rem)]">
                       {city.name}
                     </p>
                   </div>

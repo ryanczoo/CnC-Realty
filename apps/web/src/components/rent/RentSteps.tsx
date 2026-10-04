@@ -35,14 +35,14 @@ const STEPS = [
 
 export function RentSteps() {
   return (
-    <section className="bg-cnc-bg px-[75px] py-28">
-      <div className="flex gap-10">
+    <section className="bg-cnc-bg px-[75px] py-28 max-lg:px-6 max-lg:py-16">
+      <div className="flex gap-10 max-lg:flex-col">
 
         {/* Left: heading + CTA */}
-        <div className="flex flex-1 flex-col gap-8 sticky top-28 self-start">
+        <div className="flex flex-1 flex-col gap-8 sticky top-28 self-start max-lg:static">
           <h2 className="font-sans font-light leading-[1.1]">
             <RevealLine className="block text-[1.9rem] xl:text-[2.2rem]">Moving made,</RevealLine>
-            <span className="block pl-[7.5rem]">
+            <span className="block pl-[7.5rem] max-lg:pl-[3.5rem]">
               <RevealLine className="text-[3rem] xl:text-[3.5rem] font-medium" color="#9E8C61" delay={0.15}>Easy</RevealLine>
             </span>
           </h2>
@@ -50,7 +50,7 @@ export function RentSteps() {
             animate={PULSE_ANIMATE}
             transition={PULSE_TRANSITION}
             whileHover={{ scale: 1.05, transition: SPRING_HOVER }}
-            className="ml-[7.5rem] w-fit"
+            className="ml-[7.5rem] w-fit max-lg:ml-[3.5rem]"
           >
             <Link
               href="/properties?listingType=FOR_RENT"
@@ -62,19 +62,19 @@ export function RentSteps() {
         </div>
 
         {/* Right: steps list */}
-        <div className="shrink-0 basis-[57%]">
+        <div className="shrink-0 basis-[57%] max-lg:basis-auto">
 <div>
             {STEPS.map((step, i) => (
               <motion.div
                 key={step.num}
                 {...fadeUp(i * 0.12)}
-                className="flex items-center gap-10 border-t border-[#1B1B1B]/[0.07] py-6"
+                className="flex items-center gap-10 border-t border-[#1B1B1B]/[0.07] py-6 max-lg:gap-5"
               >
                 <span className="w-8 shrink-0 font-sans text-base font-medium tracking-widest text-cnc-gold">
                   {step.num}
                 </span>
                 <div className="font-sans font-medium leading-[1.15]">
-                  <p className="text-[2.1rem] text-[#1B1B1B]">{step.title}</p>
+                  <p className="text-[2.1rem] text-[#1B1B1B] max-lg:text-[clamp(1.5rem,6.5vw,2.1rem)]">{step.title}</p>
                   <p className="mt-2 text-base font-light leading-relaxed text-[#1B1B1B]/50">{step.body}</p>
                 </div>
               </motion.div>
