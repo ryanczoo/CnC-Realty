@@ -85,21 +85,21 @@ type Step = Omit<(typeof STEPS)[number], "cta"> & {
 function SlidePanel({ step, shiftLeft = 0 }: { step: Step; shiftLeft?: number }) {
   return (
     <div
-      className="relative flex h-full items-center justify-center"
+      className="relative flex h-full items-center justify-center max-lg:!w-[85vw] max-lg:shrink-0 max-lg:[scroll-snap-align:start]"
       style={{ width: `${SLIDE_VW}vw` }}
     >
-      <div className="relative" style={{ width: "30.8vw", height: "34.6vw", transform: shiftLeft ? `translateX(-${shiftLeft}px)` : undefined }}>
+      <div className="relative max-lg:portrait:!h-[64vw] max-lg:portrait:!w-[57vw] max-lg:portrait:!transform-none" style={{ width: "30.8vw", height: "34.6vw", transform: shiftLeft ? `translateX(-${shiftLeft}px)` : undefined }}>
         <div
-          className="relative overflow-hidden rounded-2xl"
+          className="relative overflow-hidden rounded-2xl max-lg:portrait:!h-[43vw] max-lg:portrait:!w-[35vw]"
           style={{ width: "18.8vw", height: "23.3vw", transform: "translateX(20%)" }}
         >
-          <Image src={step.slideTop!} alt={`${step.title} top`} fill sizes="18.8vw" className="object-cover" />
+          <Image src={step.slideTop!} alt={`${step.title} top`} fill sizes="(max-width: 1023px) 35vw, 18.8vw" className="object-cover" />
         </div>
         <div
-          className="absolute overflow-hidden rounded-2xl"
+          className="absolute overflow-hidden rounded-2xl max-lg:portrait:!left-[30vw] max-lg:portrait:!top-[30vw] max-lg:portrait:!h-[34vw] max-lg:portrait:!w-[27vw]"
           style={{ width: "14.8vw", height: "18.4vw", left: "16.1vw", top: "16.3vw", zIndex: 1 }}
         >
-          <Image src={step.slideBottom!} alt={`${step.title} bottom`} fill sizes="14.8vw" className="object-cover" />
+          <Image src={step.slideBottom!} alt={`${step.title} bottom`} fill sizes="(max-width: 1023px) 27vw, 14.8vw" className="object-cover" />
         </div>
       </div>
     </div>
@@ -130,13 +130,13 @@ export function SellProcess() {
     <section
       ref={sectionRef}
       data-navbar-theme="dark"
-      className="relative bg-[#1B1B1B]"
+      className="relative bg-[#1B1B1B] max-lg:!h-auto max-lg:pb-16"
       style={{ height: "900vh" }}
     >
-      <div className="sticky top-0 h-screen overflow-hidden">
+      <div className="sticky top-0 h-screen overflow-hidden max-lg:static max-lg:h-auto max-lg:overflow-visible">
 
         {/* Segmented progress bar */}
-        <div className="absolute left-16 right-16 top-[5.25rem] z-20 flex gap-1">
+        <div className="absolute left-16 right-16 top-[5.25rem] z-20 flex gap-1 max-lg:hidden">
           {SEG_FILLS.map((fill, i) => (
             <div
               key={i}
@@ -152,7 +152,7 @@ export function SellProcess() {
         </div>
 
         {/* Our Process label */}
-        <div className="absolute left-16 top-[6.25rem] z-20">
+        <div className="absolute left-16 top-[6.25rem] z-20 max-lg:static max-lg:px-6 max-lg:pb-6 max-lg:pt-24">
           <h2 className="font-sans text-[2.5rem] font-light xl:text-[3rem]">
             <RevealLine onDark>
               <span className="text-[1.9rem] xl:text-[2.2rem]">Our </span>
@@ -163,15 +163,15 @@ export function SellProcess() {
 
         {/* Horizontal scroll row */}
         <motion.div
-          className="flex h-full"
+          className="flex h-full max-lg:h-[75svh] max-lg:gap-3 max-lg:overflow-x-auto max-lg:px-6 max-lg:!transform-none max-lg:!w-auto max-lg:[scroll-snap-type:x_mandatory] max-lg:[scrollbar-width:none]"
           style={{ x, width: `${TOTAL_VW}vw` }}
         >
           {/* Intro panel — 55vw */}
           <div
-            className="flex h-full flex-col items-start justify-center px-16 lg:px-28"
+            className="flex h-full flex-col items-start justify-center px-16 lg:px-28 max-lg:!w-[85vw] max-lg:shrink-0 max-lg:px-2 max-lg:[scroll-snap-align:start]"
             style={{ width: `${INTRO_VW}vw` }}
           >
-            <h2 className="mb-6 max-w-2xl font-sans text-[3rem] font-light leading-tight text-white lg:text-[4.5rem]">
+            <h2 className="mb-6 max-w-2xl font-sans text-[3rem] font-light leading-tight text-white lg:text-[4.5rem] max-lg:text-[clamp(2rem,8vw,3rem)]">
               We're here for you,<br />start to close
             </h2>
             <p className="max-w-md font-sans text-base font-light leading-relaxed text-white/40">
@@ -185,7 +185,7 @@ export function SellProcess() {
 
               {/* Full-bleed photo panel — 93vw */}
               <div
-                className="relative h-full overflow-hidden"
+                className="relative h-full overflow-hidden max-lg:!w-[85vw] max-lg:shrink-0 max-lg:rounded-2xl max-lg:[scroll-snap-align:start]"
                 style={{ width: `${PHOTO_VW}vw` }}
               >
                 <div className="absolute inset-0 scale-110">
@@ -193,7 +193,7 @@ export function SellProcess() {
                     src={step.photo}
                     alt={step.title}
                     fill
-                    sizes={`${PHOTO_VW}vw`}
+                    sizes={`(max-width: 1023px) 85vw, ${PHOTO_VW}vw`}
                     className="object-cover"
                     style={step.photoPos ? { objectPosition: step.photoPos } : undefined}
                     priority={step.num === "01"}
@@ -209,14 +209,14 @@ export function SellProcess() {
 
               {/* Step text panel */}
               <div
-                className="relative flex h-full items-center"
+                className="relative flex h-full items-center max-lg:!w-[85vw] max-lg:shrink-0 max-lg:[scroll-snap-align:start]"
                 style={{ width: `${TEXT_VW}vw` }}
               >
-                <div className="relative z-10 px-16 lg:px-28">
-                  <div className="mb-10">
+                <div className="relative z-10 px-16 lg:px-28 max-lg:px-2">
+                  <div className="mb-10 max-lg:mb-4">
                     <span className="font-sans text-sm font-medium text-[#9E8C61]">{step.num}</span>
                   </div>
-                  <h3 className="mb-6 font-sans text-[2.8rem] font-light leading-tight text-white lg:text-[3.8rem]">
+                  <h3 className="mb-6 font-sans text-[2.8rem] font-light leading-tight text-white lg:text-[3.8rem] max-lg:text-[clamp(2rem,8vw,2.8rem)]">
                     {step.title}
                   </h3>
                   <p className="max-w-sm font-sans text-base font-light leading-relaxed text-white/50">
@@ -230,7 +230,7 @@ export function SellProcess() {
                         animate={PULSE_ANIMATE}
                         whileHover={{ scale: 1.1, transition: SPRING_HOVER }}
                         transition={PULSE_TRANSITION}
-                        className="mt-20 inline-flex rounded-full bg-white px-8 py-3.5 font-sans text-sm font-medium text-[#1B1B1B]"
+                        className="mt-20 inline-flex rounded-full bg-white px-8 py-3.5 font-sans text-sm font-medium text-[#1B1B1B] max-lg:mt-8"
                       >
                         {step.cta.label}
                       </motion.button>
@@ -240,7 +240,7 @@ export function SellProcess() {
                         animate={PULSE_ANIMATE}
                         whileHover={{ scale: 1.1, transition: SPRING_HOVER }}
                         transition={PULSE_TRANSITION}
-                        className="mt-20 inline-flex rounded-full bg-white px-8 py-3.5 font-sans text-sm font-medium text-[#1B1B1B]"
+                        className="mt-20 inline-flex rounded-full bg-white px-8 py-3.5 font-sans text-sm font-medium text-[#1B1B1B] max-lg:mt-8"
                       >
                         {step.cta.label}
                       </MotionLink>
