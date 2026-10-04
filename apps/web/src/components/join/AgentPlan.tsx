@@ -25,22 +25,22 @@ export function AgentPlan() {
   return (
     <section className="relative z-10 bg-cnc-bg px-8 py-24 lg:px-20">
       <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-b from-transparent to-white" />
-      <div className="mx-auto flex max-w-7xl gap-20">
+      <div className="mx-auto flex max-w-7xl gap-20 max-lg:flex-col max-lg:gap-10">
 
         {/* LEFT — section title */}
         <div className="flex-1 pt-6">
-          <div className="sticky top-28">
+          <div className="sticky top-28 max-lg:static">
             <h2 className="font-sans font-light leading-[1.0]">
-              <span className="block -ml-[4rem] text-[2.5rem] xl:-ml-[4.8rem] xl:text-[3rem]">
+              <span className="block -ml-[4rem] text-[2.5rem] xl:-ml-[4.8rem] xl:text-[3rem] max-lg:ml-0 max-lg:text-[clamp(1.9rem,8vw,2.5rem)]">
                 <RevealLine>For Agents,</RevealLine>
               </span>
-              <span className="block text-[3.5rem] font-medium xl:text-[4.2rem]">
+              <span className="block text-[3.5rem] font-medium xl:text-[4.2rem] max-lg:text-[clamp(2.6rem,11vw,3.5rem)]">
                 <RevealLine delay={0.15}>
                   By <span className="text-[#9E8C61]">Agents</span>
                 </RevealLine>
               </span>
             </h2>
-            <div className="mt-8 w-[80%] overflow-hidden rounded-2xl">
+            <div className="mt-8 w-[80%] overflow-hidden rounded-2xl max-lg:w-full">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/images/join-city.jpg"
@@ -52,7 +52,7 @@ export function AgentPlan() {
         </div>
 
         {/* RIGHT — plan card */}
-        <div className="mr-24 w-[420px] flex-shrink-0 rounded-2xl bg-white p-10 shadow-[0_4px_32px_rgba(0,0,0,0.07)]">
+        <div className="mr-24 w-[420px] flex-shrink-0 rounded-2xl bg-white p-10 shadow-[0_4px_32px_rgba(0,0,0,0.07)] max-lg:mr-0 max-lg:w-full max-lg:p-6">
           {/* Plan name */}
           <h3 className="font-sans text-[3.2rem] font-bold leading-none text-[#1B1B1B]">
             Pro
