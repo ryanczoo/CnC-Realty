@@ -48,10 +48,13 @@ No change needed: `FounderQuote` (shared `useScrollWordLight`), `StatsBar` (`fle
   heading becomes static on phones.
 
 ### 3. Stacked cards — `components/join/WhyCnCStacked.tsx`
-- Card height (52vh), offsets and the stacking motion are unchanged (the JS slide distance is
-  derived from 52vh, so heights stay identical).
-- Upright phones: each card's inline `row`/`row-reverse` is overridden to a column
-  (`max-lg:portrait:!flex-col`) — photo on top (~40%), text below; heading/body sizes scale.
+- *Refined during planning:* the desktop stacking geometry (top 80px + 2 × 88px offsets + 52vh
+  card) puts card 3's bottom ~70px below a sideways phone's screen and below a small iPhone's
+  visible area when Safari's bar shows. Phones therefore use tighter offsets (top 64px, 40px
+  steps) and sideways phones 48vh cards, via an exported pure function `stackGeometry(vh, mode)`
+  whose desktop values (88px, 52vh) are pinned by a unit test; static tops are `max-lg:!top-*`.
+- Upright phones: the photo fills the card with a dark overlay and the heading/body sit over it in
+  white (a photo-above-text split leaves too little room for the copy at 320px); sizes scale.
 - Sideways phones: side-by-side kept; text sizes capped by screen height.
 
 ### 4. JoinSteps (Transaction Management / Personal Webpage / Custom CRM) — `components/join/JoinSteps.tsx`
