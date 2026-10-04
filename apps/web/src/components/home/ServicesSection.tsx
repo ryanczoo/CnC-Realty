@@ -205,7 +205,7 @@ function ServiceCard({
             style={{ ...BACKFACE_HIDDEN, transform: "rotateY(180deg)" }}
           >
             <div className="mb-6 h-px w-6 bg-[#1B1B1B]/40" />
-            <p className="flex-1 font-sans text-sm leading-relaxed text-[#1B1B1B]/70">
+            <p className="flex-1 font-sans text-sm leading-relaxed text-[#1B1B1B]/70 max-lg:min-h-0 max-lg:overflow-y-auto">
               {description}
             </p>
             <div className="mt-6 flex items-center justify-between">

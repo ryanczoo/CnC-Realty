@@ -63,7 +63,7 @@ export function WhyCnC() {
       data-navbar-theme="light"
       ref={containerRef}
       style={{ height: `${ITEMS.length * 100}vh` }}
-      className="relative max-lg:!h-[200svh]"
+      className="relative max-lg:!h-[200svh] max-lg:bg-[#F2F0EF]"
     >
       <div className="sticky top-0 h-screen overflow-hidden bg-[#F2F0EF] max-lg:h-[100svh]">
         <div className="flex h-full max-lg:portrait:flex-col-reverse">
