@@ -35,7 +35,7 @@ function StepImage({ step, i }: { step: (typeof STEPS)[0]; i: number }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-60px" }}
       transition={{ duration: 0.7, ease: "easeOut" }}
-      className="relative overflow-hidden rounded-2xl"
+      className="relative overflow-hidden rounded-2xl max-lg:!h-[220px]"
       style={{ height: "340px" }}
     >
       <Image
@@ -68,7 +68,7 @@ function StepText({
       className="relative"
     >
       <div
-        className={`relative flex flex-col gap-20 ${align === "right" ? "items-end text-right" : "items-start text-left"}`}
+        className={`relative flex flex-col gap-20 max-lg:items-start max-lg:gap-5 max-lg:text-left ${align === "right" ? "items-end text-right" : "items-start text-left"}`}
       >
         <div className="flex flex-col gap-3">
           <span className="font-sans text-sm font-medium text-[#9E8C61]">
@@ -110,7 +110,7 @@ export function BuySteps() {
       <div className="relative mx-auto max-w-7xl">
 
         {/* Vertical center line — segmented, matches site progress bar style */}
-        <div className="absolute inset-y-0 left-1/2 flex w-[2px] -translate-x-1/2 flex-col gap-4">
+        <div className="absolute inset-y-0 left-1/2 flex w-[2px] -translate-x-1/2 flex-col gap-4 max-lg:left-0 max-lg:translate-x-0">
           {segHeights.map((h, i) => (
             <div key={i} className="flex-1 overflow-hidden" style={{ backgroundColor: "rgba(27,27,27,0.12)" }}>
               <motion.div className="w-full bg-[#1B1B1B]" style={{ height: h }} />
@@ -122,10 +122,10 @@ export function BuySteps() {
         {STEPS.map((step, i) => {
           const imageLeft = i % 2 === 0;
           return (
-            <div key={i} className="relative flex items-center py-16">
+            <div key={i} className="relative flex items-center py-16 max-lg:flex-col max-lg:items-stretch max-lg:gap-6 max-lg:py-10 max-lg:pl-8">
 
               {/* Left content */}
-              <div className="flex-1 pr-12">
+              <div className={`flex-1 pr-12 max-lg:pr-0 ${imageLeft ? "" : "max-lg:order-2"}`}>
                 {imageLeft
                   ? <StepImage step={step} i={i} />
                   : <StepText step={step} i={i} align="left" />
@@ -133,10 +133,10 @@ export function BuySteps() {
               </div>
 
               {/* Center spacer — keeps content off the line */}
-              <div className="w-16 flex-shrink-0" />
+              <div className="w-16 flex-shrink-0 max-lg:hidden" />
 
               {/* Right content */}
-              <div className="flex-1 pl-12">
+              <div className="flex-1 pl-12 max-lg:pl-0">
                 {imageLeft
                   ? <StepText step={step} i={i} align="right" />
                   : <StepImage step={step} i={i} />
