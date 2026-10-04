@@ -1,9 +1,10 @@
 "use client";
 
 import { useRef, useEffect } from "react";
-import { motion, useScroll, useTransform } from "motion/react";
+import { motion, useMotionValue, useScroll, useTransform } from "motion/react";
 import Image from "next/image";
 import { ramp } from "@/lib/motion";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 // Corner positions measured from Uptown at 1440×900 viewport.
 // topRight.cy pulled to 0.28 (from measured 0.12) to overlap with "OSE" of "CHOOSE".
@@ -32,6 +33,41 @@ const SC = {
   right:  CW.right  / C.topRight.w,
   back:   CW.center / C.btmRight.w,
 };
+
+// Upright phones: corners two-by-two around "WHY CHOOSE CnC", images taller
+// than wide like on desktop; cluster larger and centred for a narrow screen.
+// Static corner boxes are set by the max-lg:portrait:! classes below and must
+// match these cx/cy/w/h values (left = cx - w/2, top = cy - h/2).
+const C_PHONE = {
+  topLeft:  { cx: 0.27, cy: 0.20, w: 0.40, h: 0.22 },
+  topRight: { cx: 0.73, cy: 0.26, w: 0.40, h: 0.22 },
+  btmLeft:  { cx: 0.27, cy: 0.76, w: 0.40, h: 0.22 },
+  btmRight: { cx: 0.73, cy: 0.82, w: 0.40, h: 0.22 },
+};
+const K_PHONE = { center: { cx: 0.5, cy: 0.5 }, left: { cx: 0.30, cy: 0.49 }, right: { cx: 0.70, cy: 0.49 } };
+const CW_PHONE = { center: 0.62, left: 0.44, right: 0.44 };
+
+type Move = { dx: number; dy: number; scale: number };
+
+// Fly-in geometry: how far (as viewport fractions) and how much each image
+// grows from its corner to its cluster spot. Desktop values are the original
+// (K - C) offsets and SC ratios.
+export function clusterGeometry(portraitPhone: boolean): Record<"ctr" | "lft" | "rgt" | "bck", Move> {
+  if (!portraitPhone) {
+    return {
+      ctr: { dx: K.center.cx - C.topLeft.cx, dy: K.center.cy - C.topLeft.cy, scale: SC.center },
+      lft: { dx: K.left.cx - C.btmLeft.cx, dy: K.left.cy - C.btmLeft.cy, scale: SC.left },
+      rgt: { dx: K.right.cx - C.topRight.cx, dy: K.right.cy - C.topRight.cy, scale: SC.right },
+      bck: { dx: K.center.cx - C.btmRight.cx, dy: K.center.cy - C.btmRight.cy, scale: SC.back },
+    };
+  }
+  return {
+    ctr: { dx: K_PHONE.center.cx - C_PHONE.topLeft.cx, dy: K_PHONE.center.cy - C_PHONE.topLeft.cy, scale: CW_PHONE.center / C_PHONE.topLeft.w },
+    lft: { dx: K_PHONE.left.cx - C_PHONE.btmLeft.cx, dy: K_PHONE.left.cy - C_PHONE.btmLeft.cy, scale: CW_PHONE.left / C_PHONE.btmLeft.w },
+    rgt: { dx: K_PHONE.right.cx - C_PHONE.topRight.cx, dy: K_PHONE.right.cy - C_PHONE.topRight.cy, scale: CW_PHONE.right / C_PHONE.topRight.w },
+    bck: { dx: K_PHONE.center.cx - C_PHONE.btmRight.cx, dy: K_PHONE.center.cy - C_PHONE.btmRight.cy, scale: CW_PHONE.center / C_PHONE.btmRight.w },
+  };
+}
 
 const FLOAT_ROWS = [
   { words: ["TRUST", "WORTHY"],  width: "90vw"  },
@@ -82,59 +118,51 @@ export function BuyContemporary() {
   const sectionRef = useRef<HTMLElement>(null);
   const vwRef = useRef(1440);
   const vhRef = useRef(900);
+  // 1 on upright phones/iPads (matches the max-lg:portrait: CSS), 0 otherwise.
+  const isMobile = useIsMobile();
+  const portraitMV = useMotionValue(0);
 
   useEffect(() => {
     const onResize = () => {
       vwRef.current = window.innerWidth;
       vhRef.current = window.innerHeight;
+      portraitMV.set(isMobile && window.innerHeight >= window.innerWidth ? 1 : 0);
     };
     onResize();
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
-  }, []);
+  }, [isMobile, portraitMV]);
 
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ["start start", "end start"],
   });
 
+  // Each image flies from its corner to its cluster spot; offsets/scales come
+  // from clusterGeometry (desktop values unchanged, portrait phones re-tuned).
+  const geo = (m: number) => clusterGeometry(m === 1);
+
   // ── Center image: from top-left corner → cluster center ─────────────────────
-  const ctrX = useTransform(scrollYProgress, (p) =>
-    ramp(p, 0.45, 0.70, 0, (K.center.cx - C.topLeft.cx) * vwRef.current)
-  );
-  const ctrY = useTransform(scrollYProgress, (p) =>
-    ramp(p, 0.45, 0.70, 0, (K.center.cy - C.topLeft.cy) * vhRef.current)
-  );
-  const ctrSc = useTransform(scrollYProgress, (p) => ramp(p, 0.45, 0.70, 1, SC.center));
+  const ctrX  = useTransform([scrollYProgress, portraitMV], ([p, m]: number[]) => ramp(p, 0.45, 0.70, 0, geo(m).ctr.dx * vwRef.current));
+  const ctrY  = useTransform([scrollYProgress, portraitMV], ([p, m]: number[]) => ramp(p, 0.45, 0.70, 0, geo(m).ctr.dy * vhRef.current));
+  const ctrSc = useTransform([scrollYProgress, portraitMV], ([p, m]: number[]) => ramp(p, 0.45, 0.70, 1, geo(m).ctr.scale));
 
   // ── Left image: from bottom-left corner → cluster left ──────────────────────
-  const lftX = useTransform(scrollYProgress, (p) =>
-    ramp(p, 0.45, 0.70, 0, (K.left.cx - C.btmLeft.cx) * vwRef.current)
-  );
-  const lftY = useTransform(scrollYProgress, (p) =>
-    ramp(p, 0.45, 0.70, 0, (K.left.cy - C.btmLeft.cy) * vhRef.current)
-  );
-  const lftSc  = useTransform(scrollYProgress, (p) => ramp(p, 0.45, 0.70, 1, SC.left));
+  const lftX  = useTransform([scrollYProgress, portraitMV], ([p, m]: number[]) => ramp(p, 0.45, 0.70, 0, geo(m).lft.dx * vwRef.current));
+  const lftY  = useTransform([scrollYProgress, portraitMV], ([p, m]: number[]) => ramp(p, 0.45, 0.70, 0, geo(m).lft.dy * vhRef.current));
+  const lftSc = useTransform([scrollYProgress, portraitMV], ([p, m]: number[]) => ramp(p, 0.45, 0.70, 1, geo(m).lft.scale));
   const lftRot = useTransform(scrollYProgress, (p) => ramp(p, 0.45, 0.70, 0, -3.5));
 
   // ── Right image: from top-right corner → cluster right ──────────────────────
-  const rgtX = useTransform(scrollYProgress, (p) =>
-    ramp(p, 0.45, 0.70, 0, (K.right.cx - C.topRight.cx) * vwRef.current)
-  );
-  const rgtY = useTransform(scrollYProgress, (p) =>
-    ramp(p, 0.45, 0.70, 0, (K.right.cy - C.topRight.cy) * vhRef.current)
-  );
-  const rgtSc  = useTransform(scrollYProgress, (p) => ramp(p, 0.45, 0.70, 1, SC.right));
+  const rgtX  = useTransform([scrollYProgress, portraitMV], ([p, m]: number[]) => ramp(p, 0.45, 0.70, 0, geo(m).rgt.dx * vwRef.current));
+  const rgtY  = useTransform([scrollYProgress, portraitMV], ([p, m]: number[]) => ramp(p, 0.45, 0.70, 0, geo(m).rgt.dy * vhRef.current));
+  const rgtSc = useTransform([scrollYProgress, portraitMV], ([p, m]: number[]) => ramp(p, 0.45, 0.70, 1, geo(m).rgt.scale));
   const rgtRot = useTransform(scrollYProgress, (p) => ramp(p, 0.45, 0.70, 0, 3.5));
 
   // ── Back image: from bottom-right corner → cluster center (behind) ───────────
-  const bckX = useTransform(scrollYProgress, (p) =>
-    ramp(p, 0.45, 0.70, 0, (K.center.cx - C.btmRight.cx) * vwRef.current)
-  );
-  const bckY = useTransform(scrollYProgress, (p) =>
-    ramp(p, 0.45, 0.70, 0, (K.center.cy - C.btmRight.cy) * vhRef.current)
-  );
-  const bckSc = useTransform(scrollYProgress, (p) => ramp(p, 0.45, 0.70, 1, SC.back));
+  const bckX  = useTransform([scrollYProgress, portraitMV], ([p, m]: number[]) => ramp(p, 0.45, 0.70, 0, geo(m).bck.dx * vwRef.current));
+  const bckY  = useTransform([scrollYProgress, portraitMV], ([p, m]: number[]) => ramp(p, 0.45, 0.70, 0, geo(m).bck.dy * vhRef.current));
+  const bckSc = useTransform([scrollYProgress, portraitMV], ([p, m]: number[]) => ramp(p, 0.45, 0.70, 1, geo(m).bck.scale));
 
   // Gradient overlays: absent at corners, fade in as images cluster.
   const overlayOp = useTransform(scrollYProgress, (p) => ramp(p, 0.45, 0.68, 0, 1));
@@ -156,14 +184,14 @@ export function BuyContemporary() {
     <section
       ref={sectionRef}
       data-navbar-theme="dark"
-      className="bg-[#1B1B1B]"
+      className="bg-[#1B1B1B] max-lg:portrait:!h-[300svh]"
       style={{ height: "400vh" }}
     >
       <div className="sticky top-0 h-screen overflow-hidden bg-[#1B1B1B]">
 
         {/* Connector lines — draw in, then fade out as images collapse */}
         <motion.svg
-          className="pointer-events-none absolute inset-0 z-10 h-full w-full"
+          className="pointer-events-none absolute inset-0 z-10 h-full w-full max-lg:portrait:hidden"
           viewBox="0 0 1440 900"
           preserveAspectRatio="xMidYMid slice"
           fill="none"
@@ -215,13 +243,13 @@ export function BuyContemporary() {
         </div>
 
         {/* ── Center image → top-left corner ── */}
-        <motion.div style={{ ...POS_TOP_LEFT, x: ctrX, y: ctrY, scale: ctrSc, zIndex: 2 }}>
-          <Image src="/images/contemporary/contemporary-01.jpg" fill className="object-cover" alt="" sizes="25vw" />
+        <motion.div className="max-lg:portrait:!left-[7vw] max-lg:portrait:!top-[9vh] max-lg:portrait:!h-[22vh] max-lg:portrait:!w-[40vw]" style={{ ...POS_TOP_LEFT, x: ctrX, y: ctrY, scale: ctrSc, zIndex: 2 }}>
+          <Image src="/images/contemporary/contemporary-01.jpg" fill className="object-cover" alt="" sizes="(max-width: 1023px) 62vw, 25vw" />
         </motion.div>
 
         {/* ── Right image → top-right corner (overlay shares parent transform) ── */}
-        <motion.div style={{ ...POS_TOP_RIGHT, x: rgtX, y: rgtY, scale: rgtSc, rotate: rgtRot, zIndex: 1 }}>
-          <Image src="/images/contemporary/contemporary-02.jpg" fill className="object-cover" alt="" sizes="18vw" />
+        <motion.div className="max-lg:portrait:!left-[53vw] max-lg:portrait:!top-[15vh] max-lg:portrait:!h-[22vh] max-lg:portrait:!w-[40vw]" style={{ ...POS_TOP_RIGHT, x: rgtX, y: rgtY, scale: rgtSc, rotate: rgtRot, zIndex: 1 }}>
+          <Image src="/images/contemporary/contemporary-02.jpg" fill className="object-cover" alt="" sizes="(max-width: 1023px) 44vw, 18vw" />
           <motion.div
             aria-hidden
             style={{ position: "absolute", inset: 0, opacity: overlayOp, background: OVERLAY_GRADIENT, pointerEvents: "none" }}
@@ -229,8 +257,8 @@ export function BuyContemporary() {
         </motion.div>
 
         {/* ── Left image → bottom-left corner (overlay shares parent transform) ── */}
-        <motion.div style={{ ...POS_BTM_LEFT, x: lftX, y: lftY, scale: lftSc, rotate: lftRot, zIndex: 1 }}>
-          <Image src="/images/contemporary/contemporary-03.jpg" fill className="object-cover" alt="" sizes="18vw" />
+        <motion.div className="max-lg:portrait:!left-[7vw] max-lg:portrait:!top-[65vh] max-lg:portrait:!h-[22vh] max-lg:portrait:!w-[40vw]" style={{ ...POS_BTM_LEFT, x: lftX, y: lftY, scale: lftSc, rotate: lftRot, zIndex: 1 }}>
+          <Image src="/images/contemporary/contemporary-03.jpg" fill className="object-cover" alt="" sizes="(max-width: 1023px) 44vw, 18vw" />
           <motion.div
             aria-hidden
             style={{ position: "absolute", inset: 0, opacity: overlayOp, background: OVERLAY_GRADIENT, pointerEvents: "none" }}
@@ -238,8 +266,8 @@ export function BuyContemporary() {
         </motion.div>
 
         {/* ── Back image → bottom-right corner ── */}
-        <motion.div style={{ ...POS_BTM_RIGHT, x: bckX, y: bckY, scale: bckSc, zIndex: 0 }}>
-          <Image src="/images/contemporary/contemporary-04.jpg" fill className="object-cover" alt="" sizes="18vw" />
+        <motion.div className="max-lg:portrait:!left-[53vw] max-lg:portrait:!top-[71vh] max-lg:portrait:!h-[22vh] max-lg:portrait:!w-[40vw]" style={{ ...POS_BTM_RIGHT, x: bckX, y: bckY, scale: bckSc, zIndex: 0 }}>
+          <Image src="/images/contemporary/contemporary-04.jpg" fill className="object-cover" alt="" sizes="(max-width: 1023px) 62vw, 18vw" />
         </motion.div>
 
         {/* WHY CHOOSE CnC? */}
@@ -248,7 +276,7 @@ export function BuyContemporary() {
           className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center"
         >
           <h2
-            className="font-sans font-light leading-none text-white"
+            className="font-sans font-light leading-none text-white max-lg:landscape:!text-[clamp(1.6rem,9svh,2.5rem)]"
             style={{ fontSize: "clamp(2.5rem, 6vw, 7rem)" }}
           >
             WHY CHOOSE
@@ -264,7 +292,7 @@ export function BuyContemporary() {
             </span>
           </h2>
           <p
-            className="mt-10 max-w-md font-sans font-light leading-relaxed text-white/60"
+            className="mt-10 max-w-md font-sans font-light leading-relaxed text-white/60 max-lg:mt-4 max-lg:px-8"
             style={{ fontSize: "clamp(0.875rem, 1.2vw, 1rem)" }}
           >
             With over 15+ years of California real estate expertise, our team is built to protect your interest and put your needs first
