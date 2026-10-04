@@ -103,15 +103,15 @@ export function SellValues() {
   ];
 
   return (
-    <section ref={sectionRef} className="relative" style={{ height: "500vh" }}>
+    <section ref={sectionRef} className="relative max-lg:!h-[300svh]" style={{ height: "500vh" }}>
       {/* Sticky panel */}
       <div className="sticky top-0 h-screen overflow-hidden bg-cnc-bg">
 
         {/* Title — top center, same pattern as "Our Process" */}
-        <div className="absolute inset-x-0 top-40 flex justify-center">
-          <h2 className="font-sans text-[3.5rem] font-light xl:text-[4.5rem]">
+        <div className="absolute inset-x-0 top-40 flex justify-center max-lg:top-24">
+          <h2 className="font-sans text-[3.5rem] font-light xl:text-[4.5rem] max-lg:text-[clamp(2.2rem,9vw,3.5rem)]">
             <RevealLine>
-              <span className="text-[2.6rem] xl:text-[3.4rem]">Our </span>
+              <span className="text-[2.6rem] xl:text-[3.4rem] max-lg:text-[clamp(1.7rem,7vw,2.6rem)]">Our </span>
               <span style={{ color: "#9E8C61", fontWeight: 500 }}>Values</span>
             </RevealLine>
           </h2>
@@ -155,7 +155,7 @@ export function SellValues() {
             />
             <div className="absolute inset-0 bg-black/40" />
             <div className="absolute inset-0 flex items-center justify-center">
-              <p className="px-4 text-center font-sans text-[2.2rem] font-light leading-tight text-white lg:text-[2.6rem]">
+              <p className="px-4 text-center font-sans text-[2.2rem] font-light leading-tight text-white lg:text-[2.6rem] max-lg:px-2 max-lg:text-[1.3rem]">
                 {v.label}
               </p>
             </div>
