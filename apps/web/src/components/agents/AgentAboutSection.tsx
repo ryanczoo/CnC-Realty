@@ -81,15 +81,15 @@ export function AgentAboutSection({
       <AgentAboutLineArt />
 
       <div className="relative z-10 mx-auto max-w-7xl px-4 py-16 md:px-8 md:py-24 lg:px-12">
-        <div className="flex flex-col gap-12 md:flex-row md:gap-16 lg:gap-24">
+        <div className="flex flex-col gap-12 md:flex-row md:gap-16 lg:gap-24 max-lg:landscape:flex-row max-lg:landscape:gap-6">
 
           {/* LEFT — sticky photo column */}
-          <div className="md:w-[29%]">
-            <div className="sticky top-28">
+          <div className="md:w-[29%] max-lg:landscape:w-[29%] max-lg:landscape:shrink-0">
+            <div className="sticky top-28 max-lg:landscape:static">
               {/* Large agent photo — hidden until morph animation hands off */}
               <div
                 ref={onPhotoRef}
-                className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl bg-[#E0DDD8]"
+                className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl bg-[#E0DDD8] max-lg:landscape:w-[min(100%,calc((100svh_-_9rem)*0.75))]"
                 style={{ visibility: photoVisible ? "visible" : "hidden" }}
               >
                 {headshot ? (
@@ -173,7 +173,7 @@ export function AgentAboutSection({
 
           {/* RIGHT — scrollable bio content */}
           <motion.div
-            className="md:w-[71%] md:py-4 md:pl-16 lg:pl-24"
+            className="md:w-[71%] md:py-4 md:pl-16 lg:pl-24 max-lg:landscape:w-[71%] max-lg:landscape:pl-2"
             initial={{ opacity: 0, scale: 0.96 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true, amount: 0.12 }}
@@ -187,14 +187,14 @@ export function AgentAboutSection({
                 {bio.split(/\n\n+/).map((para, i) => (
                   <p
                     key={i}
-                    className="font-sans text-4xl font-medium leading-relaxed text-white/62"
+                    className="font-sans text-4xl font-medium leading-relaxed text-white/62 max-lg:text-[clamp(1.25rem,5.5vw,1.75rem)]"
                   >
                     {para}
                   </p>
                 ))}
               </div>
             ) : (
-              <p className="font-sans text-4xl font-medium leading-relaxed text-white/62">
+              <p className="font-sans text-4xl font-medium leading-relaxed text-white/62 max-lg:text-[clamp(1.25rem,5.5vw,1.75rem)]">
                 Dedicated to helping clients buy, sell, and invest in real estate
                 across Southern California with integrity and expertise.
               </p>
