@@ -24,12 +24,24 @@ export function countCacheKey(where: unknown): string {
   return `properties:count:${stableStringify(where)}`;
 }
 
+// A hung Redis (as opposed to an erroring one) must not hold up the search page:
+// give it this long, then count from the database instead.
+const REDIS_GET_TIMEOUT_MS = 300;
+
 export async function cachedCount(key: string, compute: () => Promise<number>): Promise<number> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
   try {
-    const hit = await redis.get<number>(key);
+    const hit = await Promise.race([
+      redis.get<number>(key),
+      new Promise<null>((resolve) => {
+        timer = setTimeout(() => resolve(null), REDIS_GET_TIMEOUT_MS);
+      }),
+    ]);
     if (typeof hit === "number") return hit;
   } catch (err) {
     console.error("[property-count-cache] redis get failed:", err);
+  } finally {
+    clearTimeout(timer);
   }
   const total = await compute();
   redis.setex(key, COUNT_TTL_SECONDS, total).catch(console.error);

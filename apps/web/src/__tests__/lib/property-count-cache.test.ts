@@ -67,3 +67,15 @@ describe("cachedCount", () => {
     expect(compute).not.toHaveBeenCalled();
   });
 });
+
+describe("cachedCount — Redis hang", () => {
+  it("stops waiting for a hung Redis after a short timeout and counts directly", async () => {
+    vi.useFakeTimers();
+    vi.mocked(redis.get).mockReturnValue(new Promise(() => {}) as never);
+    const compute = vi.fn().mockResolvedValue(9);
+    const p = cachedCount("k", compute);
+    await vi.advanceTimersByTimeAsync(350);
+    await expect(p).resolves.toBe(9);
+    vi.useRealTimers();
+  });
+});
