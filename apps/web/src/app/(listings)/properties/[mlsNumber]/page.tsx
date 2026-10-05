@@ -16,6 +16,7 @@ import { BackLink } from "@/components/properties/BackLink";
 import { AgentAttribution } from "@/components/properties/AgentAttribution";
 import { CrmlsDisclaimer } from "@/components/properties/CrmlsDisclaimer";
 import { SaveButton } from "@/components/properties/SaveButton";
+import { StickyContactBar } from "@/components/properties/StickyContactBar";
 
 interface PageProps {
   params: { mlsNumber: string };
@@ -81,7 +82,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
   const detailSections = buildDetailSections((property.details as Record<string, unknown>) ?? {}, property.lotSize);
 
   return (
-    <div data-navbar-theme="light" className="min-h-screen bg-[#F2F0EF] pb-20 text-[#1B1B1B]">
+    <div data-navbar-theme="light" className="min-h-screen bg-[#F2F0EF] pb-20 text-[#1B1B1B] max-lg:pb-36">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -114,18 +115,18 @@ export default async function PropertyDetailPage({ params }: PageProps) {
       <div className="mx-auto max-w-7xl px-4 pt-6">
         <PhotoGallery photos={photos} address={property.address} />
 
-        <div className="mt-8 flex gap-8">
+        <div className="mt-8 flex gap-8 max-lg:flex-col">
           {/* Left: listing details */}
           <div className="min-w-0 flex-1">
             {/* Header */}
-            <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start justify-between gap-4 max-lg:flex-col max-lg:gap-3">
               <div>
                 <h1 className="text-3xl font-bold">${property.listPrice.toLocaleString()}</h1>
                 <p className="mt-1 text-lg text-[#1B1B1B]/80">{property.address}</p>
                 <p className="text-sm text-[#1B1B1B]/70">{property.city}, {property.state} {property.zip}</p>
               </div>
               <div className="flex shrink-0 items-center gap-2">
-                <SaveButton mlsNumber={property.mlsNumber} />
+                <SaveButton mlsNumber={property.mlsNumber} className="max-lg:hidden" />
                 <span className="rounded-full bg-[#9E8C61]/20 px-3 py-1 text-sm text-[#9E8C61]">
                   {formatPropertyStatus(property.status)}
                 </span>
@@ -137,7 +138,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
               <div className="mt-5 overflow-hidden rounded-xl bg-cnc-bg">
                 <div className="grid grid-cols-3">
                   {statsFields.map(({ icon: Icon, label, value }) => (
-                    <div key={label} className="flex items-center gap-2.5 px-4 py-3.5">
+                    <div key={label} className="flex items-center gap-2.5 px-4 py-3.5 max-lg:flex-col max-lg:items-start max-lg:gap-1 max-lg:px-3">
                       <Icon className="h-4 w-4 shrink-0 text-[#9E8C61]" />
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold text-[#1B1B1B]" title={String(value)}>{value}</p>
@@ -164,7 +165,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
             />
 
             {/* MLS # and Listed date */}
-            <div className="mt-5 grid grid-cols-2 gap-x-8 gap-y-2.5 rounded-xl bg-cnc-bg p-4 text-sm">
+            <div className="mt-5 grid grid-cols-2 gap-x-8 gap-y-2.5 rounded-xl bg-cnc-bg p-4 text-sm max-sm:grid-cols-1">
               <div className="flex justify-between">
                 <span className="text-[#1B1B1B]/70">MLS #</span>
                 <span>{property.mlsNumber}</span>
@@ -189,7 +190,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
                   <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-[#1B1B1B]/60">
                     {section.title}
                   </h3>
-                  <div className="grid grid-cols-2 gap-x-8 gap-y-2.5 text-sm">
+                  <div className="grid grid-cols-2 gap-x-8 gap-y-2.5 text-sm max-sm:grid-cols-1">
                     {section.fields.map(([label, value]) => (
                       <div key={label} className="min-w-0">
                         <span className="block text-[#1B1B1B]/70">{label}</span>
@@ -205,9 +206,9 @@ export default async function PropertyDetailPage({ params }: PageProps) {
           </div>
 
           {/* Right: sticky sidebar */}
-          <div className="w-80 shrink-0">
-            <div className="sticky top-24 flex flex-col gap-4">
-              <ContactForm mlsNumber={property.mlsNumber} address={property.address} />
+          <div className="w-80 shrink-0 max-lg:w-full">
+            <div className="sticky top-24 flex flex-col gap-4 max-lg:static">
+              <ContactForm id="listing-contact" mlsNumber={property.mlsNumber} address={property.address} />
               <MortgageCalculator listPrice={property.listPrice} />
             </div>
           </div>
@@ -221,6 +222,8 @@ export default async function PropertyDetailPage({ params }: PageProps) {
           />
         </div>
       </div>
+
+      <StickyContactBar mlsNumber={property.mlsNumber} targetId="listing-contact" className="fixed inset-x-0 bottom-0 z-30" />
     </div>
   );
 }

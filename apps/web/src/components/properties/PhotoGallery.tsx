@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { PhotoSwiper } from "./PhotoSwiper";
 
 interface Props {
   photos: string[];
@@ -26,7 +27,7 @@ export function PhotoGallery({ photos, address }: Props) {
 
   return (
     <>
-      <div className="relative grid h-[420px] grid-cols-4 grid-rows-2 gap-1 overflow-hidden rounded-2xl">
+      <div className="relative grid h-[420px] grid-cols-4 grid-rows-2 gap-1 overflow-hidden rounded-2xl max-lg:hidden">
         {/* Main large photo — spans 2 cols × 2 rows */}
         <button
           className="relative col-span-2 row-span-2 overflow-hidden"
@@ -71,6 +72,14 @@ export function PhotoGallery({ photos, address }: Props) {
           See all {photos.length} photos
         </button>
       </div>
+
+      {/* Phones: one full-width photo at a time, swipe through; tap opens the lightbox */}
+      <PhotoSwiper
+        photos={photos}
+        alt={address}
+        onPhotoClick={(i) => setLightboxIndex(i)}
+        className="rounded-2xl lg:hidden max-lg:portrait:aspect-[4/3] max-lg:landscape:h-[60svh]"
+      />
 
       {/* Lightbox — rendered via portal so position:fixed escapes any transformed ancestor (drawer) */}
       {lightboxIndex !== null && createPortal(
