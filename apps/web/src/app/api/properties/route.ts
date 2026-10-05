@@ -93,10 +93,7 @@ export async function GET(req: Request) {
           listedAt: true,
         },
       }),
-      cachedCount(
-        countCacheKey({ ...Object.fromEntries(rawParams.entries()), listingType }),
-        () => prisma.property.count({ where }),
-      ),
+      cachedCount(countCacheKey(where), () => prisma.property.count({ where })),
     ]);
 
     const result = { properties, total, page, pages: Math.ceil(total / limit) };

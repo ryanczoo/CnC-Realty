@@ -1,18 +1,27 @@
 import { redis } from "@/lib/redis";
 
 // Counting matching listings is the slow half of a search (it reads every
-// match, not just one page). Cache it for 5 minutes, keyed by the filters only
-// (never page/limit), so the server-rendered /properties page and every
-// infinite-scroll page of the same search share one count.
+// match, not just one page). Cache it for 5 minutes, keyed by the exact
+// database filter being counted — never by raw URL params, which can repeat
+// or contain "&"/"=" and so map different searches onto one key. The server-
+// rendered /properties page and every infinite-scroll page of the same search
+// build the same filter, so they share one count.
 const COUNT_TTL_SECONDS = 300;
-const NON_FILTER_PARAMS = new Set(["page", "limit"]);
 
-export function countCacheKey(params: Record<string, string | null | undefined>): string {
-  const parts = Object.entries(params)
-    .filter(([k, v]) => !NON_FILTER_PARAMS.has(k) && v != null && v !== "")
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([k, v]) => `${k}=${v}`);
-  return `properties:count:${parts.join("&") || "default"}`;
+function stableStringify(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
+  if (value && typeof value === "object") {
+    return `{${Object.keys(value as Record<string, unknown>)
+      .filter((k) => (value as Record<string, unknown>)[k] !== undefined)
+      .sort()
+      .map((k) => `${JSON.stringify(k)}:${stableStringify((value as Record<string, unknown>)[k])}`)
+      .join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+export function countCacheKey(where: unknown): string {
+  return `properties:count:${stableStringify(where)}`;
 }
 
 export async function cachedCount(key: string, compute: () => Promise<number>): Promise<number> {

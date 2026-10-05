@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
@@ -179,5 +179,25 @@ describe("GET /api/properties — shared count cache", () => {
     expect(body.total).toBe(160541);
     expect(prisma.property.count).not.toHaveBeenCalled();
     vi.mocked(redis.get).mockResolvedValue(null);
+  });
+});
+
+describe("GET /api/properties — count cache can't be poisoned", () => {
+  afterEach(async () => {
+    const { redis } = await import("@/lib/redis");
+    vi.mocked(redis.get).mockResolvedValue(null);
+  });
+
+  it("a duplicated-param request never writes its count under the plain search's key", async () => {
+    const { redis } = await import("@/lib/redis");
+    vi.clearAllMocks();
+    vi.mocked(redis.get).mockResolvedValue(null);
+    vi.mocked(prisma.property.findMany).mockResolvedValue([]);
+    vi.mocked(prisma.property.count).mockResolvedValue(3);
+    await GET(makeRequest("minPrice=100000000&minPrice="));
+    await GET(makeRequest(""));
+    const countKeys = vi.mocked(redis.setex).mock.calls.map((c) => String(c[0])).filter((k) => k.startsWith("properties:count:"));
+    expect(countKeys).toHaveLength(2);
+    expect(countKeys[0]).not.toBe(countKeys[1]);
   });
 });

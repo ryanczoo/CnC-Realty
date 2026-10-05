@@ -81,7 +81,7 @@ export default async function PropertiesPage({ searchParams }: PageProps) {
           listedAt: true,
         },
       }),
-      cachedCount(countCacheKey({ ...searchParams, listingType }), () => prisma.property.count({ where })),
+      cachedCount(countCacheKey(where), () => prisma.property.count({ where })),
     ]);
 
     const initialProperties: PropertyListing[] = rawProperties.map((p) => ({

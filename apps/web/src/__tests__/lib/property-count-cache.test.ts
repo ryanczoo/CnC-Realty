@@ -10,23 +10,35 @@ vi.mock("@/lib/redis", () => ({
 import { redis } from "@/lib/redis";
 import { countCacheKey, cachedCount } from "@/lib/property-count-cache";
 
+const base = { status: { in: ["Active", "ComingSoon", "ActiveUnderContract"] }, listingType: "FOR_SALE" };
+
 describe("countCacheKey", () => {
-  it("is the same for the server page and every infinite-scroll page of one search", () => {
-    const page = countCacheKey({ listingType: "FOR_SALE", query: "Pasadena", minBeds: "3" });
-    const api1 = countCacheKey({ minBeds: "3", page: "1", limit: "20", query: "Pasadena", listingType: "FOR_SALE" });
-    const api2 = countCacheKey({ query: "Pasadena", listingType: "FOR_SALE", minBeds: "3", page: "4" });
-    expect(api1).toBe(page);
-    expect(api2).toBe(page);
+  it("is keyed by the filter actually counted, so equal filters share one key regardless of field order", () => {
+    const a = countCacheKey({ ...base, beds: { gte: 3 }, listPrice: { gte: 500000 } });
+    const b = countCacheKey({ listPrice: { gte: 500000 }, listingType: "FOR_SALE", beds: { gte: 3 }, status: base.status });
+    expect(a).toBe(b);
   });
-  it("ignores empty filters and differs when a filter differs", () => {
-    expect(countCacheKey({ listingType: "FOR_SALE", query: "", minPrice: undefined, maxPrice: null }))
-      .toBe(countCacheKey({ listingType: "FOR_SALE" }));
-    expect(countCacheKey({ listingType: "FOR_RENT" })).not.toBe(countCacheKey({ listingType: "FOR_SALE" }));
+  it("can't be poisoned: a different filter never lands on the plain search's key", () => {
+    const plain = countCacheKey(base);
+    // e.g. ?minPrice=100000000&minPrice= counts listPrice >= 1e8 — must not share the plain key
+    expect(countCacheKey({ ...base, listPrice: { gte: 100000000 } })).not.toBe(plain);
+    // values containing & or = cannot forge another filter's key
+    expect(countCacheKey({ ...base, city: { contains: "a&beds=3" } }))
+      .not.toBe(countCacheKey({ ...base, city: { contains: "a" }, beds: 3 }));
+  });
+  it("distinguishes filter values, not just which filters are present", () => {
+    expect(countCacheKey({ ...base, listPrice: { gte: 100000000 } })).not.toBe(countCacheKey({ ...base, listPrice: { gte: 500000 } }));
+  });
+  it("differs by listing type", () => {
+    expect(countCacheKey({ ...base, listingType: "FOR_RENT" })).not.toBe(countCacheKey(base));
   });
 });
 
 describe("cachedCount", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(redis.get).mockReset();
+  });
 
   it("returns the cached count without touching the database", async () => {
     vi.mocked(redis.get).mockResolvedValue(160541);
