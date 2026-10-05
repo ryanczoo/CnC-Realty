@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { applyChromaKeyAlpha } from "@/lib/chroma-key-alpha";
+import { MOBILE_QUERY } from "@/hooks/useIsMobile";
 
 // Matches the source video's native resolution deliberately -- downscaling
 // here would blend each confetti piece's edge pixels with the surrounding
@@ -11,6 +12,14 @@ import { applyChromaKeyAlpha } from "@/lib/chroma-key-alpha";
 // Keying at native resolution keeps the math looking at true colors.
 const CANVAS_WIDTH = 1280;
 const CANVAS_HEIGHT = 720;
+
+// Phones key at half resolution: 4x fewer pixels per frame keeps playback
+// smooth on slower phone processors. Trade-off accepted for phones only: the
+// smallest confetti pieces blend slightly with the green before keying (see
+// above). Desktop keeps the native resolution.
+export function confettiCanvasSize(isMobile: boolean): { width: number; height: number } {
+  return isMobile ? { width: CANVAS_WIDTH / 2, height: CANVAS_HEIGHT / 2 } : { width: CANVAS_WIDTH, height: CANVAS_HEIGHT };
+}
 
 export function ConfettiCannonInner() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -29,14 +38,17 @@ export function ConfettiCannonInner() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    canvas.width = CANVAS_WIDTH;
-    canvas.height = CANVAS_HEIGHT;
+    // Read the media query directly: the canvas is sized once at mount, and
+    // useIsMobile() is still false during hydration.
+    const { width, height } = confettiCanvasSize(window.matchMedia(MOBILE_QUERY).matches);
+    canvas.width = width;
+    canvas.height = height;
 
     let rafId: number;
 
     const drawFrame = () => {
-      ctx.drawImage(video, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-      const frame = ctx.getImageData(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+      ctx.drawImage(video, 0, 0, width, height);
+      const frame = ctx.getImageData(0, 0, width, height);
       applyChromaKeyAlpha(frame.data);
       ctx.putImageData(frame, 0, 0);
       rafId = requestAnimationFrame(drawFrame);
