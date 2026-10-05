@@ -18,6 +18,9 @@
     "node": ">=18"
   },
   "pnpm": {
+    "overrides": {
+      "jsdom": "26.1.0"
+    },
     "onlyBuiltDependencies": [
       "@prisma/client",
       "@prisma/engines",
