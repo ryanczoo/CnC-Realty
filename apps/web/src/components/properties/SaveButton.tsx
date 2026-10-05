@@ -5,16 +5,17 @@ import { useSavedProperties } from "@/hooks/useSavedProperties";
 
 interface Props {
   mlsNumber: string;
+  className?: string;
 }
 
-export function SaveButton({ mlsNumber }: Props) {
+export function SaveButton({ mlsNumber, className = "" }: Props) {
   const { savedSet, toggle } = useSavedProperties();
   const saved = savedSet.has(mlsNumber);
 
   return (
     <button
       onClick={() => toggle(mlsNumber)}
-      className="rounded-full p-2 transition-colors hover:bg-[#1B1B1B]/5"
+      className={`rounded-full p-2 transition-colors hover:bg-[#1B1B1B]/5 ${className}`.trim()}
       aria-label={saved ? "Remove from saved" : "Save property"}
     >
       <Heart

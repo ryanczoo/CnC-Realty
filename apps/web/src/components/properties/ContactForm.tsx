@@ -7,11 +7,13 @@ import { emailError } from "@/lib/form-validation";
 interface Props {
   mlsNumber: string;
   address: string;
+  /** lets a "Contact Agent" button scroll here */
+  id?: string;
 }
 
 type FormState = "idle" | "loading" | "done" | "error";
 
-export function ContactForm({ mlsNumber, address }: Props) {
+export function ContactForm({ mlsNumber, address, id }: Props) {
   const [form, setForm] = useState({
     firstName: "",
     email: "",
@@ -50,7 +52,7 @@ export function ContactForm({ mlsNumber, address }: Props) {
 
   if (state === "done") {
     return (
-      <div className="rounded-2xl bg-white p-6 text-center">
+      <div id={id} className="rounded-2xl bg-white p-6 text-center">
         <p className="text-lg font-semibold text-[#1B1B1B]">Request sent!</p>
         <p className="mt-2 text-sm text-[#1B1B1B]/60">
           An agent will reach out to you shortly.
@@ -63,7 +65,7 @@ export function ContactForm({ mlsNumber, address }: Props) {
     "rounded-lg bg-[#F2F0EF] px-3 py-2 text-sm text-[#1B1B1B] placeholder-[#1B1B1B]/30 outline-none focus:ring-1 focus:ring-[#9E8C61]/50";
 
   return (
-    <div className="rounded-2xl bg-white p-5">
+    <div id={id} className="rounded-2xl bg-white p-5">
       <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-[#1B1B1B]">
         Request a Tour
       </h3>
