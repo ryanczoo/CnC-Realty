@@ -7,6 +7,8 @@ import { X, ChevronLeft, ChevronRight, Loader2, Heart } from "lucide-react";
 import Link from "next/link";
 import { ContactForm } from "./ContactForm";
 import { MortgageCalculator } from "./MortgageCalculator";
+import { PhotoSwiper } from "./PhotoSwiper";
+import { StickyContactBar } from "./StickyContactBar";
 import { AgentAttribution } from "./AgentAttribution";
 import { CrmlsDisclaimer } from "./CrmlsDisclaimer";
 import { buildStatsFields, buildDetailSections, formatFeatureValue } from "@/lib/property-ui-helpers";
@@ -105,7 +107,7 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
         animate={{ x: 0 }}
         exit={{ x: "100%" }}
         transition={{ type: "spring", stiffness: 320, damping: 32 }}
-        className="fixed bottom-0 right-0 z-50 flex flex-col overflow-hidden bg-[#F2F0EF] shadow-2xl"
+        className="fixed bottom-0 right-0 z-50 flex flex-col overflow-hidden bg-[#F2F0EF] shadow-2xl max-lg:!w-full"
         style={{ top: "64px", width: "min(880px, 63vw)" }}
       >
         {/* Top bar */}
@@ -146,7 +148,8 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
           {!isLoading && !isError && property && (
             <div className="pb-10">
               {/* Photo carousel */}
-              <div className="relative h-72 w-full bg-[#1B1B1B]/10 sm:h-80 md:h-96">
+              <div className="relative h-72 w-full bg-[#1B1B1B]/10 sm:h-80 md:h-96 max-lg:landscape:h-[60svh]">
+                <div className="contents max-lg:hidden">
                 {photos.length > 0 ? (
                   <>
                     <Image
@@ -181,12 +184,19 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
                 ) : (
                   <div className="flex h-full items-center justify-center text-sm text-[#1B1B1B]/50">No photos</div>
                 )}
+                </div>
+                {photos.length > 0 && (
+                  <PhotoSwiper photos={photos} alt={property.address} className="absolute inset-0 lg:hidden" />
+                )}
+                {photos.length === 0 && (
+                  <div className="flex h-full items-center justify-center text-sm text-[#1B1B1B]/50 lg:hidden">No photos</div>
+                )}
                 <span className="absolute left-3 top-3 rounded-full bg-black/60 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm">
                   {formatPropertyStatus(property.status)}
                 </span>
                 <button
                   onClick={() => toggle(property.mlsNumber)}
-                  className="absolute right-3 top-3 rounded-full bg-black/50 p-2 backdrop-blur-sm transition-colors hover:bg-black/70"
+                  className="absolute right-3 top-3 rounded-full bg-black/50 p-2 backdrop-blur-sm transition-colors hover:bg-black/70 max-lg:hidden"
                   aria-label={savedSet.has(property.mlsNumber) ? "Remove from saved" : "Save property"}
                 >
                   <Heart
@@ -198,7 +208,7 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
               </div>
 
               {/* Content: two columns at wider widths */}
-              <div className="flex gap-6 px-6 pt-6">
+              <div className="flex gap-6 px-6 pt-6 max-lg:px-4">
                 {/* Left: main details */}
                 <div className="min-w-0 flex-1">
                   {/* Header */}
@@ -215,7 +225,7 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
                     <div className="mt-4 overflow-hidden rounded-xl bg-cnc-bg">
                       <div className="grid grid-cols-3">
                         {statsFields.map(({ icon: Icon, label, value }) => (
-                          <div key={label} className="flex items-center gap-2.5 px-4 py-3.5">
+                          <div key={label} className="flex items-center gap-2.5 px-4 py-3.5 max-lg:flex-col max-lg:items-start max-lg:gap-1 max-lg:px-3">
                             <Icon className="h-4 w-4 shrink-0 text-[#9E8C61]" />
                             <div className="min-w-0">
                               <p className="truncate text-sm font-semibold text-[#1B1B1B]" title={String(value)}>{value}</p>
@@ -248,7 +258,7 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
                   />
 
                   {/* MLS # and Listed date */}
-                  <div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-2.5 rounded-xl bg-cnc-bg p-4 text-sm">
+                  <div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-2.5 rounded-xl bg-cnc-bg p-4 text-sm max-sm:grid-cols-1">
                     <div className="flex justify-between">
                       <span className="text-[#1B1B1B]/70">MLS #</span>
                       <span className="text-[#1B1B1B]">{property.mlsNumber}</span>
@@ -275,7 +285,7 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
                         <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-[#1B1B1B]/60">
                           {section.title}
                         </h3>
-                        <div className="grid grid-cols-2 gap-x-6 gap-y-2.5">
+                        <div className="grid grid-cols-2 gap-x-6 gap-y-2.5 max-sm:grid-cols-1">
                           {section.fields.map(([label, value]) => (
                             <div key={label} className="min-w-0">
                               <span className="block text-sm text-[#1B1B1B]/70">{label}</span>
@@ -298,8 +308,8 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
               </div>
 
               {/* Contact + calculator stacked (visible at narrower drawer widths) */}
-              <div className="mt-6 flex flex-col gap-4 px-6 xl:hidden">
-                <ContactForm mlsNumber={property.mlsNumber} address={property.address} />
+              <div className="mt-6 flex flex-col gap-4 px-6 xl:hidden max-lg:px-4">
+                <ContactForm id="drawer-contact" mlsNumber={property.mlsNumber} address={property.address} />
                 <MortgageCalculator listPrice={property.listPrice} />
               </div>
 
@@ -310,6 +320,10 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
             </div>
           )}
         </div>
+
+        {property && !isLoading && (
+          <StickyContactBar mlsNumber={property.mlsNumber} targetId="drawer-contact" className="shrink-0" />
+        )}
       </motion.div>
     </>
   );
