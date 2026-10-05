@@ -35,14 +35,14 @@ export function HowToJoin() {
     <section data-navbar-theme="light" className="relative z-10 bg-cnc-bg px-8 pt-6 pb-28 lg:px-20">
       <div className="pointer-events-none absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-white to-transparent" />
 <div className="mx-auto max-w-7xl">
-        <div className="flex gap-24">
+        <div className="flex gap-24 max-lg:flex-col max-lg:gap-10">
 
           {/* Left — sticky heading + button */}
-          <div className="w-[45%] shrink-0">
-            <div className="sticky top-28">
-              <h2 className="font-sans leading-[1.1] -ml-16">
-                <span className="block text-[2.5rem] font-light"><RevealText>How to</RevealText></span>
-                <span className="block pl-[5.5rem] text-[3.5rem] font-medium"><RevealLine delay={0.15}>Join <span className="text-[#9E8C61]">CnC</span></RevealLine></span>
+          <div className="w-[45%] shrink-0 max-lg:w-full">
+            <div className="sticky top-28 max-lg:static">
+              <h2 className="font-sans leading-[1.1] -ml-16 max-lg:ml-0">
+                <span className="block text-[2.5rem] font-light max-lg:text-[clamp(1.9rem,8vw,2.5rem)]"><RevealText>How to</RevealText></span>
+                <span className="block pl-[5.5rem] text-[3.5rem] font-medium max-lg:pl-[3rem] max-lg:text-[clamp(2.6rem,11vw,3.5rem)]"><RevealLine delay={0.15}>Join <span className="text-[#9E8C61]">CnC</span></RevealLine></span>
               </h2>
               <MotionLink
                 href="/join/apply"
@@ -57,22 +57,22 @@ export function HowToJoin() {
           </div>
 
           {/* Right — steps + photo */}
-          <div className="flex flex-1 gap-12">
+          <div className="flex flex-1 gap-12 max-lg:flex-col max-lg:gap-6">
 
             {/* Steps list */}
             <div className="flex-1">
               {STEPS.map((step) => (
-                <div key={step.number} className="py-10">
+                <div key={step.number} className="py-10 max-lg:py-6">
                   <p className="mb-4 font-sans text-base font-medium tracking-widest text-cnc-gold">{step.number}</p>
-                  <h3 className="mb-3 font-sans text-[2.2rem] font-medium text-[#1B1B1B]">{step.title}</h3>
+                  <h3 className="mb-3 font-sans text-[2.2rem] font-medium text-[#1B1B1B] max-lg:text-[clamp(1.6rem,7vw,2.2rem)]">{step.title}</h3>
                   <p className="max-w-sm font-sans text-base text-[#1B1B1B]/50">{step.body}</p>
                 </div>
               ))}
             </div>
 
             {/* Photo — sticky, mirrors the heading column */}
-            <div className="w-72 shrink-0 pt-10 sticky top-28 self-start">
-              <div className="h-[380px] w-full overflow-hidden rounded-2xl shadow-lg">
+            <div className="w-72 shrink-0 pt-10 sticky top-28 self-start max-lg:static max-lg:w-full max-lg:pt-0">
+              <div className="h-[380px] w-full overflow-hidden rounded-2xl shadow-lg max-lg:h-[260px]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="/images/join-house.jpg"
