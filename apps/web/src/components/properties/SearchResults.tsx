@@ -8,7 +8,7 @@ import { useSearchFilters } from "@/hooks/useSearchFilters";
 import { useProperties } from "@/hooks/useProperties";
 import { useSavedProperties } from "@/hooks/useSavedProperties";
 import { PropertyCard } from "./PropertyCard";
-import { PropertyMap } from "./PropertyMap";
+import { PropertyMap, MapPlaceholder } from "./PropertyMap";
 import { PropertyDrawer } from "./PropertyDrawer";
 import { FilterBar } from "./FilterBar";
 import { PropertyListing } from "@/types/property";
@@ -113,7 +113,7 @@ function SearchResultsInner({ initialProperties, initialTotal }: Props) {
       <div className="flex flex-1 overflow-hidden">
         {/* List pane — 45% */}
         <div className={`flex w-[45%] flex-col overflow-y-auto max-lg:w-full${showMap ? " max-lg:hidden" : ""}`}>
-          <div className="grid grid-cols-2 gap-3 p-3 max-sm:grid-cols-1">
+          <div className="grid grid-cols-2 gap-3 p-3 max-sm:grid-cols-1 max-lg:pb-24">
             {properties.map((p) => (
               <PropertyCard
                 key={p.mlsNumber}
@@ -153,7 +153,7 @@ function SearchResultsInner({ initialProperties, initialTotal }: Props) {
           {shouldRenderMap(phoneAtLoad, isMobile, mapRequested, mounted) ? (
             <PropertyMap properties={properties} hoveredId={hoveredId} onSelect={handleSelect} />
           ) : (
-            <div className="h-full w-full bg-[#1a1a1a]" />
+            <MapPlaceholder />
           )}
         </div>
       </div>
@@ -163,7 +163,7 @@ function SearchResultsInner({ initialProperties, initialTotal }: Props) {
         <motion.button
           type="button"
           onClick={toggleMap}
-          animate={PULSE_ANIMATE}
+          animate={isMobile ? PULSE_ANIMATE : undefined}
           transition={PULSE_TRANSITION}
           whileHover={{ scale: 1.05, transition: SPRING_HOVER }}
           className="pointer-events-auto rounded-full bg-[#1B1B1B] px-6 py-3 text-sm font-medium text-white shadow-[0_8px_24px_rgba(0,0,0,0.35)] ring-1 ring-white/10"
