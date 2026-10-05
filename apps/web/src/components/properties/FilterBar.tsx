@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { SearchFilters } from "@/types/property";
 import { buildPropertySearchParams } from "@/lib/property-search";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 interface Props {
   filters: SearchFilters;
@@ -58,6 +59,16 @@ export function FilterBar({
   total,
 }: Props) {
   const [openDropdown, setOpenDropdown] = useState<DropdownKey>(null);
+  const isMobile = useIsMobile();
+
+  // Phones/tablets: Escape closes the open bottom sheet (keyboard + screen-
+  // reader users). Desktop dropdowns keep their original behaviour.
+  useEffect(() => {
+    if (!isMobile || !openDropdown) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setOpenDropdown(null); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [isMobile, openDropdown]);
   const barRef = useRef<HTMLDivElement>(null);
 
   // The query text field only searches on explicit submit (Enter or the

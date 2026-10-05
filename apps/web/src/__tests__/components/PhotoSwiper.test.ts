@@ -13,3 +13,16 @@ describe("swiperIndex", () => {
     expect(swiperIndex(390, 0, 5)).toBe(0);
   });
 });
+
+import { scrollBehaviorFor } from "@/components/properties/PhotoSwiper";
+
+describe("scrollBehaviorFor", () => {
+  it("animates a one-photo step", () => {
+    expect(scrollBehaviorFor(0, 1)).toBe("smooth");
+    expect(scrollBehaviorFor(5, 4)).toBe("smooth");
+  });
+  it("jumps on wrap-around so it doesn't scroll past (and load) every photo", () => {
+    expect(scrollBehaviorFor(0, 24)).toBe("instant");
+    expect(scrollBehaviorFor(24, 0)).toBe("instant");
+  });
+});
