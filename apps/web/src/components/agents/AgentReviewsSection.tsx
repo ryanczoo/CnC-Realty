@@ -44,8 +44,13 @@ const PLACEHOLDER_REVIEWS = [
   },
 ];
 
-const VISIBLE = 3;
-const MAX_IDX = PLACEHOLDER_REVIEWS.length - VISIBLE;
+// Reviews shown side by side: 3 on desktop (unchanged), 2 on wider phones and
+// iPads, 1 on upright phones — three columns at 390px wrap one word per line.
+export function reviewsPerView(viewportWidth: number): number {
+  if (viewportWidth >= 1024) return 3;
+  if (viewportWidth >= 640) return 2;
+  return 1;
+}
 
 function ArrowIcon() {
   return (
@@ -60,13 +65,19 @@ export function AgentReviewsSection({ displayName }: { displayName: string }) {
   void displayName;
   const [idx, setIdx] = useState(0);
   const [cardWidth, setCardWidth] = useState(0);
+  // First render is 3 (matches the server HTML); the real count is set on mount.
+  const [perView, setPerView] = useState(3);
+  const maxIdx = Math.max(0, PLACEHOLDER_REVIEWS.length - perView);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const GAP = 16;
     function measure() {
       if (!containerRef.current) return;
-      setCardWidth((containerRef.current.offsetWidth - GAP * (VISIBLE - 1)) / VISIBLE);
+      const n = reviewsPerView(window.innerWidth);
+      setPerView(n);
+      setIdx((i) => Math.min(i, Math.max(0, PLACEHOLDER_REVIEWS.length - n)));
+      setCardWidth((containerRef.current.offsetWidth - GAP * (n - 1)) / n);
     }
     measure();
     window.addEventListener("resize", measure);
@@ -74,7 +85,7 @@ export function AgentReviewsSection({ displayName }: { displayName: string }) {
   }, []);
 
   function goPrev() { setIdx(i => Math.max(0, i - 1)); }
-  function goNext() { setIdx(i => Math.min(MAX_IDX, i + 1)); }
+  function goNext() { setIdx(i => Math.min(maxIdx, i + 1)); }
 
   return (
     <section className="bg-cnc-bg px-6 py-20 md:px-12 lg:px-20">
@@ -155,7 +166,7 @@ export function AgentReviewsSection({ displayName }: { displayName: string }) {
             type="button"
             aria-label="Next reviews"
             onClick={goNext}
-            disabled={idx === MAX_IDX}
+            disabled={idx === maxIdx}
             animate={PULSE_ANIMATE}
             transition={PULSE_TRANSITION}
             whileHover={{ scale: 1.05, transition: SPRING_HOVER }}
