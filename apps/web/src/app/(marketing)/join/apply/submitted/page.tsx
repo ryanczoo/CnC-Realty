@@ -13,7 +13,7 @@ export default function ApplicationSubmittedPage() {
     <main className="relative min-h-screen bg-[#F2F0EF]">
       <ConfettiCannon />
       <div className="mx-auto max-w-4xl px-4 pt-32 pb-8">
-        <h1 className="-ml-40 mb-12 font-sans font-light leading-[1.05]">
+        <h1 className="-ml-40 mb-12 font-sans font-light leading-[1.05] max-lg:ml-0">
           <span className="block text-[1.9rem] xl:text-[2.2rem] text-[#1B1B1B]">
             <RevealLine delay={0}>You&apos;re</RevealLine>
           </span>

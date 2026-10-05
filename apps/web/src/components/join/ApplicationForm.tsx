@@ -236,7 +236,7 @@ function FormInner() {
       {/* ── Section 1: Personal Information ── */}
       <div className={sectionClass}>
         <p className={sectionHeadingClass}>Personal Information</p>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4 max-sm:grid-cols-1">
           <div>
             <label className={labelClass}>First Name<RequiredMark /></label>
             <input className={`${inputClass} ${ring("firstName")}`} value={form.firstName} onChange={(e) => set("firstName", e.target.value)} />
@@ -246,7 +246,7 @@ function FormInner() {
             <input className={`${inputClass} ${ring("lastName")}`} value={form.lastName} onChange={(e) => set("lastName", e.target.value)} />
           </div>
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-4">
+        <div className="mt-4 grid grid-cols-2 gap-4 max-sm:grid-cols-1">
           <div>
             <label className={labelClass}>Email<RequiredMark /></label>
             <input className={`${inputClass} ${ring("email")}`} type="email" value={form.email} onChange={(e) => set("email", e.target.value)} />
@@ -261,7 +261,7 @@ function FormInner() {
           <label className={labelClass}>Street Address<RequiredMark /></label>
           <input className={inputClass} value={form.address} onChange={(e) => set("address", e.target.value)} />
         </div>
-        <div className="mt-4 grid grid-cols-3 gap-4">
+        <div className="mt-4 grid grid-cols-3 gap-4 max-sm:grid-cols-1">
           <div>
             <label className={labelClass}>City<RequiredMark /></label>
             <input className={inputClass} value={form.city} onChange={(e) => set("city", stripDigits(e.target.value))} />
@@ -280,7 +280,7 @@ function FormInner() {
             <input className={inputClass} value={form.zip} maxLength={5} onChange={(e) => set("zip", digitsOnly(e.target.value, 5))} />
           </div>
         </div>
-        <div className="mt-4 grid grid-cols-3 gap-4">
+        <div className="mt-4 grid grid-cols-3 gap-4 max-sm:grid-cols-1">
           <div>
             <label className={labelClass}>Date of Birth<RequiredMark /></label>
             <DateField
@@ -315,7 +315,7 @@ function FormInner() {
             ))}
           </div>
         </div>
-        <div className="mt-8 grid grid-cols-2 gap-4">
+        <div className="mt-8 grid grid-cols-2 gap-4 max-sm:grid-cols-1">
           <div>
             <label className={labelClass}>CA DRE License #<RequiredMark /></label>
             <input className={`${inputClass} ${ring("licenseNumber")}`} value={form.licenseNumber} maxLength={8} onChange={(e) => set("licenseNumber", digitsOnly(e.target.value, 8))} />
@@ -327,7 +327,7 @@ function FormInner() {
             </div>
           </div>
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-4">
+        <div className="mt-4 grid grid-cols-2 gap-4 max-sm:grid-cols-1">
           <div>
             <label className={labelClass}>Years Licensed<RequiredMark /></label>
             <input className={`${inputClass} ${ring("yearsLicensed")}`} type="number" min={0} max={99} value={form.yearsLicensed} onChange={(e) => set("yearsLicensed", e.target.value.slice(0, 2))} />
@@ -337,7 +337,7 @@ function FormInner() {
             <input className={inputClass} value={form.formerBrokerage} onChange={(e) => set("formerBrokerage", e.target.value)} />
           </div>
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-4">
+        <div className="mt-4 grid grid-cols-2 gap-4 max-sm:grid-cols-1">
           <div>
             <label className={labelClass}>Current Membership Association<RequiredMark /></label>
             <div className="relative">
