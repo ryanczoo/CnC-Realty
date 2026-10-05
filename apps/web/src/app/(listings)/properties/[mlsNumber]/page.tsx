@@ -82,7 +82,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
   const detailSections = buildDetailSections((property.details as Record<string, unknown>) ?? {}, property.lotSize);
 
   return (
-    <div data-navbar-theme="light" className="min-h-screen bg-[#F2F0EF] pb-20 text-[#1B1B1B] max-lg:pb-36">
+    <div data-navbar-theme="light" className="min-h-screen bg-[#F2F0EF] pb-20 text-[#1B1B1B] max-lg:pb-0">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -223,7 +223,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
         </div>
       </div>
 
-      <StickyContactBar mlsNumber={property.mlsNumber} targetId="listing-contact" className="fixed inset-x-0 bottom-0 z-30" />
+      <StickyContactBar mlsNumber={property.mlsNumber} targetId="listing-contact" className="sticky bottom-0 z-30 mt-12" />
     </div>
   );
 }
