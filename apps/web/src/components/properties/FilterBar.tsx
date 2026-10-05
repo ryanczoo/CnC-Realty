@@ -116,7 +116,7 @@ export function FilterBar({
           {filters.listingType === "FOR_RENT" ? "For Rent" : "For Sale"} ▾
         </button>
         {openDropdown === "listingType" && (
-          <div className="absolute left-0 top-full z-40 mt-1 w-36 rounded-xl border border-white/10 bg-[#1a1a1a] py-1 shadow-2xl max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:top-auto max-lg:mt-0 max-lg:w-auto max-lg:rounded-b-none max-lg:rounded-t-2xl max-lg:py-3 max-lg:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <div className="absolute left-0 top-full z-40 mt-1 w-36 rounded-xl border border-white/10 bg-[#1a1a1a] py-1 shadow-2xl max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:top-auto max-lg:mt-0 max-lg:w-auto max-lg:rounded-b-none max-lg:rounded-t-2xl max-lg:max-h-[75svh] max-lg:overflow-y-auto max-lg:py-3 max-lg:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             {[
               { label: "For Sale", value: "FOR_SALE" },
               { label: "For Rent", value: "FOR_RENT" },
@@ -186,7 +186,7 @@ export function FilterBar({
           {priceLabel} ▾
         </button>
         {openDropdown === "price" && (
-          <div className="absolute left-0 top-full z-40 mt-1 w-44 rounded-xl border border-white/10 bg-[#1a1a1a] py-1 shadow-2xl max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:top-auto max-lg:mt-0 max-lg:w-auto max-lg:rounded-b-none max-lg:rounded-t-2xl max-lg:py-3 max-lg:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <div className="absolute left-0 top-full z-40 mt-1 w-44 rounded-xl border border-white/10 bg-[#1a1a1a] py-1 shadow-2xl max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:top-auto max-lg:mt-0 max-lg:w-auto max-lg:rounded-b-none max-lg:rounded-t-2xl max-lg:max-h-[75svh] max-lg:overflow-y-auto max-lg:py-3 max-lg:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             {PRICE_PRESETS.map((p) => (
               <button
                 key={p.label}
@@ -213,7 +213,7 @@ export function FilterBar({
           {bedsActive ? `${filters.minBeds}+ Beds` : "Beds"} ▾
         </button>
         {openDropdown === "beds" && (
-          <div className="absolute left-0 top-full z-40 mt-1 w-32 rounded-xl border border-white/10 bg-[#1a1a1a] py-1 shadow-2xl max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:top-auto max-lg:mt-0 max-lg:w-auto max-lg:rounded-b-none max-lg:rounded-t-2xl max-lg:py-3 max-lg:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <div className="absolute left-0 top-full z-40 mt-1 w-32 rounded-xl border border-white/10 bg-[#1a1a1a] py-1 shadow-2xl max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:top-auto max-lg:mt-0 max-lg:w-auto max-lg:rounded-b-none max-lg:rounded-t-2xl max-lg:max-h-[75svh] max-lg:overflow-y-auto max-lg:py-3 max-lg:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             {BED_OPTIONS.map((o) => (
               <button
                 key={o.value}
@@ -239,7 +239,7 @@ export function FilterBar({
           {bathsActive ? `${filters.minBaths}+ Baths` : "Baths"} ▾
         </button>
         {openDropdown === "baths" && (
-          <div className="absolute left-0 top-full z-40 mt-1 w-32 rounded-xl border border-white/10 bg-[#1a1a1a] py-1 shadow-2xl max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:top-auto max-lg:mt-0 max-lg:w-auto max-lg:rounded-b-none max-lg:rounded-t-2xl max-lg:py-3 max-lg:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <div className="absolute left-0 top-full z-40 mt-1 w-32 rounded-xl border border-white/10 bg-[#1a1a1a] py-1 shadow-2xl max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:top-auto max-lg:mt-0 max-lg:w-auto max-lg:rounded-b-none max-lg:rounded-t-2xl max-lg:max-h-[75svh] max-lg:overflow-y-auto max-lg:py-3 max-lg:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             {BATH_OPTIONS.map((o) => (
               <button
                 key={o.value}
@@ -268,7 +268,7 @@ export function FilterBar({
           ▾
         </button>
         {openDropdown === "type" && (
-          <div className="absolute left-0 top-full z-40 mt-1 w-44 rounded-xl border border-white/10 bg-[#1a1a1a] py-1 shadow-2xl max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:top-auto max-lg:mt-0 max-lg:w-auto max-lg:rounded-b-none max-lg:rounded-t-2xl max-lg:py-3 max-lg:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <div className="absolute left-0 top-full z-40 mt-1 w-44 rounded-xl border border-white/10 bg-[#1a1a1a] py-1 shadow-2xl max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:top-auto max-lg:mt-0 max-lg:w-auto max-lg:rounded-b-none max-lg:rounded-t-2xl max-lg:max-h-[75svh] max-lg:overflow-y-auto max-lg:py-3 max-lg:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             {TYPE_OPTIONS.map((o) => (
               <button
                 key={o.value}
