@@ -83,7 +83,7 @@ function CardContent({ row }: { row: Row }) {
           {row.label}
         </h3>
         <p
-          className="max-w-lg font-sans text-[1.25rem] font-light leading-relaxed max-lg:portrait:!text-white max-lg:portrait:text-[clamp(0.85rem,3.8vw,1.05rem)] max-lg:landscape:text-[clamp(0.7rem,3.3svh,0.95rem)]"
+          className="max-w-lg font-sans text-[1.25rem] font-light leading-relaxed max-lg:portrait:!text-white max-lg:portrait:text-[clamp(0.85rem,3.8vw,1.05rem)] max-lg:landscape:text-[clamp(0.65rem,3.3svh,0.95rem)] max-lg:landscape:leading-snug"
           style={{ color: row.textColor }}
         >
           {row.body}

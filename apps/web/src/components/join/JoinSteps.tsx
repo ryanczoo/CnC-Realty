@@ -1,10 +1,23 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useScroll } from "motion/react";
 import Image from "next/image";
 import { useScrollStepper } from "@/hooks/useScrollStepper";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { RevealLine } from "@/components/ui/reveal-text";
+
+// Upright phones pin the step text above the photos, which shifts where each
+// photo sits relative to the section's scroll progress — so there the active
+// step is whichever photo's centre is closest to the middle of the space below
+// the pinned text. Desktop and sideways phones keep useScrollStepper.
+export function photoInView(centers: number[], target: number): number {
+  let best = 0;
+  centers.forEach((c, i) => {
+    if (Math.abs(c - target) < Math.abs(centers[best] - target)) best = i;
+  });
+  return best;
+}
 
 function IconTransactionManagement() {
   return (
@@ -114,7 +127,41 @@ export function JoinSteps() {
   });
 
   const { activeIdx, registerBarEl } = useScrollStepper(scrollYProgress, STEPS.length);
-  const active = STEPS[activeIdx];
+
+  const isMobile = useIsMobile();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const photoRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [phoneIdx, setPhoneIdx] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!isMobile) {
+      setPhoneIdx(null);
+      return;
+    }
+    const update = () => {
+      if (window.innerHeight < window.innerWidth) {
+        setPhoneIdx(null); // sideways: side-by-side layout, scroll-progress stepper
+        return;
+      }
+      const panelBottom = panelRef.current?.getBoundingClientRect().bottom ?? 0;
+      const target = (panelBottom + window.innerHeight) / 2;
+      const centers = photoRefs.current.map((el) => {
+        const r = el?.getBoundingClientRect();
+        return r ? r.top + r.height / 2 : Number.POSITIVE_INFINITY;
+      });
+      setPhoneIdx(photoInView(centers, target));
+    };
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+  }, [isMobile]);
+
+  const shownIdx = phoneIdx ?? activeIdx;
+  const active = STEPS[shownIdx];
 
   return (
     <section ref={sectionRef} data-navbar-theme="light" className="relative flex bg-white pl-8 pr-20 max-lg:portrait:flex-col max-lg:portrait:px-6 max-lg:landscape:pr-6">
@@ -124,6 +171,7 @@ export function JoinSteps() {
         {STEPS.map((step, i) => (
           <div
             key={i}
+            ref={(el) => { photoRefs.current[i] = el; }}
             className="relative overflow-hidden rounded-2xl max-lg:portrait:!h-[40svh]"
             style={{ height: "49vh" }}
           >
@@ -160,12 +208,12 @@ export function JoinSteps() {
       </div>
 
       {/* ── Right panel — sticky text ── */}
-      <div className="sticky top-[100px] flex h-[68vh] w-[42%] flex-col justify-between self-start pb-12 pt-10 text-right max-lg:portrait:order-first max-lg:portrait:top-16 max-lg:portrait:z-10 max-lg:portrait:h-auto max-lg:portrait:w-full max-lg:portrait:gap-3 max-lg:portrait:bg-white max-lg:portrait:py-4 max-lg:portrait:text-left max-lg:landscape:top-16 max-lg:landscape:h-[80svh] max-lg:landscape:pb-4 max-lg:landscape:pt-4">
+      <div ref={panelRef} className="sticky top-[100px] flex h-[68vh] w-[42%] flex-col justify-between self-start pb-12 pt-10 text-right max-lg:portrait:order-first max-lg:portrait:top-16 max-lg:portrait:z-10 max-lg:portrait:h-auto max-lg:portrait:w-full max-lg:portrait:gap-3 max-lg:portrait:bg-white max-lg:portrait:py-4 max-lg:portrait:text-left max-lg:landscape:top-16 max-lg:landscape:h-[80svh] max-lg:landscape:pb-4 max-lg:landscape:pt-4">
 
         {/* TOP — step heading */}
         <AnimatePresence mode="wait">
           <motion.h2
-            key={`title-${activeIdx}`}
+            key={`title-${shownIdx}`}
             className="font-sans text-[3.2rem] font-light leading-[1.0] xl:text-[3.8rem] max-lg:portrait:text-[clamp(1.8rem,8vw,3.2rem)] max-lg:landscape:text-[clamp(1.4rem,8svh,2.6rem)]"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0, transition: { duration: 0.55, ease: "easeOut" } }}
@@ -182,7 +230,7 @@ export function JoinSteps() {
         {/* BOTTOM — counter then body */}
         <AnimatePresence mode="wait">
           <motion.div
-            key={`body-${activeIdx}`}
+            key={`body-${shownIdx}`}
             className="flex flex-col gap-4"
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }}
