@@ -57,9 +57,12 @@ const OFFSET = 88;
 // 900px screen but runs ~70px below a sideways phone's. Static tops are set by
 // the max-lg:!top-* classes below and must match these offsets (base 64px).
 export type StackMode = "desktop" | "portrait" | "landscape";
-export function stackGeometry(vh: number, mode: StackMode): { offset: number; cardH: number } {
+// On phones the caller passes the rendered card height (measuredCardH): iOS/Android
+// innerHeight shrinks while the address bar shows, so vh-derived px would not match
+// the CSS card and the cards would overlap or jump. Desktop keeps 52vh.
+export function stackGeometry(vh: number, mode: StackMode, measuredCardH?: number): { offset: number; cardH: number } {
   if (mode === "desktop") return { offset: OFFSET, cardH: vh * 0.52 };
-  return { offset: 40, cardH: vh * (mode === "landscape" ? 0.48 : 0.52) };
+  return { offset: 40, cardH: measuredCardH ?? vh * (mode === "landscape" ? 0.48 : 0.52) };
 }
 
 function CardContent({ row }: { row: Row }) {
@@ -97,11 +100,14 @@ export function WhyCnCStacked() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [vh, setVh] = useState(800);
   const [mode, setMode] = useState<StackMode>("desktop");
+  const [cardPx, setCardPx] = useState<number | undefined>(undefined);
+  const card1Ref = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
 
   useEffect(() => {
     const update = () => {
       setVh(window.innerHeight);
+      setCardPx(isMobile ? card1Ref.current?.offsetHeight : undefined);
       setMode(!isMobile ? "desktop" : window.innerHeight >= window.innerWidth ? "portrait" : "landscape");
     };
     update();
@@ -115,7 +121,7 @@ export function WhyCnCStacked() {
   });
 
   // Card height in px (matches height: "52vh"; 48vh on sideways phones).
-  const { offset, cardH } = stackGeometry(vh, mode);
+  const { offset, cardH } = stackGeometry(vh, mode, cardPx);
 
   // Both cards start the same distance below their stacked position:
   // exactly at the bottom edge of the card above them once stacked.
@@ -135,8 +141,8 @@ export function WhyCnCStacked() {
           <div className="relative h-full">
 
             {/* Card 1 — fixed at base position */}
-            <div
-              className="absolute left-6 right-6 overflow-hidden rounded-2xl max-lg:!top-[64px] max-lg:left-4 max-lg:right-4 max-lg:landscape:!h-[48vh]"
+            <div ref={card1Ref}
+              className="absolute left-6 right-6 overflow-hidden rounded-2xl max-lg:!top-[64px] max-lg:left-4 max-lg:right-4 max-lg:portrait:!h-[52svh] max-lg:landscape:!h-[48svh]"
               style={{ top: BASE, height: "52vh" }}
             >
               <CardContent row={ROWS[0]} />
@@ -144,7 +150,7 @@ export function WhyCnCStacked() {
 
             {/* Card 2 — slides up from below card 1 during phase 1 */}
             <motion.div
-              className="absolute left-6 right-6 overflow-hidden rounded-2xl max-lg:!top-[104px] max-lg:left-4 max-lg:right-4 max-lg:landscape:!h-[48vh]"
+              className="absolute left-6 right-6 overflow-hidden rounded-2xl max-lg:!top-[104px] max-lg:left-4 max-lg:right-4 max-lg:portrait:!h-[52svh] max-lg:landscape:!h-[48svh]"
               style={{ top: BASE + OFFSET, y: card2Y, height: "52vh" }}
             >
               <CardContent row={ROWS[1]} />
@@ -152,7 +158,7 @@ export function WhyCnCStacked() {
 
             {/* Card 3 — follows card 2's bottom in phase 1, stacks in phase 2 */}
             <motion.div
-              className="absolute left-6 right-6 overflow-hidden rounded-2xl max-lg:!top-[144px] max-lg:left-4 max-lg:right-4 max-lg:landscape:!h-[48vh]"
+              className="absolute left-6 right-6 overflow-hidden rounded-2xl max-lg:!top-[144px] max-lg:left-4 max-lg:right-4 max-lg:portrait:!h-[52svh] max-lg:landscape:!h-[48svh]"
               style={{ top: BASE + OFFSET * 2, y: card3Y, height: "52vh" }}
             >
               <CardContent row={ROWS[2]} />
