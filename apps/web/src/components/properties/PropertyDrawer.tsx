@@ -186,7 +186,7 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
                 )}
                 </div>
                 {photos.length > 0 && (
-                  <PhotoSwiper photos={photos} alt={property.address} className="absolute inset-0 lg:hidden" />
+                  <PhotoSwiper photos={photos} alt={property.address} className="h-full lg:hidden" />
                 )}
                 {photos.length === 0 && (
                   <div className="flex h-full items-center justify-center text-sm text-[#1B1B1B]/50 lg:hidden">No photos</div>
