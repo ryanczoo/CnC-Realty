@@ -12,7 +12,7 @@ export default function FairHousingPage() {
         <p className="mb-3 font-sans text-xs uppercase tracking-widest text-[#1B1B1B]/40">Legal</p>
         <h1 className="font-sans text-4xl font-light text-[#1B1B1B] lg:text-5xl">Fair Housing Notice</h1>
         <p className="mt-3 mb-12 font-sans text-sm text-[#1B1B1B]/50">CA DRE #02439028 · CnC Realty Group</p>
-        <div className="space-y-12 font-sans text-[#1B1B1B]">
+        <div className="space-y-12 font-sans text-[#1B1B1B] max-lg:[overflow-wrap:anywhere]">
 
           <section>
             <p className="text-base leading-relaxed text-[#1B1B1B]/80">
