@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { useIsMobile } from "@/hooks/useIsMobile";
+import { useIsMobile, MOBILE_QUERY } from "@/hooks/useIsMobile";
 import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
 import { useSearchFilters } from "@/hooks/useSearchFilters";
 import { useProperties } from "@/hooks/useProperties";
@@ -20,11 +20,19 @@ interface Props {
 }
 
 // Phones open on the list; the map code (~1.7 MB) downloads only on the first
-// "Show Map" tap. Until the page has mounted we cannot know phone vs desktop,
-// so the map pane shows the same grey placeholder the map's own loader shows.
-export function shouldRenderMap(mounted: boolean, isMobile: boolean, mapRequested: boolean): boolean {
-  if (!mounted) return false;
-  return !isMobile || mapRequested;
+// "Show Map" tap. phoneAtLoad is read from the browser during the very first
+// client render, so desktop places the map at exactly the same moment as
+// before (no wait for mount). That first render's HTML is identical either way:
+// the map's own loader and the phone placeholder are the same grey div, and the
+// server always renders that div. mounted/isMobile cover a narrow window later
+// widened to desktop width.
+export function shouldRenderMap(
+  phoneAtLoad: boolean,
+  isMobile: boolean,
+  mapRequested: boolean,
+  mounted = false,
+): boolean {
+  return !phoneAtLoad || mapRequested || (mounted && !isMobile);
 }
 
 function SearchResultsInner({ initialProperties, initialTotal }: Props) {
@@ -37,6 +45,9 @@ function SearchResultsInner({ initialProperties, initialTotal }: Props) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [selectedMls, setSelectedMls] = useState<string | null>(null);
   const isMobile = useIsMobile();
+  const [phoneAtLoad] = useState(
+    () => typeof window !== "undefined" && window.matchMedia(MOBILE_QUERY).matches,
+  );
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const [showMap, setShowMap] = useState(false);
@@ -139,7 +150,7 @@ function SearchResultsInner({ initialProperties, initialTotal }: Props) {
 
         {/* Map pane — remaining 55% */}
         <div className={`flex-1${showMap ? "" : " max-lg:hidden"}`}>
-          {shouldRenderMap(mounted, isMobile, mapRequested) ? (
+          {shouldRenderMap(phoneAtLoad, isMobile, mapRequested, mounted) ? (
             <PropertyMap properties={properties} hoveredId={hoveredId} onSelect={handleSelect} />
           ) : (
             <div className="h-full w-full bg-[#1a1a1a]" />
