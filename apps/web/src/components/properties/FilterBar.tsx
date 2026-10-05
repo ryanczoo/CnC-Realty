@@ -105,7 +105,7 @@ export function FilterBar({
   return (
     <div
       ref={barRef}
-      className="relative z-10 flex flex-wrap items-center gap-2 border-b border-white/5 bg-[#0f0f0f]/95 px-4 py-2.5 backdrop-blur-md"
+      className="relative z-10 flex flex-wrap items-center gap-2 border-b border-white/5 bg-[#0f0f0f]/95 px-4 py-2.5 backdrop-blur-md max-lg:z-30 max-lg:backdrop-blur-none max-lg:px-3"
     >
       {/* Listing type toggle */}
       <div className="relative">
@@ -116,7 +116,7 @@ export function FilterBar({
           {filters.listingType === "FOR_RENT" ? "For Rent" : "For Sale"} ▾
         </button>
         {openDropdown === "listingType" && (
-          <div className="absolute left-0 top-full z-40 mt-1 w-36 rounded-xl border border-white/10 bg-[#1a1a1a] py-1 shadow-2xl">
+          <div className="absolute left-0 top-full z-40 mt-1 w-36 rounded-xl border border-white/10 bg-[#1a1a1a] py-1 shadow-2xl max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:top-auto max-lg:mt-0 max-lg:w-auto max-lg:rounded-b-none max-lg:rounded-t-2xl max-lg:py-3 max-lg:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             {[
               { label: "For Sale", value: "FOR_SALE" },
               { label: "For Rent", value: "FOR_RENT" },
@@ -127,7 +127,7 @@ export function FilterBar({
                   setFilter("listingType", o.value);
                   setOpenDropdown(null);
                 }}
-                className={`flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-white/5 ${
+                className={`flex w-full items-center gap-2 px-4 py-2 text-left text-sm max-lg:py-3 max-lg:text-base hover:bg-white/5 ${
                   filters.listingType === o.value ? "text-[#9E8C61]" : "text-white/70 hover:text-white"
                 }`}
               >
@@ -140,7 +140,7 @@ export function FilterBar({
       </div>
 
       {/* Search input */}
-      <div className="relative w-56">
+      <div className="relative w-56 max-lg:w-auto max-lg:flex-1">
         <input
           type="text"
           placeholder="City, zip…"
@@ -172,6 +172,11 @@ export function FilterBar({
         </button>
       </div>
 
+      {/* Phones: one swipeable row of pills (no box on desktop: display:contents) */}
+      <div
+        className="contents max-lg:flex max-lg:w-full max-lg:items-center max-lg:gap-2 max-lg:overflow-x-auto max-lg:[scroll-snap-type:x_mandatory] max-lg:[&>*]:shrink-0 max-lg:[&>*]:[scroll-snap-align:start] max-lg:[&_button]:whitespace-nowrap"
+        style={{ scrollbarWidth: "none" }}
+      >
       {/* Price pill */}
       <div className="relative">
         <button
@@ -181,7 +186,7 @@ export function FilterBar({
           {priceLabel} ▾
         </button>
         {openDropdown === "price" && (
-          <div className="absolute left-0 top-full z-40 mt-1 w-44 rounded-xl border border-white/10 bg-[#1a1a1a] py-1 shadow-2xl">
+          <div className="absolute left-0 top-full z-40 mt-1 w-44 rounded-xl border border-white/10 bg-[#1a1a1a] py-1 shadow-2xl max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:top-auto max-lg:mt-0 max-lg:w-auto max-lg:rounded-b-none max-lg:rounded-t-2xl max-lg:py-3 max-lg:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             {PRICE_PRESETS.map((p) => (
               <button
                 key={p.label}
@@ -190,7 +195,7 @@ export function FilterBar({
                   setFilter("maxPrice", p.max);
                   setOpenDropdown(null);
                 }}
-                className="w-full px-4 py-2 text-left text-sm text-white/70 hover:bg-white/5 hover:text-white"
+                className="w-full px-4 py-2 text-left text-sm max-lg:py-3 max-lg:text-base text-white/70 hover:bg-white/5 hover:text-white"
               >
                 {p.label}
               </button>
@@ -208,7 +213,7 @@ export function FilterBar({
           {bedsActive ? `${filters.minBeds}+ Beds` : "Beds"} ▾
         </button>
         {openDropdown === "beds" && (
-          <div className="absolute left-0 top-full z-40 mt-1 w-32 rounded-xl border border-white/10 bg-[#1a1a1a] py-1 shadow-2xl">
+          <div className="absolute left-0 top-full z-40 mt-1 w-32 rounded-xl border border-white/10 bg-[#1a1a1a] py-1 shadow-2xl max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:top-auto max-lg:mt-0 max-lg:w-auto max-lg:rounded-b-none max-lg:rounded-t-2xl max-lg:py-3 max-lg:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             {BED_OPTIONS.map((o) => (
               <button
                 key={o.value}
@@ -216,7 +221,7 @@ export function FilterBar({
                   setFilter("minBeds", o.value);
                   setOpenDropdown(null);
                 }}
-                className="w-full px-4 py-2 text-left text-sm text-white/70 hover:bg-white/5 hover:text-white"
+                className="w-full px-4 py-2 text-left text-sm max-lg:py-3 max-lg:text-base text-white/70 hover:bg-white/5 hover:text-white"
               >
                 {o.label}
               </button>
@@ -234,7 +239,7 @@ export function FilterBar({
           {bathsActive ? `${filters.minBaths}+ Baths` : "Baths"} ▾
         </button>
         {openDropdown === "baths" && (
-          <div className="absolute left-0 top-full z-40 mt-1 w-32 rounded-xl border border-white/10 bg-[#1a1a1a] py-1 shadow-2xl">
+          <div className="absolute left-0 top-full z-40 mt-1 w-32 rounded-xl border border-white/10 bg-[#1a1a1a] py-1 shadow-2xl max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:top-auto max-lg:mt-0 max-lg:w-auto max-lg:rounded-b-none max-lg:rounded-t-2xl max-lg:py-3 max-lg:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             {BATH_OPTIONS.map((o) => (
               <button
                 key={o.value}
@@ -242,7 +247,7 @@ export function FilterBar({
                   setFilter("minBaths", o.value);
                   setOpenDropdown(null);
                 }}
-                className="w-full px-4 py-2 text-left text-sm text-white/70 hover:bg-white/5 hover:text-white"
+                className="w-full px-4 py-2 text-left text-sm max-lg:py-3 max-lg:text-base text-white/70 hover:bg-white/5 hover:text-white"
               >
                 {o.label}
               </button>
@@ -263,7 +268,7 @@ export function FilterBar({
           ▾
         </button>
         {openDropdown === "type" && (
-          <div className="absolute left-0 top-full z-40 mt-1 w-44 rounded-xl border border-white/10 bg-[#1a1a1a] py-1 shadow-2xl">
+          <div className="absolute left-0 top-full z-40 mt-1 w-44 rounded-xl border border-white/10 bg-[#1a1a1a] py-1 shadow-2xl max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:top-auto max-lg:mt-0 max-lg:w-auto max-lg:rounded-b-none max-lg:rounded-t-2xl max-lg:py-3 max-lg:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             {TYPE_OPTIONS.map((o) => (
               <button
                 key={o.value}
@@ -271,7 +276,7 @@ export function FilterBar({
                   setFilter("propertyType", o.value);
                   setOpenDropdown(null);
                 }}
-                className="w-full px-4 py-2 text-left text-sm text-white/70 hover:bg-white/5 hover:text-white"
+                className="w-full px-4 py-2 text-left text-sm max-lg:py-3 max-lg:text-base text-white/70 hover:bg-white/5 hover:text-white"
               >
                 {o.label}
               </button>
@@ -294,6 +299,7 @@ export function FilterBar({
       <span className="ml-auto text-xs text-white/30">
         {total.toLocaleString()} homes
       </span>
+      </div>
 
       {/* Backdrop to close dropdowns */}
       {openDropdown && (
