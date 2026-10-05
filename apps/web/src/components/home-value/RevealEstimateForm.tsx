@@ -103,7 +103,7 @@ export function RevealEstimateForm({ address, zip, beds, sqft }: Props) {
               exit={{ opacity: 0, y: 8 }}
               transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
               onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-lg rounded-2xl bg-white p-10"
+              className="relative w-full max-w-lg rounded-2xl bg-white p-10 max-sm:p-6"
             >
               <button
                 onClick={() => setOpen(false)}
@@ -123,7 +123,7 @@ export function RevealEstimateForm({ address, zip, beds, sqft }: Props) {
               </p>
 
               <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-2 gap-6 max-sm:grid-cols-1 max-sm:gap-4">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-left font-sans text-sm text-[#1B1B1B]/60">First Name<RequiredMark /></label>
                     <input

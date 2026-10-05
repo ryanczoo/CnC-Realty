@@ -159,7 +159,7 @@ export default function HomeValuePage() {
     buildMapboxStaticImageUrl({ lat, lng, token: process.env.NEXT_PUBLIC_MAPBOX_TOKEN });
 
   return (
-    <main className="bg-cnc-bg px-8 pb-24 pt-32 lg:px-20">
+    <main className="bg-cnc-bg px-8 pb-24 pt-32 lg:px-20 max-sm:px-5">
       <h1 className="font-sans font-light leading-[1.1]">
         <RevealLine className="block text-[1.9rem] xl:text-[2.2rem]">Home-Value</RevealLine>
         <span className="block pl-[4.5rem]">
@@ -186,10 +186,10 @@ export default function HomeValuePage() {
               )}
             </div>
 
-            <section className="flex flex-1 flex-col justify-center rounded-xl border border-[#1B1B1B]/10 bg-white p-8 text-center">
+            <section className="flex flex-1 flex-col justify-center rounded-xl border border-[#1B1B1B]/10 bg-white p-8 text-center max-sm:p-5">
               <EstimatedValueRange low={data.range.low} high={data.range.high} />
               {data.subject && (
-                <div className="mt-16 overflow-hidden rounded-xl">
+                <div className="mt-16 overflow-hidden rounded-xl max-sm:mt-8">
                   <div className="grid grid-cols-3">
                     {buildStatsFields({
                       beds: data.subject.beds,
@@ -199,7 +199,7 @@ export default function HomeValuePage() {
                       county: data.subject.county,
                       propertyType: data.subject.propertyType,
                     }).map(({ icon: Icon, label, value }) => (
-                      <div key={label} className="flex items-center gap-2.5 px-4 py-3.5 text-left">
+                      <div key={label} className="flex items-center gap-2.5 px-4 py-3.5 text-left max-lg:flex-col max-lg:items-start max-lg:gap-1 max-lg:px-3">
                         <Icon className="h-4 w-4 shrink-0 text-[#9E8C61]" />
                         <div className="min-w-0">
                           <p className="truncate text-sm font-semibold text-[#1B1B1B]" title={String(value)}>{value}</p>
@@ -228,7 +228,7 @@ export default function HomeValuePage() {
         )}
       </div>
 
-      <div className="-mx-8 lg:-mx-20">
+      <div className="-mx-8 lg:-mx-20 max-sm:-mx-5">
         <PageCTA
           heading={<>You're In <span className="text-cnc-gold font-medium">Control</span></>}
           body="CnC's got your back"

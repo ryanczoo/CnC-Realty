@@ -35,7 +35,7 @@ export function LocalMarketSnapshot({ bars, medianPrice, zip }: Props) {
         </p>
       ) : (
         <>
-          <div className="mt-8 flex h-40 items-end gap-6">
+          <div className="mt-8 flex h-40 items-end gap-6 max-sm:gap-2">
             {bars.map((b, i) => (
               <div key={`${b.label}-${i}`} className="flex flex-1 flex-col items-center gap-2">
                 <div className="flex h-32 w-full items-end">
@@ -44,9 +44,9 @@ export function LocalMarketSnapshot({ bars, medianPrice, zip }: Props) {
                     style={{ height: `${heights[i]}%` }}
                   />
                 </div>
-                <p className="text-xs text-[#1B1B1B]/60">{b.label}</p>
+                <p className="text-xs text-[#1B1B1B]/60 max-sm:text-[10px]">{b.label}</p>
                 {b.count != null && (
-                  <p className="text-xs font-medium text-[#1B1B1B]">{b.count}</p>
+                  <p className="text-xs font-medium text-[#1B1B1B] max-sm:text-[10px]">{b.count}</p>
                 )}
               </div>
             ))}
