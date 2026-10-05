@@ -49,7 +49,7 @@ export function PropertyCard({ property, isSaved, onToggleSave, onHover, onSelec
             alt={property.address}
             fill
             className="object-cover transition-transform duration-300 group-hover:scale-105"
-            sizes="(max-width: 768px) 50vw, 280px"
+            sizes="(max-width: 639px) 100vw, (max-width: 768px) 50vw, 280px"
             unoptimized
           />
         ) : (

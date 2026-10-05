@@ -1,7 +1,9 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
-import { AnimatePresence } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
+import { useIsMobile } from "@/hooks/useIsMobile";
+import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
 import { useSearchFilters } from "@/hooks/useSearchFilters";
 import { useProperties } from "@/hooks/useProperties";
 import { useSavedProperties } from "@/hooks/useSavedProperties";
@@ -17,6 +19,14 @@ interface Props {
   initialTotal: number;
 }
 
+// Phones open on the list; the map code (~1.7 MB) downloads only on the first
+// "Show Map" tap. Until the page has mounted we cannot know phone vs desktop,
+// so the map pane shows the same grey placeholder the map's own loader shows.
+export function shouldRenderMap(mounted: boolean, isMobile: boolean, mapRequested: boolean): boolean {
+  if (!mounted) return false;
+  return !isMobile || mapRequested;
+}
+
 function SearchResultsInner({ initialProperties, initialTotal }: Props) {
   const { filters, setFilter, applyFilters, clearFilters, hasActiveFilters } = useSearchFilters();
   const { properties, total, isLoading, isError, hasMore, loadNextPage } = useProperties(
@@ -26,6 +36,15 @@ function SearchResultsInner({ initialProperties, initialTotal }: Props) {
   const { savedSet, toggle } = useSavedProperties();
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [selectedMls, setSelectedMls] = useState<string | null>(null);
+  const isMobile = useIsMobile();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const [showMap, setShowMap] = useState(false);
+  const [mapRequested, setMapRequested] = useState(false);
+  const toggleMap = useCallback(() => {
+    setMapRequested(true);
+    setShowMap((v) => !v);
+  }, []);
 
   // Infinite scroll sentinel
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -82,8 +101,8 @@ function SearchResultsInner({ initialProperties, initialTotal }: Props) {
 
       <div className="flex flex-1 overflow-hidden">
         {/* List pane — 45% */}
-        <div className="flex w-[45%] flex-col overflow-y-auto">
-          <div className="grid grid-cols-2 gap-3 p-3">
+        <div className={`flex w-[45%] flex-col overflow-y-auto max-lg:w-full${showMap ? " max-lg:hidden" : ""}`}>
+          <div className="grid grid-cols-2 gap-3 p-3 max-sm:grid-cols-1">
             {properties.map((p) => (
               <PropertyCard
                 key={p.mlsNumber}
@@ -96,19 +115,19 @@ function SearchResultsInner({ initialProperties, initialTotal }: Props) {
             ))}
 
             {isLoading && (
-              <div className="col-span-2 flex justify-center py-6">
+              <div className="col-span-2 max-sm:col-span-1 flex justify-center py-6">
                 <Loader2 className="h-5 w-5 animate-spin text-[#9E8C61]" />
               </div>
             )}
 
             {isError && (
-              <div className="col-span-2 py-16 text-center text-sm text-red-400">
+              <div className="col-span-2 max-sm:col-span-1 py-16 text-center text-sm text-red-400">
                 Failed to load listings. Check your connection and try again.
               </div>
             )}
 
             {!isLoading && !isError && properties.length === 0 && (
-              <div className="col-span-2 py-16 text-center text-sm text-white/40">
+              <div className="col-span-2 max-sm:col-span-1 py-16 text-center text-sm text-white/40">
                 No properties found. Try adjusting your filters.
               </div>
             )}
@@ -119,9 +138,27 @@ function SearchResultsInner({ initialProperties, initialTotal }: Props) {
         </div>
 
         {/* Map pane — remaining 55% */}
-        <div className="flex-1">
-          <PropertyMap properties={properties} hoveredId={hoveredId} onSelect={handleSelect} />
+        <div className={`flex-1${showMap ? "" : " max-lg:hidden"}`}>
+          {shouldRenderMap(mounted, isMobile, mapRequested) ? (
+            <PropertyMap properties={properties} hoveredId={hoveredId} onSelect={handleSelect} />
+          ) : (
+            <div className="h-full w-full bg-[#1a1a1a]" />
+          )}
         </div>
+      </div>
+
+      {/* Phones: list/map toggle */}
+      <div className="pointer-events-none fixed inset-x-0 bottom-6 z-20 flex justify-center lg:hidden">
+        <motion.button
+          type="button"
+          onClick={toggleMap}
+          animate={PULSE_ANIMATE}
+          transition={PULSE_TRANSITION}
+          whileHover={{ scale: 1.05, transition: SPRING_HOVER }}
+          className="pointer-events-auto rounded-full bg-[#1B1B1B] px-6 py-3 text-sm font-medium text-white shadow-[0_8px_24px_rgba(0,0,0,0.35)] ring-1 ring-white/10"
+        >
+          {showMap ? "Show List" : "Show Map"}
+        </motion.button>
       </div>
 
       {/* Property detail drawer */}
