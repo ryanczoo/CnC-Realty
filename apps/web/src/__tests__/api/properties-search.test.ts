@@ -164,3 +164,20 @@ describe("GET /api/properties — commercial type filter", () => {
     expect((call.where as any).propertyType.contains).toBeUndefined();
   });
 });
+
+describe("GET /api/properties — shared count cache", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("reuses a cached count instead of re-counting every listing", async () => {
+    const { redis } = await import("@/lib/redis");
+    vi.mocked(redis.get).mockImplementation(async (key: string) =>
+      key.startsWith("properties:count:") ? 160541 : null
+    );
+    vi.mocked(prisma.property.findMany).mockResolvedValue([]);
+    const res = await GET(makeRequest("query=Pasadena&page=3"));
+    const body = await res.json();
+    expect(body.total).toBe(160541);
+    expect(prisma.property.count).not.toHaveBeenCalled();
+    vi.mocked(redis.get).mockResolvedValue(null);
+  });
+});

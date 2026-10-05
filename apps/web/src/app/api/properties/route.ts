@@ -4,6 +4,7 @@ import { Prisma } from "@cnc/database";
 import { MULTIFAMILY_TYPES, COMMERCIAL_TYPES } from "@/types/property";
 import { redis } from "@/lib/redis";
 import { buildLocationWhere } from "@/lib/property-search-query";
+import { cachedCount, countCacheKey } from "@/lib/property-count-cache";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -92,7 +93,10 @@ export async function GET(req: Request) {
           listedAt: true,
         },
       }),
-      prisma.property.count({ where }),
+      cachedCount(
+        countCacheKey({ ...Object.fromEntries(rawParams.entries()), listingType }),
+        () => prisma.property.count({ where }),
+      ),
     ]);
 
     const result = { properties, total, page, pages: Math.ceil(total / limit) };

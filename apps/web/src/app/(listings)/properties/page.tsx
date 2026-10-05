@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { SearchResults } from "@/components/properties/SearchResults";
 import { PropertyListing, MULTIFAMILY_TYPES, COMMERCIAL_TYPES } from "@/types/property";
 import { buildLocationWhere } from "@/lib/property-search-query";
+import { cachedCount, countCacheKey } from "@/lib/property-count-cache";
 
 export const metadata: Metadata = {
   title: "Property Search",
@@ -80,7 +81,7 @@ export default async function PropertiesPage({ searchParams }: PageProps) {
           listedAt: true,
         },
       }),
-      prisma.property.count({ where }),
+      cachedCount(countCacheKey({ ...searchParams, listingType }), () => prisma.property.count({ where })),
     ]);
 
     const initialProperties: PropertyListing[] = rawProperties.map((p) => ({
