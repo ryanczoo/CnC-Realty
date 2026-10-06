@@ -115,8 +115,9 @@ export function AgentReviewsSection({ displayName }: { displayName: string }) {
             {PLACEHOLDER_REVIEWS.map((review) => (
               <div
                 key={review.author}
-                className="flex shrink-0 flex-col rounded-2xl border border-[#E0DDD8] bg-white p-6"
-                style={{ width: cardWidth || "calc(33.333% - 11px)" }}
+                // Before the first measure, CSS sizes the cards at the same 1/2/3 cutoffs as reviewsPerView.
+                className={`flex shrink-0 flex-col rounded-2xl border border-[#E0DDD8] bg-white p-6 ${cardWidth ? "" : "w-full sm:w-[calc(50%-8px)] lg:w-[calc(33.333%-11px)]"}`}
+                style={cardWidth ? { width: cardWidth } : undefined}
               >
                 <div className="mb-4 flex gap-0.5">
                   {[...Array(5)].map((_, j) => (
