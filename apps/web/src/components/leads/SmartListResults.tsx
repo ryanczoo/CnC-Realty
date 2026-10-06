@@ -7,6 +7,7 @@ import { ArrowIcon } from "@/components/ui/ArrowIcon";
 import { LEAD_STATUS_COLORS } from "@/lib/campaign-ui";
 import { resolveListFilters, PREBUILT_LISTS } from "@/lib/smart-list-filters";
 import type { FilterCondition } from "@/lib/smart-list-filters";
+import { PHONE_TABLE } from "@/lib/dashboard-phone";
 
 const STATUS_LABELS: Record<string, string> = {
   NEW: "New",
@@ -154,7 +155,7 @@ export function SmartListResults({ activeList, customLists, isAdmin }: Props) {
         <>
           {/* Table */}
           <div className="overflow-hidden rounded-2xl bg-white">
-            <table className="w-full">
+            <table className={`w-full ${PHONE_TABLE}`}>
               <thead>
                 <tr className="border-b border-[#1B1B1B]/10">
                   {["Name", "Status", "Tags", "Last Contacted", "Source", "Price Range"].map(h => (

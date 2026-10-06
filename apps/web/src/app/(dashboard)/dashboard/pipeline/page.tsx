@@ -11,6 +11,7 @@ import { DealDrawer } from "@/components/deals/DealDrawer";
 import { NewDealModal } from "@/components/deals/NewDealModal";
 import { fetchDeals, updateDealInList, removeDealFromList } from "@/lib/dashboard-queries";
 import type { DealRow } from "@/lib/deal-pipeline";
+import { PHONE_TAB_BAR } from "@/lib/dashboard-phone";
 
 const PIPELINES = ["BUYERS", "SELLERS", "LEASE_TENANT", "LEASE_LANDLORD"] as const;
 type PipelineTab = (typeof PIPELINES)[number];
@@ -99,7 +100,7 @@ export default function PipelinePage() {
         </button>
       </div>
 
-      <div className="mb-6 flex gap-1 rounded-xl bg-[#F2F0EF] p-1 w-fit">
+      <div className={`mb-6 flex gap-1 rounded-xl bg-[#F2F0EF] p-1 w-fit ${PHONE_TAB_BAR}`}>
         {PIPELINES.map((p) => (
           <button
             key={p}

@@ -4,6 +4,7 @@ import type { FileDocumentRecord, FileChecklistItemWithDocs } from "@/types/tran
 import { TrashIcon } from "@/components/ui/TrashIcon";
 import { DownloadIcon } from "@/components/ui/DownloadIcon";
 import { deleteDocumentPermanently } from "@/lib/document-actions";
+import { PHONE_TABLE } from "@/lib/dashboard-phone";
 
 const STATUS_STYLES: Record<string, string> = {
   APPROVED: "bg-green-100 text-green-700",
@@ -73,7 +74,7 @@ export function DocumentsTab({
 
   return (
     <div className="rounded-xl border border-[#1B1B1B]/10 bg-white overflow-hidden">
-      <table className="w-full text-sm">
+      <table className={`w-full text-sm ${PHONE_TABLE}`}>
         <thead>
           <tr className="border-b border-[#1B1B1B]/5 bg-[#F2F0EF]/60">
             <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Document</th>

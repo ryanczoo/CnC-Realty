@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowIcon } from "@/components/ui/ArrowIcon";
+import { PHONE_TABLE } from "@/lib/dashboard-phone";
 
 interface PostRow {
   id: string;
@@ -34,7 +35,7 @@ export function BlogPostList({ posts: initial }: { posts: PostRow[] }) {
 
   return (
     <div className="overflow-hidden rounded-xl border border-[#1B1B1B]/10">
-      <table className="w-full text-sm">
+      <table className={`w-full text-sm ${PHONE_TABLE}`}>
         <thead className="bg-[#F2F0EF] text-left text-xs uppercase tracking-wider text-[#1B1B1B]/50">
           <tr>
             <th className="px-4 py-3 w-12" />

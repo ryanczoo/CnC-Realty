@@ -18,6 +18,7 @@ import { getChecklistProgress, allowedNextStatuses, canDeleteListing, listingSta
 import type { FileDocumentRecord, FileChecklistItemWithDocs, ListingFileDetail, TransactionFileDetail } from "@/types/transaction";
 import { EMAIL_WARNING_TEXT } from "@/lib/file-messages";
 import { latestCancellationReason } from "@/lib/activity-detail";
+import { PHONE_TAB_BAR } from "@/lib/dashboard-phone";
 
 type Tab = "overview" | "checklist" | "commission" | "documents" | "parties" | "activity";
 
@@ -213,7 +214,7 @@ export default function AdminFileDetailPage() {
         )}
       </div>
 
-      <div className="mb-6 flex gap-1 rounded-xl bg-[#F2F0EF] p-1 w-fit">
+      <div className={`mb-6 flex gap-1 rounded-xl bg-[#F2F0EF] p-1 w-fit ${PHONE_TAB_BAR}`}>
         {ADMIN_TABS.map((t) => (
           <button
             key={t.key}

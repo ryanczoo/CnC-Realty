@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Loader2 } from "lucide-react";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { ArrowIcon } from "@/components/ui/ArrowIcon";
+import { PHONE_TABLE } from "@/lib/dashboard-phone";
 
 type RangeValue = "week" | "month" | "30d" | "90d" | "year" | "all";
 
@@ -171,7 +172,7 @@ export function DashboardTabs({ overviewStats, role }: DashboardTabsProps) {
                   No leads for this period.
                 </p>
               ) : (
-                <table className="w-full text-sm">
+                <table className={`w-full text-sm ${PHONE_TABLE}`}>
                   <thead>
                     <tr className="border-b border-[#1B1B1B]/5 text-xs text-[#1B1B1B]/40">
                       <th className="px-5 py-2 text-left font-medium">Source</th>

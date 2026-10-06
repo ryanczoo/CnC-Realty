@@ -6,6 +6,7 @@ import { Plus } from "lucide-react";
 import { FileCard } from "@/components/transactions/FileCard";
 import { pickDisplayPrice, pickDisplayDate } from "@/lib/transaction-helpers";
 import { fetchListings, fetchTransactions } from "@/lib/dashboard-queries";
+import { PHONE_TAB_BAR } from "@/lib/dashboard-phone";
 
 type Tab = "listings" | "transactions";
 
@@ -42,7 +43,7 @@ export default function TransactionsPage() {
         </div>
       </div>
 
-      <div className="mb-6 flex gap-1 rounded-xl bg-[#F2F0EF] p-1 w-fit">
+      <div className={`mb-6 flex gap-1 rounded-xl bg-[#F2F0EF] p-1 w-fit ${PHONE_TAB_BAR}`}>
         {(["listings", "transactions"] as Tab[]).map((t) => (
           <button
             key={t}

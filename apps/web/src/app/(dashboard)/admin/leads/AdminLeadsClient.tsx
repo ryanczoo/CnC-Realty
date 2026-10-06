@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { LEAD_STATUS_COLORS } from "@/lib/campaign-ui";
 import { formatDate } from "@/lib/utils";
 import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
-import { PHONE_POPUP_FRAME, PHONE_POPUP_PANEL } from "@/lib/dashboard-phone";
+import { PHONE_POPUP_FRAME, PHONE_POPUP_PANEL, PHONE_TABLE } from "@/lib/dashboard-phone";
 import { ArrowIcon } from "@/components/ui/ArrowIcon";
 import { NewLeadModal } from "@/components/leads/NewLeadModal";
 import { AssignLeadModal, type AgentOption } from "@/components/leads/AssignLeadModal";
@@ -167,7 +167,7 @@ export function AdminLeadsClient({
         )}
 
         <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
-          <table className="w-full text-sm">
+          <table className={`w-full text-sm ${PHONE_TABLE}`}>
             <thead>
               <tr className="bg-[#F2F0EF]">
                 <th className="w-10 px-4 py-3" />
@@ -261,7 +261,7 @@ export function AdminLeadsClient({
       {/* ── Unassigned tab ── */}
       <div className={tab === "unassigned" ? "" : "hidden"}>
         <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
-          <table className="w-full text-sm">
+          <table className={`w-full text-sm ${PHONE_TABLE}`}>
             <thead>
               <tr className="bg-[#F2F0EF]">
                 <th className={TABLE_HEAD_CLS}>Lead Name</th>

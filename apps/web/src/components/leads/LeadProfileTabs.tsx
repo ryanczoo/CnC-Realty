@@ -6,6 +6,7 @@ import { AddNoteForm } from "@/components/dashboard/AddNoteForm";
 import { LeadTasksTab } from "./LeadTasksTab";
 import { HomesTab } from "./HomesTab";
 import { LeadActionPlansSection } from "./LeadActionPlansSection";
+import { PHONE_TAB_BAR } from "@/lib/dashboard-phone";
 
 type Tab = "activity" | "tasks" | "homes" | "plans";
 
@@ -44,7 +45,7 @@ export function LeadProfileTabs({ leadId, activities, tasks }: Props) {
 
   return (
     <div>
-      <div className="mb-4 flex gap-1 rounded-xl bg-[#F2F0EF] p-1">
+      <div className={`mb-4 flex gap-1 rounded-xl bg-[#F2F0EF] p-1 ${PHONE_TAB_BAR}`}>
         {tabs.map((t) => (
           <button
             key={t.id}

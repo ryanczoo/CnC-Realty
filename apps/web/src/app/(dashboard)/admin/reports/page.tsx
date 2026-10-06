@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { PHONE_TABLE } from "@/lib/dashboard-phone";
 
 export const dynamic = "force-dynamic";
 
@@ -114,7 +115,7 @@ export default function AdminReportsPage() {
                 No agent data for this period.
               </p>
             ) : (
-              <table className="w-full text-sm">
+              <table className={`w-full text-sm ${PHONE_TABLE}`}>
                 <thead>
                   <tr className="border-b border-[#1B1B1B]/5 text-xs text-[#1B1B1B]/40">
                     <th className="px-5 py-2 text-left font-medium">Agent</th>
@@ -164,7 +165,7 @@ export default function AdminReportsPage() {
                   No leads for this period.
                 </p>
               ) : (
-                <table className="w-full text-sm">
+                <table className={`w-full text-sm ${PHONE_TABLE}`}>
                   <thead>
                     <tr className="border-b border-[#1B1B1B]/5 text-xs text-[#1B1B1B]/40">
                       <th className="px-5 py-2 text-left font-medium">Source</th>
@@ -204,7 +205,7 @@ export default function AdminReportsPage() {
                   No contact data for this period.
                 </p>
               ) : (
-                <table className="w-full text-sm">
+                <table className={`w-full text-sm ${PHONE_TABLE}`}>
                   <thead>
                     <tr className="border-b border-[#1B1B1B]/5 text-xs text-[#1B1B1B]/40">
                       <th className="px-5 py-2 text-left font-medium">Agent</th>

@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { FileCard } from "@/components/transactions/FileCard";
 import { pickDisplayPrice, pickDisplayDate } from "@/lib/transaction-helpers";
+import { PHONE_TAB_BAR } from "@/lib/dashboard-phone";
 
 type Tab = "all" | "review";
 
@@ -45,7 +46,7 @@ export default function AdminTransactionsPage() {
         <h1 className="text-2xl font-light text-[#1B1B1B]">All Files</h1>
       </div>
 
-      <div className="mb-6 flex gap-1 rounded-xl bg-[#F2F0EF] p-1 w-fit">
+      <div className={`mb-6 flex gap-1 rounded-xl bg-[#F2F0EF] p-1 w-fit ${PHONE_TAB_BAR}`}>
         {TABS.map((t) => (
           <button
             key={t.key}
