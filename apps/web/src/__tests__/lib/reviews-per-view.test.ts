@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { reviewsPerView } from "@/components/agents/AgentReviewsSection";
+import { reviewsPerView } from "@/lib/reviews-per-view";
 
 describe("reviewsPerView", () => {
   it("desktop shows 3 reviews (unchanged)", () => {

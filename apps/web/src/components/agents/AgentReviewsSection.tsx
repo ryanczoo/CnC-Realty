@@ -5,6 +5,7 @@ import { Star } from "lucide-react";
 import { motion } from "motion/react";
 import { RevealLine } from "@/components/ui/reveal-text";
 import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
+import { reviewsPerView } from "@/lib/reviews-per-view";
 
 const PLACEHOLDER_REVIEWS = [
   {
@@ -43,14 +44,6 @@ const PLACEHOLDER_REVIEWS = [
     role: "Repeat Client",
   },
 ];
-
-// Reviews shown side by side: 3 on desktop (unchanged), 2 on wider phones and
-// iPads, 1 on upright phones — three columns at 390px wrap one word per line.
-export function reviewsPerView(viewportWidth: number): number {
-  if (viewportWidth >= 1024) return 3;
-  if (viewportWidth >= 640) return 2;
-  return 1;
-}
 
 function ArrowIcon() {
   return (
