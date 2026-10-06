@@ -114,6 +114,7 @@ export function AgentProfileHero({
       const startY = heroDocTop - wrapperDocTop;
       const startX = heroR.left;
 
+      // AgentAboutSection's sideways-phone photo height (100svh - 9rem) assumes this 112px.
       const stickyOffset  = 112;
       const idealTarget   = aboutDocTop - stickyOffset;
       const p             = Math.max(0.05, Math.min(1.0, (idealTarget - wrapperDocTop) / totalScroll));

@@ -86,7 +86,8 @@ export function AgentAboutSection({
           {/* LEFT — sticky photo column */}
           <div className="md:w-[29%] max-lg:landscape:w-[29%] max-lg:landscape:shrink-0">
             <div className="sticky top-28 max-lg:landscape:static">
-              {/* Large agent photo — hidden until morph animation hands off */}
+              {/* Large agent photo — hidden until morph animation hands off.
+                  Sideways phones: 9rem = the morph's 112px stickyOffset (AgentProfileHero) + 32px margin. */}
               <div
                 ref={onPhotoRef}
                 className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl bg-[#E0DDD8] max-lg:landscape:w-[min(100%,calc((100svh_-_9rem)*0.75))]"
