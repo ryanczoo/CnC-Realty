@@ -4,6 +4,7 @@ import { FieldError } from "@/components/ui/FieldError";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
+import { PHONE_POPUP_PANEL } from "@/lib/dashboard-phone";
 import { formatPhoneInput, isValidEmail, emailError } from "@/lib/form-validation";
 
 const SOURCE_OPTIONS = [
@@ -130,7 +131,7 @@ export function NewLeadModal({ open, onClose, onSaved }: Props) {
           onClick={(e) => e.target === e.currentTarget && handleClose()}
         >
           <motion.div
-            className="w-full max-w-lg rounded-2xl bg-white p-8 shadow-xl"
+            className={`w-full max-w-lg rounded-2xl bg-white p-8 shadow-xl ${PHONE_POPUP_PANEL}`}
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 16 }}

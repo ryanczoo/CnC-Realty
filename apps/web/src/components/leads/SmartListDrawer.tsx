@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { FilterCondition } from "@/lib/smart-list-filters";
+import { PHONE_DRAWER_PANEL } from "@/lib/dashboard-phone";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -349,7 +350,7 @@ export function SmartListDrawer({ open, onClose, initial, onSaved }: Props) {
       />
 
       {/* Panel */}
-      <div className="relative flex h-full w-96 flex-col overflow-y-auto bg-white shadow-xl">
+      <div className={`relative flex h-full w-96 flex-col overflow-y-auto bg-white shadow-xl ${PHONE_DRAWER_PANEL}`}>
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[#1B1B1B]/10 px-6 py-4">
           <h2 className="font-sans text-lg font-light text-[#1B1B1B]">

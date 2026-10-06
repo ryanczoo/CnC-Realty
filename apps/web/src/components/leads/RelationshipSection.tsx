@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { PHONE_POPUP_FRAME, PHONE_POPUP_PANEL } from "@/lib/dashboard-phone";
 
 type LinkedLead = { id: string; firstName: string; lastName: string; email: string };
 type Relationship = { id: string; type: string; lead: LinkedLead };
@@ -68,8 +69,8 @@ export function RelationshipSection({ leadId, relationships, onChanged }: Props)
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+        <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40 ${PHONE_POPUP_FRAME}`}>
+          <div className={`w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl ${PHONE_POPUP_PANEL}`}>
             <h3 className="mb-4 font-sans text-lg font-light text-[#1B1B1B]">Link a Contact</h3>
             <input
               autoFocus

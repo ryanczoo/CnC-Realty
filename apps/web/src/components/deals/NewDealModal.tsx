@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import type { DealRow } from "@/lib/deal-pipeline";
 import { PIPELINE_STAGES } from "@/lib/deal-pipeline";
 import { DateField } from "@/components/ui/DateField";
+import { PHONE_POPUP_FRAME, PHONE_POPUP_PANEL } from "@/lib/dashboard-phone";
 
 type Props = {
   open: boolean;
@@ -92,9 +93,9 @@ export function NewDealModal({ open, onClose, onSaved, initialLeadId, initialLea
   }
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center ${open ? "" : "hidden"}`}>
+    <div className={`fixed inset-0 z-50 flex items-center justify-center ${open ? "" : "hidden"} ${PHONE_POPUP_FRAME}`}>
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+      <div className={`relative w-full max-w-md rounded-2xl bg-white p-6 shadow-xl ${PHONE_POPUP_PANEL}`}>
         <div className="mb-5 flex items-center justify-between">
           <h2 className="font-sans text-lg font-medium text-[#1B1B1B]">New Deal</h2>
           <button onClick={onClose} className="font-sans text-[#1B1B1B]/40 hover:text-[#1B1B1B]">✕</button>

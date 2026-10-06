@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { LeadTaskDrawer } from "./LeadTaskDrawer";
 import { DateField } from "@/components/ui/DateField";
+import { PHONE_POPUP_FRAME, PHONE_POPUP_PANEL } from "@/lib/dashboard-phone";
 
 type LeadTask = {
   id: string;
@@ -178,9 +179,9 @@ export function LeadTasksTab({ leadId, initialTasks }: Props) {
 
       {/* New Task panel */}
       {newTaskOpen && (
-        <div className="fixed inset-0 z-50 flex items-end justify-end">
+        <div className={`fixed inset-0 z-50 flex items-end justify-end ${PHONE_POPUP_FRAME}`}>
           <div className="absolute inset-0 bg-black/20" onClick={() => setNewTaskOpen(false)} />
-          <div className="relative w-full max-w-md rounded-t-2xl bg-white p-6 shadow-2xl sm:rounded-2xl sm:m-4">
+          <div className={`relative w-full max-w-md rounded-t-2xl bg-white p-6 shadow-2xl sm:rounded-2xl sm:m-4 ${PHONE_POPUP_PANEL}`}>
             <h3 className="mb-4 font-sans text-lg font-light">New Task</h3>
             <div className="space-y-3">
               <input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Task title" className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm outline-none focus:border-[#9E8C61]" />

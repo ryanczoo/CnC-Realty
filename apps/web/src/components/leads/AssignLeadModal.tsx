@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
+import { PHONE_POPUP_FRAME, PHONE_POPUP_PANEL } from "@/lib/dashboard-phone";
 import { assignLead } from "@/lib/assign-lead";
 
 export type AgentOption = { id: string; displayName: string | null; user: { email: string } };
@@ -38,8 +39,8 @@ export function AssignLeadModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+    <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40 ${PHONE_POPUP_FRAME}`}>
+      <div className={`w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl ${PHONE_POPUP_PANEL}`}>
         <h3 className="mb-1 font-sans text-lg font-light text-[#1B1B1B]">Assign Lead</h3>
         <p className="mb-4 text-sm text-[#1B1B1B]/60">
           {lead.firstName} {lead.lastName}

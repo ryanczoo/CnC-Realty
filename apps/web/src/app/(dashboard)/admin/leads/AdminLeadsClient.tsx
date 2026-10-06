@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { LEAD_STATUS_COLORS } from "@/lib/campaign-ui";
 import { formatDate } from "@/lib/utils";
 import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
+import { PHONE_POPUP_FRAME, PHONE_POPUP_PANEL } from "@/lib/dashboard-phone";
 import { ArrowIcon } from "@/components/ui/ArrowIcon";
 import { NewLeadModal } from "@/components/leads/NewLeadModal";
 import { AssignLeadModal, type AgentOption } from "@/components/leads/AssignLeadModal";
@@ -332,8 +333,8 @@ export function AdminLeadsClient({
 
       {/* ── Merge modal ── */}
       {merging && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+        <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40 ${PHONE_POPUP_FRAME}`}>
+          <div className={`w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl ${PHONE_POPUP_PANEL}`}>
             <h3 className="mb-2 font-sans text-lg font-light text-[#1B1B1B]">
               Merge Leads
             </h3>
