@@ -61,7 +61,7 @@ export function AgentPhotoMorph({
             src={headshot}
             alt={name}
             fill
-            sizes="(max-width: 1023px) and (orientation: portrait) 100vw, (max-width: 768px) 25vw, 40vw"
+            sizes="(max-width: 767px) and (orientation: portrait) 100vw, (max-width: 1023px) and (orientation: portrait) 30vw, (max-width: 768px) 25vw, 40vw"
             quality={95}
             className="object-cover object-top"
             priority
