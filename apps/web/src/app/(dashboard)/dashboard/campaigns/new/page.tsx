@@ -113,7 +113,7 @@ export default function NewCampaignPage() {
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] items-start justify-center bg-[#F2F0EF] py-10">
+    <div className="flex min-h-[calc(100vh-4rem)] items-start justify-center bg-[#F2F0EF] py-10 max-lg:min-h-[calc(100svh-4rem-2.75rem)]">
       <div className="w-full max-w-2xl rounded-2xl bg-white p-8 shadow-sm">
         <div className="mb-8">
           <div className="mb-3 flex justify-between">
