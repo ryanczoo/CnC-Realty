@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { PHONE_TABLE } from "@/lib/dashboard-phone";
+import { PHONE_TABLE_FRAME } from "@/lib/dashboard-phone";
 
 type Tag = { id: string; name: string; color: string; createdAt: string; leadCount: number };
 
@@ -109,11 +109,11 @@ export function AdminTagsClient({ initialTags, autoTagCity: initialAutoTagCity }
       </div>
 
       {/* Tags table */}
-      <div className="rounded-2xl bg-white">
+      <div className={`rounded-2xl bg-white ${PHONE_TABLE_FRAME}`}>
         {tags.length === 0 ? (
           <p className="px-5 py-8 text-center text-sm text-[#1B1B1B]/40">No tags yet. Create one above.</p>
         ) : (
-          <table className={`w-full text-sm ${PHONE_TABLE}`}>
+          <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[#1B1B1B]/10">
                 <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-widest text-[#1B1B1B]/40">Color</th>

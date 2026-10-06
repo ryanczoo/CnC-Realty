@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowIcon } from "@/components/ui/ArrowIcon";
 import { LEAD_STATUS_COLORS } from "@/lib/campaign-ui";
 import { formatDate } from "@/lib/utils";
-import { PHONE_POPUP_FRAME, PHONE_POPUP_PANEL, PHONE_TABLE } from "@/lib/dashboard-phone";
+import { PHONE_POPUP_FRAME, PHONE_POPUP_PANEL, PHONE_TABLE_FRAME } from "@/lib/dashboard-phone";
 
 type LeadRow = {
   id: string;
@@ -84,8 +84,8 @@ export function AdminLeadsMergeClient({ leads }: Props) {
         </div>
       )}
 
-      <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
-        <table className={`w-full text-sm ${PHONE_TABLE}`}>
+      <div className={`overflow-hidden rounded-2xl bg-white shadow-sm ${PHONE_TABLE_FRAME}`}>
+        <table className="w-full text-sm">
           <thead>
             <tr className="bg-[#F2F0EF]">
               <th className="w-10 px-4 py-3" />

@@ -4,7 +4,7 @@ import { TransactionFileStatus } from "@cnc/database";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { requireAdminPage } from "@/lib/server-utils";
 import { formatDateOnly } from "@/lib/utils";
-import { PHONE_TABLE } from "@/lib/dashboard-phone";
+import { PHONE_TABLE_FRAME } from "@/lib/dashboard-phone";
 
 export const metadata = { title: "Broker Overview | CnC Realty" };
 
@@ -131,8 +131,8 @@ export default async function AdminOverviewPage() {
         {openTransactionsWithDeadlines.length === 0 ? (
           <p className="text-sm text-[#1B1B1B]/50">No deadlines in the next 7 days.</p>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-[#1B1B1B]/10">
-            <table className={`w-full text-sm ${PHONE_TABLE}`}>
+          <div className={`overflow-hidden rounded-xl border border-[#1B1B1B]/10 ${PHONE_TABLE_FRAME}`}>
+            <table className="w-full text-sm">
               <thead className="bg-[#F2F0EF] text-left text-xs uppercase tracking-wider text-[#1B1B1B]/50">
                 <tr>
                   <th className="px-4 py-3">Property</th>

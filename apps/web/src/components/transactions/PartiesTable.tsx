@@ -4,7 +4,7 @@ import { Plus } from "lucide-react";
 import { TrashIcon } from "@/components/ui/TrashIcon";
 import { emailError } from "@/lib/form-validation";
 import type { FilePartyRecord, FilePartyRole, FileContextProps } from "@/types/transaction";
-import { PHONE_TABLE } from "@/lib/dashboard-phone";
+import { PHONE_TABLE_FRAME } from "@/lib/dashboard-phone";
 
 const ROLE_LABELS: Record<FilePartyRole, string> = {
   BUYER: "Buyer", SELLER: "Seller", LISTING_AGENT: "Listing Agent",
@@ -43,8 +43,8 @@ export function PartiesTable({ fileType, fileId, parties, onChanged, readOnly = 
   }
 
   return (
-    <div>
-      <table className={`w-full text-sm ${PHONE_TABLE}`}>
+    <div className={PHONE_TABLE_FRAME}>
+      <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-[#1B1B1B]/10 text-left text-xs font-medium uppercase tracking-wider text-[#1B1B1B]/40">
             <th className="pb-2">Role</th><th className="pb-2">Name</th><th className="pb-2">Email</th><th className="pb-2">Phone</th><th className="pb-2">Company</th><th className="pb-2">License #</th><th className="pb-2"></th>

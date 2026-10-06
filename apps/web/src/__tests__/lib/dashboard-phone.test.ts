@@ -5,7 +5,7 @@ describe("dashboard phone bundle", () => {
   it("exports the seven phone bundles", () => {
     expect(Object.keys(bundle).sort()).toEqual([
       "PHONE_DRAG_CARD", "PHONE_DRAWER_PANEL", "PHONE_FIELDS_16", "PHONE_POPUP_FRAME",
-      "PHONE_POPUP_PANEL", "PHONE_TABLE", "PHONE_TAB_BAR",
+      "PHONE_POPUP_PANEL", "PHONE_TABLE_FRAME", "PHONE_TAB_BAR",
     ]);
   });
 

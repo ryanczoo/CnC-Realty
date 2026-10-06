@@ -9,8 +9,8 @@ export const PHONE_POPUP_PANEL =
   "max-lg:m-0 max-lg:max-h-[calc(100svh-2rem)] max-lg:overflow-y-auto max-lg:rounded-2xl";
 // Side drawer panel: full width like the other drawers.
 export const PHONE_DRAWER_PANEL = "max-lg:w-full";
-// Table: scrolls sideways inside its own box (no wrapper element needed).
-export const PHONE_TABLE = "max-lg:block max-lg:overflow-x-auto";
+// Table's parent card: scrolls the table sideways on phones; the table itself stays a real table (full card width).
+export const PHONE_TABLE_FRAME = "max-lg:overflow-x-auto";
 // Pill tab bar: scrolls sideways within itself; pills keep their size.
 export const PHONE_TAB_BAR = "max-lg:max-w-full max-lg:overflow-x-auto max-lg:[&>*]:shrink-0";
 // 16px fields so iPhone Safari doesn't zoom the page on focus.

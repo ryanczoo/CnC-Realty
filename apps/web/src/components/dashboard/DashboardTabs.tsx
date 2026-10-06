@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Loader2 } from "lucide-react";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { ArrowIcon } from "@/components/ui/ArrowIcon";
-import { PHONE_TABLE } from "@/lib/dashboard-phone";
+import { PHONE_TABLE_FRAME } from "@/lib/dashboard-phone";
 
 type RangeValue = "week" | "month" | "30d" | "90d" | "year" | "all";
 
@@ -163,7 +163,7 @@ export function DashboardTabs({ overviewStats, role }: DashboardTabsProps) {
             </div>
 
             {/* My Lead Sources */}
-            <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
+            <div className={`overflow-hidden rounded-2xl bg-white shadow-sm ${PHONE_TABLE_FRAME}`}>
               <div className="border-b border-[#1B1B1B]/5 px-5 py-3">
                 <h2 className="text-sm font-medium text-[#1B1B1B]">My Lead Sources</h2>
               </div>
@@ -172,7 +172,7 @@ export function DashboardTabs({ overviewStats, role }: DashboardTabsProps) {
                   No leads for this period.
                 </p>
               ) : (
-                <table className={`w-full text-sm ${PHONE_TABLE}`}>
+                <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-[#1B1B1B]/5 text-xs text-[#1B1B1B]/40">
                       <th className="px-5 py-2 text-left font-medium">Source</th>

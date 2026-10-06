@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { PHONE_TABLE } from "@/lib/dashboard-phone";
+import { PHONE_TABLE_FRAME } from "@/lib/dashboard-phone";
 
 export const dynamic = "force-dynamic";
 
@@ -106,7 +106,7 @@ export default function AdminReportsPage() {
       {!loading && !error && data && (
         <>
           {/* Leaderboard */}
-          <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
+          <div className={`overflow-hidden rounded-2xl bg-white shadow-sm ${PHONE_TABLE_FRAME}`}>
             <div className="border-b border-[#1B1B1B]/5 px-5 py-3">
               <h2 className="text-sm font-medium text-[#1B1B1B]">Leaderboard</h2>
             </div>
@@ -115,7 +115,7 @@ export default function AdminReportsPage() {
                 No agent data for this period.
               </p>
             ) : (
-              <table className={`w-full text-sm ${PHONE_TABLE}`}>
+              <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[#1B1B1B]/5 text-xs text-[#1B1B1B]/40">
                     <th className="px-5 py-2 text-left font-medium">Agent</th>
@@ -156,7 +156,7 @@ export default function AdminReportsPage() {
           {/* Lead Sources + Speed-to-Lead side by side */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             {/* Lead Sources */}
-            <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
+            <div className={`overflow-hidden rounded-2xl bg-white shadow-sm ${PHONE_TABLE_FRAME}`}>
               <div className="border-b border-[#1B1B1B]/5 px-5 py-3">
                 <h2 className="text-sm font-medium text-[#1B1B1B]">Lead Sources</h2>
               </div>
@@ -165,7 +165,7 @@ export default function AdminReportsPage() {
                   No leads for this period.
                 </p>
               ) : (
-                <table className={`w-full text-sm ${PHONE_TABLE}`}>
+                <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-[#1B1B1B]/5 text-xs text-[#1B1B1B]/40">
                       <th className="px-5 py-2 text-left font-medium">Source</th>
@@ -196,7 +196,7 @@ export default function AdminReportsPage() {
             </div>
 
             {/* Speed to Lead */}
-            <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
+            <div className={`overflow-hidden rounded-2xl bg-white shadow-sm ${PHONE_TABLE_FRAME}`}>
               <div className="border-b border-[#1B1B1B]/5 px-5 py-3">
                 <h2 className="text-sm font-medium text-[#1B1B1B]">Speed to Lead</h2>
               </div>
@@ -205,7 +205,7 @@ export default function AdminReportsPage() {
                   No contact data for this period.
                 </p>
               ) : (
-                <table className={`w-full text-sm ${PHONE_TABLE}`}>
+                <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-[#1B1B1B]/5 text-xs text-[#1B1B1B]/40">
                       <th className="px-5 py-2 text-left font-medium">Agent</th>

@@ -1,4 +1,4 @@
-import { PHONE_TABLE } from "@/lib/dashboard-phone";
+import { PHONE_TABLE_FRAME } from "@/lib/dashboard-phone";
 interface AdminTableProps {
   headers: string[];
   children: React.ReactNode;
@@ -6,8 +6,8 @@ interface AdminTableProps {
 
 export function AdminTable({ headers, children }: AdminTableProps) {
   return (
-    <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
-      <table className={`w-full text-sm ${PHONE_TABLE}`}>
+    <div className={`overflow-hidden rounded-2xl bg-white shadow-sm ${PHONE_TABLE_FRAME}`}>
+      <table className="w-full text-sm">
         <thead>
           <tr className="bg-[#1B1B1B]">
             {headers.map((h) => (

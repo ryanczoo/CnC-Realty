@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { formatDate } from "@/lib/utils";
-import { PHONE_TABLE } from "@/lib/dashboard-phone";
+import { PHONE_TABLE_FRAME } from "@/lib/dashboard-phone";
 
 type Application = {
   id: string;
@@ -48,8 +48,8 @@ export function ApplicationsClient({ applications }: { applications: Application
       {filtered.length === 0 ? (
         <p className="py-12 text-center font-sans text-sm text-[#1B1B1B]/40">No applications.</p>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-[#1B1B1B]/10">
-          <table className={`w-full text-sm ${PHONE_TABLE}`}>
+        <div className={`overflow-hidden rounded-xl border border-[#1B1B1B]/10 ${PHONE_TABLE_FRAME}`}>
+          <table className="w-full text-sm">
             <thead className="border-b border-[#1B1B1B]/10 bg-[#F2F0EF]">
               <tr>
                 {["Name", "Email", "License #", "Type", "Submitted", "Status"].map((h) => (
