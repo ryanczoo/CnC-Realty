@@ -5,14 +5,12 @@ import {
   DndContext,
   DragEndEvent,
   DragOverlay,
-  PointerSensor,
-  useSensor,
-  useSensors,
   useDroppable,
   closestCorners,
 } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { DealCard } from "./DealCard";
+import { useBoardSensors } from "@/hooks/useBoardSensors";
 import { PIPELINE_STAGES, STAGE_LABELS, isTerminalStage } from "@/lib/deal-pipeline";
 import type { DealRow } from "@/lib/deal-pipeline";
 import type { DealPipeline, DealStage } from "@cnc/database";
@@ -40,7 +38,7 @@ export function DealBoard({ pipeline, initialDeals, onCardClick, onOfferAccepted
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const stages = PIPELINE_STAGES[pipeline];
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+  const sensors = useBoardSensors();
 
   async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;

@@ -4,14 +4,12 @@ import {
   DndContext,
   DragEndEvent,
   DragOverlay,
-  PointerSensor,
-  useSensor,
-  useSensors,
   useDroppable,
   closestCorners,
 } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { LeadCard } from "./LeadCard";
+import { useBoardSensors } from "@/hooks/useBoardSensors";
 import { NewLeadModal, type SavedLead } from "@/components/leads/NewLeadModal";
 import { motion } from "framer-motion";
 import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
@@ -57,7 +55,7 @@ export function LeadKanban({ initialLeads }: { initialLeads: Lead[] }) {
     setLeads((prev) => [{ ...lead, status: "NEW" as LeadStatus }, ...prev]);
   }
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+  const sensors = useBoardSensors();
 
   async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;

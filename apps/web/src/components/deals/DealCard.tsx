@@ -5,6 +5,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { formatDealPrice, formatCloseDate, calcDaysInStage, isTerminalStage } from "@/lib/deal-pipeline";
 import type { DealRow } from "@/lib/deal-pipeline";
+import { PHONE_DRAG_CARD } from "@/lib/dashboard-phone";
 
 type Props = {
   deal: DealRow;
@@ -24,7 +25,7 @@ export function DealCard({ deal, onClick }: Props) {
       onClick={() => onClick(deal)}
       className={`cursor-grab rounded-lg border bg-white p-3 shadow-sm transition-shadow hover:shadow-md active:cursor-grabbing ${
         isAccepted ? "border-l-2 border-l-[#9E8C61] border-[#1B1B1B]/10" : "border-[#1B1B1B]/10"
-      }`}
+      } ${PHONE_DRAG_CARD}`}
     >
       <p className="mb-1 font-sans text-sm font-medium text-[#1B1B1B] truncate">
         <Link
