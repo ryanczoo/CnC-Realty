@@ -168,7 +168,7 @@ export function DateField({ value, onChange, minYear, maxYear, withTime }: DateF
         onChange={(e) => handleMonth(e.target.value)}
         placeholder="MM"
         inputMode="numeric"
-        className={`${segClass} w-6`}
+        className={`${segClass} w-6 max-lg:w-8`}
       />
       <span className="text-[#1B1B1B]/30">/</span>
       <input
@@ -180,7 +180,7 @@ export function DateField({ value, onChange, minYear, maxYear, withTime }: DateF
         }}
         placeholder="DD"
         inputMode="numeric"
-        className={`${segClass} w-6`}
+        className={`${segClass} w-6 max-lg:w-8`}
       />
       <span className="text-[#1B1B1B]/30">/</span>
       <input
@@ -207,7 +207,7 @@ export function DateField({ value, onChange, minYear, maxYear, withTime }: DateF
             }}
             placeholder="HH"
             inputMode="numeric"
-            className={`${segClass} w-6`}
+            className={`${segClass} w-6 max-lg:w-8`}
           />
           <span className="text-[#1B1B1B]/30">:</span>
           <input
@@ -219,7 +219,7 @@ export function DateField({ value, onChange, minYear, maxYear, withTime }: DateF
             }}
             placeholder="MM"
             inputMode="numeric"
-            className={`${segClass} w-6`}
+            className={`${segClass} w-6 max-lg:w-8`}
           />
         </>
       )}

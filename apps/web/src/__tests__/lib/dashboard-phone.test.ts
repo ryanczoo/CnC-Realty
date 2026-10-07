@@ -17,4 +17,8 @@ describe("dashboard phone bundle", () => {
       for (const word of words) expect(word, `${name}: ${word}`).toMatch(/^max-lg:/);
     }
   });
+
+  it("drag cards carry the -webkit- prefixed user-select (iOS Safari ignores the unprefixed one)", () => {
+    expect(bundle.PHONE_DRAG_CARD.split(/\s+/)).toContain("max-lg:[-webkit-user-select:none]");
+  });
 });

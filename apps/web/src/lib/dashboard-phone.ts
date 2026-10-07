@@ -17,4 +17,6 @@ export const PHONE_TAB_BAR = "max-lg:max-w-full max-lg:overflow-x-auto max-lg:[&
 export const PHONE_FIELDS_16 =
   "max-lg:[&_input]:text-base max-lg:[&_select]:text-base max-lg:[&_textarea]:text-base max-lg:[&_[contenteditable=true]]:text-base";
 // Draggable cards: no iPhone text-selection popup on long-press; touch-friendly.
-export const PHONE_DRAG_CARD = "max-lg:select-none max-lg:touch-manipulation max-lg:[-webkit-touch-callout:none]";
+// -webkit-user-select is explicit: the build has no autoprefixer and iOS Safari ignores the unprefixed form.
+export const PHONE_DRAG_CARD =
+  "max-lg:select-none max-lg:[-webkit-user-select:none] max-lg:touch-manipulation max-lg:[-webkit-touch-callout:none]";

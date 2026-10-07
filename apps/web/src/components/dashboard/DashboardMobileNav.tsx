@@ -17,7 +17,9 @@ export function DashboardMobileNav({ email, isAdmin }: { email: string; isAdmin:
   const [open, setOpen] = useState(false);
 
   // Close on navigation, and whenever the window grows to desktop width.
-  useEffect(() => setOpen(false), [pathname]);
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
   useEffect(() => {
     if (!isMobile) setOpen(false);
   }, [isMobile]);
@@ -67,6 +69,10 @@ export function DashboardMobileNav({ email, isAdmin }: { email: string; isAdmin:
               exit={{ x: "-100%" }}
               transition={{ duration: 0.3, ease: EASE_OUT_EXPO as [number, number, number, number] }}
               className="fixed inset-y-0 left-0 z-[70] flex w-[280px] max-w-[85vw] flex-col overflow-y-auto bg-white px-4 py-4 shadow-2xl lg:hidden"
+              onClick={(e) => {
+                // Close on any link tap, including the current page's link (pathname won't change then).
+                if ((e.target as HTMLElement).closest("a")) setOpen(false);
+              }}
             >
               <button
                 type="button"
