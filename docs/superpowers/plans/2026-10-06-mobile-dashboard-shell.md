@@ -1,5 +1,7 @@
 # Mobile Layout — Sub-project 7a (Dashboard Shell + Shared Pieces) Implementation Plan
 
+> **Note (post-build):** the table approach changed. Tables scroll via `PHONE_TABLE_FRAME` (`max-lg:overflow-x-auto`) on the PARENT card, not `PHONE_TABLE` / `max-lg:block` on the `<table>` (that shrank rows on iPads). See the spec, sections 2 and 4.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** On phones and upright iPads (<1024px) the dashboard's fixed 224px sidebar becomes a slim bar + slide-in menu, and the shared pieces every dashboard page uses (popups, form fields, tables, tab bars, drag boards) work on touch screens — desktop unchanged.

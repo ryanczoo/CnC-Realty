@@ -63,7 +63,7 @@ surveyed in 7b–7e; creating sample records in the shared production database n
 
 - **Desktop sidebar unchanged;** hidden below 1024px (`max-lg:hidden` added).
 - **Nav lists move to `lib/dashboard-nav.ts`** (`AGENT_NAV`, `ACADEMY_NAV`, `ADMIN_NAV`, `SETTINGS_ITEM`)
-  and **`NavSection` to `components/dashboard/NavSection.tsx`** — moved as-is (identical output), so the
+  and **`NavSection` stayed private in `SidebarNav.tsx`** (shipped; the sidebar component is shared) so the
   desktop sidebar and phone menu render from one source. `NavSection` gains an optional `activeHref`
   (phone only; when omitted the output is identical to today).
 - **Slim bar** (phones only, ~44px, white, sidebar's border): ☰ button on the left, current page name
@@ -85,17 +85,22 @@ surveyed in 7b–7e; creating sample records in the shared production database n
 Named phone-only class strings (same precedent as `NAV_PANEL_CLS`/`NAV_ITEM_CLS` in `lib/motion.ts`),
 appended to existing classes. `tailwind.config.ts` already scans `src/lib/**`.
 
-- `PHONE_POPUP_FRAME` — edge margin on the centered overlay (`max-lg:p-4`).
-- `PHONE_POPUP_PANEL` — panel height capped to the screen and scrolls (`max-lg:max-h-[calc(100svh-2rem)]
-  max-lg:overflow-y-auto`).
+- `PHONE_POPUP_FRAME` — centers the overlay and gives it an edge margin
+  (`max-lg:items-center max-lg:justify-center max-lg:p-4`).
+- `PHONE_POPUP_PANEL` — panel height capped to the screen, scrolls, fully rounded, no margin
+  (`max-lg:m-0 max-lg:max-h-[calc(100svh-2rem)] max-lg:overflow-y-auto max-lg:rounded-2xl`; the
+  centering/rounded/no-margin words are needed for LeadTasksTab).
 - `PHONE_DRAWER_PANEL` — full width (`max-lg:w-full`), for the Smart List drawer.
-- `PHONE_TABLE` — table scrolls sideways inside its own box, no new wrapper element
-  (`max-lg:block max-lg:overflow-x-auto`).
+- `PHONE_TABLE_FRAME` (`max-lg:overflow-x-auto`) — goes on the table's PARENT card, which scrolls the
+  table sideways. The table stays a real table. (The original `PHONE_TABLE` = `max-lg:block
+  max-lg:overflow-x-auto` on the `<table>` itself was dropped: `display:block` made rows shrink on iPads.)
 - `PHONE_TAB_BAR` — tab bar scrolls sideways within itself, pills keep their size
   (`max-lg:max-w-full max-lg:overflow-x-auto max-lg:[&>*]:shrink-0`).
 - `PHONE_FIELDS_16` — 16px text for fields (see 3).
 - `PHONE_DRAG_CARD` — no iPhone text-selection popup on draggable cards
-  (`max-lg:select-none max-lg:[-webkit-touch-callout:none]`).
+  (`max-lg:select-none max-lg:[-webkit-user-select:none] max-lg:touch-manipulation
+  max-lg:[-webkit-touch-callout:none]`). The `-webkit-` form is explicit because the build has no
+  autoprefixer and iOS Safari ignores the unprefixed `user-select`.
 
 **Safety test:** every whitespace-separated word in every export must start with `max-lg:` — a desktop
 rule can never enter the bundle.
@@ -114,8 +119,8 @@ the build). Desktop fields stay 14px. Rejected: `maximum-scale=1` (blocks pinch-
 
 ### 4. Tables
 
-`PHONE_TABLE` on the 12 `<table>`s that have no sideways-scroll box (the 13th already sits inside one and
-is left alone). `AdminTable`'s wrapper `overflow-hidden` also gets `max-lg:overflow-x-auto`. Card layouts
+`PHONE_TABLE_FRAME` on the parent card of the 12 `<table>`s that have no sideways-scroll box (the 13th
+already sits inside one and is left alone). `AdminTable`'s wrapper `overflow-hidden` also gets `max-lg:overflow-x-auto`. Card layouts
 for specific tables are decided page by page in 7b–7e.
 
 ### 5. Tab bars
@@ -129,12 +134,12 @@ Replaces the duplicated sensor setup in `LeadKanban` and `DealBoard`:
 - **Desktop:** exactly today's `PointerSensor` with `{ distance: 8 }`.
 - **Phones** (`useIsMobile()`): `TouchSensor` `{ delay: 400, tolerance: 8 }` (0.4s hold, Ryan) +
   `MouseSensor` `{ distance: 8 }`. Auto-scroll near edges is `@dnd-kit`'s default (left on).
-- Config chosen by a pure `boardSensorConfig(isMobile)` (unit-tested); hooks always call `useSensor` the
+- Config chosen by a pure `boardSensorKinds(isMobile)` (unit-tested); hooks always call `useSensor` the
   same way. Cards get `PHONE_DRAG_CARD`. Board layouts themselves → 7d.
 
 ## Verification
 
-1. **Tests:** `dashboardPageTitle`, `boardSensorConfig`, the bundle safety test (red → green). Full suite,
+1. **Tests:** `dashboardPageTitle`, `boardSensorKinds`, the bundle safety test (red → green). Full suite,
    `tsc`, clean build after every task.
 2. **Desktop:** element-box fingerprints of all 26 dashboard pages at 1440×900 and 1024×768, before and
    after, twice each — identical. Desktop field font 14px, sidebar visible, slim bar absent.
