@@ -1,5 +1,5 @@
 // Phone-only (below 1024px) class bundles for the dashboard, appended to existing classes.
-// Every word must start with `max-lg:` so nothing here can reach desktop — pinned by
+// Every word must start with `max-lg:` or `max-sm:` so nothing here can reach desktop — pinned by
 // __tests__/lib/dashboard-phone.test.ts. Same idea as NAV_PANEL_CLS in lib/motion.ts.
 
 // Centered popup overlay: centered, 16px from the screen edges.
@@ -20,3 +20,11 @@ export const PHONE_FIELDS_16 =
 // -webkit-user-select is explicit: the build has no autoprefixer and iOS Safari ignores the unprefixed form.
 export const PHONE_DRAG_CARD =
   "max-lg:select-none max-lg:[-webkit-user-select:none] max-lg:touch-manipulation max-lg:[-webkit-touch-callout:none]";
+// Page header row (title left, actions right): stacks on phones — title full width, actions below.
+export const PHONE_HEADER_STACK = "max-lg:flex-col max-lg:items-stretch";
+// The header's actions group: one full-width row per action on phones (the status select sits
+// inside a wrapper div, so it needs its own full-width word).
+export const PHONE_HEADER_ACTIONS =
+  "max-lg:w-full max-lg:flex-col max-lg:items-stretch max-lg:[&>*]:w-full max-lg:[&>*]:justify-center max-lg:[&>*]:text-center max-lg:[&_select]:w-full";
+// Two-column field pair in a wizard card: one field per row on narrow phones (below 640px).
+export const PHONE_FIELD_PAIR = "max-sm:grid-cols-1";
