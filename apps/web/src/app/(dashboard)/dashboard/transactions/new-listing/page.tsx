@@ -14,6 +14,8 @@ import { LISTING_TYPES, listingTypeLabel, listingPriceLabel, commissionDisplay }
 import { listingDatesError } from "@/lib/listing-dates";
 import { formatDateMDY } from "@/lib/utils";
 import { RequiredMark } from "@/components/ui/RequiredMark";
+import { WizardStepBar } from "@/components/transactions/WizardStepBar";
+import { PHONE_FIELD_PAIR } from "@/lib/dashboard-phone";
 
 export default function NewListingPage() {
   const router = useRouter();
@@ -66,34 +68,15 @@ export default function NewListingPage() {
 
   return (
     <div className="w-full">
-      <div className="mb-16">
+      <div className="mb-16 max-lg:mb-6">
         <h1 className="text-4xl font-semibold text-[#1B1B1B]">New Listing</h1>
       </div>
 
       {/* Step bar */}
-      <div className="mb-20 mx-auto flex max-w-5xl items-center">
-        {STEPS.flatMap((s, i) => {
-          const done = i < step;
-          const active = i === step;
-          const el = (
-            <div key={s} className="flex shrink-0 items-center gap-2.5 whitespace-nowrap">
-              {active && <div className="h-3 w-3 rounded-full bg-[#1B1B1B]" />}
-              {done && <div className="h-3 w-3 rounded-full bg-[#9E8C61]" />}
-              <span
-                className={`text-base ${active ? "font-semibold text-[#1B1B1B]" : done ? "text-[#9E8C61]" : "text-[#1B1B1B]/30"}`}
-              >
-                {s}
-              </span>
-            </div>
-          );
-          if (i < STEPS.length - 1)
-            return [el, <div key={`ln-${i}`} className="mx-3 h-px flex-1 bg-[#1B1B1B]/10" />];
-          return [el];
-        })}
-      </div>
+      <WizardStepBar steps={STEPS} current={step} />
 
       {/* Card */}
-      <div className="mx-auto max-w-2xl rounded-2xl border border-[#1B1B1B]/8 bg-white p-10">
+      <div className="mx-auto max-w-2xl rounded-2xl border border-[#1B1B1B]/8 bg-white p-10 max-lg:p-5">
         {step === 0 && (
           <div className="space-y-4">
             <div>
@@ -118,7 +101,7 @@ export default function NewListingPage() {
             {/* Label follows the Listing Type live, in any order: a lease listing's price
                 is its asking monthly rent. */}
             <Field label={listingPriceLabel(form.listingType)} required value={form.listPrice} onChange={(v) => set("listPrice", v)} placeholder="$" formatCommas />
-            <div className="grid grid-cols-2 gap-4">
+            <div className={`grid grid-cols-2 gap-4 ${PHONE_FIELD_PAIR}`}>
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">List Date<RequiredMark /></label>
                 <DateField value={form.listDate} onChange={(v) => set("listDate", v)} />

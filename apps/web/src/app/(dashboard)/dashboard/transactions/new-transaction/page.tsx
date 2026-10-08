@@ -20,6 +20,8 @@ import { CommissionField } from "@/components/transactions/CommissionField";
 import { CheckIcon } from "@/components/ui/CheckIcon";
 import { Spinner } from "@/components/ui/Spinner";
 import { RequiredMark } from "@/components/ui/RequiredMark";
+import { WizardStepBar } from "@/components/transactions/WizardStepBar";
+import { PHONE_FIELD_PAIR } from "@/lib/dashboard-phone";
 
 const STAGES = [
   { value: "UNDER_CONTRACT", label: "Under Contract", desc: "You have a signed agreement" },
@@ -297,34 +299,15 @@ export default function NewTransactionPage() {
 
   return (
     <div className="w-full">
-      <div className="mb-16">
+      <div className="mb-16 max-lg:mb-6">
         <h1 className="text-4xl font-semibold text-[#1B1B1B]">New Transaction</h1>
       </div>
 
       {/* Step bar */}
-      <div className="mb-20 mx-auto flex max-w-5xl items-center">
-        {STEPS.flatMap((s, i) => {
-          const done = i < displayStep;
-          const active = i === displayStep;
-          const el = (
-            <div key={s} className="flex shrink-0 items-center gap-2.5 whitespace-nowrap">
-              {active && <div className="h-3 w-3 rounded-full bg-[#1B1B1B]" />}
-              {done && <div className="h-3 w-3 rounded-full bg-[#9E8C61]" />}
-              <span
-                className={`text-base ${active ? "font-semibold text-[#1B1B1B]" : done ? "text-[#9E8C61]" : "text-[#1B1B1B]/30"}`}
-              >
-                {s}
-              </span>
-            </div>
-          );
-          if (i < STEPS.length - 1)
-            return [el, <div key={`ln-${i}`} className="mx-3 h-px flex-1 bg-[#1B1B1B]/10" />];
-          return [el];
-        })}
-      </div>
+      <WizardStepBar steps={STEPS} current={displayStep} />
 
       {/* Card */}
-      <div className="mx-auto max-w-2xl rounded-2xl border border-[#1B1B1B]/8 bg-white p-10">
+      <div className="mx-auto max-w-2xl rounded-2xl border border-[#1B1B1B]/8 bg-white p-10 max-lg:p-5">
         {/* ── Step 0: File Type ── */}
         {step === 0 && (
           <div className="space-y-8">
@@ -518,14 +501,14 @@ export default function NewTransactionPage() {
               {/* Offer dates: sales "Offer", commercial leases "LOI", hidden for
                   residential leases (no offer phase — a rental application). */}
               {offerLabels && (
-                <div className="mb-4 grid grid-cols-2 gap-4">
+                <div className={`mb-4 grid grid-cols-2 gap-4 ${PHONE_FIELD_PAIR}`}>
                   <DateFieldRow label={offerLabels.date} value={form.offerDate} onChange={(v) => set("offerDate", v)} />
                   <DateFieldRow label={offerLabels.expiration} value={form.offerExpirationDate} onChange={(v) => set("offerExpirationDate", v)} />
                 </div>
               )}
               {/* Required once Under Contract (a ratified contract states them); a lease
                   uses its own signed/start dates instead of acceptance/escrow. */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className={`grid grid-cols-2 gap-4 ${PHONE_FIELD_PAIR}`}>
                 {isLease ? (
                   <>
                     <DateFieldRow label="Lease Signed Date" required={underContract} value={form.leaseSignedDate} onChange={(v) => set("leaseSignedDate", v)} />
@@ -544,11 +527,11 @@ export default function NewTransactionPage() {
             {!isLease && (
               <div className="border-t border-[#1B1B1B]/5 pt-5">
                 <SectionLabel className="text-center">Key Deadlines</SectionLabel>
-                <div className="grid grid-cols-2 gap-4">
+                <div className={`grid grid-cols-2 gap-4 ${PHONE_FIELD_PAIR}`}>
                   <DateFieldRow label="Inspection Deadline" value={form.inspectionDeadline} onChange={(v) => set("inspectionDeadline", v)} />
                   <DateFieldRow label="Appraisal Deadline" value={form.appraisalDeadline} onChange={(v) => set("appraisalDeadline", v)} />
                 </div>
-                <div className="mt-4 grid grid-cols-2 gap-4">
+                <div className={`mt-4 grid grid-cols-2 gap-4 ${PHONE_FIELD_PAIR}`}>
                   <DateFieldRow label="Loan Approval Deadline" value={form.loanApprovalDeadline} onChange={(v) => set("loanApprovalDeadline", v)} />
                   <DateFieldRow label="Final Walkthrough Date" value={form.finalWalkthroughDate} onChange={(v) => set("finalWalkthroughDate", v)} />
                 </div>
@@ -1005,7 +988,7 @@ function ConditionsSection({
             >
               <TrashIcon size={14} />
             </button>
-            <div className="grid grid-cols-2 gap-3">
+            <div className={`grid grid-cols-2 gap-3 ${PHONE_FIELD_PAIR}`}>
               <Field label="Condition Name" value={c.name} onChange={(v) => update(i, "name", v)} placeholder="e.g. Inspection Contingency" />
               <DateFieldRow label="Due Date" value={c.dueDate} onChange={(v) => update(i, "dueDate", v)} />
             </div>
