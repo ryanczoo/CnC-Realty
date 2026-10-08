@@ -73,7 +73,7 @@ Both wizards contain the same step-bar markup copied verbatim. It moves into one
 
 - **Desktop:** renders exactly today's markup (dot + label per step, `h-px flex-1` lines between), wrapped
   so it is hidden below 1024px (`max-lg:hidden` appended to the outer `mb-20 mx-auto flex max-w-5xl
-  items-center` div). Desktop server HTML of both wizards must be identical before/after once the appended /
+  items-center` div). Desktop server HTML of both wizards must be identical before/after once the appended `max-lg:`/`max-sm:`
   words are stripped.
 - **Phones (Ryan's choice — compact):** a second block, `lg:hidden`, showing one dot per step (gold =
   done, dark = current, faint = to do) and the line `Step {n} of {total} · {current step name}`.
