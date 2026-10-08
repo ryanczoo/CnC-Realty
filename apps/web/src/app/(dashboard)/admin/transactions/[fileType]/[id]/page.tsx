@@ -18,7 +18,7 @@ import { getChecklistProgress, allowedNextStatuses, canDeleteListing, listingSta
 import type { FileDocumentRecord, FileChecklistItemWithDocs, ListingFileDetail, TransactionFileDetail } from "@/types/transaction";
 import { EMAIL_WARNING_TEXT } from "@/lib/file-messages";
 import { latestCancellationReason } from "@/lib/activity-detail";
-import { PHONE_TAB_BAR } from "@/lib/dashboard-phone";
+import { PHONE_TAB_BAR, PHONE_HEADER_STACK, PHONE_HEADER_ACTIONS } from "@/lib/dashboard-phone";
 
 type Tab = "overview" | "checklist" | "commission" | "documents" | "parties" | "activity";
 
@@ -144,7 +144,7 @@ export default function AdminFileDetailPage() {
         <Link href="/admin/transactions" className="mb-2 inline-flex items-center gap-1 text-sm text-[#1B1B1B]/40 hover:text-[#1B1B1B]">
           <ArrowIcon direction="left" /> All Files
         </Link>
-        <div className="flex items-start justify-between gap-4">
+        <div className={`flex items-start justify-between gap-4 ${PHONE_HEADER_STACK}`}>
           <div>
             {file.status !== "PENDING_TRANSFER" && file.propertyAddress ? (
               <>
@@ -167,7 +167,7 @@ export default function AdminFileDetailPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className={`flex items-center gap-2 ${PHONE_HEADER_ACTIONS}`}>
             {listing?.status === "ACTIVE" && (
               <ConvertListingButton
                 listingId={id}

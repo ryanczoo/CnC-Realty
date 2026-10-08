@@ -17,6 +17,7 @@ import { getChecklistProgress, listingStatusOptions, transactionStatusOptions, c
 import { isFileReadOnlyFor, isCommissionLockedFor } from "@/lib/file-lock";
 import { isPlaceholderAddress } from "@/lib/transfer-placeholder";
 import { DateField } from "@/components/ui/DateField";
+import { PHONE_HEADER_STACK, PHONE_HEADER_ACTIONS } from "@/lib/dashboard-phone";
 import type {
   ListingFileDetail,
   TransactionFileDetail,
@@ -221,7 +222,7 @@ export default function FileDetailPage() {
   return (
     <div>
       <div className="mb-6">
-        <div className="flex items-start justify-between gap-4">
+        <div className={`flex items-start justify-between gap-4 ${PHONE_HEADER_STACK}`}>
           <div>
             {!isLocked && file.propertyAddress ? (
               <>
@@ -239,7 +240,7 @@ export default function FileDetailPage() {
             </div>
           </div>
 
-          <div className="flex shrink-0 gap-2">
+          <div className={`flex shrink-0 gap-2 ${PHONE_HEADER_ACTIONS}`}>
             {isListing && listing?.status === "ACTIVE" && !readOnly && (
               <ConvertListingButton
                 listingId={id}

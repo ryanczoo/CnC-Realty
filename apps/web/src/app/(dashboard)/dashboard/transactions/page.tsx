@@ -6,7 +6,7 @@ import { Plus } from "lucide-react";
 import { FileCard } from "@/components/transactions/FileCard";
 import { pickDisplayPrice, pickDisplayDate } from "@/lib/transaction-helpers";
 import { fetchListings, fetchTransactions } from "@/lib/dashboard-queries";
-import { PHONE_TAB_BAR } from "@/lib/dashboard-phone";
+import { PHONE_TAB_BAR, PHONE_HEADER_STACK } from "@/lib/dashboard-phone";
 
 type Tab = "listings" | "transactions";
 
@@ -28,12 +28,12 @@ export default function TransactionsPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className={`mb-6 flex items-center justify-between ${PHONE_HEADER_STACK} max-lg:gap-3`}>
         <div>
           <h1 className="font-sans text-2xl font-medium text-[#1B1B1B]">Transactions</h1>
           <p className="mt-1 font-sans text-sm text-[#1B1B1B]/50">Manage all your listings and transactions in one place</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 max-lg:grid max-lg:grid-cols-2 max-lg:[&>*]:justify-center">
           <Link href="/dashboard/transactions/new-listing" className="flex items-center gap-1.5 rounded-full border border-[#1B1B1B]/20 bg-white px-4 py-2 text-sm text-[#1B1B1B]">
             <Plus className="h-4 w-4" /> New Listing
           </Link>
