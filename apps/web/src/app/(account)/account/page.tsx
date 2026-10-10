@@ -125,6 +125,7 @@ export default function AccountPage() {
             <button
               key={t}
               type="button"
+              aria-label={t}
               onClick={() => setTab(t)}
               className={`rounded-md px-4 py-2 text-sm transition-colors ${
                 tab === t ? "bg-[#1B1B1B] text-white" : "text-[#1B1B1B]/60 hover:text-[#1B1B1B]"
