@@ -25,4 +25,8 @@ describe("dashboard phone bundle", () => {
   it("header actions make the status select full width too (it sits inside a wrapper div)", () => {
     expect(bundle.PHONE_HEADER_ACTIONS.split(/\s+/)).toContain("max-lg:[&_select]:w-full");
   });
+
+  it("header actions make the Tooltip-wrapped Convert button full width too (button sits inside div.group)", () => {
+    expect(bundle.PHONE_HEADER_ACTIONS.split(/\s+/)).toContain("max-lg:[&>.group>button]:w-full");
+  });
 });

@@ -25,6 +25,6 @@ export const PHONE_HEADER_STACK = "max-lg:flex-col max-lg:items-stretch";
 // The header's actions group: one full-width row per action on phones (the status select sits
 // inside a wrapper div, so it needs its own full-width word).
 export const PHONE_HEADER_ACTIONS =
-  "max-lg:w-full max-lg:flex-col max-lg:items-stretch max-lg:[&>*]:w-full max-lg:[&>*]:justify-center max-lg:[&>*]:text-center max-lg:[&_select]:w-full";
+  "max-lg:w-full max-lg:flex-col max-lg:items-stretch max-lg:[&>*]:w-full max-lg:[&>*]:justify-center max-lg:[&>*]:text-center max-lg:[&_select]:w-full max-lg:[&>.group>button]:w-full";
 // Two-column field pair in a wizard card: one field per row on narrow phones (below 640px).
 export const PHONE_FIELD_PAIR = "max-sm:grid-cols-1";

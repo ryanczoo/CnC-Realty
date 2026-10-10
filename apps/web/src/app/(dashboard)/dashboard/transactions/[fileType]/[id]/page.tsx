@@ -686,7 +686,7 @@ function ReferralActions({
           if (!amount.trim()) return;
           patch({ status: "REFERRAL_BROKER_REVIEW", referralAmountReceived: amount });
         }}
-        className="flex items-center gap-2"
+        className="flex items-center gap-2 max-lg:flex-col max-lg:items-stretch"
       >
         <input
           type="text"
@@ -695,7 +695,7 @@ function ReferralActions({
           placeholder="Amount received"
           value={formatCurrencyDisplay(amount)}
           onChange={(e) => setAmount(sanitizeCurrencyInput(e.target.value, 12))}
-          className="w-40 rounded-lg border border-[#1B1B1B]/15 bg-[#F2F0EF] px-3 py-2 text-sm text-[#1B1B1B] outline-none focus:border-[#1B1B1B]/40"
+          className="w-40 rounded-lg border border-[#1B1B1B]/15 bg-[#F2F0EF] px-3 py-2 text-sm text-[#1B1B1B] outline-none focus:border-[#1B1B1B]/40 max-lg:w-full"
         />
         <button
           type="submit"
@@ -721,8 +721,8 @@ function ReferralActions({
   if (!content && !warning) return null;
 
   return (
-    <div className="flex flex-col items-end gap-1.5">
-      {content && <div className="flex items-center gap-2">{content}</div>}
+    <div className="flex flex-col items-end gap-1.5 max-lg:items-stretch">
+      {content && <div className="flex items-center gap-2 max-lg:flex-col max-lg:items-stretch">{content}</div>}
       {error && <p className="text-xs text-red-600">{error}</p>}
       {warning && <p className="mt-2 text-xs text-amber-700">{EMAIL_WARNING_TEXT}</p>}
     </div>
