@@ -166,7 +166,7 @@ export default function CampaignDetailPage() {
             <ArrowIcon direction="left" /> Campaigns
           </Link>
           <div className="flex items-center gap-3 max-lg:flex-col max-lg:items-start max-lg:gap-2">
-            <h1 className="font-sans text-2xl font-light text-[#1B1B1B]">{campaign.name}</h1>
+            <h1 className="font-sans text-2xl font-light text-[#1B1B1B] max-lg:[overflow-wrap:anywhere]">{campaign.name}</h1>
             <span
               className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
                 CAMPAIGN_STATUS_COLORS[campaign.status] ?? "bg-gray-100 text-gray-600"
