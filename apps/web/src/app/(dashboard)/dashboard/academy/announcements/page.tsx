@@ -37,12 +37,12 @@ export default async function AnnouncementsPage() {
           {announcements.map((a) => (
             <div key={a.id} className="rounded-xl border border-[#1B1B1B]/10 bg-white p-6">
               <div className="mb-2 flex items-center justify-between max-lg:flex-col max-lg:items-start max-lg:gap-1">
-                <h2 className="font-sans text-base font-medium text-[#1B1B1B]">{a.title}</h2>
+                <h2 className="font-sans text-base font-medium text-[#1B1B1B] max-lg:[overflow-wrap:anywhere]">{a.title}</h2>
                 <span className="font-sans text-xs text-[#1B1B1B]/40 max-lg:whitespace-nowrap">
                   {a.sentAt ? formatDate(a.sentAt) : ""}
                 </span>
               </div>
-              <p className="whitespace-pre-wrap font-sans text-sm text-[#1B1B1B]/70">{a.body}</p>
+              <p className="whitespace-pre-wrap font-sans text-sm text-[#1B1B1B]/70 max-lg:[overflow-wrap:anywhere]">{a.body}</p>
             </div>
           ))}
         </div>

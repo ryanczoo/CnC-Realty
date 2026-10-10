@@ -124,8 +124,8 @@ export function AnnouncementComposer() {
         This will email every current agent and publish it to the Announcements archive.
       </p>
       <div className="mb-4 rounded-lg bg-[#F2F0EF] p-4">
-        <p className="mb-1 font-sans text-sm font-medium text-[#1B1B1B]">{title}</p>
-        <p className="whitespace-pre-wrap font-sans text-sm text-[#1B1B1B]/70">{body}</p>
+        <p className="mb-1 font-sans text-sm font-medium text-[#1B1B1B] max-lg:[overflow-wrap:anywhere]">{title}</p>
+        <p className="whitespace-pre-wrap font-sans text-sm text-[#1B1B1B]/70 max-lg:[overflow-wrap:anywhere]">{body}</p>
       </div>
       {error && <p className="mb-4 font-sans text-sm text-red-600">{error}</p>}
       <div className="flex gap-3">
