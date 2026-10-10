@@ -44,7 +44,7 @@ export function PartiesTable({ fileType, fileId, parties, onChanged, readOnly = 
 
   return (
     <div className={PHONE_TABLE_FRAME}>
-      <table className="w-full text-sm">
+      <table className="w-full text-sm max-lg:whitespace-nowrap max-lg:[&_td]:pr-4 max-lg:[&_th]:pr-4">
         <thead>
           <tr className="border-b border-[#1B1B1B]/10 text-left text-xs font-medium uppercase tracking-wider text-[#1B1B1B]/40">
             <th className="pb-2">Role</th><th className="pb-2">Name</th><th className="pb-2">Email</th><th className="pb-2">Phone</th><th className="pb-2">Company</th><th className="pb-2">License #</th><th className="pb-2"></th>

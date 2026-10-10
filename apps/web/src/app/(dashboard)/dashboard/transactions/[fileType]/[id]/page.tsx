@@ -17,7 +17,7 @@ import { getChecklistProgress, listingStatusOptions, transactionStatusOptions, c
 import { isFileReadOnlyFor, isCommissionLockedFor } from "@/lib/file-lock";
 import { isPlaceholderAddress } from "@/lib/transfer-placeholder";
 import { DateField } from "@/components/ui/DateField";
-import { PHONE_HEADER_STACK, PHONE_HEADER_ACTIONS } from "@/lib/dashboard-phone";
+import { PHONE_HEADER_STACK, PHONE_HEADER_ACTIONS, PHONE_FIELD_PAIR } from "@/lib/dashboard-phone";
 import type {
   ListingFileDetail,
   TransactionFileDetail,
@@ -491,7 +491,7 @@ function TasksTab({
             onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
             className="w-full rounded-lg border border-[#1B1B1B]/15 bg-[#F2F0EF] px-3 py-2 text-sm text-[#1B1B1B] outline-none focus:border-[#1B1B1B]/40"
           />
-          <div className="grid grid-cols-2 gap-3">
+          <div className={`grid grid-cols-2 gap-3 ${PHONE_FIELD_PAIR}`}>
             <div>
               <label className="mb-1 block text-xs text-[#1B1B1B]/40">Due Date (optional)</label>
               <DateField value={form.dueDate} onChange={(v) => setForm((f) => ({ ...f, dueDate: v }))} />
