@@ -8,6 +8,8 @@ import { PropertyCard } from "@/components/properties/PropertyCard";
 import { useSavedProperties } from "@/hooks/useSavedProperties";
 import { ArrowIcon } from "@/components/ui/ArrowIcon";
 import type { PropertyListing } from "@/types/property";
+import { ACCOUNT_TABS, accountTabShortLabel, type AccountTab } from "@/lib/account-tabs";
+import { PHONE_FIELDS_16 } from "@/lib/dashboard-phone";
 
 type TourRequest = {
   id: string;
@@ -15,9 +17,6 @@ type TourRequest = {
   status: string;
   createdAt: string;
 };
-
-const TABS = ["Saved Properties", "Tour Requests", "Settings"] as const;
-type Tab = (typeof TABS)[number];
 
 function EmptyState({ message }: { message: string }) {
   return (
@@ -34,7 +33,7 @@ export default function AccountPage() {
   const { data: session, status, update } = useSession();
   const router = useRouter();
   const { savedSet, toggle } = useSavedProperties();
-  const [tab, setTab] = useState<Tab>("Saved Properties");
+  const [tab, setTab] = useState<AccountTab>("Saved Properties");
   const [savedProperties, setSavedProperties] = useState<PropertyListing[]>([]);
   const [tourRequests, setTourRequests] = useState<TourRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -122,7 +121,7 @@ export default function AccountPage() {
         </div>
 
         <div className="mb-6 flex w-fit gap-1 rounded-lg bg-white p-1 shadow-sm">
-          {TABS.map((t) => (
+          {ACCOUNT_TABS.map((t) => (
             <button
               key={t}
               type="button"
@@ -131,7 +130,8 @@ export default function AccountPage() {
                 tab === t ? "bg-[#1B1B1B] text-white" : "text-[#1B1B1B]/60 hover:text-[#1B1B1B]"
               }`}
             >
-              {t}
+              <span className="max-lg:hidden">{t}</span>
+              <span className="lg:hidden">{accountTabShortLabel(t)}</span>
             </button>
           ))}
         </div>
@@ -178,7 +178,7 @@ export default function AccountPage() {
           ))}
 
         {tab === "Settings" && (
-          <div className="flex flex-col gap-5 max-w-lg">
+          <div className={`flex flex-col gap-5 max-w-lg ${PHONE_FIELDS_16}`}>
             {/* Profile */}
             <div className="rounded-xl bg-white p-6 shadow-sm">
               <h2 className="mb-4 text-sm font-semibold text-[#1B1B1B]">Profile</h2>
