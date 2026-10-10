@@ -312,7 +312,7 @@ export default function NewCampaignPage() {
               type="button"
               onClick={handleFinish}
               disabled={submitting}
-              className="rounded-full bg-[#9E8C61] px-5 py-2.5 font-sans text-sm text-white transition-colors hover:bg-[#9E8C61]/80 disabled:pointer-events-none disabled:opacity-40"
+              className="rounded-full bg-[#9E8C61] px-5 py-2.5 font-sans text-sm text-white transition-colors hover:bg-[#9E8C61]/80 disabled:pointer-events-none disabled:opacity-40 max-sm:text-[13px]"
             >
               {submitting
                 ? "Saving…"
