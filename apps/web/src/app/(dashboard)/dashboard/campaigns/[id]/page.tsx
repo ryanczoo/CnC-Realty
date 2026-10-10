@@ -6,6 +6,7 @@ import { ArrowIcon } from "@/components/ui/ArrowIcon";
 import { CAMPAIGN_STATUS_COLORS, CONTACT_STATUS_COLORS } from "@/lib/campaign-ui";
 import { toSentenceCase } from "@/lib/utils";
 import { sanitizeHtml } from "@/lib/sanitize-html";
+import { PHONE_HEADER_STACK, PHONE_HEADER_ACTIONS } from "@/lib/dashboard-phone";
 
 interface ContactRow {
   id: string;
@@ -156,7 +157,7 @@ export default function CampaignDetailPage() {
   return (
     <div className="flex flex-col gap-8">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className={`flex items-start justify-between gap-4 ${PHONE_HEADER_STACK}`}>
         <div className="flex flex-col gap-2">
           <Link
             href="/dashboard/campaigns"
@@ -164,7 +165,7 @@ export default function CampaignDetailPage() {
           >
             <ArrowIcon direction="left" /> Campaigns
           </Link>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 max-lg:flex-col max-lg:items-start max-lg:gap-2">
             <h1 className="font-sans text-2xl font-light text-[#1B1B1B]">{campaign.name}</h1>
             <span
               className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
@@ -175,7 +176,7 @@ export default function CampaignDetailPage() {
             </span>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className={`flex items-center gap-2 ${PHONE_HEADER_ACTIONS}`}>
           {canSend && (
             <button
               type="button"

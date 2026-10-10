@@ -6,6 +6,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { remainingQuota } from "@/lib/email-quota";
 import { CampaignCard } from "@/components/campaigns/CampaignCard";
+import { PHONE_HEADER_STACK } from "@/lib/dashboard-phone";
 
 export default async function CampaignsPage() {
   const session = await getServerSession(authOptions);
@@ -67,7 +68,7 @@ export default async function CampaignsPage() {
 
   return (
     <div>
-      <div className="mb-8 flex items-center justify-between">
+      <div className={`mb-8 flex items-center justify-between ${PHONE_HEADER_STACK} max-lg:gap-3`}>
         <div>
           <h1 className="font-sans text-2xl font-medium text-[#1B1B1B]">Campaigns</h1>
           <p className="mt-1 font-sans text-sm text-[#1B1B1B]/50">Create and send emails or DRIP campaigns to your leads here</p>
@@ -77,7 +78,7 @@ export default async function CampaignsPage() {
         </div>
         <Link
           href="/dashboard/campaigns/new"
-          className="flex items-center gap-1.5 rounded-full bg-[#1B1B1B] px-4 py-2 font-sans text-sm text-white hover:bg-[#1B1B1B]/80 transition-colors"
+          className="flex items-center gap-1.5 rounded-full bg-[#1B1B1B] px-4 py-2 font-sans text-sm text-white hover:bg-[#1B1B1B]/80 transition-colors max-lg:justify-center"
         >
           <Plus className="h-4 w-4" /> New Campaign
         </Link>

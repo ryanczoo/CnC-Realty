@@ -3,6 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatDate } from "@/lib/utils";
 import { AnnouncementComposer } from "./AnnouncementComposer";
+import { PHONE_HEADER_STACK } from "@/lib/dashboard-phone";
 
 export const metadata = { title: "Announcements | CnC Realty" };
 
@@ -24,7 +25,7 @@ export default async function AnnouncementsPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className={`mb-6 flex items-center justify-between ${PHONE_HEADER_STACK} max-lg:gap-3`}>
         <h1 className="font-sans text-2xl font-medium text-[#1B1B1B]">Announcements</h1>
         {isAdmin && <AnnouncementComposer />}
       </div>
@@ -35,9 +36,9 @@ export default async function AnnouncementsPage() {
         <div className="max-w-2xl space-y-4">
           {announcements.map((a) => (
             <div key={a.id} className="rounded-xl border border-[#1B1B1B]/10 bg-white p-6">
-              <div className="mb-2 flex items-center justify-between">
+              <div className="mb-2 flex items-center justify-between max-lg:flex-col max-lg:items-start max-lg:gap-1">
                 <h2 className="font-sans text-base font-medium text-[#1B1B1B]">{a.title}</h2>
-                <span className="font-sans text-xs text-[#1B1B1B]/40">
+                <span className="font-sans text-xs text-[#1B1B1B]/40 max-lg:whitespace-nowrap">
                   {a.sentAt ? formatDate(a.sentAt) : ""}
                 </span>
               </div>
