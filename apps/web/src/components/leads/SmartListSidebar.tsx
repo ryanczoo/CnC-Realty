@@ -92,14 +92,14 @@ export function SmartListSidebar({ customLists: initialLists, isAdmin }: Props) 
                 <div className="absolute right-1 hidden gap-0.5 group-hover:flex max-lg:static max-lg:flex">
                   <button
                     onClick={() => openEdit(list)}
-                    className="rounded p-1 font-sans text-xs text-[#1B1B1B]/30 hover:text-[#1B1B1B]"
+                    className="rounded p-1 font-sans text-xs text-[#1B1B1B]/30 hover:text-[#1B1B1B] max-lg:px-2.5 max-lg:py-1.5 max-lg:text-base max-lg:text-[#1B1B1B]/50"
                     title="Edit list"
                   >
                     ✎
                   </button>
                   <button
                     onClick={() => deleteList(list.id)}
-                    className="rounded p-1 font-sans text-xs text-[#1B1B1B]/30 hover:text-[#1B1B1B]"
+                    className="rounded p-1 font-sans text-xs text-[#1B1B1B]/30 hover:text-[#1B1B1B] max-lg:px-2.5 max-lg:py-1.5 max-lg:text-base max-lg:text-[#1B1B1B]/50"
                     title="Delete list"
                   >
                     ×
