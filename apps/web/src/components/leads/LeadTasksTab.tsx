@@ -144,11 +144,11 @@ export function LeadTasksTab({ leadId, initialTasks }: Props) {
   return (
     <div className="space-y-4">
       {/* Quick tasks */}
-      <div className="flex gap-2 max-lg:grid max-lg:grid-cols-2">
+      <div className="flex gap-2 max-sm:grid max-sm:grid-cols-2">
         <button onClick={() => quickTask(1)} disabled={creating} className={QUICK_TASK_CLS}>Tomorrow</button>
         <button onClick={() => quickTask(3)} disabled={creating} className={QUICK_TASK_CLS}>In 3 Days</button>
         <button onClick={() => quickTask(7)} disabled={creating} className={QUICK_TASK_CLS}>Next Week</button>
-        <button onClick={() => setNewTaskOpen(true)} className="ml-auto rounded-lg bg-[#1B1B1B] px-3 py-1.5 text-xs font-medium text-white max-lg:ml-0">+ New Task</button>
+        <button onClick={() => setNewTaskOpen(true)} className="ml-auto rounded-lg bg-[#1B1B1B] px-3 py-1.5 text-xs font-medium text-white max-sm:ml-0">+ New Task</button>
       </div>
 
       {overdue.length > 0 && (
