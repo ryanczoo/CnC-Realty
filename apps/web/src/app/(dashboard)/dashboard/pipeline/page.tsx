@@ -11,7 +11,7 @@ import { DealDrawer } from "@/components/deals/DealDrawer";
 import { NewDealModal } from "@/components/deals/NewDealModal";
 import { fetchDeals, updateDealInList, removeDealFromList } from "@/lib/dashboard-queries";
 import type { DealRow } from "@/lib/deal-pipeline";
-import { PHONE_TAB_BAR } from "@/lib/dashboard-phone";
+import { PHONE_TAB_BAR, PHONE_HEADER_STACK } from "@/lib/dashboard-phone";
 
 const PIPELINES = ["BUYERS", "SELLERS", "LEASE_TENANT", "LEASE_LANDLORD"] as const;
 type PipelineTab = (typeof PIPELINES)[number];
@@ -87,7 +87,7 @@ export default function PipelinePage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className={`mb-6 flex items-center justify-between ${PHONE_HEADER_STACK} max-lg:gap-3`}>
         <div>
           <h1 className="font-sans text-2xl font-medium text-[#1B1B1B]">Pipeline</h1>
           <p className="mt-1 font-sans text-sm text-[#1B1B1B]/50">Track deals from beginning to end</p>
