@@ -80,10 +80,10 @@ export default async function LeadsPage({
   }
 
   return (
-    <div className="-m-8 flex min-h-[calc(100vh-4rem)] max-lg:-m-4 max-lg:min-h-[calc(100svh-4rem-2.75rem)]">
+    <div className="-m-8 flex min-h-[calc(100vh-4rem)] max-lg:-m-4 max-lg:min-h-[calc(100svh-4rem-2.75rem)] max-lg:flex-col">
       <SmartListSidebar customLists={customLists} isAdmin={isAdmin} />
 
-      <div className="flex-1 overflow-auto p-8">
+      <div className="flex-1 overflow-auto p-8 max-lg:min-w-0 max-lg:p-4">
         <BrokerageLeadsBanner leads={unseenBrokerageLeads} />
         {list && isValidList ? (
           <SmartListResults activeList={list} customLists={customLists} isAdmin={isAdmin} />

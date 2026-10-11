@@ -7,7 +7,7 @@ import { ArrowIcon } from "@/components/ui/ArrowIcon";
 import { LEAD_STATUS_COLORS } from "@/lib/campaign-ui";
 import { resolveListFilters, PREBUILT_LISTS } from "@/lib/smart-list-filters";
 import type { FilterCondition } from "@/lib/smart-list-filters";
-import { PHONE_TABLE_FRAME } from "@/lib/dashboard-phone";
+import { PHONE_TABLE_FRAME, PHONE_HEADER_STACK } from "@/lib/dashboard-phone";
 
 const STATUS_LABELS: Record<string, string> = {
   NEW: "New",
@@ -129,7 +129,7 @@ export function SmartListResults({ activeList, customLists, isAdmin }: Props) {
   return (
     <div>
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className={`mb-6 flex items-center justify-between ${PHONE_HEADER_STACK} max-lg:gap-1`}>
         <h1 className="font-sans text-2xl font-medium text-[#1B1B1B]">{listName}</h1>
         {!loading && (
           <p className="font-sans text-sm text-[#1B1B1B]/40">
@@ -155,7 +155,7 @@ export function SmartListResults({ activeList, customLists, isAdmin }: Props) {
         <>
           {/* Table */}
           <div className={`overflow-hidden rounded-2xl bg-white ${PHONE_TABLE_FRAME}`}>
-            <table className="w-full">
+            <table className="w-full max-lg:whitespace-nowrap">
               <thead>
                 <tr className="border-b border-[#1B1B1B]/10">
                   {["Name", "Status", "Tags", "Last Contacted", "Source", "Price Range"].map(h => (

@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { visiblePrebuiltLists } from "@/lib/smart-list-filters";
 import { SmartListDrawer } from "./SmartListDrawer";
+import { PHONE_TAB_BAR } from "@/lib/dashboard-phone";
 
 type CustomList = { id: string; name: string; filters: unknown };
 
@@ -55,13 +56,13 @@ export function SmartListSidebar({ customLists: initialLists, isAdmin }: Props) 
 
   return (
     <>
-      <div className="flex w-[200px] flex-shrink-0 flex-col border-r border-[#1B1B1B]/10 bg-white px-3 py-6">
+      <div className={`flex w-[200px] flex-shrink-0 flex-col border-r border-[#1B1B1B]/10 bg-white px-3 py-6 max-lg:w-full max-lg:flex-row max-lg:items-center max-lg:gap-1 max-lg:border-b max-lg:border-r-0 max-lg:px-4 max-lg:py-3 max-lg:[&_button]:w-auto max-lg:[&_button]:shrink-0 max-lg:[&_button]:whitespace-nowrap ${PHONE_TAB_BAR}`}>
         <button onClick={() => selectList(null)} className={linkClass(!selected)}>
           Kanban
         </button>
 
-        <div className="mt-4">
-          <p className="mb-1 px-3 font-sans text-xs font-semibold uppercase tracking-wider text-[#1B1B1B]/30">
+        <div className="mt-4 max-lg:contents">
+          <p className="mb-1 px-3 font-sans text-xs font-semibold uppercase tracking-wider text-[#1B1B1B]/30 max-lg:hidden">
             Smart Lists
           </p>
           {visiblePrebuiltLists(isAdmin).map(list => (
@@ -76,19 +77,19 @@ export function SmartListSidebar({ customLists: initialLists, isAdmin }: Props) 
         </div>
 
         {lists.length > 0 && (
-          <div className="mt-4">
-            <p className="mb-1 px-3 font-sans text-xs font-semibold uppercase tracking-wider text-[#1B1B1B]/30">
+          <div className="mt-4 max-lg:contents">
+            <p className="mb-1 px-3 font-sans text-xs font-semibold uppercase tracking-wider text-[#1B1B1B]/30 max-lg:hidden">
               My Lists
             </p>
             {lists.map(list => (
-              <div key={list.id} className="group relative flex items-center">
+              <div key={list.id} className="group relative flex items-center max-lg:shrink-0">
                 <button
                   onClick={() => selectList(list.id)}
-                  className={`${linkClass(selected === list.id)} flex-1 truncate pr-14`}
+                  className={`${linkClass(selected === list.id)} flex-1 truncate pr-14 max-lg:pr-1`}
                 >
                   {list.name}
                 </button>
-                <div className="absolute right-1 hidden gap-0.5 group-hover:flex">
+                <div className="absolute right-1 hidden gap-0.5 group-hover:flex max-lg:static max-lg:flex">
                   <button
                     onClick={() => openEdit(list)}
                     className="rounded p-1 font-sans text-xs text-[#1B1B1B]/30 hover:text-[#1B1B1B]"
@@ -111,7 +112,7 @@ export function SmartListSidebar({ customLists: initialLists, isAdmin }: Props) 
 
         <button
           onClick={openCreate}
-          className="mt-4 w-full rounded-lg border border-dashed border-[#1B1B1B]/20 px-3 py-1.5 text-left font-sans text-sm text-[#1B1B1B]/40 transition-colors hover:border-[#9E8C61]/40 hover:text-[#9E8C61]"
+          className="mt-4 w-full rounded-lg border border-dashed border-[#1B1B1B]/20 px-3 py-1.5 text-left font-sans text-sm text-[#1B1B1B]/40 transition-colors hover:border-[#9E8C61]/40 hover:text-[#9E8C61] max-lg:mt-0"
         >
           + New List
         </button>

@@ -86,7 +86,7 @@ export function LeadKanban({ initialLeads }: { initialLeads: Lead[] }) {
 
   return (
     <>
-      <div className="mb-4 flex justify-end">
+      <div className="mb-4 flex justify-end max-lg:[&>*]:w-full">
         <motion.button
           onClick={() => setShowModal(true)}
           className="rounded-full bg-[#1B1B1B] px-5 py-2 text-sm text-white"
@@ -98,11 +98,11 @@ export function LeadKanban({ initialLeads }: { initialLeads: Lead[] }) {
         </motion.button>
       </div>
       <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={(e) => setActiveId(e.active.id as string)} onDragEnd={handleDragEnd}>
-        <div className="flex gap-4 overflow-x-auto pb-4">
+        <div className="flex gap-4 overflow-x-auto pb-4 max-lg:snap-x max-lg:snap-proximity">
           {COLUMNS.map(({ status, label }) => {
             const col = leads.filter((l) => l.status === status);
             return (
-              <div key={status} className="flex w-56 flex-shrink-0 flex-col gap-3">
+              <div key={status} className="flex w-56 flex-shrink-0 flex-col gap-3 max-lg:w-[85%] max-lg:snap-start">
                 <div className="flex items-center justify-between">
                   <p className="font-sans text-xs font-medium uppercase tracking-widest text-[#1B1B1B]/50">{label}</p>
                   <span className="rounded-full bg-[#1B1B1B]/10 px-2 py-0.5 font-sans text-xs text-[#1B1B1B]/50">{col.length}</span>
