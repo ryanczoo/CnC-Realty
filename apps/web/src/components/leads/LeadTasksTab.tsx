@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { LeadTaskDrawer } from "./LeadTaskDrawer";
 import { DateField } from "@/components/ui/DateField";
-import { PHONE_POPUP_FRAME, PHONE_POPUP_PANEL } from "@/lib/dashboard-phone";
+import { PHONE_POPUP_FRAME, PHONE_POPUP_PANEL, PHONE_WRAP_TEXT } from "@/lib/dashboard-phone";
 
 type LeadTask = {
   id: string;
@@ -40,7 +40,7 @@ interface TaskRowProps {
 function TaskRow({ task, accent, onEdit, onToggleDone }: TaskRowProps) {
   return (
     <div
-      className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 ${accent ?? "bg-[#F2F0EF]"} hover:brightness-95`}
+      className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 ${accent ?? "bg-[#F2F0EF]"} hover:brightness-95 max-lg:items-start`}
       onClick={() => onEdit(task)}
     >
       <input
@@ -51,7 +51,7 @@ function TaskRow({ task, accent, onEdit, onToggleDone }: TaskRowProps) {
         className="h-4 w-4 accent-[#9E8C61]"
       />
       <div className="min-w-0 flex-1">
-        <p className={`truncate text-sm ${task.done ? "line-through text-[#1B1B1B]/30" : "text-[#1B1B1B]"}`}>{task.title}</p>
+        <p className={`truncate text-sm ${PHONE_WRAP_TEXT} ${task.done ? "line-through text-[#1B1B1B]/30" : "text-[#1B1B1B]"}`}>{task.title}</p>
         <p className="text-xs text-[#1B1B1B]/40">{TYPE_LABELS[task.taskType]} {task.dueDate ? `· ${new Date(task.dueDate).toLocaleDateString()}` : ""}</p>
       </div>
     </div>
@@ -144,11 +144,11 @@ export function LeadTasksTab({ leadId, initialTasks }: Props) {
   return (
     <div className="space-y-4">
       {/* Quick tasks */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 max-lg:grid max-lg:grid-cols-2">
         <button onClick={() => quickTask(1)} disabled={creating} className={QUICK_TASK_CLS}>Tomorrow</button>
         <button onClick={() => quickTask(3)} disabled={creating} className={QUICK_TASK_CLS}>In 3 Days</button>
         <button onClick={() => quickTask(7)} disabled={creating} className={QUICK_TASK_CLS}>Next Week</button>
-        <button onClick={() => setNewTaskOpen(true)} className="ml-auto rounded-lg bg-[#1B1B1B] px-3 py-1.5 text-xs font-medium text-white">+ New Task</button>
+        <button onClick={() => setNewTaskOpen(true)} className="ml-auto rounded-lg bg-[#1B1B1B] px-3 py-1.5 text-xs font-medium text-white max-lg:ml-0">+ New Task</button>
       </div>
 
       {overdue.length > 0 && (

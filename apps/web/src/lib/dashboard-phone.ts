@@ -28,3 +28,5 @@ export const PHONE_HEADER_ACTIONS =
   "max-lg:w-full max-lg:flex-col max-lg:items-stretch max-lg:[&>*]:w-full max-lg:[&>*]:justify-center max-lg:[&>*]:text-center max-lg:[&_select]:w-full max-lg:[&>.group>button]:w-full";
 // Two-column field pair in a wizard card: one field per row on narrow phones (below 640px).
 export const PHONE_FIELD_PAIR = "max-sm:grid-cols-1";
+// A line that is truncated with "…" on desktop wraps onto more lines on phones instead (long words break too).
+export const PHONE_WRAP_TEXT = "max-lg:whitespace-normal max-lg:[overflow-wrap:anywhere]";

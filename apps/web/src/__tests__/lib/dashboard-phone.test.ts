@@ -2,11 +2,16 @@ import { describe, it, expect } from "vitest";
 import * as bundle from "@/lib/dashboard-phone";
 
 describe("dashboard phone bundle", () => {
-  it("exports the ten phone bundles", () => {
+  it("exports the eleven phone bundles", () => {
     expect(Object.keys(bundle).sort()).toEqual([
       "PHONE_DRAG_CARD", "PHONE_DRAWER_PANEL", "PHONE_FIELDS_16", "PHONE_FIELD_PAIR", "PHONE_HEADER_ACTIONS",
       "PHONE_HEADER_STACK", "PHONE_POPUP_FRAME", "PHONE_POPUP_PANEL", "PHONE_TABLE_FRAME", "PHONE_TAB_BAR",
+      "PHONE_WRAP_TEXT",
     ]);
+  });
+
+  it("wrap text lets a truncated line wrap on phones (overrides truncate's nowrap, breaks long words)", () => {
+    expect(bundle.PHONE_WRAP_TEXT.split(/\s+/)).toEqual(["max-lg:whitespace-normal", "max-lg:[overflow-wrap:anywhere]"]);
   });
 
   it("every class word is phone-only (below 1024px or below 640px), so nothing here can reach desktop", () => {

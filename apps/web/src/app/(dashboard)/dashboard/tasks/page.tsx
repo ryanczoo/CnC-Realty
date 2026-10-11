@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { fetchOpenTasks, fetchCompletedTasks, removeTaskById } from "@/lib/dashboard-queries";
+import { PHONE_WRAP_TEXT } from "@/lib/dashboard-phone";
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +36,7 @@ function formatDue(dueDate: string | null): string {
 function TaskRow({ task, onCheck }: { task: CrossLeadTask; onCheck: (task: CrossLeadTask) => void }) {
   const leadName = `${task.leadFirstName} ${task.leadLastName}`.trim();
   return (
-    <div className="flex items-center gap-3 rounded-lg bg-[#F2F0EF] px-3 py-2">
+    <div className="flex items-center gap-3 rounded-lg bg-[#F2F0EF] px-3 py-2 max-lg:items-start">
       <input
         type="checkbox"
         checked={false}
@@ -43,7 +44,7 @@ function TaskRow({ task, onCheck }: { task: CrossLeadTask; onCheck: (task: Cross
         className="h-4 w-4 accent-[#9E8C61]"
       />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm text-[#1B1B1B]">{task.title}</p>
+        <p className={`truncate text-sm text-[#1B1B1B] ${PHONE_WRAP_TEXT}`}>{task.title}</p>
         <p className="text-xs text-[#1B1B1B]/40">
           {TYPE_LABELS[task.taskType] ?? task.taskType}
           {" · "}
