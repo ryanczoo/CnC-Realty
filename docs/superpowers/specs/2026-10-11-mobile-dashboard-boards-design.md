@@ -5,7 +5,7 @@ desktop never changes, fluid 320–1023px incl. sideways phones, no new librarie
 `2026-10-06-mobile-dashboard-shell-design.md` (7a: shell, `lib/dashboard-phone.ts` bundles,
 `hooks/useBoardSensors.ts` long-press drag), `2026-10-07-…transactions-design.md` (7b: stacked headers),
 `2026-10-10-…campaigns-academy-account-design.md` (7c).
-**Date:** 2026-10-11 · **Status:** Draft for Ryan's review
+**Date:** 2026-10-11 · **Status:** Approved by Ryan 2026-10-11
 
 ## Scope
 
@@ -50,7 +50,7 @@ New Deal popup + lead search, New Lead popup, pipeline type tabs (7a swipe row).
 1. **Desktop (≥1024px) is pixel-identical — with one approved exception:** the Deal drawer's layer moves
    from `z-40` to `z-50` (Ryan, 2026-10-11) so its title and × show on desktop too, matching every other
    dashboard drawer. Everything else: existing class strings are only appended to, with phone-only words
-   (`max-lg:`, `max-sm:`, `sm:max-lg:`).
+   (`max-lg:`, `max-sm:`).
 2. Reuse first: `lib/dashboard-phone.ts` bundles (`PHONE_TAB_BAR`, `PHONE_HEADER_STACK`, `PHONE_TABLE_FRAME`,
    …). One new bundle only, because the same fix is needed in two places: `PHONE_WRAP_TEXT` (task titles on
    the Tasks page and the lead Tasks tab). No new component, no new library.
@@ -76,8 +76,8 @@ New Deal popup + lead search, New Lead popup, pipeline type tabs (7a swipe row).
 ### 2. Leads board — swipe columns (Ryan's choice)
 
 - `LeadKanban` columns container (`flex gap-4 overflow-x-auto pb-4`) gains `max-lg:snap-x
-  max-lg:snap-proximity`; each column (`flex w-56 flex-shrink-0 …`) gains `max-sm:w-[85%] sm:max-lg:w-[45%]
-  max-lg:snap-start` — one column plus a peek on phones, two columns on upright iPads.
+  max-lg:snap-proximity`; each column (`flex w-56 flex-shrink-0 …`) gains `max-lg:w-[85%] max-lg:snap-start`
+  — one column plus a peek of the next, on phones and upright iPads alike (Ryan, 2026-10-11).
   (`snap-proximity`, not `mandatory`, so dnd-kit's edge auto-scroll during a drag isn't fought by snapping.)
 - "+ Add Lead" row (`mb-4 flex justify-end`) gains `max-lg:[&>*]:w-full` (full-width button under the heading).
 
