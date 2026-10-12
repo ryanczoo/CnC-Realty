@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
 import { RequiredMark } from "@/components/ui/RequiredMark";
+import { DRAWER_PANEL_POSITION } from "@/lib/dashboard-drawer";
 
 type Plan = { id: string; name: string; isActive: boolean };
 
@@ -122,7 +123,7 @@ export function TriggerDrawer({ open, trigger, onClose, onSaved }: Props) {
   return (
     <div className={open ? "" : "hidden"} role="dialog" aria-modal="true" aria-label={trigger ? "Edit Trigger" : "New Trigger"}>
       <div className="fixed inset-0 z-40 bg-black/20" onClick={onClose} />
-      <div className="fixed right-0 top-0 z-50 flex h-full w-full max-w-md flex-col bg-white shadow-2xl">
+      <div className={`fixed ${DRAWER_PANEL_POSITION} z-50 flex w-full max-w-md flex-col bg-white shadow-2xl`}>
         <div className="flex items-center justify-between border-b border-[#1B1B1B]/10 px-6 py-4">
           <h2 className="font-sans text-lg font-light text-[#1B1B1B]">
             {trigger ? "Edit Trigger" : "New Trigger"}
