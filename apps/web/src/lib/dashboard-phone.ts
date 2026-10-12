@@ -30,3 +30,5 @@ export const PHONE_HEADER_ACTIONS =
 export const PHONE_FIELD_PAIR = "max-sm:grid-cols-1";
 // A line that is truncated with "…" on desktop wraps onto more lines on phones instead (long words break too).
 export const PHONE_WRAP_TEXT = "max-lg:whitespace-normal max-lg:[overflow-wrap:anywhere]";
+// The spot a card was picked up from (phone touch hold): a faded gold dashed outline, so you can see where it came from.
+export const PHONE_DRAG_PLACEHOLDER = "max-lg:outline-dashed max-lg:outline-2 max-lg:outline-[#c9a84c]/60";

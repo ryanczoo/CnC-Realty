@@ -19,3 +19,13 @@ export function useBoardSensors() {
   const byKind = { pointer, touch, mouse };
   return useSensors(...boardSensorKinds(isMobile).map((k) => byKind[k]));
 }
+
+// Did this drag start from the phone touch hold? Desktop drags start from a pointer or mouse event.
+export function isTouchHold(e: Event | null | undefined): boolean {
+  return !!e && e.type.startsWith("touch");
+}
+
+// One short buzz on pick-up where the phone allows it (Android). iPhones don't support it, so it does nothing there.
+export function liftBuzz(nav: { vibrate?: (ms: number) => boolean } | undefined = typeof navigator !== "undefined" ? navigator : undefined) {
+  nav?.vibrate?.(15);
+}

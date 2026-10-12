@@ -10,7 +10,8 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { DealCard } from "./DealCard";
-import { useBoardSensors } from "@/hooks/useBoardSensors";
+import { useBoardSensors, isTouchHold, liftBuzz } from "@/hooks/useBoardSensors";
+import { DragLift } from "@/components/dashboard/DragLift";
 import { PIPELINE_STAGES, STAGE_LABELS, isTerminalStage } from "@/lib/deal-pipeline";
 import type { DealRow } from "@/lib/deal-pipeline";
 import type { DealPipeline, DealStage } from "@cnc/database";
@@ -36,6 +37,7 @@ export function DealBoard({ pipeline, initialDeals, onCardClick, onOfferAccepted
   const [deals, setDeals] = useState<DealRow[]>(initialDeals);
   const [error, setError] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [lifted, setLifted] = useState(false);
 
   const stages = PIPELINE_STAGES[pipeline];
   const sensors = useBoardSensors();
@@ -96,7 +98,7 @@ export function DealBoard({ pipeline, initialDeals, onCardClick, onOfferAccepted
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
-        onDragStart={(e) => setActiveId(e.active.id as string)}
+        onDragStart={(e) => { const lift = isTouchHold(e.activatorEvent); setLifted(lift); if (lift) liftBuzz(); setActiveId(e.active.id as string); }}
         onDragEnd={handleDragEnd}
       >
         <div className="flex flex-col gap-4">
@@ -124,7 +126,7 @@ export function DealBoard({ pipeline, initialDeals, onCardClick, onOfferAccepted
           })}
         </div>
         <DragOverlay>
-          {activeDeal && <DealCard deal={activeDeal} onClick={onCardClick} />}
+          {activeDeal && <DragLift lifted={lifted}><DealCard deal={activeDeal} onClick={onCardClick} /></DragLift>}
         </DragOverlay>
       </DndContext>
     </div>
