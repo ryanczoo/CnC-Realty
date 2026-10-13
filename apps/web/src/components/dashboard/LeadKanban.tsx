@@ -9,7 +9,7 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { LeadCard } from "./LeadCard";
-import { useBoardSensors, isTouchHold, liftBuzz } from "@/hooks/useBoardSensors";
+import { useBoardSensors, boardDragStart, boardDragCancel } from "@/hooks/useBoardSensors";
 import { DragLift } from "./DragLift";
 import { NewLeadModal, type SavedLead } from "@/components/leads/NewLeadModal";
 import { motion } from "framer-motion";
@@ -50,7 +50,6 @@ function DroppableColumn({ status, children }: { status: string; children: React
 export function LeadKanban({ initialLeads }: { initialLeads: Lead[] }) {
   const [leads, setLeads] = useState(initialLeads);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [lifted, setLifted] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
   function handleLeadSaved(lead: SavedLead) {
@@ -99,7 +98,7 @@ export function LeadKanban({ initialLeads }: { initialLeads: Lead[] }) {
           + Add Lead
         </motion.button>
       </div>
-      <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={(e) => { const lift = isTouchHold(e.activatorEvent); setLifted(lift); if (lift) liftBuzz(); setActiveId(e.active.id as string); }} onDragEnd={handleDragEnd}>
+      <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={(e) => boardDragStart(e, setActiveId)} onDragCancel={() => boardDragCancel(setActiveId)} onDragEnd={handleDragEnd}>
         <div className="flex gap-4 overflow-x-auto pb-4 max-lg:snap-x max-lg:snap-proximity">
           {COLUMNS.map(({ status, label }) => {
             const col = leads.filter((l) => l.status === status);
@@ -119,7 +118,7 @@ export function LeadKanban({ initialLeads }: { initialLeads: Lead[] }) {
           })}
         </div>
         <DragOverlay>
-          {activeLead && <DragLift lifted={lifted}><LeadCard lead={activeLead} /></DragLift>}
+          {activeLead && <DragLift><LeadCard lead={activeLead} /></DragLift>}
         </DragOverlay>
       </DndContext>
       <NewLeadModal open={showModal} onClose={() => setShowModal(false)} onSaved={handleLeadSaved} />

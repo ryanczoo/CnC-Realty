@@ -29,3 +29,15 @@ export function isTouchHold(e: Event | null | undefined): boolean {
 export function liftBuzz(nav: { vibrate?: (ms: number) => boolean } | undefined = typeof navigator !== "undefined" ? navigator : undefined) {
   nav?.vibrate?.(15);
 }
+
+// Both boards: on drag start remember the picked-up card (the lift shows for every drag); buzz only for a phone touch hold.
+type Navi = Parameters<typeof liftBuzz>[0];
+export function boardDragStart(e: { active: { id: string | number }; activatorEvent: Event | null }, setActiveId: (id: string | null) => void, nav?: Navi) {
+  if (isTouchHold(e.activatorEvent)) liftBuzz(nav);
+  setActiveId(String(e.active.id));
+}
+
+// A cancelled drag (Escape, an interrupted touch) puts the card back — forget it, the same as a drop does.
+export function boardDragCancel(setActiveId: (id: string | null) => void) {
+  setActiveId(null);
+}

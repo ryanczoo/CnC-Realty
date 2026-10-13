@@ -2,7 +2,8 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
 import { ArrowIcon } from "@/components/ui/ArrowIcon";
-import { PHONE_DRAG_CARD, PHONE_DRAG_PLACEHOLDER } from "@/lib/dashboard-phone";
+import { PHONE_DRAG_CARD } from "@/lib/dashboard-phone";
+import { CARD_LIFT_PLACEHOLDER } from "@/lib/motion";
 
 interface Lead {
   id: string;
@@ -22,7 +23,7 @@ export function LeadCard({ lead }: { lead: Lead }) {
       style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }}
       {...attributes}
       {...listeners}
-      className={`cursor-grab rounded-xl bg-white p-4 shadow-sm active:cursor-grabbing ${PHONE_DRAG_CARD} ${isDragging ? PHONE_DRAG_PLACEHOLDER : ""}`}
+      className={`cursor-grab rounded-xl bg-white p-4 shadow-sm active:cursor-grabbing ${PHONE_DRAG_CARD} ${isDragging ? CARD_LIFT_PLACEHOLDER : ""}`}
     >
       <p className="font-sans text-sm font-medium text-[#1B1B1B]">
         {lead.firstName} {lead.lastName}

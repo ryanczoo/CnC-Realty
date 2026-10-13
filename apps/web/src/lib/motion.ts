@@ -53,7 +53,9 @@ export function computeSegmentProgress(p: number, n: number): number[] {
   });
 }
 
-// Board card picked up by the phone touch hold: pops up 5% and tilts so it's obvious it's ready to move.
+// Board card picked up (mouse drag or phone touch hold): pops up 5% and tilts so it's obvious it's ready to move.
 // Animate with SPRING_HOVER. The class styles the card itself, so the ring follows each card's own corners.
 export const CARD_LIFT_ANIMATE = { scale: 1.05, rotate: 2 };
 export const CARD_LIFT_CLS = "[&>*]:shadow-2xl [&>*]:ring-2 [&>*]:ring-[#c9a84c]";
+// The spot the card was picked up from: a faded gold dashed outline, so you can see where it came from.
+export const CARD_LIFT_PLACEHOLDER = "outline-dashed outline-2 outline-[#c9a84c]/60";

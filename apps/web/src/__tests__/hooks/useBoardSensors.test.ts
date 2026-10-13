@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { boardSensorKinds, DESKTOP_DRAG, PHONE_TOUCH_DRAG, isTouchHold, liftBuzz } from "@/hooks/useBoardSensors";
+import { boardSensorKinds, DESKTOP_DRAG, PHONE_TOUCH_DRAG, isTouchHold, liftBuzz, boardDragStart, boardDragCancel } from "@/hooks/useBoardSensors";
 
 describe("board drag sensors", () => {
   it("desktop keeps today's mouse drag exactly", () => {
@@ -22,5 +22,21 @@ describe("board drag sensors", () => {
     expect(calls).toEqual([15]);
     expect(() => liftBuzz({})).not.toThrow();
     expect(() => liftBuzz(undefined)).not.toThrow();
+  });
+  it("drag start (both boards): remembers the picked-up card; buzzes only for a phone touch hold", () => {
+    const buzz: number[] = [];
+    const nav = { vibrate: (ms: number) => { buzz.push(ms); return true; } };
+    const ids: (string | null)[] = [];
+    boardDragStart({ active: { id: "lead-1" }, activatorEvent: new Event("pointerdown") }, (id) => ids.push(id), nav);
+    expect(ids).toEqual(["lead-1"]);
+    expect(buzz).toEqual([]);
+    boardDragStart({ active: { id: "lead-2" }, activatorEvent: new Event("touchstart") }, (id) => ids.push(id), nav);
+    expect(ids).toEqual(["lead-1", "lead-2"]);
+    expect(buzz).toEqual([15]);
+  });
+  it("drag cancel (Escape, interrupted touch): forgets the picked-up card", () => {
+    const ids: (string | null)[] = ["lead-1"];
+    boardDragCancel((id) => ids.push(id));
+    expect(ids).toEqual(["lead-1", null]);
   });
 });
