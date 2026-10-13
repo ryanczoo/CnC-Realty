@@ -5,6 +5,7 @@ import { useState } from "react";
 import { visiblePrebuiltLists } from "@/lib/smart-list-filters";
 import { SmartListDrawer } from "./SmartListDrawer";
 import { PHONE_TAB_BAR } from "@/lib/dashboard-phone";
+import { confirmListDelete } from "@/lib/smart-list-delete";
 
 type CustomList = { id: string; name: string; filters: unknown };
 
@@ -36,7 +37,8 @@ export function SmartListSidebar({ customLists: initialLists, isAdmin }: Props) 
     setDrawerOpen(true);
   }
 
-  async function deleteList(id: string) {
+  async function deleteList(id: string, name: string) {
+    if (!confirmListDelete(name)) return;
     const res = await fetch(`/api/smart-lists/${id}`, { method: "DELETE" });
     if (!res.ok) return;
     setLists(prev => prev.filter(l => l.id !== id));
@@ -98,7 +100,7 @@ export function SmartListSidebar({ customLists: initialLists, isAdmin }: Props) 
                     ✎
                   </button>
                   <button
-                    onClick={() => deleteList(list.id)}
+                    onClick={() => deleteList(list.id, list.name)}
                     className="rounded p-1 font-sans text-xs text-[#1B1B1B]/30 hover:text-[#1B1B1B] max-lg:px-2.5 max-lg:py-1.5 max-lg:text-base max-lg:text-[#1B1B1B]/50"
                     title="Delete list"
                   >
