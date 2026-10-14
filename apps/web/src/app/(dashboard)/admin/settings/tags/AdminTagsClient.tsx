@@ -93,7 +93,7 @@ export function AdminTagsClient({ initialTags, autoTagCity: initialAutoTagCity }
             placeholder="Tag name"
             className="flex-1 rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm outline-none focus:border-[#9E8C61]"
           />
-          <div className="flex gap-1">
+          <div className="flex gap-1 max-lg:flex-wrap">
             {PRESET_COLORS.map((c) => (
               <button
                 key={c}
