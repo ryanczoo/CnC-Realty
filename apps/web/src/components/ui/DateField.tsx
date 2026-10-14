@@ -9,6 +9,8 @@ interface DateFieldProps {
   minYear?: number;
   maxYear?: number;
   withTime?: boolean;
+  /** White box for forms on the off-white page background (default: off-white, for white cards). */
+  onLight?: boolean;
 }
 
 // ─── Date-only segment logic (unchanged behavior — withTime never touches these) ──
@@ -80,7 +82,7 @@ export function parseDateTimeLocal(value: string) {
 const segClass =
   "bg-transparent text-center text-sm text-[#1B1B1B] outline-none placeholder:text-[#1B1B1B]/40";
 
-export function DateField({ value, onChange, minYear, maxYear, withTime }: DateFieldProps) {
+export function DateField({ value, onChange, minYear, maxYear, withTime, onLight }: DateFieldProps) {
   const initial = withTime ? parseDateTimeLocal(value) : { ...parseIso(value), hour: "", minute: "" };
   const [month, setMonth] = useState(initial.month);
   const [day, setDay] = useState(initial.day);
@@ -161,7 +163,7 @@ export function DateField({ value, onChange, minYear, maxYear, withTime }: DateF
   };
 
   return (
-    <div className="flex w-full items-center gap-1 rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-4 py-3 focus-within:ring-2 focus-within:ring-[#9E8C61]/40 max-sm:gap-0.5 max-sm:px-3">
+    <div className={`flex w-full items-center gap-1 rounded-lg border border-[#1B1B1B]/10 ${onLight ? "bg-white" : "bg-[#F2F0EF]"} px-4 py-3 focus-within:ring-2 focus-within:ring-[#9E8C61]/40 max-sm:gap-0.5 max-sm:px-3`}>
       <input
         ref={monthRef}
         value={month}

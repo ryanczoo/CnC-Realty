@@ -29,7 +29,7 @@ const labelClass =
   "mb-1 block text-xs font-medium text-[#1B1B1B]/60 uppercase tracking-wide text-left";
 const sectionClass = "mb-10";
 const sectionHeadingClass =
-  "mb-6 font-sans text-xl font-medium uppercase tracking-widest text-[#9E8C61]";
+  "mb-6 text-center font-sans text-xl font-medium uppercase tracking-widest text-[#9E8C61]";
 
 type LicenseType = "SALESPERSON" | "BROKER_ASSOCIATE";
 type CommissionEntity = "PERSONAL" | "LLC" | "S_CORP" | "C_CORP";
@@ -284,6 +284,7 @@ function FormInner() {
           <div>
             <label className={labelClass}>Date of Birth<RequiredMark /></label>
             <DateField
+              onLight
               value={form.dateOfBirth}
               onChange={(v) => set("dateOfBirth", v)}
               minYear={DOB_MIN_YEAR}
@@ -323,7 +324,7 @@ function FormInner() {
           <div>
             <label className={labelClass}>License Expiration Date<RequiredMark /></label>
             <div className={`rounded-lg ${ring("licenseExpDate")}`}>
-              <DateField value={form.licenseExpDate} onChange={(v) => set("licenseExpDate", v)} />
+              <DateField value={form.licenseExpDate} onChange={(v) => set("licenseExpDate", v)} onLight />
             </div>
           </div>
         </div>
