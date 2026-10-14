@@ -1,10 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Fragment } from "react";
-import { motion, useScroll, useTransform } from "motion/react";
+import { motion, useMotionValue, useScroll, useTransform } from "motion/react";
 import { RevealLine } from "@/components/ui/reveal-text";
 import { ContactModal } from "@/components/ui/ContactModal";
+import { useIsMobile } from "@/hooks/useIsMobile";
+import { phoneSectionHeight, phoneTravelPx } from "@/lib/sell-process-scroll";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -85,7 +87,7 @@ type Step = Omit<(typeof STEPS)[number], "cta"> & {
 function SlidePanel({ step, shiftLeft = 0 }: { step: Step; shiftLeft?: number }) {
   return (
     <div
-      className="relative flex h-full items-center justify-center max-lg:!w-[85vw] max-lg:shrink-0 max-lg:[scroll-snap-align:start]"
+      className="relative flex h-full items-center justify-center max-lg:!w-[85vw] max-lg:shrink-0"
       style={{ width: `${SLIDE_VW}vw` }}
     >
       <div className="relative max-lg:portrait:!h-[64vw] max-lg:portrait:!w-[57vw] max-lg:portrait:!transform-none max-lg:landscape:!h-[66svh] max-lg:landscape:!w-[59svh] max-lg:landscape:!transform-none" style={{ width: "30.8vw", height: "34.6vw", transform: shiftLeft ? `translateX(-${shiftLeft}px)` : undefined }}>
@@ -117,6 +119,28 @@ export function SellProcess() {
 
   const x = useTransform(scrollYProgress, [0, 1], ["0vw", `-${TRAVEL_VW}vw`]);
 
+  // Phones (<1024px): same pinned scroll as desktop, but the slide distance is measured in px from the row.
+  const isMobile = useIsMobile();
+  const rowRef = useRef<HTMLDivElement>(null);
+  const travel = useMotionValue(0);
+  const [phoneTravel, setPhoneTravel] = useState<number | null>(null);
+  const xPhone = useTransform(() => -scrollYProgress.get() * travel.get());
+  useEffect(() => {
+    if (!isMobile) return;
+    const row = rowRef.current;
+    if (!row) return;
+    const measure = () => {
+      const t = phoneTravelPx(row.offsetWidth, window.innerWidth);
+      travel.set(t);
+      setPhoneTravel(t);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(row);
+    window.addEventListener("resize", measure);
+    return () => { ro.disconnect(); window.removeEventListener("resize", measure); };
+  }, [isMobile, travel]);
+
   // One useTransform per step — N must match STEPS.length (4). Ranges derived from N
   // so boundaries stay correct if steps are ever added/removed (and hook count updated).
   const N = STEPS.length;
@@ -130,13 +154,13 @@ export function SellProcess() {
     <section
       ref={sectionRef}
       data-navbar-theme="dark"
-      className="relative bg-[#1B1B1B] max-lg:!h-auto max-lg:pb-16"
-      style={{ height: "900vh" }}
+      className="relative bg-[#1B1B1B] max-lg:!h-[var(--sp-phone-h)]"
+      style={{ height: "900vh", ["--sp-phone-h" as string]: phoneSectionHeight(phoneTravel) }}
     >
-      <div className="sticky top-0 h-screen overflow-hidden max-lg:static max-lg:h-auto max-lg:overflow-visible">
+      <div className="sticky top-0 h-screen overflow-hidden max-lg:h-[100svh]">
 
         {/* Segmented progress bar */}
-        <div className="absolute left-16 right-16 top-[5.25rem] z-20 flex gap-1 max-lg:hidden">
+        <div className="absolute left-16 right-16 top-[5.25rem] z-20 flex gap-1 max-lg:left-6 max-lg:right-6">
           {SEG_FILLS.map((fill, i) => (
             <div
               key={i}
@@ -152,7 +176,7 @@ export function SellProcess() {
         </div>
 
         {/* Our Process label */}
-        <div className="absolute left-16 top-[6.25rem] z-20 max-lg:static max-lg:px-6 max-lg:pb-6 max-lg:pt-24">
+        <div className="absolute left-16 top-[6.25rem] z-20 max-lg:left-6">
           <h2 className="font-sans text-[2.5rem] font-light xl:text-[3rem]">
             <RevealLine onDark>
               <span className="text-[1.9rem] xl:text-[2.2rem]">Our </span>
@@ -163,12 +187,13 @@ export function SellProcess() {
 
         {/* Horizontal scroll row */}
         <motion.div
-          className="flex h-full max-lg:h-[75svh] max-lg:gap-3 max-lg:overflow-x-auto max-lg:px-6 max-lg:!transform-none max-lg:!w-auto max-lg:[scroll-snap-type:x_mandatory] max-lg:[scrollbar-width:none] max-lg:overflow-y-hidden max-lg:landscape:h-[85svh]"
-          style={{ x, width: `${TOTAL_VW}vw` }}
+          ref={rowRef}
+          className="flex h-full max-lg:!w-max max-lg:gap-3 max-lg:px-6 max-lg:pb-6 max-lg:pt-40 max-lg:landscape:pb-3 max-lg:landscape:pt-36"
+          style={{ x: isMobile ? xPhone : x, width: `${TOTAL_VW}vw` }}
         >
           {/* Intro panel — 55vw */}
           <div
-            className="flex h-full flex-col items-start justify-center px-16 lg:px-28 max-lg:!w-[85vw] max-lg:shrink-0 max-lg:px-2 max-lg:[scroll-snap-align:start]"
+            className="flex h-full flex-col items-start justify-center px-16 lg:px-28 max-lg:!w-[85vw] max-lg:shrink-0 max-lg:px-2"
             style={{ width: `${INTRO_VW}vw` }}
           >
             <h2 className="mb-6 max-w-2xl font-sans text-[3rem] font-light leading-tight text-white lg:text-[4.5rem] max-lg:text-[clamp(2rem,8vw,3rem)] max-lg:landscape:text-[clamp(1.6rem,8svh,2.4rem)]">
@@ -185,7 +210,7 @@ export function SellProcess() {
 
               {/* Full-bleed photo panel — 93vw */}
               <div
-                className="relative h-full overflow-hidden max-lg:!w-[85vw] max-lg:shrink-0 max-lg:rounded-2xl max-lg:[scroll-snap-align:start]"
+                className="relative h-full overflow-hidden max-lg:!w-[85vw] max-lg:shrink-0 max-lg:rounded-2xl"
                 style={{ width: `${PHOTO_VW}vw` }}
               >
                 <div className="absolute inset-0 scale-110">
@@ -209,7 +234,7 @@ export function SellProcess() {
 
               {/* Step text panel */}
               <div
-                className="relative flex h-full items-center max-lg:!w-[85vw] max-lg:shrink-0 max-lg:[scroll-snap-align:start]"
+                className="relative flex h-full items-center max-lg:!w-[85vw] max-lg:shrink-0"
                 style={{ width: `${TEXT_VW}vw` }}
               >
                 <div className="relative z-10 px-16 lg:px-28 max-lg:px-2">
