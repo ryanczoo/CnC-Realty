@@ -83,7 +83,7 @@ export function ContactModal({ open, source, onClose }: ContactModalProps) {
             exit={{ opacity: 0, y: 8 }}
             transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-lg rounded-2xl bg-white p-10 max-lg:max-h-[calc(100dvh-6rem)] max-lg:overflow-y-auto max-lg:p-6"
+            className="relative w-full max-w-lg rounded-2xl bg-white p-10 max-lg:max-h-[calc(100dvh-6rem)] max-lg:overflow-y-auto max-lg:p-5"
           >
             <button
               onClick={onClose}
@@ -95,10 +95,10 @@ export function ContactModal({ open, source, onClose }: ContactModalProps) {
               </svg>
             </button>
 
-            <h2 className="font-sans text-[2rem] font-light leading-tight text-[#1B1B1B]">
+            <h2 className="font-sans text-[2rem] font-light leading-tight text-[#1B1B1B] max-lg:text-[1.6rem]">
               Let&apos;s Chat
             </h2>
-            <p className="mt-1 mb-8 font-sans text-sm text-[#1B1B1B]/50 max-lg:mb-5">
+            <p className="mt-1 mb-8 font-sans text-sm text-[#1B1B1B]/50 max-lg:mb-4">
               We&apos;re super responsive!
             </p>
 
@@ -108,8 +108,10 @@ export function ContactModal({ open, source, onClose }: ContactModalProps) {
                 <p className="mt-2 font-sans text-sm text-[#1B1B1B]/50">We&apos;ll be in touch soon.</p>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="flex flex-col gap-6 max-lg:gap-4">
-                <div className="flex flex-col gap-1.5">
+              <form onSubmit={handleSubmit} className="flex flex-col gap-6 max-lg:gap-3">
+                {/* First + Last Name: side by side on phones; display:contents on desktop keeps the stacked layout. */}
+                <div className="contents max-lg:grid max-lg:grid-cols-2 max-lg:gap-3">
+                <div className="flex flex-col gap-1.5 max-lg:min-w-0 max-lg:gap-1">
                   <label className="font-sans text-sm text-left text-[#1B1B1B]/60">First Name<RequiredMark /></label>
                   <input
                     type="text"
@@ -117,44 +119,45 @@ export function ContactModal({ open, source, onClose }: ContactModalProps) {
                     autoFocus
                     value={form.firstName}
                     onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
-                    className="border-b border-[#1B1B1B]/20 bg-transparent py-2 font-sans text-base text-[#1B1B1B] outline-none transition-colors focus:border-[#1B1B1B]/60"
+                    className="border-b border-[#1B1B1B]/20 bg-transparent py-2 font-sans text-base text-[#1B1B1B] outline-none transition-colors focus:border-[#1B1B1B]/60 max-lg:py-1.5"
                     placeholder=""
                   />
                 </div>
 
-                <div className="flex flex-col gap-1.5">
+                <div className="flex flex-col gap-1.5 max-lg:min-w-0 max-lg:gap-1">
                   <label className="font-sans text-sm text-left text-[#1B1B1B]/60">Last Name<RequiredMark /></label>
                   <input
                     type="text"
                     required
                     value={form.lastName}
                     onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
-                    className="border-b border-[#1B1B1B]/20 bg-transparent py-2 font-sans text-base text-[#1B1B1B] outline-none transition-colors focus:border-[#1B1B1B]/60"
+                    className="border-b border-[#1B1B1B]/20 bg-transparent py-2 font-sans text-base text-[#1B1B1B] outline-none transition-colors focus:border-[#1B1B1B]/60 max-lg:py-1.5"
                     placeholder=""
                   />
                 </div>
+                </div>
 
-                <div className="flex flex-col gap-1.5">
+                <div className="flex flex-col gap-1.5 max-lg:gap-1">
                   <label className="font-sans text-sm text-left text-[#1B1B1B]/60">Email<RequiredMark /></label>
                   <input
                     type="email"
                     required
                     value={form.email}
                     onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                    className="border-b border-[#1B1B1B]/20 bg-transparent py-2 font-sans text-base text-[#1B1B1B] outline-none transition-colors focus:border-[#1B1B1B]/60"
+                    className="border-b border-[#1B1B1B]/20 bg-transparent py-2 font-sans text-base text-[#1B1B1B] outline-none transition-colors focus:border-[#1B1B1B]/60 max-lg:py-1.5"
                     placeholder=""
                   />
                   <FieldError message={emailError(form.email)} />
                 </div>
 
-                <div className="flex flex-col gap-1.5" ref={roleRef}>
+                <div className="flex flex-col gap-1.5 max-lg:gap-1" ref={roleRef}>
                   <label className={`font-sans text-sm text-left ${roleError ? "text-red-500" : "text-[#1B1B1B]/60"}`}>
                     I am a<RequiredMark />
                   </label>
                   <button
                     type="button"
                     onClick={() => { setRoleOpen((o) => !o); setRoleError(false); }}
-                    className="flex items-center justify-between border-b py-2 font-sans text-base transition-colors focus:outline-none"
+                    className="flex items-center justify-between border-b py-2 font-sans text-base transition-colors focus:outline-none max-lg:py-1.5"
                     style={{ borderColor: roleError ? "rgb(239,68,68)" : roleOpen ? "rgba(27,27,27,0.6)" : "rgba(27,27,27,0.2)" }}
                   >
                     <span className={form.role ? "text-[#1B1B1B]" : "text-[#1B1B1B]/30"}>
@@ -183,14 +186,14 @@ export function ContactModal({ open, source, onClose }: ContactModalProps) {
                   )}
                 </div>
 
-                <div className="flex flex-col gap-1.5">
+                <div className="flex flex-col gap-1.5 max-lg:gap-1">
                   <label className="font-sans text-sm text-left text-[#1B1B1B]/60">Message<RequiredMark /></label>
                   <textarea
                     rows={4}
                     required
                     value={form.notes}
                     onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-                    className="resize-none border-b border-[#1B1B1B]/20 bg-transparent py-2 font-sans text-base text-[#1B1B1B] outline-none transition-colors focus:border-[#1B1B1B]/60 max-lg:h-16"
+                    className="resize-none border-b border-[#1B1B1B]/20 bg-transparent py-2 font-sans text-base text-[#1B1B1B] outline-none transition-colors focus:border-[#1B1B1B]/60 max-lg:h-14"
                     placeholder="Type away..."
                   />
                 </div>
@@ -207,7 +210,7 @@ export function ContactModal({ open, source, onClose }: ContactModalProps) {
                   animate={PULSE_ANIMATE}
                   transition={PULSE_TRANSITION}
                   whileHover={{ scale: 1.02, transition: SPRING_HOVER }}
-                  className="w-full rounded-full bg-[#1B1B1B] py-3.5 font-sans text-sm font-medium text-white disabled:opacity-40"
+                  className="w-full rounded-full bg-[#1B1B1B] py-3.5 font-sans text-sm font-medium text-white disabled:opacity-40 max-lg:py-3"
                 >
                   {status === "loading" ? "Sending…" : "Send Message"}
                 </motion.button>
