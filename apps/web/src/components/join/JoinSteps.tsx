@@ -222,7 +222,7 @@ export function JoinSteps() {
             <RevealLine triggerOnMount>
               <span className="text-[2.4rem] xl:text-[2.9rem] max-lg:portrait:text-[clamp(1.4rem,6vw,2.4rem)] max-lg:landscape:text-[clamp(1.1rem,6svh,2rem)]">{active.title.first}{active.title.mid && ` ${active.title.mid}`} </span>
               {active.titleBreak && <br />}
-              <span className="text-cnc-gold font-medium">{active.title.last}</span>
+              <span className="text-cnc-gold font-medium max-lg:portrait:inline-block max-lg:portrait:pl-[3rem]">{active.title.last}</span>
             </RevealLine>
           </motion.h2>
         </AnimatePresence>

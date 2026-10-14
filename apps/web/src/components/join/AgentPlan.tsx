@@ -34,7 +34,7 @@ export function AgentPlan() {
               <span className="block -ml-[4rem] text-[2.5rem] xl:-ml-[4.8rem] xl:text-[3rem] max-lg:ml-0 max-lg:text-[clamp(1.9rem,8vw,2.5rem)]">
                 <RevealLine>For Agents,</RevealLine>
               </span>
-              <span className="block text-[3.5rem] font-medium xl:text-[4.2rem] max-lg:text-[clamp(2.6rem,11vw,3.5rem)]">
+              <span className="block text-[3.5rem] font-medium xl:text-[4.2rem] max-lg:text-[clamp(2.6rem,11vw,3.5rem)] max-lg:pl-[3rem]">
                 <RevealLine delay={0.15}>
                   By <span className="text-[#9E8C61]">Agents</span>
                 </RevealLine>
