@@ -163,7 +163,7 @@ export function Footer() {
         <div className="flex items-end justify-between px-8 pb-6 pt-12 lg:px-16 max-lg:flex-col max-lg:items-center max-lg:gap-10 max-lg:pt-16">
 
           {/* Left — large logo */}
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 max-lg:order-3">
             <Image
               src="/logo-white.png"
               alt="CnC Realty Group"
@@ -174,7 +174,7 @@ export function Footer() {
           </div>
 
           {/* Center — contact + newsletter + socials */}
-          <div className="flex flex-col items-center gap-5 text-center">
+          <div className="flex flex-col items-center gap-5 text-center max-lg:order-2">
             <div className="flex flex-col items-center gap-2">
               <a
                 href="mailto:info@cncrealtygroup.com"
@@ -265,7 +265,7 @@ export function Footer() {
           </div>
 
           {/* Right — nav links */}
-          <div className="flex flex-col items-end gap-2 max-lg:items-center">
+          <div className="flex flex-col items-end gap-2 max-lg:items-center max-lg:order-1">
             {NAV_LINKS.map((link) => (
               <Link
                 key={link.href}
