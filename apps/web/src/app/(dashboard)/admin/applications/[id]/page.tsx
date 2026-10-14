@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import { PHONE_HEADER_STACK, PHONE_WRAP_TEXT } from "@/lib/dashboard-phone";
 
 type ApplicationDetail = {
   id: string; status: string; createdAt: string;
@@ -27,9 +28,9 @@ const ENTITY_LABELS: Record<string, string> = {
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex gap-4 py-2 border-b border-[#1B1B1B]/5">
-      <span className="w-48 shrink-0 text-xs font-medium uppercase tracking-wide text-[#1B1B1B]/40">{label}</span>
-      <span className="text-sm text-[#1B1B1B]/80">{value === null || value === "" ? "—" : value}</span>
+    <div className="flex gap-4 py-2 border-b border-[#1B1B1B]/5 max-lg:flex-col max-lg:gap-1">
+      <span className="w-48 shrink-0 text-xs font-medium uppercase tracking-wide text-[#1B1B1B]/40 max-lg:w-auto">{label}</span>
+      <span className={`text-sm text-[#1B1B1B]/80 ${PHONE_WRAP_TEXT}`}>{value === null || value === "" ? "—" : value}</span>
     </div>
   );
 }
@@ -77,11 +78,11 @@ export default function ApplicationDetailPage() {
 
   return (
     <div className="max-w-3xl">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="font-sans text-2xl font-light text-[#1B1B1B]">
+      <div className={`mb-6 flex items-center justify-between ${PHONE_HEADER_STACK} max-lg:gap-2`}>
+        <h1 className={`font-sans text-2xl font-light text-[#1B1B1B] ${PHONE_WRAP_TEXT}`}>
           {app.firstName} {app.lastName}
         </h1>
-        <span className={`rounded-full px-3 py-1 text-xs font-medium ${
+        <span className={`rounded-full px-3 py-1 text-xs font-medium max-lg:self-start ${
           app.status === "PENDING" ? "bg-yellow-100 text-yellow-800" :
           app.status === "APPROVED" ? "bg-green-100 text-green-800" :
           "bg-red-100 text-red-800"

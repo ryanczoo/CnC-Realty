@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { formatDate } from "@/lib/utils";
-import { PHONE_TABLE_FRAME } from "@/lib/dashboard-phone";
+import { PHONE_TABLE_FRAME, PHONE_TAB_BAR } from "@/lib/dashboard-phone";
 
 type Application = {
   id: string;
@@ -29,7 +29,7 @@ export function ApplicationsClient({ applications }: { applications: Application
 
   return (
     <div>
-      <div className="mb-4 flex gap-2">
+      <div className={`mb-4 flex gap-2 ${PHONE_TAB_BAR}`}>
         {(["ALL", "PENDING", "APPROVED", "REJECTED"] as const).map((s) => (
           <button
             key={s}
