@@ -2,6 +2,11 @@
 
 ## ⚠️ Pending — Deploy Checklist (compiled 2026-09-13)
 
+> **Status 2026-10-13: the site is LIVE on Vercel** — first production deploy 2026-10-01 (`715ba87`); cncrealtygroup.com
+> is served by Vercel and `main` auto-deploys on push (verified 2026-10-13: pushing `a040728` → GitHub status "Vercel is
+> deploying your app" → "Deployment has completed"). The items below were NOT re-verified during the 2026-10-13
+> catch-up — confirm each in the Postmark / Vercel / Google dashboards before ticking it off.
+
 Besides the IDX resync, workers' comp, and E&O (tracked separately — see the relevant memory/session notes), this is what's left before/around deploying:
 
 **Postmark**
@@ -7339,3 +7344,121 @@ checklist items / documents / tasks / parties / activities for all three.
    done now via this arc — remaining open items are the CRES E&O follow-up and the eventual Vercel
    deploy (still gated on Postmark/Vercel paid-plan upgrades + a fresh full IDX resync, per the
    2026-09-14/15/16 notes above).
+
+---
+
+## Session Notes — 2026-09-24 → 2026-10-13 (catch-up: file lifecycle, newsletter, first deploy, mobile 1–7e)
+
+Written once at the end of the arc, per Ryan's rule (no CLAUDE.md updates until mobile 7e was done). 215 commits,
+`bca817a..a040728`, all pushed to `origin/main` on 2026-10-13 and live. Every piece has a spec + plan in
+`docs/superpowers/specs/` and `docs/superpowers/plans/` (dates 2026-09-24 → 2026-10-13) — read those for detail;
+this is the map.
+
+### Listing / transaction file lifecycle (2026-09-24 → 09-27)
+
+- **Listing lifecycle + document removal** (spec `2026-09-24-listing-lifecycle-and-document-removal`): agents change
+  their own listing status via a shared `FileStatusSelect`; only the broker can cancel; listing delete is admin-only
+  and only when empty; converting a listing opens the new transaction file and keeps the two in step ("Converted"
+  shown under an Under Contract listing; Activity marks such changes "(via transaction file)"). Documents: **Remove**
+  (agent, detaches from the checklist item, file kept) vs admin-only permanent **Delete** with a logged reason.
+  Convert requires every required listing document uploaded (shared, greyed-out Convert button).
+- **Morning job** decides date-driven listing/transaction statuses with one shared `dateDrivenStatus` rule;
+  `9c846b9` fixed the scheduled jobs so they actually run on Vercel Cron. No deadline reminders for
+  canceled/archived/closed/expired files.
+- **Plan 2 — file details + transaction status** (spec `2026-09-25-plan-2-…`): every file detail editable row by row
+  (pencil/check icons, agent + admin, listings + transactions), validated, dates move the status. MLS # optional on
+  transactions. Dedicated lease signed/start dates. Transactions become **Pending automatically** once complete
+  (`isReadyForPending` + `sidePartiesReady`); Pending requirements can't be removed; dates must be in order. Agents can
+  move a file to Pre-Contract or **request cancellation** with a reason (emails the broker + review queue).
+- **Commission** (09-26/27 plans): listing commission as % or $ (`commissionAmount` column, shared `CommissionField`
+  toggle); commission required Under Contract; locked for agents during broker review, every change logged; % capped
+  at 100 while typing everywhere; Lease Commission takes % or $; Convert carries the listing's commission.
+- Small shared styling: one required-field asterisk colour `#A42A04` site-wide; new `cnc-green` token `#355E3B` (Gross
+  Commission); negatives read "-$990.00"; every email field flags an invalid address while typing.
+
+### Newsletter + personal agent views (2026-09-28 → 09-29)
+
+- **Newsletter** (spec `2026-09-28-newsletter-design`): `Lead.newsletterSubscribedAt/newsletterOptOut`,
+  `LeadSource.NEWSLETTER`, `Campaign.audience`; footer signup → branded welcome email (hero photo); own "newsletter"
+  unsubscribe category; admin can send a campaign to all subscribers. Shared `subscribeToNewsletter()` — one
+  subscription per address, contact forms never override an unsubscribe; contact page/pop-up and agent-profile form
+  enroll with a consent notice.
+- **Personal agent views** (spec `2026-09-29-…`): an admin's Agent-section Overview/Leads/Pipeline/Tasks/Campaigns show
+  only their own; admin-only "Newsletter" smart list; assign any agent-less lead from All Leads via a shared Assign
+  pop-up; All Leads paginated 100/page with a real total (resolves the parked 100-cap question).
+- Site weight: 19 oversized photos shrunk (26.6MB → 3.3MB), 5 videos recompressed (VMAF ≥ 95, ~17.8MB saved), footer
+  video loads only near the bottom. Password-reset email got its hero photo + new copy.
+
+### First production deploy (2026-09-30 → 10-01)
+
+- `f7a3576` moved `vercel.json` into `apps/web` (the Vercel project root) so the crons are read; `715ba87` fixed Prisma
+  in the monorepo for Vercel. Production deployment created 2026-10-01; cncrealtygroup.com now served by Vercel.
+- `5bd32c5` pinned `jsdom 26.1.0` (pnpm override) — /press articles 500'd on Vercel without it.
+- **Push = deploy.** Pushing `main` triggers a Vercel build; a failed build leaves the live site on the previous
+  version; Instant Rollback lives in Vercel → Deployments. Local dev and production share the one Neon DB, so a
+  migration applied locally is already live (check `_prisma_migrations` before assuming a push needs one).
+
+### Mobile site — sub-projects 1–6 (2026-10-03 → 10-05)
+
+Parent spec `2026-10-03-mobile-layout-design.md`: phone layout below 1024px, **desktop never changes**, fluid
+320–1023px incl. sideways phones, no new libraries, load speed not worse. Each sub-project = spec → plan → build, with
+desktop fingerprints + speed A/B.
+
+1. **Shared pieces:** `useIsMobile()`, phone lettering layer for `VideoMaskHero`, FAQ rows stack, footer one column,
+   CTA buttons stack, contact pop-up scrolls.
+2. **Homepage:** hero, listings heading, Why CnC (shorter pinned panel), Services (one per row), advantage carousel,
+   testimonials, Join CTA — all fitted.
+3. **Buy/Sell/Rent/Manage:** Buy steps on a left-edge timeline, RESULTS cluster portrait positions, Sell Our Process as
+   swipe cards, Our Values shorter, Rent steps stack.
+4. **Join pages:** hero lettering, pricing stacks, stacked cards (photo behind text), steps, How to Join, application
+   form rows stack; confetti keyed at half resolution on phones.
+5. **Property search / listing / home value:** opens on the list with a **Show Map** pill (map code loads on first
+   tap), filters as a swipe pill row with bottom sheets, shared phone photo swiper + sticky contact bar on the popup and
+   full listing page, home-value report fits. Perf: `a1e8883` Property autovacuum tuned (search count stays an
+   index-only scan; migration `20261005120000`), search count cached 5 min in Redis keyed by exact filter, 300ms cap on
+   the Redis lookup.
+6. **Agent profiles, press, auth, legal:** reviews one card at a time, bio fits, Fair Housing addresses wrap.
+
+### Mobile dashboard — sub-project 7a–7e (2026-10-06 → 10-13)
+
+Rules (Ryan): desktop untouchable, speed-check desktop + phone, reuse shared pieces first, ask before placement changes.
+
+- **Shared:** `apps/web/src/lib/dashboard-phone.ts` — phone-only class bundles (`PHONE_POPUP_FRAME/PANEL`,
+  `PHONE_DRAWER_PANEL`, `PHONE_TABLE_FRAME`, `PHONE_TAB_BAR`, `PHONE_FIELDS_16`, `PHONE_DRAG_CARD`,
+  `PHONE_HEADER_STACK`, `PHONE_HEADER_ACTIONS`, `PHONE_FIELD_PAIR`, `PHONE_WRAP_TEXT`). A test pins every word to
+  `max-lg:`/`max-sm:` so nothing reaches desktop. **Check this file before writing any new phone layout code.**
+  `hooks/useBoardSensors.ts` — one drag-sensor setup for both boards (0.4s hold on phones, desktop unchanged).
+- **7a shell:** slim top bar, slide-in menu, 16px fields (no iPhone zoom), popups fit the screen, tables/tab bars
+  scroll inside their card.
+- **7b transactions:** shared wizard step bar ("Step 2 of 6" on phones), file headers stack, parties table scrolls,
+  hover tooltips hidden below 1024px.
+- **7c campaigns/academy/settings/account:** headers stack, long names/links wrap, client-account short tab labels.
+- **7d boards:** Smart Lists as a swipe pill row (edit/delete always visible; delete asks first on phones), Leads board
+  one column + snap (iPads too), task titles wrap, deal cards full width. **Approved desktop changes:** all 7 dashboard
+  side drawers start below the 64px top bar (`lib/dashboard-drawer.ts`); board cards "lift" while dragged on desktop
+  and phone (`DragLift`, `CARD_LIFT_*` in `lib/motion.ts`). Ryan decision: Leads board stays 8 columns.
+- **7e the 13 other admin pages** (spec `2026-10-13-mobile-dashboard-admin-design.md`): application details show the
+  label above the value (long emails/addresses wrap), status filters swipe, Action Plans/Triggers/Checklists headers
+  stack with a full-width New button, trigger rows put controls on the line below the name (delete confirmation on its
+  own line), Create Tag colour dots wrap. Desktop 56/56 views + 12/12 screenshots identical; speed equal.
+- Left as is (Ryan): agent-title inline editor's Save sits past the edge inside the swipe table; titles that truncate
+  with "…" on desktop too. 7d deferred (Ryan to decide): opened custom list's pill not auto-scrolled into view;
+  tasks-page lead-name line has no overflow-wrap; ✎/× tap targets ~36px.
+- Verification tooling (git-ignored): `.superpowers/mobile-tools/`, `.superpowers/7d-survey/`, `.superpowers/7e-survey/`
+  (fingerprint / survey / walk / speed scripts). All 7d/7e sample data deleted; DB users = Ryan's admin only.
+
+### Key Decisions
+
+1. Mobile work shipped as one push after 7e (Ryan) — done 2026-10-13.
+2. Desktop changes in the mobile arc only with explicit approval (the drawer offset and board-card lift).
+3. All Leads paginates at 100 per page instead of a hard cap.
+
+### Next Session — Start Here
+
+1. Ryan tests the live admin/dashboard pages on his phone (post-push).
+2. **Font trim** (Ryan, 2026-10-04 — next after mobile): `apps/web/src/app/fonts/GoogleSansFlex.woff2` is 1.8MB, the
+   biggest phone download; subset to Latin + the weights/axes used.
+3. Re-check the Deploy Checklist at the top of this file against the Postmark / Vercel / Google dashboards (not
+   re-verified in this catch-up).
+4. Older backlog: the New Listing wizard walkthrough listed on 2026-09-24 (the listing-lifecycle work that followed
+   likely came out of it — confirm with Ryan whether it's finished); CRES E&O follow-up; 7d deferred items above.
