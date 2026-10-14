@@ -66,13 +66,13 @@ export function WhyCnC() {
       className="relative max-lg:!h-[200svh] max-lg:bg-[#F2F0EF]"
     >
       <div className="sticky top-0 h-screen overflow-hidden bg-[#F2F0EF] max-lg:h-[100svh]">
-        <div className="flex h-full max-lg:portrait:flex-col-reverse">
+        <div className="flex h-full max-lg:portrait:flex-col">
 
           {/* Left: text panel */}
           <div className="relative flex w-[42%] flex-col justify-center pl-28 pr-16 max-lg:portrait:w-full max-lg:portrait:flex-1 max-lg:portrait:justify-start max-lg:portrait:pb-8 max-lg:portrait:pl-14 max-lg:portrait:pr-6 max-lg:portrait:pt-6 max-lg:landscape:pl-14 max-lg:landscape:pr-6">
             {/* Segmented vertical progress — 4 equal segments, each fills top-to-bottom */}
             <div
-              className="absolute left-14 top-1/2 flex -translate-y-1/2 flex-col gap-1 max-lg:left-6 max-lg:!h-[120px]"
+              className="absolute left-14 top-1/2 flex -translate-y-1/2 flex-col gap-1 max-lg:left-6 max-lg:!h-[120px] max-lg:portrait:top-6 max-lg:portrait:translate-y-0"
               style={{ width: 2, height: 220 }}
             >
               {ITEMS.map((_, i) => (
@@ -184,7 +184,7 @@ export function WhyCnC() {
                 the wipe sweeping over an empty box while it downloads. */}
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute opacity-0 max-lg:portrait:!left-[6%] max-lg:portrait:!top-[30%] max-lg:portrait:!h-[62%] max-lg:portrait:!w-[44%]"
+              className="pointer-events-none absolute opacity-0 max-lg:portrait:!left-[6%] max-lg:portrait:!top-[20%] max-lg:portrait:!h-[62%] max-lg:portrait:!w-[44%]"
               style={{ left: "2%", top: "25%", width: "40%", height: "52%" }}
             >
               {ITEMS.map((item) =>
@@ -198,7 +198,7 @@ export function WhyCnC() {
             <AnimatePresence mode="wait">
               <motion.div
                 key={`front-${activeIdx}`}
-                className="absolute z-10 overflow-hidden rounded-2xl max-lg:portrait:!left-[6%] max-lg:portrait:!top-[30%] max-lg:portrait:!h-[62%] max-lg:portrait:!w-[44%]"
+                className="absolute z-10 overflow-hidden rounded-2xl max-lg:portrait:!left-[6%] max-lg:portrait:!top-[20%] max-lg:portrait:!h-[62%] max-lg:portrait:!w-[44%]"
                 style={{ left: "2%", top: "25%", width: "40%", height: "52%" }}
                 initial={{ clipPath: scrollDirRef.current === "down" ? "inset(100% 0 0 0)" : "inset(0 0 100% 0)" }}
                 animate={{ clipPath: "inset(0 0 0 0)" }}
