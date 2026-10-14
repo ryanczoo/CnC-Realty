@@ -90,15 +90,15 @@ function SlidePanel({ step, shiftLeft = 0 }: { step: Step; shiftLeft?: number })
       className="relative flex h-full items-center justify-center max-lg:!w-[85vw] max-lg:shrink-0"
       style={{ width: `${SLIDE_VW}vw` }}
     >
-      <div className="relative max-lg:portrait:!h-[64vw] max-lg:portrait:!w-[57vw] max-lg:portrait:!transform-none max-lg:landscape:!h-[66svh] max-lg:landscape:!w-[59svh] max-lg:landscape:!transform-none" style={{ width: "30.8vw", height: "34.6vw", transform: shiftLeft ? `translateX(-${shiftLeft}px)` : undefined }}>
+      <div className="relative max-lg:portrait:!h-[64vw] max-lg:portrait:!w-[57vw] max-lg:portrait:!transform-none max-lg:landscape:!h-[58svh] max-lg:landscape:!w-[52svh] max-lg:landscape:!transform-none" style={{ width: "30.8vw", height: "34.6vw", transform: shiftLeft ? `translateX(-${shiftLeft}px)` : undefined }}>
         <div
-          className="relative overflow-hidden rounded-2xl max-lg:portrait:!h-[43vw] max-lg:portrait:!w-[35vw] max-lg:landscape:!h-[44svh] max-lg:landscape:!w-[36svh]"
+          className="relative overflow-hidden rounded-2xl max-lg:portrait:!h-[43vw] max-lg:portrait:!w-[35vw] max-lg:landscape:!h-[39svh] max-lg:landscape:!w-[32svh]"
           style={{ width: "18.8vw", height: "23.3vw", transform: "translateX(20%)" }}
         >
           <Image src={step.slideTop!} alt={`${step.title} top`} fill sizes="(max-width: 1023px) and (orientation: portrait) 35vw, 18.8vw" className="object-cover" />
         </div>
         <div
-          className="absolute overflow-hidden rounded-2xl max-lg:portrait:!left-[30vw] max-lg:portrait:!top-[30vw] max-lg:portrait:!h-[34vw] max-lg:portrait:!w-[27vw] max-lg:landscape:!left-[31svh] max-lg:landscape:!top-[31svh] max-lg:landscape:!h-[35svh] max-lg:landscape:!w-[28svh]"
+          className="absolute overflow-hidden rounded-2xl max-lg:portrait:!left-[30vw] max-lg:portrait:!top-[30vw] max-lg:portrait:!h-[34vw] max-lg:portrait:!w-[27vw] max-lg:landscape:!left-[27svh] max-lg:landscape:!top-[27svh] max-lg:landscape:!h-[31svh] max-lg:landscape:!w-[25svh]"
           style={{ width: "14.8vw", height: "18.4vw", left: "16.1vw", top: "16.3vw", zIndex: 1 }}
         >
           <Image src={step.slideBottom!} alt={`${step.title} bottom`} fill sizes="(max-width: 1023px) and (orientation: portrait) 27vw, 14.8vw" className="object-cover" />
@@ -176,8 +176,8 @@ export function SellProcess() {
         </div>
 
         {/* Our Process label */}
-        <div className="absolute left-16 top-[6.25rem] z-20 max-lg:left-6">
-          <h2 className="font-sans text-[2.5rem] font-light xl:text-[3rem]">
+        <div className="absolute left-16 top-[6.25rem] z-20 max-lg:left-6 max-lg:landscape:top-[5.75rem]">
+          <h2 className="font-sans text-[2.5rem] font-light xl:text-[3rem] max-lg:landscape:leading-none">
             <RevealLine onDark>
               <span className="text-[1.9rem] xl:text-[2.2rem]">Our </span>
               <span style={{ color: "#9E8C61", fontWeight: 500 }}>Process</span>
