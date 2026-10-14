@@ -74,7 +74,7 @@ export function ContactModal({ open, source, onClose }: ContactModalProps) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 max-lg:items-start max-lg:pb-4 max-lg:pt-20"
           onClick={onClose}
         >
           <motion.div
@@ -83,7 +83,7 @@ export function ContactModal({ open, source, onClose }: ContactModalProps) {
             exit={{ opacity: 0, y: 8 }}
             transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-lg rounded-2xl bg-white p-10 max-lg:max-h-[90dvh] max-lg:overflow-y-auto max-lg:p-6"
+            className="relative w-full max-w-lg rounded-2xl bg-white p-10 max-lg:max-h-[calc(100dvh-6rem)] max-lg:overflow-y-auto max-lg:p-6"
           >
             <button
               onClick={onClose}
@@ -98,7 +98,7 @@ export function ContactModal({ open, source, onClose }: ContactModalProps) {
             <h2 className="font-sans text-[2rem] font-light leading-tight text-[#1B1B1B]">
               Let&apos;s Chat
             </h2>
-            <p className="mt-1 mb-8 font-sans text-sm text-[#1B1B1B]/50">
+            <p className="mt-1 mb-8 font-sans text-sm text-[#1B1B1B]/50 max-lg:mb-5">
               We&apos;re super responsive!
             </p>
 
@@ -108,7 +108,7 @@ export function ContactModal({ open, source, onClose }: ContactModalProps) {
                 <p className="mt-2 font-sans text-sm text-[#1B1B1B]/50">We&apos;ll be in touch soon.</p>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+              <form onSubmit={handleSubmit} className="flex flex-col gap-6 max-lg:gap-4">
                 <div className="flex flex-col gap-1.5">
                   <label className="font-sans text-sm text-left text-[#1B1B1B]/60">First Name<RequiredMark /></label>
                   <input
@@ -190,7 +190,7 @@ export function ContactModal({ open, source, onClose }: ContactModalProps) {
                     required
                     value={form.notes}
                     onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-                    className="resize-none border-b border-[#1B1B1B]/20 bg-transparent py-2 font-sans text-base text-[#1B1B1B] outline-none transition-colors focus:border-[#1B1B1B]/60"
+                    className="resize-none border-b border-[#1B1B1B]/20 bg-transparent py-2 font-sans text-base text-[#1B1B1B] outline-none transition-colors focus:border-[#1B1B1B]/60 max-lg:h-16"
                     placeholder="Type away..."
                   />
                 </div>
