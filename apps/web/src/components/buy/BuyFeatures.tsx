@@ -75,7 +75,7 @@ export function BuyFeatures() {
             <motion.div
               key={i}
               {...fadeUp(i * 0.1)}
-              className="flex flex-col gap-4 border-l border-[#1B1B1B]/15 px-8 py-6"
+              className="flex flex-col gap-4 border-l border-[#1B1B1B]/15 px-8 py-6 max-sm:items-center max-sm:border-l-0 max-sm:text-center"
             >
               <feature.icon />
               <p className="font-sans text-[0.95rem] font-light leading-relaxed text-[#1B1B1B]/80">
@@ -87,9 +87,9 @@ export function BuyFeatures() {
           {/* CTA column */}
           <motion.div
             {...fadeUp(0.3)}
-            className="flex flex-col justify-end border-l border-[#1B1B1B]/15 px-8 pt-6 pb-2"
+            className="flex flex-col justify-end border-l border-[#1B1B1B]/15 px-8 pt-6 pb-2 max-sm:items-center max-sm:border-l-0 max-sm:text-center"
           >
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 max-sm:items-center">
               <span className="font-sans text-xs font-medium uppercase tracking-widest text-[#1B1B1B]/40">
                 Explore
               </span>
