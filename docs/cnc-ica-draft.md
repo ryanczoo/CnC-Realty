@@ -329,7 +329,3 @@ I, the undersigned Associate-Licensee, do hereby acknowledge that I have read Cn
 | Optional CnC TC Service | $350 (paid through escrow) |
 
 *CnC Realty Group reserves the right to update the Fee Schedule. The fee schedule in effect at the time a transaction is initiated applies to that transaction. Associate-Licensee will be notified of any fee changes via the CnC Realty Group platform.*
-
----
-
-*DRAFT — For attorney review before use. This document is not legal advice.*

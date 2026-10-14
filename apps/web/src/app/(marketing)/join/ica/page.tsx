@@ -98,10 +98,6 @@ export default function IcaPage() {
   return (
     <main className="min-h-screen bg-[#F2F0EF]">
       <div className="mx-auto max-w-6xl px-6 py-20">
-        <div className="mb-10 rounded-lg border border-[#9E8C61]/40 bg-[#9E8C61]/8 px-4 py-3 font-sans text-xs text-[#9E8C61]">
-          DRAFT — Pending attorney review. This document is provided for informational purposes only and does not constitute legal advice.
-        </div>
-
         <div className="mb-10 border-b border-[#1B1B1B]/15 pb-8">
           <p className="mb-1 text-center font-sans text-xs font-medium uppercase tracking-widest text-[#9E8C61]">CnC Realty</p>
           <h1 className="text-center font-sans text-3xl font-medium text-[#1B1B1B]">Independent Contractor Agreement</h1>
