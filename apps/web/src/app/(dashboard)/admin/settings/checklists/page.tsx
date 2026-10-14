@@ -2,6 +2,7 @@
 import { RequiredMark } from "@/components/ui/RequiredMark";
 import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
+import { PHONE_HEADER_STACK } from "@/lib/dashboard-phone";
 import { ChecklistTemplateEditor } from "@/components/transactions/ChecklistTemplateEditor";
 
 export default function ChecklistTemplatesPage() {
@@ -57,11 +58,11 @@ export default function ChecklistTemplatesPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className={`mb-6 flex items-center justify-between ${PHONE_HEADER_STACK} max-lg:gap-3`}>
         <h1 className="text-2xl font-light text-[#1B1B1B]">Checklist Templates</h1>
         <button
           onClick={() => setCreating((v) => !v)}
-          className="flex items-center gap-1.5 rounded-full bg-[#1B1B1B] px-4 py-2 text-sm text-white"
+          className="flex items-center gap-1.5 rounded-full bg-[#1B1B1B] px-4 py-2 text-sm text-white max-lg:w-full max-lg:justify-center"
         >
           <Plus className="h-4 w-4" /> New Template
         </button>

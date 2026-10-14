@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
+import { PHONE_HEADER_STACK } from "@/lib/dashboard-phone";
 import { TriggerDrawer } from "@/components/triggers/TriggerDrawer";
 
 type TriggerRow = {
@@ -94,7 +95,7 @@ export default function TriggersAdminPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 px-4 py-8">
-      <div className="flex items-center justify-between">
+      <div className={`flex items-center justify-between ${PHONE_HEADER_STACK} max-lg:gap-3`}>
         <div>
           <h1 className="font-sans text-2xl font-light text-[#1B1B1B]">Trigger Automations</h1>
           <p className="mt-1 text-sm text-[#1B1B1B]/40">
@@ -106,7 +107,7 @@ export default function TriggersAdminPage() {
           animate={PULSE_ANIMATE}
           transition={PULSE_TRANSITION}
           whileHover={{ scale: 1.05, transition: SPRING_HOVER }}
-          className="rounded-full bg-[#1B1B1B] px-5 py-2.5 text-sm font-medium text-white"
+          className="rounded-full bg-[#1B1B1B] px-5 py-2.5 text-sm font-medium text-white max-lg:w-full max-lg:justify-center"
         >
           + New Trigger
         </motion.button>
@@ -125,7 +126,7 @@ export default function TriggersAdminPage() {
         {triggers.map((trigger, i) => (
           <div
             key={trigger.id}
-            className={`flex items-center gap-4 px-5 py-4 ${
+            className={`flex items-center gap-4 px-5 py-4 max-lg:flex-wrap max-lg:gap-x-3 max-lg:gap-y-2 ${
               i > 0 ? "border-t border-[#1B1B1B]/5" : ""
             }`}
           >
@@ -139,7 +140,7 @@ export default function TriggersAdminPage() {
             />
 
             {/* Info */}
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 max-lg:basis-[calc(100%-2rem)]">
               <p className="text-sm font-medium text-[#1B1B1B]">{trigger.name}</p>
               <p className="mt-0.5 text-xs text-[#1B1B1B]/50">
                 Status → {STATUS_LABELS[trigger.statusTrigger] ?? trigger.statusTrigger}
@@ -150,7 +151,7 @@ export default function TriggersAdminPage() {
 
             {/* Active badge */}
             <span
-              className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+              className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium max-lg:ml-7 ${
                 trigger.isActive
                   ? "bg-green-100 text-green-700"
                   : "bg-[#1B1B1B]/10 text-[#1B1B1B]/40"
