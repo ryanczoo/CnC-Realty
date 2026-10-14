@@ -53,7 +53,7 @@ export default function ActionPlansAdminPage() {
           animate={PULSE_ANIMATE}
           transition={PULSE_TRANSITION}
           whileHover={{ scale: 1.05, transition: SPRING_HOVER }}
-          className="rounded-full bg-[#1B1B1B] px-5 py-2.5 text-sm font-medium text-white max-lg:w-full max-lg:justify-center"
+          className="rounded-full bg-[#1B1B1B] px-5 py-2.5 text-sm font-medium text-white max-lg:w-full"
         >
           + New Plan
         </motion.button>
