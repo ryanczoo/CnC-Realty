@@ -71,9 +71,10 @@ the All Agents name column shows the slug (existing desktop behaviour).
 - Label `w-48 shrink-0 …` gains `max-lg:w-auto`.
 - Value `text-sm text-[#1B1B1B]/80` gains `PHONE_WRAP_TEXT` (long emails/addresses break instead of
   running off-screen).
-- Header `mb-6 flex items-center justify-between` gains `PHONE_HEADER_STACK` + `max-lg:items-start
-  max-lg:gap-2`, and the `<h1>` gains `PHONE_WRAP_TEXT`: name on top, status badge below at its natural width
-  (`items-start` overrides the bundle's stretch so the badge isn't a full-width bar).
+- Header `mb-6 flex items-center justify-between` gains `PHONE_HEADER_STACK` + `max-lg:gap-2`, the `<h1>`
+  gains `PHONE_WRAP_TEXT`, and the status badge gains `max-lg:self-start`: name on top, badge below at its
+  natural width. (`self-start` on the badge, not `items-start` on the row — Tailwind emits `items-stretch`
+  after `items-start`, so the bundle's stretch would win a same-breakpoint tie.)
 - Approve / Reject and the reject-reason box are unchanged (already fine).
 
 ### 2. Applications list — swipeable filter row
