@@ -1,6 +1,6 @@
 # Smarter Property Search + Apply-Button Filters — Design
 
-Date: 2026-10-15 · Status: draft for Ryan's review
+Date: 2026-10-15 · Status: open questions answered — awaiting Ryan's approval
 
 ## Goal
 
@@ -31,6 +31,9 @@ below was checked against Zillow on 2026-10-15 (its suggestion list, plus Ryan's
 | Filler words: "Pasadena homes for sale", "homes near Pasadena" | Same as "Pasadena" | Ryan's test |
 | Property type: "condos in…", "townhomes in…" | Location + Type filter | Ryan's tests |
 | Price: "under 800k", "Pasadena under 1M" | Location + max price | Ryan's tests |
+| Price: "over 1M" | Min price | Ryan's test |
+| Price: "between 500k and 800k" | Min + max price | Ryan's test |
+| "Pasadena homes for rent" | Location + switches to For Rent ("for sale" keeps For Sale) | Ryan's test |
 | Baths: "2 bath homes in Pasadena" | Location + baths filter | Ryan's test |
 | Beds shorthand: "3br", "3 bd", "3 bedroom" | Location + beds filter ("3 bed" already works) | Claude's tests |
 | Address spellings: "328 North Lincoln Ave", "328 Lincoln Ave", "328 N. Lincoln Ave.", "111 Marguerita Unit 100" | That home | Suggestion list |
@@ -46,7 +49,8 @@ Two pure, tested functions in `apps/web/src/lib/`, extending the ones that exist
 
 1. **`buildPropertySearchParams(text)`** (`lib/property-search.ts`, already used by all three bars). Pulls the filter
    words out of the text and turns them into the filter values the page already understands (`minBeds`, `minBaths`,
-   `maxPrice`, `propertyType`), strips filler words, and leaves the location as `query`. Because the results come back
+   `minPrice`, `maxPrice`, `propertyType`, `listingType`), strips filler words, and leaves the location as `query`.
+   These filters use the existing price/type/beds/baths/listing-type lookups, so they add no database work or cost. Because the results come back
    as normal filter values, the matching filter buttons light up gold exactly as if the visitor had picked them.
 2. **`buildLocationWhere(query)`** (`lib/property-search-query.ts`, used by the search page and `/api/properties`).
    Turns the location into a database filter, in this order:
@@ -124,10 +128,10 @@ panels gain an Apply button and the Price panel is new; nothing else on desktop 
 
 Each release is a separate push, with Ryan's go-ahead.
 
-## Open questions for Ryan
+## Decisions (Ryan, 2026-10-15)
 
-1. **Bay Area counties.** Proposed: the standard 9 — Alameda, Contra Costa, Marin, Napa, San Francisco, San Mateo,
-   Santa Clara, Solano, Sonoma.
-2. **Apply button look.** Proposed: the site's dark pill button, full width at the bottom of each dropdown.
-3. **Phrases not yet checked on Zillow** — included only if Zillow handles them: "over 1M", "between 500k and 800k",
-   "Pasadena homes for rent" (would switch to For Rent).
+1. **Bay Area counties:** the standard 9 — Alameda, Contra Costa, Marin, Napa, San Francisco, San Mateo, Santa Clara,
+   Solano, Sonoma.
+2. **Apply button look:** the site's off-white (`#F2F0EF`, `cnc-bg`) background with dark (`#1B1B1B`) text, full width
+   at the bottom of each dropdown.
+3. **"over 1M", "between 500k and 800k", "… for rent":** all work on Zillow → included (table above).
