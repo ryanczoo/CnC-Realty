@@ -40,3 +40,20 @@ describe("buildFilterQueryString", () => {
     expect(qs).toBe("");
   });
 });
+
+import { parsedToFilterPatch } from "@/lib/search-filters";
+import { buildPropertySearchParams } from "@/lib/property-search";
+
+describe("parsedToFilterPatch", () => {
+  const patch = (s: string) => parsedToFilterPatch(buildPropertySearchParams(s));
+  it("carries every typed filter", () => {
+    expect(patch("condos in Pasadena under 800k")).toEqual({ query: "Pasadena", propertyType: "Condominium", minPrice: "", maxPrice: "800000" });
+    expect(patch("Pasadena homes for rent")).toEqual({ query: "Pasadena", listingType: "FOR_RENT" });
+  });
+  it("a plain location leaves the other filters as they are (Zillow keeps them)", () => {
+    expect(patch("Pasadena")).toEqual({ query: "Pasadena" });
+  });
+  it("a typed price replaces both ends", () => {
+    expect(patch("over 1m")).toEqual({ query: "", minPrice: "1000000", maxPrice: "" });
+  });
+});

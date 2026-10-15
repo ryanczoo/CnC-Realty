@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { SearchFilters } from "@/types/property";
 import { buildPropertySearchParams } from "@/lib/property-search";
+import { parsedToFilterPatch } from "@/lib/search-filters";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
 interface Props {
@@ -83,12 +84,7 @@ export function FilterBar({
     // Parse natural-language phrasing ("3 beds in whittier") the same way
     // the homepage hero and Buy page search do, so this box isn't a plain
     // literal city/zip field the moment someone types more than a place name.
-    const parsed = buildPropertySearchParams(queryDraft);
-    const minBeds = parsed.get("minBeds");
-    applyFilters({
-      query: parsed.get("query") ?? "",
-      ...(minBeds ? { minBeds } : {}),
-    });
+    applyFilters(parsedToFilterPatch(buildPropertySearchParams(queryDraft)));
   }
 
   function toggle(key: DropdownKey) {
