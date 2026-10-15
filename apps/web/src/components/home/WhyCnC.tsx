@@ -47,6 +47,9 @@ const ITEMS: { title: TitlePart[]; description: string; imgFront?: string; imgFr
 
 type TitlePart = { text: string; sm?: boolean; size?: string };
 
+const titleSize = (part: TitlePart) =>
+  `${part.size ?? (part.sm ? "text-[3rem] xl:text-[3.6rem]" : "text-[4rem] xl:text-[4.8rem]")} ${part.sm ? "max-lg:text-[clamp(1.2rem,min(7vw,6svh),2.8rem)]" : "max-lg:text-[clamp(1.5rem,min(9vw,8svh),3.6rem)]"}`;
+
 export function WhyCnC() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
@@ -69,10 +72,10 @@ export function WhyCnC() {
         <div className="flex h-full max-lg:portrait:flex-col">
 
           {/* Left: text panel */}
-          <div className="relative flex w-[42%] flex-col justify-center pl-28 pr-16 max-lg:portrait:w-full max-lg:portrait:flex-1 max-lg:portrait:justify-start max-lg:portrait:pb-8 max-lg:portrait:pl-14 max-lg:portrait:pr-6 max-lg:portrait:pt-6 max-lg:landscape:pl-14 max-lg:landscape:pr-6">
+          <div className="relative flex w-[42%] flex-col justify-center pl-28 pr-16 max-lg:portrait:w-full max-lg:portrait:flex-none max-lg:portrait:justify-start max-lg:portrait:pb-6 max-lg:portrait:pl-14 max-lg:portrait:pr-6 max-lg:portrait:pt-[88px] max-lg:landscape:pl-14 max-lg:landscape:pr-6">
             {/* Segmented vertical progress — 4 equal segments, each fills top-to-bottom */}
             <div
-              className="absolute left-14 top-1/2 flex -translate-y-1/2 flex-col gap-1 max-lg:left-6 max-lg:!h-[120px] max-lg:portrait:top-6 max-lg:portrait:translate-y-0"
+              className="absolute left-14 top-1/2 flex -translate-y-1/2 flex-col gap-1 max-lg:left-6 max-lg:!h-[120px] max-lg:portrait:top-[88px] max-lg:portrait:translate-y-0"
               style={{ width: 2, height: 220 }}
             >
               {ITEMS.map((_, i) => (
@@ -90,6 +93,23 @@ export function WhyCnC() {
               ))}
             </div>
 
+            {/* Upright phones: invisible copies of all four items share one grid
+                cell with the live one, so the text area is always as tall as the
+                longest and the photos below never jump between steps. */}
+            <div className="max-lg:portrait:grid">
+            {ITEMS.map((item, n) => (
+              <div key={n} aria-hidden className="invisible col-start-1 row-start-1 hidden flex-col gap-5 max-lg:portrait:flex">
+                <h2 className="font-sans font-light uppercase leading-[0.90] tracking-wide">
+                  {item.title.map((part, i) => (
+                    <span key={i} className={`block ${titleSize(part)}`}>
+                      <span className="relative inline-block"><span className={i === item.title.length - 1 ? "font-medium" : undefined}>{part.text}</span></span>
+                    </span>
+                  ))}
+                </h2>
+                <p className="max-w-sm text-[0.95rem] leading-relaxed">{item.description}</p>
+                {item.showButton && <span className="flex w-fit px-7 py-3.5 text-sm font-medium">Join CnC</span>}
+              </div>
+            ))}
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeIdx}
@@ -100,7 +120,7 @@ export function WhyCnC() {
                   hidden: {},
                   visible: { transition: { staggerChildren: 0.18 } },
                 }}
-                className="flex flex-col gap-12 max-lg:gap-5"
+                className="flex flex-col gap-12 max-lg:gap-5 max-lg:portrait:col-start-1 max-lg:portrait:row-start-1"
               >
                 <h2 className="font-sans font-light uppercase leading-[0.90] tracking-wide text-[#1B1B1B]">
                   {active.title.map((part, i) => {
@@ -108,7 +128,7 @@ export function WhyCnC() {
                     return (
                       <span
                         key={i}
-                        className={`block ${part.size ?? (part.sm ? "text-[3rem] xl:text-[3.6rem]" : "text-[4rem] xl:text-[4.8rem]")} ${part.sm ? "max-lg:text-[clamp(1.2rem,min(7vw,6svh),2.8rem)]" : "max-lg:text-[clamp(1.5rem,min(9vw,8svh),3.6rem)]"}`}
+                        className={`block ${titleSize(part)}`}
                       >
                         <RevealLine triggerOnMount delay={i * 0.15}>
                           <span className={isLastPart ? "text-cnc-gold font-medium" : undefined}>
@@ -147,10 +167,11 @@ export function WhyCnC() {
                 )}
               </motion.div>
             </AnimatePresence>
+            </div>
           </div>
 
           {/* Right: overlapping images */}
-          <div className="relative flex-1 max-lg:portrait:h-[45%] max-lg:portrait:flex-none">
+          <div className="relative flex-1 max-lg:portrait:min-h-0">
 
             {/* Back media — venetian blind for images, crossfade for video */}
             <div
