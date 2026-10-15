@@ -38,4 +38,39 @@ describe("buildPropertySearchParams", () => {
     expect(params.get("minBeds")).toBe("3");
     expect(params.get("query")).toBe("whittier");
   });
+
+  const p = (s: string) => Object.fromEntries(buildPropertySearchParams(s).entries());
+
+  it("drops filler words around the city", () => {
+    expect(p("Pasadena homes for sale")).toEqual({ query: "Pasadena", listingType: "FOR_SALE" });
+    expect(p("homes for sale near Pasadena")).toEqual({ query: "Pasadena", listingType: "FOR_SALE" });
+    expect(p("3 bed home in Whittier")).toEqual({ query: "Whittier", minBeds: "3" });
+  });
+  it("for rent switches the listing type", () => {
+    expect(p("Pasadena homes for rent")).toEqual({ query: "Pasadena", listingType: "FOR_RENT" });
+  });
+  it("property type words", () => {
+    expect(p("condos in Pasadena under 800k")).toEqual({ query: "Pasadena", propertyType: "Condominium", maxPrice: "800000" });
+    expect(p("townhomes in pasadena")).toEqual({ query: "pasadena", propertyType: "Townhouse" });
+  });
+  it("prices", () => {
+    expect(p("Pasadena under 1M")).toEqual({ query: "Pasadena", maxPrice: "1000000" });
+    expect(p("over 1m")).toEqual({ minPrice: "1000000" });
+    expect(p("between 500k and 800k")).toEqual({ minPrice: "500000", maxPrice: "800000" });
+    expect(p("between 500 and 800k")).toEqual({ minPrice: "500000", maxPrice: "800000" });
+    expect(p("homes under $1.5M in Glendale")).toEqual({ query: "Glendale", maxPrice: "1500000" });
+    expect(p("under 750,000")).toEqual({ maxPrice: "750000" });
+  });
+  it("beds and baths shorthand", () => {
+    expect(p("3br in Pasadena")).toEqual({ query: "Pasadena", minBeds: "3" });
+    expect(p("3 bd Pasadena")).toEqual({ query: "Pasadena", minBeds: "3" });
+    expect(p("3 bedroom homes in Pasadena")).toEqual({ query: "Pasadena", minBeds: "3" });
+    expect(p("2 bath homes in Pasadena")).toEqual({ query: "Pasadena", minBaths: "2" });
+  });
+  it("leaves place names and addresses that contain keywords alone", () => {
+    expect(p("Home Gardens")).toEqual({ query: "Home Gardens" });
+    expect(p("Indio")).toEqual({ query: "Indio" });
+    expect(p("3 Bedford Ave")).toEqual({ query: "3 Bedford Ave" });
+    expect(p("123 Main St")).toEqual({ query: "123 Main St" });
+  });
 });
