@@ -115,6 +115,9 @@ export function mapResoToProperty(raw: ResoProperty) {
     state: raw.StateOrProvince ?? "CA",
     zip: raw.PostalCode ?? "",
     county: raw.CountyOrParish ?? null,
+    // MLS neighborhood label ("C21 - Silver Lake - Echo Park"), its own column
+    // so search can index it; also kept inside details for the detail page.
+    area: raw.MLSAreaMajor ?? null,
     latitude: raw.Latitude ?? null,
     longitude: raw.Longitude ?? null,
     photos: photos,

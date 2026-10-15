@@ -98,3 +98,13 @@ describe("mapResoToProperty — photos filtering by MediaClassification", () => 
     expect(result.photos).toEqual(["https://x/a.jpg", "https://x/b.jpg"]);
   });
 });
+
+describe("mapResoToProperty — area (MLS neighborhood)", () => {
+  it("copies MLSAreaMajor into area", () => {
+    const r = mapResoToProperty({ ...baseRaw(), MLSAreaMajor: "C21 - Silver Lake - Echo Park" } as any);
+    expect(r.area).toBe("C21 - Silver Lake - Echo Park");
+  });
+  it("is null when the feed has no area", () => {
+    expect(mapResoToProperty(baseRaw() as any).area).toBeNull();
+  });
+});
