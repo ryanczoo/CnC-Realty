@@ -295,7 +295,7 @@ export function ServicesSection() {
     <section data-navbar-theme="light" ref={sectionRef} className="relative bg-[#F2F0EF] max-lg:flex max-lg:!min-h-0 max-lg:flex-col max-lg:gap-8 max-lg:px-6 max-lg:py-16" style={{ minHeight: "108vh" }}>
       {/* Heading — top right */}
       <motion.div
-        className="absolute right-[8%] top-[14%] text-right max-lg:static max-lg:text-left"
+        className="absolute right-[8%] top-[14%] text-right max-lg:static"
         initial={{ opacity: 0, y: 24 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
@@ -312,7 +312,7 @@ export function ServicesSection() {
           animate={PULSE_ANIMATE}
           whileHover={{ scale: 1.1, transition: SPRING_HOVER }}
           transition={PULSE_TRANSITION}
-          className="ml-auto mt-6 flex w-fit items-center rounded-full bg-[#1B1B1B] px-7 py-3.5 text-sm font-medium text-white max-lg:ml-0"
+          className="ml-auto mt-6 flex w-fit items-center rounded-full bg-[#1B1B1B] px-7 py-3.5 text-sm font-medium text-white"
         >
           Let&apos;s Start
         </motion.button>
