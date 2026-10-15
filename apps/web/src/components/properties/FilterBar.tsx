@@ -5,7 +5,9 @@ import { X } from "lucide-react";
 import { SearchFilters } from "@/types/property";
 import { buildPropertySearchParams } from "@/lib/property-search";
 import { parsedToFilterPatch } from "@/lib/search-filters";
-import { useIsMobile } from "@/hooks/useIsMobile";
+import { draftChanges, draftValue, type FilterDraft } from "@/lib/filter-draft";
+import { normalizePriceDraft } from "@/lib/price-steps";
+import { FilterPanel, FilterOption } from "./FilterPanel";
 
 interface Props {
   filters: SearchFilters;
@@ -53,23 +55,33 @@ type DropdownKey = "listingType" | "price" | "beds" | "baths" | "type" | null;
 
 export function FilterBar({
   filters,
-  setFilter,
   applyFilters,
   clearFilters,
   hasActiveFilters,
   total,
 }: Props) {
   const [openDropdown, setOpenDropdown] = useState<DropdownKey>(null);
-  const isMobile = useIsMobile();
 
-  // Phones/tablets: Escape closes the open bottom sheet (keyboard + screen-
-  // reader users). Desktop dropdowns keep their original behaviour.
+  // Picks inside an open dropdown wait for Apply; opening starts a fresh draft,
+  // so closing any other way (outside tap, Escape, another pill) discards it.
+  const [draft, setDraft] = useState<FilterDraft>({});
+  const dv = (k: keyof SearchFilters) => draftValue(draft, filters, k);
+  const pick = (patch: FilterDraft) => setDraft((d) => ({ ...d, ...patch }));
+  function apply() {
+    let next = draft;
+    if ("minPrice" in draft || "maxPrice" in draft) next = { ...draft, ...normalizePriceDraft(dv("minPrice"), dv("maxPrice")) };
+    const changes = draftChanges(next, filters);
+    if (Object.keys(changes).length) applyFilters(changes);
+    setOpenDropdown(null);
+  }
+
+  // Escape closes the open dropdown / bottom sheet without applying.
   useEffect(() => {
-    if (!isMobile || !openDropdown) return;
+    if (!openDropdown) return;
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setOpenDropdown(null); };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [isMobile, openDropdown]);
+  }, [openDropdown]);
   const barRef = useRef<HTMLDivElement>(null);
 
   // The query text field only searches on explicit submit (Enter or the
@@ -88,6 +100,7 @@ export function FilterBar({
   }
 
   function toggle(key: DropdownKey) {
+    setDraft({});
     setOpenDropdown((prev) => (prev === key ? null : key));
   }
 
@@ -123,26 +136,16 @@ export function FilterBar({
           {filters.listingType === "FOR_RENT" ? "For Rent" : "For Sale"} ▾
         </button>
         {openDropdown === "listingType" && (
-          <div className="absolute left-0 top-full z-40 mt-1 w-36 rounded-xl border border-white/10 bg-[#1a1a1a] py-1 shadow-2xl max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:top-auto max-lg:mt-0 max-lg:w-auto max-lg:rounded-b-none max-lg:rounded-t-2xl max-lg:max-h-[75svh] max-lg:overflow-y-auto max-lg:py-3 max-lg:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <FilterPanel width="w-36" onApply={apply}>
             {[
               { label: "For Sale", value: "FOR_SALE" },
               { label: "For Rent", value: "FOR_RENT" },
             ].map((o) => (
-              <button
-                key={o.value}
-                onClick={() => {
-                  setFilter("listingType", o.value);
-                  setOpenDropdown(null);
-                }}
-                className={`flex w-full items-center gap-2 px-4 py-2 text-left text-sm max-lg:py-3 max-lg:text-base hover:bg-white/5 ${
-                  filters.listingType === o.value ? "text-[#9E8C61]" : "text-white/70 hover:text-white"
-                }`}
-              >
-                <span className={`h-2 w-2 rounded-full border ${filters.listingType === o.value ? "border-[#9E8C61] bg-[#9E8C61]" : "border-white/30"}`} />
+              <FilterOption key={o.value} selected={dv("listingType") === o.value} onClick={() => pick({ listingType: o.value })}>
                 {o.label}
-              </button>
+              </FilterOption>
             ))}
-          </div>
+          </FilterPanel>
         )}
       </div>
 
@@ -193,21 +196,17 @@ export function FilterBar({
           {priceLabel} ▾
         </button>
         {openDropdown === "price" && (
-          <div className="absolute left-0 top-full z-40 mt-1 w-44 rounded-xl border border-white/10 bg-[#1a1a1a] py-1 shadow-2xl max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:top-auto max-lg:mt-0 max-lg:w-auto max-lg:rounded-b-none max-lg:rounded-t-2xl max-lg:max-h-[75svh] max-lg:overflow-y-auto max-lg:py-3 max-lg:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <FilterPanel width="w-44" onApply={apply}>
             {PRICE_PRESETS.map((p) => (
-              <button
+              <FilterOption
                 key={p.label}
-                onClick={() => {
-                  setFilter("minPrice", p.min);
-                  setFilter("maxPrice", p.max);
-                  setOpenDropdown(null);
-                }}
-                className="w-full px-4 py-2 text-left text-sm max-lg:py-3 max-lg:text-base text-white/70 hover:bg-white/5 hover:text-white"
+                selected={dv("minPrice") === p.min && dv("maxPrice") === p.max}
+                onClick={() => pick({ minPrice: p.min, maxPrice: p.max })}
               >
                 {p.label}
-              </button>
+              </FilterOption>
             ))}
-          </div>
+          </FilterPanel>
         )}
       </div>
 
@@ -220,20 +219,13 @@ export function FilterBar({
           {bedsActive ? `${filters.minBeds}+ Beds` : "Beds"} ▾
         </button>
         {openDropdown === "beds" && (
-          <div className="absolute left-0 top-full z-40 mt-1 w-32 rounded-xl border border-white/10 bg-[#1a1a1a] py-1 shadow-2xl max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:top-auto max-lg:mt-0 max-lg:w-auto max-lg:rounded-b-none max-lg:rounded-t-2xl max-lg:max-h-[75svh] max-lg:overflow-y-auto max-lg:py-3 max-lg:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <FilterPanel width="w-32" onApply={apply}>
             {BED_OPTIONS.map((o) => (
-              <button
-                key={o.value}
-                onClick={() => {
-                  setFilter("minBeds", o.value);
-                  setOpenDropdown(null);
-                }}
-                className="w-full px-4 py-2 text-left text-sm max-lg:py-3 max-lg:text-base text-white/70 hover:bg-white/5 hover:text-white"
-              >
+              <FilterOption key={o.value} selected={dv("minBeds") === o.value} onClick={() => pick({ minBeds: o.value })}>
                 {o.label}
-              </button>
+              </FilterOption>
             ))}
-          </div>
+          </FilterPanel>
         )}
       </div>
 
@@ -246,20 +238,13 @@ export function FilterBar({
           {bathsActive ? `${filters.minBaths}+ Baths` : "Baths"} ▾
         </button>
         {openDropdown === "baths" && (
-          <div className="absolute left-0 top-full z-40 mt-1 w-32 rounded-xl border border-white/10 bg-[#1a1a1a] py-1 shadow-2xl max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:top-auto max-lg:mt-0 max-lg:w-auto max-lg:rounded-b-none max-lg:rounded-t-2xl max-lg:max-h-[75svh] max-lg:overflow-y-auto max-lg:py-3 max-lg:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <FilterPanel width="w-32" onApply={apply}>
             {BATH_OPTIONS.map((o) => (
-              <button
-                key={o.value}
-                onClick={() => {
-                  setFilter("minBaths", o.value);
-                  setOpenDropdown(null);
-                }}
-                className="w-full px-4 py-2 text-left text-sm max-lg:py-3 max-lg:text-base text-white/70 hover:bg-white/5 hover:text-white"
-              >
+              <FilterOption key={o.value} selected={dv("minBaths") === o.value} onClick={() => pick({ minBaths: o.value })}>
                 {o.label}
-              </button>
+              </FilterOption>
             ))}
-          </div>
+          </FilterPanel>
         )}
       </div>
 
@@ -275,20 +260,13 @@ export function FilterBar({
           ▾
         </button>
         {openDropdown === "type" && (
-          <div className="absolute left-0 top-full z-40 mt-1 w-44 rounded-xl border border-white/10 bg-[#1a1a1a] py-1 shadow-2xl max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:top-auto max-lg:mt-0 max-lg:w-auto max-lg:rounded-b-none max-lg:rounded-t-2xl max-lg:max-h-[75svh] max-lg:overflow-y-auto max-lg:py-3 max-lg:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <FilterPanel width="w-44" onApply={apply}>
             {TYPE_OPTIONS.map((o) => (
-              <button
-                key={o.value}
-                onClick={() => {
-                  setFilter("propertyType", o.value);
-                  setOpenDropdown(null);
-                }}
-                className="w-full px-4 py-2 text-left text-sm max-lg:py-3 max-lg:text-base text-white/70 hover:bg-white/5 hover:text-white"
-              >
+              <FilterOption key={o.value} selected={dv("propertyType") === o.value} onClick={() => pick({ propertyType: o.value })}>
                 {o.label}
-              </button>
+              </FilterOption>
             ))}
-          </div>
+          </FilterPanel>
         )}
       </div>
 
