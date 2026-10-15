@@ -27,6 +27,12 @@ describe("price steps", () => {
     expect(maxIndexFor("20000000")).toBe(LAST_STEP);
     expect(minValueAt(32)).toBe("800000");
   });
+  // Final review: a $0 max means "nothing can match" — treat it as no max
+  it("a max of $0 means no max, never zero homes", () => {
+    expect(maxValueAt(0)).toBe("");
+    expect(normalizePriceDraft("", "0")).toEqual({ minPrice: "", maxPrice: "" });
+    expect(normalizePriceDraft("0", "500000")).toEqual({ minPrice: "", maxPrice: "500000" });
+  });
   it("a typed min above max is swapped, not left to return nothing", () => {
     expect(normalizePriceDraft("900000", "500000")).toEqual({ minPrice: "500000", maxPrice: "900000" });
     expect(normalizePriceDraft("500000", "")).toEqual({ minPrice: "500000", maxPrice: "" });

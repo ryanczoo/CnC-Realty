@@ -27,7 +27,8 @@ export function maxIndexFor(value: string): number {
 }
 
 export const minValueAt = (i: number) => (i <= 0 ? "" : String(PRICE_STEPS[i]));
-export const maxValueAt = (i: number) => (i >= LAST_STEP ? "" : String(PRICE_STEPS[i]));
+// Max at either end means "no max" — a $0 max could only ever match nothing
+export const maxValueAt = (i: number) => (i >= LAST_STEP || i <= 0 ? "" : String(PRICE_STEPS[i]));
 
 export function stepLabel(i: number): string {
   if (i >= LAST_STEP) return "$10M+";
@@ -37,6 +38,9 @@ export function stepLabel(i: number): string {
 }
 
 export function normalizePriceDraft(min: string, max: string): { minPrice: string; maxPrice: string } {
+  // A typed $0 on either end is the same as no limit
+  if (Number(min) === 0) min = "";
+  if (Number(max) === 0) max = "";
   if (min && max && Number(min) > Number(max)) return { minPrice: max, maxPrice: min };
   return { minPrice: min, maxPrice: max };
 }

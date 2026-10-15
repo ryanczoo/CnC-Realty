@@ -73,4 +73,18 @@ describe("buildPropertySearchParams", () => {
     expect(p("3 Bedford Ave")).toEqual({ query: "3 Bedford Ave" });
     expect(p("123 Main St")).toEqual({ query: "123 Main St" });
   });
+
+  // Final review: the old reader kept whatever followed "in"/"near" as the
+  // location; descriptive words before it must not leak into the city search.
+  it("descriptive words before 'in {city}' are dropped, as before", () => {
+    expect(p("luxury homes in Malibu")).toEqual({ query: "Malibu" });
+    expect(p("single family homes in Pasadena")).toEqual({ query: "Pasadena" });
+    expect(p("new listings in Pasadena")).toEqual({ query: "Pasadena" });
+    expect(p("3 bedroom house with pool in Pasadena")).toEqual({ query: "Pasadena", minBeds: "3" });
+    expect(p("at least 3 beds in Pasadena")).toEqual({ query: "Pasadena", minBeds: "3" });
+    expect(p("2 story home in Irvine")).toEqual({ query: "Irvine" });
+  });
+  it("a house number in front of a street named Bath/Bd is an address, not a filter", () => {
+    expect(p("500 Bath St, Santa Barbara")).toEqual({ query: "500 Bath St, Santa Barbara" });
+  });
 });

@@ -33,14 +33,14 @@ export function PriceRangeFilter({ min, max, onChange }: Props) {
           style={{ left: `${pct(lo)}%`, right: `${100 - pct(hi)}%` }}
         />
         <input
-          type="range" aria-label="Minimum price" min={0} max={LAST_STEP} step={1} value={lo}
+          type="range" aria-label="Minimum price slider" aria-valuetext={stepLabel(lo)} min={0} max={LAST_STEP} step={1} value={lo}
           onChange={(e) => onChange(minValueAt(Math.min(Number(e.target.value), hi)), max)}
           className={RANGE}
           // When both handles sit at the top end, the min handle must be on top to be draggable
           style={{ zIndex: lo >= hi && lo > LAST_STEP / 2 ? 3 : 1 }}
         />
         <input
-          type="range" aria-label="Maximum price" min={0} max={LAST_STEP} step={1} value={hi}
+          type="range" aria-label="Maximum price slider" aria-valuetext={stepLabel(hi)} min={0} max={LAST_STEP} step={1} value={hi}
           onChange={(e) => onChange(min, maxValueAt(Math.max(Number(e.target.value), lo)))}
           className={RANGE}
           style={{ zIndex: 2 }}

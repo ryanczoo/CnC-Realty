@@ -1,5 +1,6 @@
 import { Prisma } from "@cnc/database";
 import { CA_COUNTIES, BAY_AREA_COUNTIES } from "@/lib/ca-counties";
+import { STREET_TYPES } from "@/lib/street-types";
 
 // Trailing pieces people add the way Zillow/Google take a location
 // ("Monterey Park, CA, USA"). None are stored on a listing, so they're dropped.
@@ -8,13 +9,8 @@ const STATE_END = /(?:^|[\s,]+)(?:ca|calif\.?|california)$/i;
 const ZIP_END = /(?:^|[\s,]+)(\d{5})(?:-\d{4})?$/;
 const ZIP_ONLY = /^\d{5}(?:-\d{4})?$/;
 
-// Street types. Ignored when matching an address — listings spell them
-// inconsistently ("Lincoln Avenue", "Marguerita Ave", "Sefton") — and used to
-// split "Atlantic Blvd Monterey Park" into street + city.
-const STREET_TYPES = new Set([
-  "st", "street", "ave", "av", "avenue", "blvd", "boulevard", "rd", "road", "dr", "drive", "ln", "lane",
-  "ct", "court", "pl", "place", "way", "ter", "terrace", "cir", "circle", "pkwy", "parkway", "hwy", "highway",
-]);
+// Street types (lib/street-types.ts) are ignored when matching an address and
+// used to split "Atlantic Blvd Monterey Park" into street + city.
 const DIRECTIONS = new Set([
   "n", "s", "e", "w", "ne", "nw", "se", "sw",
   "north", "south", "east", "west", "northeast", "northwest", "southeast", "southwest",

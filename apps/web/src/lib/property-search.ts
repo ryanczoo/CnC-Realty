@@ -2,6 +2,8 @@
 // way Zillow does ("condos in Pasadena under 800k", "3br", "for rent") and turns
 // it into the filter params the search page already understands. Whatever is
 // left is the location, handed to buildLocationWhere on the server.
+import { STREET_TYPES } from "@/lib/street-types";
+
 const AMOUNT = String.raw`\$?\s*(\d[\d,]*(?:\.\d+)?)\s*(k|m|mil|million)?\b`;
 const BETWEEN = new RegExp(String.raw`\bbetween\s+${AMOUNT}\s+(?:and|to)\s+${AMOUNT}`, "i");
 const UNDER = new RegExp(String.raw`\b(?:under|below|less than|up to|max)\s+${AMOUNT}`, "i");
@@ -15,6 +17,7 @@ const TOWNHOUSE = /\btown\s?(?:home|house)s?\b/i;
 const FILLER = /\b(?:homes|houses|house|properties|listings|real estate|apartments|with)\b/gi;
 // Singular "home" only where it can't be a place name ("Home Gardens")
 const HOME = /\bhome\b(?=\s+(?:in|near|around|for)\b|\s*$)/gi;
+const PLACE_AFTER = /\b(?:in|near|around)\s+(\S.*)$/i;
 const LEAD = /^(?:in|near|around)\s+/i;
 const TRAIL = /\s+(?:in|near|around)$/i;
 
@@ -41,14 +44,22 @@ export function buildPropertySearchParams(raw: string): URLSearchParams {
   });
   cut(UNDER, (m) => { const v = toDollars(m[1], m[2]); if (!v) return false; params.set("maxPrice", String(v)); return true; });
   cut(OVER, (m) => { const v = toDollars(m[1], m[2]); if (!v) return false; params.set("minPrice", String(v)); return true; });
-  cut(BEDS, (m) => { params.set("minBeds", m[1]); return true; });
-  cut(BATHS, (m) => { params.set("minBaths", m[1]); return true; });
+  // "500 Bath St" is a house number + a street named Bath, not "500 baths"
+  const isStreetName = (m: RegExpMatchArray) => {
+    const nextWord = t.slice(m.index! + m[0].length).trim().split(/[\s,]+/)[0]?.toLowerCase() ?? "";
+    return !t.slice(0, m.index).trim() && STREET_TYPES.has(nextWord);
+  };
+  cut(BEDS, (m) => { if (isStreetName(m)) return false; params.set("minBeds", m[1]); return true; });
+  cut(BATHS, (m) => { if (isStreetName(m)) return false; params.set("minBaths", m[1]); return true; });
   cut(RENT, () => { params.set("listingType", "FOR_RENT"); return true; });
   cut(SALE, () => { params.set("listingType", "FOR_SALE"); return true; });
   cut(CONDO, () => { params.set("propertyType", "Condominium"); return true; });
   cut(TOWNHOUSE, () => { params.set("propertyType", "Townhouse"); return true; });
 
-  const location = t.replace(FILLER, " ").replace(HOME, " ").replace(/\s+/g, " ").trim()
+  // "luxury homes in Malibu": whatever follows in/near/around is the place
+  // (as the old reader did); otherwise strip the filler words around it.
+  const tail = t.match(PLACE_AFTER);
+  const location = (tail ? tail[1] : t).replace(FILLER, " ").replace(HOME, " ").replace(/\s+/g, " ").trim()
     .replace(LEAD, "").replace(TRAIL, "").trim();
   if (location) params.set("query", location);
   return params;
