@@ -12,7 +12,9 @@ export function FilterPanel({ width, onApply, children }: { width: string; onApp
   return (
     <div className={`${FRAME} ${width}`}>
       {children}
-      <div className="px-3 pb-1 pt-2">
+      {/* Phones: pinned to the bottom of the sheet so a long list (Type on a
+          sideways phone) scrolls under it instead of hiding it */}
+      <div className="px-3 pb-1 pt-2 max-lg:sticky max-lg:-bottom-3 max-lg:bg-[#1a1a1a] max-lg:pb-3">
         <button
           type="button"
           onClick={onApply}

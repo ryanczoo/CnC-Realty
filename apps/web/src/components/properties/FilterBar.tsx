@@ -8,6 +8,7 @@ import { parsedToFilterPatch } from "@/lib/search-filters";
 import { draftChanges, draftValue, type FilterDraft } from "@/lib/filter-draft";
 import { normalizePriceDraft } from "@/lib/price-steps";
 import { FilterPanel, FilterOption } from "./FilterPanel";
+import { PriceRangeFilter } from "./PriceRangeFilter";
 
 interface Props {
   filters: SearchFilters;
@@ -17,14 +18,6 @@ interface Props {
   hasActiveFilters: boolean;
   total: number;
 }
-
-const PRICE_PRESETS = [
-  { label: "Any", min: "", max: "" },
-  { label: "Under $500K", min: "", max: "500000" },
-  { label: "$500K–$1M", min: "500000", max: "1000000" },
-  { label: "$1M–$2M", min: "1000000", max: "2000000" },
-  { label: "$2M+", min: "2000000", max: "" },
-];
 
 const BED_OPTIONS = [
   { label: "Any", value: "" },
@@ -109,12 +102,6 @@ export function FilterBar({
   const bathsActive = !!filters.minBaths;
   const typeActive = !!filters.propertyType;
 
-  const priceLabel = priceActive
-    ? (PRICE_PRESETS.find(
-        (p) => p.min === filters.minPrice && p.max === filters.maxPrice
-      )?.label ?? "Price")
-    : "Price";
-
   const pillBase =
     "rounded-full border px-4 py-1.5 text-sm transition-colors";
   const pillActive =
@@ -193,19 +180,15 @@ export function FilterBar({
           onClick={() => toggle("price")}
           className={`${pillBase} ${priceActive ? pillActive : pillInactive}`}
         >
-          {priceLabel} ▾
+          Price ▾
         </button>
         {openDropdown === "price" && (
-          <FilterPanel width="w-44" onApply={apply}>
-            {PRICE_PRESETS.map((p) => (
-              <FilterOption
-                key={p.label}
-                selected={dv("minPrice") === p.min && dv("maxPrice") === p.max}
-                onClick={() => pick({ minPrice: p.min, maxPrice: p.max })}
-              >
-                {p.label}
-              </FilterOption>
-            ))}
+          <FilterPanel width="w-72" onApply={apply}>
+            <PriceRangeFilter
+              min={dv("minPrice")}
+              max={dv("maxPrice")}
+              onChange={(minPrice, maxPrice) => pick({ minPrice, maxPrice })}
+            />
           </FilterPanel>
         )}
       </div>
