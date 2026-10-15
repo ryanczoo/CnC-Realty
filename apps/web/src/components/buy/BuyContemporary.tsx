@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { motion, useMotionValue, useScroll, useTransform } from "motion/react";
 import Image from "next/image";
 import { ramp } from "@/lib/motion";
@@ -84,6 +84,27 @@ export function clusterGeometry(portraitPhone: boolean): Record<"ctr" | "lft" | 
   };
 }
 
+// Upright phones: connector curves built from the real photo boxes and logo
+// centre (pixels inside the pinned panel), so they land at every phone size.
+// Each starts where the photo-centre→logo line leaves the photo and bows to
+// the same side as the desktop LINE_PATHS.
+type Box = { x: number; y: number; w: number; h: number };
+const PHONE_LINE_BOW = 0.2;
+const r1 = (n: number) => Math.round(n * 10) / 10;
+
+export function phoneLinePaths(boxes: Box[], logo: { x: number; y: number }): string[] {
+  return boxes.map(({ x, y, w, h }) => {
+    const cx = x + w / 2, cy = y + h / 2;
+    const dx = logo.x - cx, dy = logo.y - cy;
+    const t = Math.min(dx ? w / 2 / Math.abs(dx) : Infinity, dy ? h / 2 / Math.abs(dy) : Infinity);
+    const sx = cx + dx * t, sy = cy + dy * t;
+    const ex = logo.x - sx, ey = logo.y - sy;
+    const qx = (sx + logo.x) / 2 + ey * PHONE_LINE_BOW;
+    const qy = (sy + logo.y) / 2 - ex * PHONE_LINE_BOW;
+    return `M ${r1(sx)},${r1(sy)} Q ${r1(qx)},${r1(qy)} ${r1(logo.x)},${r1(logo.y)}`;
+  });
+}
+
 const FLOAT_ROWS = [
   { words: ["TRUST", "WORTHY"],  width: "90vw"  },
   { words: ["INNOV", "ATIVE"],   width: "97vw"  },
@@ -138,8 +159,28 @@ export function BuyContemporary() {
   const portraitMV = useMotionValue(0);
   const panelRef = useRef<HTMLDivElement>(null);
   const pinEndRef = useRef(0.75);
+  // Upright phones: the 4 photo boxes + logo, measured to draw the phone lines.
+  const photoRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const logoRef = useRef<HTMLSpanElement>(null);
+  const [phoneLines, setPhoneLines] = useState<{ w: number; h: number; paths: string[] } | null>(null);
 
   useEffect(() => {
+    const measureLines = () => {
+      const panel = panelRef.current, logo = logoRef.current;
+      const photos = photoRefs.current;
+      if (!isMobile || window.innerHeight < window.innerWidth || !panel || !logo || photos.some((el) => !el)) {
+        setPhoneLines(null);
+        return;
+      }
+      const pr = panel.getBoundingClientRect(), lr = logo.getBoundingClientRect();
+      // offset* ignore the fly-in transforms, so this is the corner layout at any scroll point.
+      const boxes = photos.map((el) => ({ x: el!.offsetLeft, y: el!.offsetTop, w: el!.offsetWidth, h: el!.offsetHeight }));
+      setPhoneLines({
+        w: panel.clientWidth,
+        h: panel.clientHeight,
+        paths: phoneLinePaths(boxes, { x: lr.left - pr.left + lr.width / 2, y: lr.top - pr.top + lr.height / 2 }),
+      });
+    };
     const onResize = () => {
       const panelPx = panelRef.current?.clientHeight ?? window.innerHeight;
       vwRef.current = window.innerWidth;
@@ -147,8 +188,11 @@ export function BuyContemporary() {
       const sectionPx = sectionRef.current?.offsetHeight ?? 0;
       if (sectionPx > panelPx) pinEndRef.current = (sectionPx - panelPx) / sectionPx;
       portraitMV.set(isMobile && window.innerHeight >= window.innerWidth ? 1 : 0);
+      measureLines();
     };
     onResize();
+    // The logo sits under the heading, so re-measure once the web font has loaded.
+    document.fonts?.ready.then(measureLines);
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, [isMobile, portraitMV]);
@@ -237,6 +281,29 @@ export function BuyContemporary() {
           ))}
         </motion.svg>
 
+        {/* Upright phones: same lines, drawn from the measured photo + logo positions */}
+        {phoneLines && (
+          <motion.svg
+            className="pointer-events-none absolute inset-0 z-10 hidden h-full w-full max-lg:portrait:block"
+            viewBox={`0 0 ${phoneLines.w} ${phoneLines.h}`}
+            fill="none"
+            aria-hidden
+            style={{ opacity: lineOpacity }}
+          >
+            {phoneLines.paths.map((d, i) => (
+              <motion.path
+                key={i}
+                d={d}
+                stroke="white"
+                strokeOpacity="0.18"
+                strokeWidth="1"
+                strokeLinecap="round"
+                style={{ pathLength: lineProgress }}
+              />
+            ))}
+          </motion.svg>
+        )}
+
         {/* Watermark floating text */}
         <motion.div
           aria-hidden
@@ -269,12 +336,12 @@ export function BuyContemporary() {
         </div>
 
         {/* ── Center image → top-left corner ── */}
-        <motion.div className="max-lg:portrait:!left-[7vw] max-lg:portrait:!top-[9vh] max-lg:portrait:!h-[22vh] max-lg:portrait:!w-[40vw]" style={{ ...POS_TOP_LEFT, x: ctrX, y: ctrY, scale: ctrSc, zIndex: 2 }}>
+        <motion.div ref={(el) => { photoRefs.current[0] = el; }} className="max-lg:portrait:!left-[7vw] max-lg:portrait:!top-[9vh] max-lg:portrait:!h-[22vh] max-lg:portrait:!w-[40vw]" style={{ ...POS_TOP_LEFT, x: ctrX, y: ctrY, scale: ctrSc, zIndex: 2 }}>
           <Image src="/images/contemporary/contemporary-01.jpg" fill className="object-cover" alt="" sizes="(max-width: 1023px) and (orientation: portrait) 62vw, 25vw" />
         </motion.div>
 
         {/* ── Right image → top-right corner (overlay shares parent transform) ── */}
-        <motion.div className="max-lg:portrait:!left-[53vw] max-lg:portrait:!top-[15vh] max-lg:portrait:!h-[22vh] max-lg:portrait:!w-[40vw]" style={{ ...POS_TOP_RIGHT, x: rgtX, y: rgtY, scale: rgtSc, rotate: rgtRot, zIndex: 1 }}>
+        <motion.div ref={(el) => { photoRefs.current[1] = el; }} className="max-lg:portrait:!left-[53vw] max-lg:portrait:!top-[15vh] max-lg:portrait:!h-[22vh] max-lg:portrait:!w-[40vw]" style={{ ...POS_TOP_RIGHT, x: rgtX, y: rgtY, scale: rgtSc, rotate: rgtRot, zIndex: 1 }}>
           <Image src="/images/contemporary/contemporary-02.jpg" fill className="object-cover" alt="" sizes="(max-width: 1023px) and (orientation: portrait) 44vw, 18vw" />
           <motion.div
             aria-hidden
@@ -283,7 +350,7 @@ export function BuyContemporary() {
         </motion.div>
 
         {/* ── Left image → bottom-left corner (overlay shares parent transform) ── */}
-        <motion.div className="max-lg:portrait:!left-[7vw] max-lg:portrait:!top-[65vh] max-lg:portrait:!h-[22vh] max-lg:portrait:!w-[40vw]" style={{ ...POS_BTM_LEFT, x: lftX, y: lftY, scale: lftSc, rotate: lftRot, zIndex: 1 }}>
+        <motion.div ref={(el) => { photoRefs.current[2] = el; }} className="max-lg:portrait:!left-[7vw] max-lg:portrait:!top-[65vh] max-lg:portrait:!h-[22vh] max-lg:portrait:!w-[40vw]" style={{ ...POS_BTM_LEFT, x: lftX, y: lftY, scale: lftSc, rotate: lftRot, zIndex: 1 }}>
           <Image src="/images/contemporary/contemporary-03.jpg" fill className="object-cover" alt="" sizes="(max-width: 1023px) and (orientation: portrait) 44vw, 18vw" />
           <motion.div
             aria-hidden
@@ -292,7 +359,7 @@ export function BuyContemporary() {
         </motion.div>
 
         {/* ── Back image → bottom-right corner ── */}
-        <motion.div className="max-lg:portrait:!left-[53vw] max-lg:portrait:!top-[71vh] max-lg:portrait:!h-[22vh] max-lg:portrait:!w-[40vw]" style={{ ...POS_BTM_RIGHT, x: bckX, y: bckY, scale: bckSc, zIndex: 0 }}>
+        <motion.div ref={(el) => { photoRefs.current[3] = el; }} className="max-lg:portrait:!left-[53vw] max-lg:portrait:!top-[71vh] max-lg:portrait:!h-[22vh] max-lg:portrait:!w-[40vw]" style={{ ...POS_BTM_RIGHT, x: bckX, y: bckY, scale: bckSc, zIndex: 0 }}>
           <Image src="/images/contemporary/contemporary-04.jpg" fill className="object-cover" alt="" sizes="(max-width: 1023px) and (orientation: portrait) 62vw, 18vw" />
         </motion.div>
 
@@ -306,7 +373,7 @@ export function BuyContemporary() {
             style={{ fontSize: "clamp(2.5rem, 6vw, 7rem)" }}
           >
             WHY CHOOSE
-            <span className="mt-6 flex justify-center">
+            <span ref={logoRef} className="mt-6 flex justify-center">
               <Image
                 src="/logo-mark.png"
                 alt="CnC"
