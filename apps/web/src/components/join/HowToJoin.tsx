@@ -49,7 +49,7 @@ export function HowToJoin() {
                 animate={PULSE_ANIMATE}
                 whileHover={{ scale: 1.1, transition: SPRING_HOVER }}
                 transition={PULSE_TRANSITION}
-                className="mt-8 ml-[1.5rem] inline-flex items-center rounded-full bg-[#1B1B1B] px-6 py-3 font-sans text-sm text-white"
+                className="mt-8 ml-[1.5rem] max-lg:ml-[3rem] inline-flex items-center rounded-full bg-[#1B1B1B] px-6 py-3 font-sans text-sm text-white"
               >
                 Apply Now
               </MotionLink>
@@ -62,10 +62,10 @@ export function HowToJoin() {
             {/* Steps list */}
             <div className="flex-1">
               {STEPS.map((step) => (
-                <div key={step.number} className="py-10 max-lg:py-6">
+                <div key={step.number} className="py-10 max-lg:py-6 max-lg:text-right">
                   <p className="mb-4 font-sans text-base font-medium tracking-widest text-cnc-gold">{step.number}</p>
                   <h3 className="mb-3 font-sans text-[2.2rem] font-medium text-[#1B1B1B] max-lg:text-[clamp(1.6rem,7vw,2.2rem)]">{step.title}</h3>
-                  <p className="max-w-sm font-sans text-base text-[#1B1B1B]/50">{step.body}</p>
+                  <p className="max-w-sm font-sans text-base text-[#1B1B1B]/50 max-lg:ml-auto">{step.body}</p>
                 </div>
               ))}
             </div>
