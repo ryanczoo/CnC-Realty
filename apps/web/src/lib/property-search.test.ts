@@ -17,6 +17,11 @@ describe("buildPropertySearchParams", () => {
     expect(params.get("query")).toBe("Pasadena");
   });
 
+  it("extracts the 'in {city}' clause when a state follows the city", () => {
+    expect(buildPropertySearchParams("3 bed homes in Pasadena, CA").get("query")).toBe("Pasadena, CA");
+    expect(buildPropertySearchParams("homes in Monterey Park, California").get("query")).toBe("Monterey Park, California");
+  });
+
   it("falls back to the raw query when there's no 'in {city}' clause", () => {
     const params = buildPropertySearchParams("90210");
     expect(params.get("query")).toBe("90210");

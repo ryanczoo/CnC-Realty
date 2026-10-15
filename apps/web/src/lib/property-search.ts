@@ -9,8 +9,9 @@ export function buildPropertySearchParams(raw: string): URLSearchParams {
     : raw;
   if (bedMatch) params.set("minBeds", bedMatch[1]);
 
-  // Extract "in City Name" at end of query → city search
-  const cityMatch = withoutBed.match(/\bin\s+([a-zA-Z][a-zA-Z\s]+)$/i);
+  // Extract "in City Name" (optionally ", CA") at end of query → city search;
+  // the server drops the state when it searches
+  const cityMatch = withoutBed.match(/\bin\s+([a-zA-Z][a-zA-Z\s,.]+)$/i);
   if (cityMatch) {
     params.set("query", cityMatch[1].trim());
   } else {
