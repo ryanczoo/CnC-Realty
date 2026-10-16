@@ -8,8 +8,9 @@ const AMOUNT = String.raw`\$?\s*(\d[\d,]*(?:\.\d+)?)\s*(k|m|mil|million)?\b`;
 const BETWEEN = new RegExp(String.raw`\bbetween\s+${AMOUNT}\s+(?:and|to)\s+${AMOUNT}`, "i");
 const UNDER = new RegExp(String.raw`\b(?:under|below|less than|up to|max)\s+${AMOUNT}`, "i");
 const OVER = new RegExp(String.raw`\b(?:over|above|more than|at least|min)\s+${AMOUNT}`, "i");
-const BEDS = /\b(\d+)\s*-?\s*(?:bedrooms?|beds?|bdrms?|bds?|brs?)\b/i;
-const BATHS = /\b(\d+(?:\.5)?)\s*-?\s*(?:bathrooms?|baths?|ba)\b/i;
+// "3+" reads the same as "3" — our own filter buttons say "3+ Beds"
+const BEDS = /\b(\d+)\+?\s*-?\s*(?:bedrooms?|beds?|bdrms?|bds?|brs?)\b/i;
+const BATHS = /\b(\d+(?:\.5)?)\+?\s*-?\s*(?:bathrooms?|baths?|ba)\b/i;
 const RENT = /\b(?:for\s+(?:rent|lease)|rentals?)\b/i;
 const SALE = /\bfor\s+sale\b/i;
 const CONDO = /\bcondo(?:minium)?s?\b/i;
@@ -58,8 +59,12 @@ export function buildPropertySearchParams(raw: string): URLSearchParams {
 
   // "luxury homes in Malibu": whatever follows in/near/around is the place
   // (as the old reader did); otherwise strip the filler words around it.
+  // An address ("123 Old House Rd") keeps every word — filler only goes
+  // around a place name.
   const tail = t.match(PLACE_AFTER);
-  const location = (tail ? tail[1] : t).replace(FILLER, " ").replace(HOME, " ").replace(/\s+/g, " ").trim()
+  const place = tail ? tail[1] : t;
+  const isAddress = /^\s*\d/.test(place);
+  const location = (isAddress ? place : place.replace(FILLER, " ").replace(HOME, " ")).replace(/\s+/g, " ").trim()
     .replace(LEAD, "").replace(TRAIL, "").trim();
   if (location) params.set("query", location);
   return params;

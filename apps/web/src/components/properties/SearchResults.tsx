@@ -36,7 +36,7 @@ export function shouldRenderMap(
 }
 
 function SearchResultsInner({ initialProperties, initialTotal }: Props) {
-  const { filters, setFilter, applyFilters, clearFilters, hasActiveFilters } = useSearchFilters();
+  const { filters, applyFilters, clearFilters, hasActiveFilters } = useSearchFilters();
   const { properties, total, isLoading, isError, hasMore, loadNextPage } = useProperties(
     filters,
     { properties: initialProperties, total: initialTotal }
@@ -103,7 +103,6 @@ function SearchResultsInner({ initialProperties, initialTotal }: Props) {
     <div data-navbar-theme="dark" className="fixed inset-x-0 bottom-0 flex flex-col bg-[#0f0f0f]" style={{ top: "64px" }}>
       <FilterBar
         filters={filters}
-        setFilter={setFilter}
         applyFilters={applyFilters}
         clearFilters={clearFilters}
         hasActiveFilters={hasActiveFilters}

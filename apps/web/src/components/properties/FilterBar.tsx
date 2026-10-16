@@ -12,7 +12,6 @@ import { PriceRangeFilter } from "./PriceRangeFilter";
 
 interface Props {
   filters: SearchFilters;
-  setFilter: (key: keyof SearchFilters, value: string) => void;
   applyFilters: (patch: Partial<SearchFilters>) => void;
   clearFilters: () => void;
   hasActiveFilters: boolean;

@@ -84,6 +84,14 @@ describe("buildPropertySearchParams", () => {
     expect(p("at least 3 beds in Pasadena")).toEqual({ query: "Pasadena", minBeds: "3" });
     expect(p("2 story home in Irvine")).toEqual({ query: "Irvine" });
   });
+  it("'3+' reads the same as '3' (our own filter buttons say '3+ Beds')", () => {
+    expect(p("3+ beds in Pasadena")).toEqual({ query: "Pasadena", minBeds: "3" });
+    expect(p("Pasadena 3+ baths")).toEqual({ query: "Pasadena", minBaths: "3" });
+  });
+  it("filler words are kept inside an address ('Old House Rd')", () => {
+    expect(p("123 Old House Rd")).toEqual({ query: "123 Old House Rd" });
+    expect(p("123 Old House Rd, Pasadena")).toEqual({ query: "123 Old House Rd, Pasadena" });
+  });
   it("a house number in front of a street named Bath/Bd is an address, not a filter", () => {
     expect(p("500 Bath St, Santa Barbara")).toEqual({ query: "500 Bath St, Santa Barbara" });
   });
