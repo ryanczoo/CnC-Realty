@@ -7462,3 +7462,93 @@ Rules (Ryan): desktop untouchable, speed-check desktop + phone, reuse shared pie
    re-verified in this catch-up).
 4. Older backlog: the New Listing wizard walkthrough listed on 2026-09-24 (the listing-lifecycle work that followed
    likely came out of it — confirm with Ryan whether it's finished); CRES E&O follow-up; 7d deferred items above.
+
+---
+
+## Session Notes — 2026-10-13 → 2026-10-16 (phone fixes, smarter search + Apply filters, DB freeze, iPhone zoom)
+
+All pushed to `origin/main` and live (`a040728..838a2d8`). Specs/plans in `docs/superpowers/specs|plans/2026-10-13-*`
+and `2026-10-15-smarter-property-search*`. Rules that held throughout: desktop untouchable unless Ryan approves,
+speed-check desktop + phone, reuse shared pieces first, ask before placement/cosmetic changes, ask before every push.
+
+### Public-page phone fixes (2026-10-14 → 10-15)
+
+- Six fixes from Ryan's phone walkthrough (spec e691a4e): Why CnC text first / photos below; footer links → contact →
+  logo; Buy "One stop SHOP" centred; Join title indents; contact pop-up below the navbar and fitting a full iPhone
+  screen; Sell "Our Process" pins and slides on phones (`lib/sell-process-scroll.ts`).
+- Application form section headings centred on all sizes (Ryan approved the desktop change); DateField `onLight` prop.
+- ICA draft / pending-attorney-review notice removed (page + `docs/cnc-ica-draft.md`); Word copy
+  `Downloads/CnC-Realty-ICA-DRAFT-2026-10-14.docx`.
+- Why CnC text below the navbar with an invisible "sizer" grid sized to the longest step (`0f60444`); Buy WHY CHOOSE
+  connector lines on phones from measured photo/logo boxes, `phoneLinePaths()` tested (`eea1521`); "See the difference"
+  + Let's Start right-aligned on phones (`a69d4ed`); How to Join steps right-aligned + Apply Now under "Join" (`4e5b21b`).
+- Offered, not built: on short Why CnC steps ~170px gap remains at 390×844 (alternative: photos follow each step's text).
+
+### Smarter property search (Zillow is the standard — do it only if Zillow does)
+
+- `buildLocationWhere` (`lib/property-search-query.ts`, server): ZIP; "City, CA/California/USA" stripped; full address =
+  house-number prefix + street-name contains (street type ignored, North→N, periods, Unit/Apt/# → `#`), with the city
+  after a comma required (city OR neighborhood); "X County" (58 names in `lib/ca-counties.ts`, exact as stored);
+  "Bay Area" = 9 counties; "Atlantic Blvd Monterey Park" = street + city; everything else = city OR neighborhood
+  contains. A bare letter-led name never matches addresses (the Cerritos-street regression guard).
+- `buildPropertySearchParams` (`lib/property-search.ts`, all 3 bars): under/over/between price (k/m/$/commas), beds
+  ("3br", "3 bd", "3+ beds"), baths, condo/townhome, for rent/for sale, filler words; whatever follows in/near/around is
+  the place ("luxury homes in Malibu"); "500 Bath St" stays an address; addresses keep every word.
+  `parsedToFilterPatch` (`lib/search-filters.ts`) makes the results-page bar apply every typed filter.
+  `STREET_TYPES` shared in `lib/street-types.ts`.
+- New DB column `Property.area` (MLS neighborhood, from `MLSAreaMajor`), written by the IDX sync; migrations
+  `20261015120000_add_property_area` + `20261015130000_index_property_area_county` (area trigram GIN + county btree,
+  ~62 MB ≈ 2¢/month); backfill `packages/database/backfill-property-area.mjs` (idempotent; ~385K rows have an area,
+  192K active). Old lightweight closed sales have no details JSON → no area (expected).
+- Ryan's decisions: no typo correction, no nicknames (LA/SF/OC), no MLS # search; city match stays broad ("Pasadena"
+  includes South Pasadena; "Cerritos" includes Long Beach's "Los Cerritos" area). Deferred by Ryan: retry address-only
+  when the typed city differs from the MLS city; "Lake View Terrace, Los Angeles" reads as a street.
+- Home-value address search is separate (`AddressAutocomplete` + `lib/home-value-estimate.ts`) and was not touched.
+
+### Filter dropdowns (/properties)
+
+- All five (For Sale/Rent, Price, Beds, Baths, Type) use one shared `components/properties/FilterPanel.tsx` with a
+  Zillow-style off-white Apply button; picks are a draft until Apply (`lib/filter-draft.ts`); outside tap / Escape
+  discards. Price = `PriceRangeFilter.tsx`: two-handle slider (`lib/price-steps.ts`: $25K to $1M, $100K to $2M, $250K to
+  $5M, $1M to $10M+, 68 stops) + typeable Min/Max boxes; min>max swapped; $0 = no limit; sliders announce prices.
+  Price pill label stays "Price". The old debounced `setFilter` was removed.
+- Phones: menus drop down directly under the filter row (FilterBar sets `--filter-bar-bottom` before paint and on
+  scroll/resize); long lists scroll with Apply pinned (`07f6ae6`). Desktop open + closed dropdowns pixel-identical.
+
+### Database freeze (2026-10-15 night, Ryan approved)
+
+- Neon kept re-writing "row settled" markers on every big count (EXPLAIN showed tens of thousands of pages *dirtied*
+  while reading), so first-time county / price-only / narrow-filter counts took 3–15 s. Ran
+  `VACUUM (FREEZE, ANALYZE) "Property"` on the direct (non-pooler) host: 2.1 min, site stayed up. Counts now
+  0.4–0.8 s, pages re-written 0. May decay for active listings (the 15-min sync rewrites them) — re-measure; if it
+  creeps back, a scheduled freeze is the fix.
+
+### iPhone auto-zoom (2026-10-16)
+
+- iPhone browsers (all of them — WebKit) zoom in when you tap a field under 16px, and client-side navigation kept the
+  zoom on the next page. Root `<body>` now applies `PHONE_FIELDS_16` (`lib/dashboard-phone.ts`, max-lg only) — every
+  public form field is 16px on phones (was 14px on ~37 fields: home/Buy search, search-page box, login/register/forgot,
+  /join/apply, listing tour form). Android Chrome doesn't auto-zoom; the fix is harmless there (not checked on a real
+  Android phone).
+
+### Verification tooling (`.superpowers/pf-survey/`, git-ignored)
+
+- `searchMatrixPF.cjs` (old vs new search totals; add `&v=<random>` — `/api/properties` caches 5 min in the SHARED
+  Redis keyed by URL), `filtersPF.cjs` (dropdown click-through at 4 sizes, polls the URL after Apply — a cold server
+  takes 4–10 s), `openPF.cjs` / `rowPF.cjs` (desktop dropdown pixels — compare only the panel + row, hide the "N homes"
+  count, self-check old-vs-old first), `fieldsPF.cjs` (phone field ≥16px + desktop size equality), `a11yPF.cjs`,
+  `routesPF.cjs` (route-size diff — `grep "^[├└┌] "` matches nothing in git-bash), `zoomPF.cjs`, `joinPF.cjs`.
+- Start test servers as `next start <absolute app dir> -p 3100|3101` and confirm the BUILD_ID in the served HTML — a
+  backgrounded `cd X && next start` once served the other folder's build. Stop the server before rebuilding the same
+  `.next` (a build against a running server hung for 20 min).
+- Zillow bot-checks automated browsers after ~2 searches; Ryan can clear it, or test phrases himself.
+
+### Next Session — Start Here
+
+1. Ryan re-checks on his iPhone: homepage search "90703" lands on results at normal zoom.
+2. Re-measure the big counts in a few days to see whether the freeze held (EXPLAIN ANALYZE of LA County / Bay Area /
+   $1M+ / Orange County counts; look at "dirtied").
+3. **Font trim** (still next from 2026-10-04): `apps/web/src/app/fonts/GoogleSansFlex.woff2` is 1.8MB.
+4. Pre-existing, worth its own look: Home/Buy first response 5–9 s (listings DB queries) on both builds.
+5. Older backlog unchanged: Deploy Checklist re-verification at the top of this file; 7d deferred items; CRES E&O;
+   ~5 KB phone-menu chunk loaded on desktop.
