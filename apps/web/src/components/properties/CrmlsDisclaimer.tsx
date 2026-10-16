@@ -1,21 +1,14 @@
 import Image from "next/image";
+import { formatCrmlsUpdated } from "@/lib/crmls-updated";
 
 interface Props {
-  syncedAt: string | null;
+  // When the IDX feed was last fully pulled (lib/idx/last-sync.ts).
+  lastSyncAt: string | null;
   className?: string;
 }
 
-export function CrmlsDisclaimer({ syncedAt, className }: Props) {
-  const dateTime = syncedAt
-    ? new Date(syncedAt).toLocaleString("en-US", {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: true,
-      })
-    : null;
+export function CrmlsDisclaimer({ lastSyncAt, className }: Props) {
+  const dateTime = formatCrmlsUpdated(lastSyncAt);
   return (
     <div className={className}>
       <div className="mb-2 flex items-center gap-3">

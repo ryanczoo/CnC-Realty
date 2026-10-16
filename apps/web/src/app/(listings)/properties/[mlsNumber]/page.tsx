@@ -7,6 +7,7 @@ import { propertyJsonLd, jsonLdScriptSafe } from "@/lib/json-ld";
 
 export const revalidate = 300;
 import { prisma } from "@/lib/prisma";
+import { getIdxLastSyncAt } from "@/lib/idx/last-sync";
 import { buildStatsFields, buildDetailSections, formatFeatureValue } from "@/lib/property-ui-helpers";
 import { formatPropertyStatus } from "@/types/property";
 import { PhotoGallery } from "@/components/properties/PhotoGallery";
@@ -52,8 +53,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function PropertyDetailPage({ params }: PageProps) {
   let property = null;
+  let lastSyncAt: string | null = null;
   try {
-    property = await getProperty(params.mlsNumber);
+    [property, lastSyncAt] = await Promise.all([getProperty(params.mlsNumber), getIdxLastSyncAt()]);
   } catch {
     return (
       <div data-navbar-theme="light" className="flex min-h-screen items-center justify-center bg-[#F2F0EF]">
@@ -217,7 +219,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
         {/* Disclaimer — full width, centered */}
         <div className="mt-12 text-center text-xs leading-relaxed">
           <CrmlsDisclaimer
-            syncedAt={property.syncedAt ? property.syncedAt.toISOString() : null}
+            lastSyncAt={lastSyncAt}
             className="text-[#1B1B1B]/40"
           />
         </div>

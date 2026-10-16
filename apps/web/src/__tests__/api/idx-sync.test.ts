@@ -4,6 +4,7 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     property: { upsert: vi.fn() },
     syncProgress: { findUnique: vi.fn(), upsert: vi.fn(), deleteMany: vi.fn() },
+    siteSettings: { findUnique: vi.fn(), upsert: vi.fn() },
   },
 }));
 vi.mock("@/lib/idx/client", () => ({
@@ -320,5 +321,43 @@ describe("GET /api/idx/sync", () => {
 
     expect(prisma.syncProgress.upsert).toHaveBeenCalledTimes(1);
     expect(prisma.syncProgress.deleteMany).not.toHaveBeenCalled();
+  });
+
+  // The CRMLS "Last updated" line shows when the feed was last fully pulled,
+  // so a finished run records its start time (it fetched everything modified
+  // up to then) and a failed run leaves the previous time in place.
+  it("records the run's start time as the last sync once the crawl finishes", async () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date("2026-10-16T15:00:00.000Z"));
+      vi.mocked(fetchProperties).mockImplementation(async function* () {
+        yield {
+          properties: [{ mlsNumber: "ML1", status: "Active", listingType: "FOR_SALE" } as any],
+          cursor: "2026-10-16T14:59:00.000Z",
+        };
+      });
+
+      const res = await GET(makeRequest("test-secret"));
+      expect(res.status).toBe(200);
+
+      expect(prisma.siteSettings.upsert).toHaveBeenCalledTimes(1);
+      const args = vi.mocked(prisma.siteSettings.upsert).mock.calls[0][0] as any;
+      expect(args.where.key).toBe("idx_last_sync_at");
+      expect(args.create).toEqual({ key: "idx_last_sync_at", value: "2026-10-16T15:00:00.000Z" });
+      expect(args.update).toEqual({ value: "2026-10-16T15:00:00.000Z" });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("leaves the last sync time alone when the crawl fails partway", async () => {
+    vi.mocked(fetchProperties).mockImplementation(async function* () {
+      throw new Error("RESO fetch failed: 500");
+    });
+
+    const res = await GET(makeRequest("test-secret"));
+    expect(res.status).toBe(500);
+
+    expect(prisma.siteSettings.upsert).not.toHaveBeenCalled();
   });
 });

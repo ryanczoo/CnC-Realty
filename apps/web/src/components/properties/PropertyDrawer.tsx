@@ -40,7 +40,7 @@ interface PropertyDetail {
   listOfficeName: string | null;
   details: Record<string, unknown> | null;
   listedAt: string | null;
-  syncedAt: string | null;
+  lastSyncAt: string | null;
 }
 
 interface Props {
@@ -315,7 +315,7 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
 
               {/* Disclaimer */}
               <div className="mt-8 px-10 pb-6 text-center text-xs leading-relaxed">
-                <CrmlsDisclaimer syncedAt={property.syncedAt} className="text-[#1B1B1B]/50" />
+                <CrmlsDisclaimer lastSyncAt={property.lastSyncAt}className="text-[#1B1B1B]/50" />
               </div>
             </div>
           )}

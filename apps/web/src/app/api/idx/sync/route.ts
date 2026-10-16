@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@cnc/database";
 import { fetchProperties, isKeyCursor } from "@/lib/idx/client";
+import { recordIdxSync } from "@/lib/idx/last-sync";
 
 // maxDuration applies to GET (Vercel Cron, awaits full sync).
 // POST returns 202 immediately — the background runSync() is not bound by this limit.
@@ -91,6 +92,7 @@ async function runSync(type: string) {
   // so drop the checkpoint. If it threw instead, the checkpoint is deliberately
   // left in place so the next run resumes rather than restarting.
   await prisma.syncProgress.deleteMany({ where: { syncType: type } });
+  await recordIdxSync(new Date(startedAt));
 
   // upserted + skipped + errors accounts for every record fetched, so this line
   // can be reconciled against the feed without guesswork.
