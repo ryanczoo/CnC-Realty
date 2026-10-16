@@ -2,11 +2,12 @@
 
 import type { ReactNode } from "react";
 
-// One frame for every filter dropdown — a drop-down under the pill on desktop,
-// a slide-up sheet on phones (same classes the five copies used before) — with
+// One frame for every filter dropdown — a drop-down under the pill on desktop;
+// on phones a full-width menu directly under the filter row (FilterBar sets
+// --filter-bar-bottom to the row's bottom edge while a menu is open) — with
 // Zillow's Apply button at the bottom.
 const FRAME =
-  "absolute left-0 top-full z-40 mt-1 rounded-xl border border-white/10 bg-[#1a1a1a] py-1 shadow-2xl max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:top-auto max-lg:mt-0 max-lg:w-auto max-lg:rounded-b-none max-lg:rounded-t-2xl max-lg:max-h-[75svh] max-lg:overflow-y-auto max-lg:py-3 max-lg:pb-[max(0.75rem,env(safe-area-inset-bottom))]";
+  "absolute left-0 top-full z-40 mt-1 rounded-xl border border-white/10 bg-[#1a1a1a] py-1 shadow-2xl max-lg:fixed max-lg:inset-x-0 max-lg:top-[var(--filter-bar-bottom,0px)] max-lg:bottom-auto max-lg:mt-0 max-lg:w-auto max-lg:rounded-t-none max-lg:rounded-b-2xl max-lg:max-h-[calc(100svh_-_var(--filter-bar-bottom,0px)_-_0.75rem)] max-lg:overflow-y-auto max-lg:py-3";
 
 export function FilterPanel({ width, onApply, children }: { width: string; onApply: () => void; children: ReactNode }) {
   return (

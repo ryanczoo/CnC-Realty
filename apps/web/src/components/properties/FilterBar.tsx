@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { SearchFilters } from "@/types/property";
 import { buildPropertySearchParams } from "@/lib/property-search";
@@ -67,14 +67,32 @@ export function FilterBar({
     setOpenDropdown(null);
   }
 
-  // Escape closes the open dropdown / bottom sheet without applying.
+  const barRef = useRef<HTMLDivElement>(null);
+
+  // Phones: the open menu sits right under the filter row (FilterPanel reads
+  // --filter-bar-bottom). Measured before paint, and again on scroll/rotate.
+  useLayoutEffect(() => {
+    if (!openDropdown) return;
+    const place = () => {
+      const bar = barRef.current;
+      if (bar) bar.style.setProperty("--filter-bar-bottom", `${Math.round(bar.getBoundingClientRect().bottom)}px`);
+    };
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, { passive: true });
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place);
+    };
+  }, [openDropdown]);
+
+  // Escape closes the open dropdown / menu without applying.
   useEffect(() => {
     if (!openDropdown) return;
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setOpenDropdown(null); };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [openDropdown]);
-  const barRef = useRef<HTMLDivElement>(null);
 
   // The query text field only searches on explicit submit (Enter or the
   // search icon), not on every keystroke — so it needs its own draft state,
