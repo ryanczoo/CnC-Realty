@@ -5,6 +5,7 @@ import { AnimatePresence, motion, useScroll } from "motion/react";
 import Image from "next/image";
 import { useScrollStepper } from "@/hooks/useScrollStepper";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { rafThrottle } from "@/lib/raf-throttle";
 import { RevealLine } from "@/components/ui/reveal-text";
 
 // Upright phones pin the step text above the photos, which shifts where each
@@ -152,11 +153,13 @@ export function JoinSteps() {
       setPhoneIdx(photoInView(centers, target));
     };
     update();
-    window.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("resize", update);
+    const throttled = rafThrottle(update);
+    window.addEventListener("scroll", throttled.run, { passive: true });
+    window.addEventListener("resize", throttled.run);
     return () => {
-      window.removeEventListener("scroll", update);
-      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", throttled.run);
+      window.removeEventListener("resize", throttled.run);
+      throttled.cancel();
     };
   }, [isMobile]);
 
