@@ -1,69 +1,55 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import { useSession } from "next-auth/react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { savedPropertiesKey, fetchSavedMlsNumbers, withToggled } from "@/lib/saved-properties";
 
 interface UseSavedPropertiesResult {
   savedSet: Set<string>;
   toggle: (mlsNumber: string) => void;
 }
 
+const EMPTY = new Set<string>();
+
+// Every heart on the page shares one cached list (see lib/saved-properties), so a save
+// from any heart — card, popup, desktop or phone button — shows on all of them at once.
 export function useSavedProperties(): UseSavedPropertiesResult {
   const { data: session } = useSession();
-  const [savedSet, setSavedSet] = useState<Set<string>>(new Set());
+  const userId = session?.user?.id;
+  const key = savedPropertiesKey(userId ?? "signed-out");
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (!session) {
-      setSavedSet(new Set());
-      return;
-    }
+  const { data } = useQuery({
+    queryKey: key,
+    queryFn: fetchSavedMlsNumbers,
+    enabled: !!userId,
+    staleTime: 60_000,
+  });
 
-    const controller = new AbortController();
+  const toggle = useCallback(
+    async (mlsNumber: string) => {
+      const isSaved = queryClient.getQueryData<Set<string>>(key)?.has(mlsNumber) ?? false;
+      queryClient.setQueryData<Set<string>>(key, (prev) => withToggled(prev, mlsNumber));
 
-    fetch("/api/saved-properties", { signal: controller.signal })
-      .then((r) => r.json())
-      .then((data: { mlsNumbers: string[] }) => {
-        setSavedSet(new Set(data.mlsNumbers));
-      })
-      .catch((err) => {
-        if ((err as Error).name !== "AbortError") {
-          console.error("[useSavedProperties] Failed to load saved properties:", err);
+      try {
+        if (isSaved) {
+          await fetch(`/api/saved-properties/${mlsNumber}`, { method: "DELETE" });
+        } else {
+          await fetch("/api/saved-properties", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ mlsNumber }),
+          });
         }
-      });
-
-    return () => controller.abort();
-  }, [session]);
-
-  const toggle = useCallback(async (mlsNumber: string) => {
-    // Read current state inside the updater so this callback stays stable (no savedSet dep)
-    let isSaved = false;
-    setSavedSet((prev) => {
-      isSaved = prev.has(mlsNumber);
-      const next = new Set(prev);
-      if (isSaved) next.delete(mlsNumber);
-      else next.add(mlsNumber);
-      return next;
-    });
-
-    try {
-      if (isSaved) {
-        await fetch(`/api/saved-properties/${mlsNumber}`, { method: "DELETE" });
-      } else {
-        await fetch("/api/saved-properties", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ mlsNumber }),
-        });
+      } catch {
+        queryClient.setQueryData<Set<string>>(key, (prev) => withToggled(prev, mlsNumber));
       }
-    } catch {
-      setSavedSet((prev) => {
-        const next = new Set(prev);
-        if (isSaved) next.add(mlsNumber);
-        else next.delete(mlsNumber);
-        return next;
-      });
-    }
-  }, []);
+    },
+    // key is rebuilt each render; userId is what it depends on
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [queryClient, userId],
+  );
 
-  return { savedSet, toggle };
+  return { savedSet: data ?? EMPTY, toggle };
 }
