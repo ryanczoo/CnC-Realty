@@ -5,6 +5,7 @@ import { motion, useMotionValue, useScroll, useTransform } from "motion/react";
 import Image from "next/image";
 import { ramp } from "@/lib/motion";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { pinnedPanelHeight } from "@/lib/pinned-panel";
 
 // Corner positions measured from Uptown at 1440×900 viewport.
 // topRight.cy pulled to 0.28 (from measured 0.12) to overlap with "OSE" of "CHOOSE".
@@ -56,18 +57,11 @@ export function phoneProgress(p: number, pinEnd: number): number {
   return Math.min(1, (p * 0.75) / pinEnd);
 }
 
-// Height used for vertical flight distances. Corner boxes are sized in CSS vh,
-// i.e. the pinned panel's height; on phones innerHeight is shorter whenever the
-// browser toolbar shows, so phones use the panel's own height. Desktop keeps
-// innerHeight exactly as before.
-export function flightHeight(isMobile: boolean, panelPx: number, innerPx: number): number {
-  return isMobile ? panelPx : innerPx;
-}
-
 // Fly-in geometry: how far (as viewport fractions) and how much each image
 // grows from its corner to its cluster spot. Desktop values are the original
 // (K - C) offsets and SC ratios.
-export function clusterGeometry(portraitPhone: boolean): Record<"ctr" | "lft" | "rgt" | "bck", Move> {
+type Geometry = Record<"ctr" | "lft" | "rgt" | "bck", Move>;
+function buildClusterGeometry(portraitPhone: boolean): Geometry {
   if (!portraitPhone) {
     return {
       ctr: { dx: K.center.cx - C.topLeft.cx, dy: K.center.cy - C.topLeft.cy, scale: SC.center },
@@ -82,6 +76,12 @@ export function clusterGeometry(portraitPhone: boolean): Record<"ctr" | "lft" | 
     rgt: { dx: K_PHONE.right.cx - C_PHONE.topRight.cx, dy: K_PHONE.right.cy - C_PHONE.topRight.cy, scale: CW_PHONE.right / C_PHONE.topRight.w },
     bck: { dx: K_PHONE.center.cx - C_PHONE.btmRight.cx, dy: K_PHONE.center.cy - C_PHONE.btmRight.cy, scale: CW_PHONE.center / C_PHONE.btmRight.w },
   };
+}
+// Read 12 times per scroll frame — both layouts are worked out once here.
+const GEOMETRY_DESKTOP = buildClusterGeometry(false);
+const GEOMETRY_PORTRAIT = buildClusterGeometry(true);
+export function clusterGeometry(portraitPhone: boolean): Geometry {
+  return portraitPhone ? GEOMETRY_PORTRAIT : GEOMETRY_DESKTOP;
 }
 
 // Upright phones: connector curves built from the real photo boxes and logo
@@ -184,7 +184,8 @@ export function BuyContemporary() {
     const onResize = () => {
       const panelPx = panelRef.current?.clientHeight ?? window.innerHeight;
       vwRef.current = window.innerWidth;
-      vhRef.current = flightHeight(isMobile, panelPx, window.innerHeight);
+      // Vertical flight distances: corner boxes are sized in vh (the panel's height)
+      vhRef.current = pinnedPanelHeight(isMobile, panelPx, window.innerHeight);
       const sectionPx = sectionRef.current?.offsetHeight ?? 0;
       if (sectionPx > panelPx) pinEndRef.current = (sectionPx - panelPx) / sectionPx;
       portraitMV.set(isMobile && window.innerHeight >= window.innerWidth ? 1 : 0);

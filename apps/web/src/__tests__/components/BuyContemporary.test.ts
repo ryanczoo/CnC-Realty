@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { clusterGeometry, phoneProgress, flightHeight, phoneLinePaths } from "@/components/buy/BuyContemporary";
+import { clusterGeometry, phoneProgress, phoneLinePaths } from "@/components/buy/BuyContemporary";
 
 // "M x,y Q cx,cy ex,ey" → numbers
 const parse = (d: string) => d.match(/-?\d+(\.\d+)?/g)!.map(Number);
@@ -59,18 +59,6 @@ describe("phoneProgress", () => {
   });
 });
 
-describe("flightHeight", () => {
-  // Corner boxes are sized in CSS vh (the panel's height); on phones the
-  // visible innerHeight is shorter while the toolbar shows, so flights use the
-  // panel's own height. Desktop keeps innerHeight exactly as before.
-  it("desktop: innerHeight", () => {
-    expect(flightHeight(false, 900, 880)).toBe(880);
-  });
-  it("phone: the pinned panel's height", () => {
-    expect(flightHeight(true, 844, 764)).toBe(844);
-  });
-});
-
 describe("clusterGeometry", () => {
   // Desktop must equal the original (K - C) offsets and SC scale ratios.
   it("desktop: unchanged offsets and scales", () => {
@@ -87,5 +75,11 @@ describe("clusterGeometry", () => {
     expect(g.lft).toEqual({ dx: expect.closeTo(0.03, 4), dy: expect.closeTo(-0.27, 4), scale: expect.closeTo(1.1, 4) });
     expect(g.rgt).toEqual({ dx: expect.closeTo(-0.03, 4), dy: expect.closeTo(0.23, 4), scale: expect.closeTo(1.1, 4) });
     expect(g.bck).toEqual({ dx: expect.closeTo(-0.23, 4), dy: expect.closeTo(-0.32, 4), scale: expect.closeTo(1.55, 4) });
+  });
+
+  // Read 12 times per scroll frame, so both layouts are worked out once, not per call.
+  it("returns the same precomputed geometry on every call", () => {
+    expect(clusterGeometry(false)).toBe(clusterGeometry(false));
+    expect(clusterGeometry(true)).toBe(clusterGeometry(true));
   });
 });

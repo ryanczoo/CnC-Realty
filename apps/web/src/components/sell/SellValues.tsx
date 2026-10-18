@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { motion, useMotionValue, useScroll, useTransform } from "motion/react";
 import { RevealLine } from "@/components/ui/reveal-text";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { pinnedPanelHeight } from "@/lib/pinned-panel";
 
 const SPREAD = 30; // degrees between adjacent cards
 const WR_START =  2 * SPREAD; //  60 — card[0] at center when scroll=0
@@ -17,7 +18,11 @@ const VALUES = [
   { label: "Integrity",           img: "/images/sell/values-integrity.jpg" },
 ];
 
-export function cardVars(i: number, t: number, mobile: boolean, panelH: number) {
+// Sideways phones: cards drawn this much smaller (from their own centre) so the
+// neighbouring cards' top edges clear the "Our Values" title.
+export const SIDEWAYS_CARD_SCALE = 0.88;
+
+export function cardVars(i: number, t: number, mobile: boolean, panelH: number, sideways = false) {
   const R       = mobile ? 360 : 660;
   const CW      = mobile ? 160 : 300;
   const CH      = mobile ? 208 : 390;
@@ -41,7 +46,7 @@ export function cardVars(i: number, t: number, mobile: boolean, panelH: number) 
   return {
     x,
     y,
-    scale:   Math.max(0.64, 1 - frac * 0.18),
+    scale:   Math.max(0.64, 1 - frac * 0.18) * (mobile && sideways ? SIDEWAYS_CARD_SCALE : 1),
     opacity: Math.max(0.42, 1 - frac * 0.29),
     rotate:  (angleDeg - 270) * 0.42,
   };
@@ -60,39 +65,62 @@ export function SellValues() {
   const isMobile = useIsMobile();
   const mobileMV = useMotionValue(isMobile ? 1 : 0);
   useEffect(() => { mobileMV.set(isMobile ? 1 : 0); }, [isMobile, mobileMV]);
-  const panelH = () => (typeof window !== "undefined" ? window.innerHeight : 900);
+
+  // Phones only: the pinned panel's own height (steady while the address bar slides)
+  // and whether the phone is sideways. Re-measured on rotation. Desktop leaves both at 0.
+  const panelRef = useRef<HTMLDivElement>(null);
+  const panelHMV = useMotionValue(0);
+  const sidewaysMV = useMotionValue(0);
+  useEffect(() => {
+    if (!isMobile) {
+      panelHMV.set(0);
+      sidewaysMV.set(0);
+      return;
+    }
+    const measure = () => {
+      panelHMV.set(panelRef.current?.clientHeight ?? 0);
+      sidewaysMV.set(window.innerHeight < window.innerWidth ? 1 : 0);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [isMobile, panelHMV, sidewaysMV]);
+
+  const inputs = [scrollYProgress, mobileMV, sidewaysMV, panelHMV];
+  const panelH = (m: number, h: number) =>
+    pinnedPanelHeight(m === 1, h, typeof window !== "undefined" ? window.innerHeight : 900);
 
   // 25 motion values: 5 cards × {x, y, scale, opacity, rotate}
   // Declared at top level — hooks cannot live in loops
-  const x0  = useTransform([scrollYProgress, mobileMV], ([t, m]: number[]) => cardVars(0, t, m === 1, panelH()).x);
-  const y0  = useTransform([scrollYProgress, mobileMV], ([t, m]: number[]) => cardVars(0, t, m === 1, panelH()).y);
-  const s0  = useTransform([scrollYProgress, mobileMV], ([t, m]: number[]) => cardVars(0, t, m === 1, panelH()).scale);
-  const o0  = useTransform([scrollYProgress, mobileMV], ([t, m]: number[]) => cardVars(0, t, m === 1, panelH()).opacity);
-  const ro0 = useTransform([scrollYProgress, mobileMV], ([t, m]: number[]) => cardVars(0, t, m === 1, panelH()).rotate);
+  const x0  = useTransform(inputs, ([t, m, s, h]: number[]) => cardVars(0, t, m === 1, panelH(m, h), s === 1).x);
+  const y0  = useTransform(inputs, ([t, m, s, h]: number[]) => cardVars(0, t, m === 1, panelH(m, h), s === 1).y);
+  const s0  = useTransform(inputs, ([t, m, s, h]: number[]) => cardVars(0, t, m === 1, panelH(m, h), s === 1).scale);
+  const o0  = useTransform(inputs, ([t, m, s, h]: number[]) => cardVars(0, t, m === 1, panelH(m, h), s === 1).opacity);
+  const ro0 = useTransform(inputs, ([t, m, s, h]: number[]) => cardVars(0, t, m === 1, panelH(m, h), s === 1).rotate);
 
-  const x1  = useTransform([scrollYProgress, mobileMV], ([t, m]: number[]) => cardVars(1, t, m === 1, panelH()).x);
-  const y1  = useTransform([scrollYProgress, mobileMV], ([t, m]: number[]) => cardVars(1, t, m === 1, panelH()).y);
-  const s1  = useTransform([scrollYProgress, mobileMV], ([t, m]: number[]) => cardVars(1, t, m === 1, panelH()).scale);
-  const o1  = useTransform([scrollYProgress, mobileMV], ([t, m]: number[]) => cardVars(1, t, m === 1, panelH()).opacity);
-  const ro1 = useTransform([scrollYProgress, mobileMV], ([t, m]: number[]) => cardVars(1, t, m === 1, panelH()).rotate);
+  const x1  = useTransform(inputs, ([t, m, s, h]: number[]) => cardVars(1, t, m === 1, panelH(m, h), s === 1).x);
+  const y1  = useTransform(inputs, ([t, m, s, h]: number[]) => cardVars(1, t, m === 1, panelH(m, h), s === 1).y);
+  const s1  = useTransform(inputs, ([t, m, s, h]: number[]) => cardVars(1, t, m === 1, panelH(m, h), s === 1).scale);
+  const o1  = useTransform(inputs, ([t, m, s, h]: number[]) => cardVars(1, t, m === 1, panelH(m, h), s === 1).opacity);
+  const ro1 = useTransform(inputs, ([t, m, s, h]: number[]) => cardVars(1, t, m === 1, panelH(m, h), s === 1).rotate);
 
-  const x2  = useTransform([scrollYProgress, mobileMV], ([t, m]: number[]) => cardVars(2, t, m === 1, panelH()).x);
-  const y2  = useTransform([scrollYProgress, mobileMV], ([t, m]: number[]) => cardVars(2, t, m === 1, panelH()).y);
-  const s2  = useTransform([scrollYProgress, mobileMV], ([t, m]: number[]) => cardVars(2, t, m === 1, panelH()).scale);
-  const o2  = useTransform([scrollYProgress, mobileMV], ([t, m]: number[]) => cardVars(2, t, m === 1, panelH()).opacity);
-  const ro2 = useTransform([scrollYProgress, mobileMV], ([t, m]: number[]) => cardVars(2, t, m === 1, panelH()).rotate);
+  const x2  = useTransform(inputs, ([t, m, s, h]: number[]) => cardVars(2, t, m === 1, panelH(m, h), s === 1).x);
+  const y2  = useTransform(inputs, ([t, m, s, h]: number[]) => cardVars(2, t, m === 1, panelH(m, h), s === 1).y);
+  const s2  = useTransform(inputs, ([t, m, s, h]: number[]) => cardVars(2, t, m === 1, panelH(m, h), s === 1).scale);
+  const o2  = useTransform(inputs, ([t, m, s, h]: number[]) => cardVars(2, t, m === 1, panelH(m, h), s === 1).opacity);
+  const ro2 = useTransform(inputs, ([t, m, s, h]: number[]) => cardVars(2, t, m === 1, panelH(m, h), s === 1).rotate);
 
-  const x3  = useTransform([scrollYProgress, mobileMV], ([t, m]: number[]) => cardVars(3, t, m === 1, panelH()).x);
-  const y3  = useTransform([scrollYProgress, mobileMV], ([t, m]: number[]) => cardVars(3, t, m === 1, panelH()).y);
-  const s3  = useTransform([scrollYProgress, mobileMV], ([t, m]: number[]) => cardVars(3, t, m === 1, panelH()).scale);
-  const o3  = useTransform([scrollYProgress, mobileMV], ([t, m]: number[]) => cardVars(3, t, m === 1, panelH()).opacity);
-  const ro3 = useTransform([scrollYProgress, mobileMV], ([t, m]: number[]) => cardVars(3, t, m === 1, panelH()).rotate);
+  const x3  = useTransform(inputs, ([t, m, s, h]: number[]) => cardVars(3, t, m === 1, panelH(m, h), s === 1).x);
+  const y3  = useTransform(inputs, ([t, m, s, h]: number[]) => cardVars(3, t, m === 1, panelH(m, h), s === 1).y);
+  const s3  = useTransform(inputs, ([t, m, s, h]: number[]) => cardVars(3, t, m === 1, panelH(m, h), s === 1).scale);
+  const o3  = useTransform(inputs, ([t, m, s, h]: number[]) => cardVars(3, t, m === 1, panelH(m, h), s === 1).opacity);
+  const ro3 = useTransform(inputs, ([t, m, s, h]: number[]) => cardVars(3, t, m === 1, panelH(m, h), s === 1).rotate);
 
-  const x4  = useTransform([scrollYProgress, mobileMV], ([t, m]: number[]) => cardVars(4, t, m === 1, panelH()).x);
-  const y4  = useTransform([scrollYProgress, mobileMV], ([t, m]: number[]) => cardVars(4, t, m === 1, panelH()).y);
-  const s4  = useTransform([scrollYProgress, mobileMV], ([t, m]: number[]) => cardVars(4, t, m === 1, panelH()).scale);
-  const o4  = useTransform([scrollYProgress, mobileMV], ([t, m]: number[]) => cardVars(4, t, m === 1, panelH()).opacity);
-  const ro4 = useTransform([scrollYProgress, mobileMV], ([t, m]: number[]) => cardVars(4, t, m === 1, panelH()).rotate);
+  const x4  = useTransform(inputs, ([t, m, s, h]: number[]) => cardVars(4, t, m === 1, panelH(m, h), s === 1).x);
+  const y4  = useTransform(inputs, ([t, m, s, h]: number[]) => cardVars(4, t, m === 1, panelH(m, h), s === 1).y);
+  const s4  = useTransform(inputs, ([t, m, s, h]: number[]) => cardVars(4, t, m === 1, panelH(m, h), s === 1).scale);
+  const o4  = useTransform(inputs, ([t, m, s, h]: number[]) => cardVars(4, t, m === 1, panelH(m, h), s === 1).opacity);
+  const ro4 = useTransform(inputs, ([t, m, s, h]: number[]) => cardVars(4, t, m === 1, panelH(m, h), s === 1).rotate);
 
   const MOTION = [
     { x: x0, y: y0, scale: s0, opacity: o0, rotate: ro0 },
@@ -105,10 +133,11 @@ export function SellValues() {
   return (
     <section ref={sectionRef} className="relative max-lg:!h-[300svh]" style={{ height: "500vh" }}>
       {/* Sticky panel */}
-      <div className="sticky top-0 h-screen overflow-hidden bg-cnc-bg">
+      <div ref={panelRef} className="sticky top-0 h-screen overflow-hidden bg-cnc-bg">
 
-        {/* Title — top center, same pattern as "Our Process" */}
-        <div className="absolute inset-x-0 top-40 flex justify-center max-lg:top-24">
+        {/* Title — top center, same pattern as "Our Process". Sideways phones: 40px higher
+            so the (slightly smaller) cards clear it. */}
+        <div className="absolute inset-x-0 top-40 flex justify-center max-lg:top-24 max-lg:landscape:top-14">
           <h2 className="font-sans text-[3.5rem] font-light xl:text-[4.5rem] max-lg:text-[clamp(2.2rem,9vw,3.5rem)]">
             <RevealLine>
               <span className="text-[2.6rem] xl:text-[3.4rem] max-lg:text-[clamp(1.7rem,7vw,2.6rem)]">Our </span>
