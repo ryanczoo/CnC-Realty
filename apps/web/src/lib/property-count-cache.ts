@@ -25,24 +25,32 @@ export function countCacheKey(where: unknown): string {
 }
 
 // A hung Redis (as opposed to an erroring one) must not hold up the search page:
-// give it this long, then count from the database instead.
-const REDIS_GET_TIMEOUT_MS = 300;
+// give it this long, then count from the database instead. A fresh server's first
+// Redis read takes ~500 ms to connect, and giving up early means a 5–12 s recount
+// that also overwrites the hourly saved total (lib/listing-counts.ts).
+const REDIS_GET_TIMEOUT_MS = 1000;
 
-export async function cachedCount(key: string, compute: () => Promise<number>): Promise<number> {
+// A Redis read that gives up (null) after REDIS_GET_TIMEOUT_MS or on an error.
+export async function redisReadOrNull<T>(read: () => Promise<T | null>, label: string): Promise<T | null> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
-    const hit = await Promise.race([
-      redis.get<number>(key),
+    return await Promise.race([
+      read(),
       new Promise<null>((resolve) => {
         timer = setTimeout(() => resolve(null), REDIS_GET_TIMEOUT_MS);
       }),
     ]);
-    if (typeof hit === "number") return hit;
   } catch (err) {
-    console.error("[property-count-cache] redis get failed:", err);
+    console.error(`[${label}] redis read failed:`, err);
+    return null;
   } finally {
     clearTimeout(timer);
   }
+}
+
+export async function cachedCount(key: string, compute: () => Promise<number>): Promise<number> {
+  const hit = await redisReadOrNull(() => redis.get<number>(key), "property-count-cache");
+  if (typeof hit === "number") return hit;
   const total = await compute();
   redis.setex(key, COUNT_TTL_SECONDS, total).catch(console.error);
   return total;

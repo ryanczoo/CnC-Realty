@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getCachedCityCount } from "@/lib/listing-counts";
 
 export const FALLBACK_CITY = "Los Angeles";
 export const MIN_LISTINGS = 4;
@@ -15,7 +16,10 @@ export function parseCityHeader(raw: string | null): string | null {
   }
 }
 
+// From the hourly saved counts (lib/listing-counts.ts) when available; otherwise counted live (5–10 s).
 async function countListingsInCity(city: string): Promise<number> {
+  const saved = await getCachedCityCount(city);
+  if (saved !== null) return saved;
   return prisma.property.count({
     where: {
       status: { in: MATCHING_STATUSES },

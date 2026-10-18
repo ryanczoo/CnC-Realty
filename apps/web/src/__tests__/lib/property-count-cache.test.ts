@@ -74,8 +74,23 @@ describe("cachedCount — Redis hang", () => {
     vi.mocked(redis.get).mockReturnValue(new Promise(() => {}) as never);
     const compute = vi.fn().mockResolvedValue(9);
     const p = cachedCount("k", compute);
-    await vi.advanceTimersByTimeAsync(350);
+    await vi.advanceTimersByTimeAsync(1000);
     await expect(p).resolves.toBe(9);
+    vi.useRealTimers();
+  });
+
+  it("waits through a slow first Redis connection (~500 ms) instead of recounting and overwriting the saved total", async () => {
+    vi.clearAllMocks();
+    vi.useFakeTimers();
+    vi.mocked(redis.get).mockReturnValue(
+      new Promise((resolve) => setTimeout(() => resolve(167851), 600)) as never,
+    );
+    const compute = vi.fn().mockResolvedValue(1);
+    const p = cachedCount("k", compute);
+    await vi.advanceTimersByTimeAsync(600);
+    await expect(p).resolves.toBe(167851);
+    expect(compute).not.toHaveBeenCalled();
+    expect(redis.setex).not.toHaveBeenCalled();
     vi.useRealTimers();
   });
 });

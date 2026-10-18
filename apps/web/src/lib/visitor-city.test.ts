@@ -6,7 +6,13 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
+// The saved city count map (lib/listing-counts). Missing by default, so these tests count live like before.
+vi.mock("@/lib/redis", () => ({
+  redis: { hmget: vi.fn().mockResolvedValue(null) },
+}));
+
 import { prisma } from "@/lib/prisma";
+import { redis } from "@/lib/redis";
 import { parseCityHeader, resolveVisitorCity, FALLBACK_CITY, MIN_LISTINGS } from "./visitor-city";
 
 describe("parseCityHeader", () => {
@@ -32,6 +38,7 @@ describe("parseCityHeader", () => {
 describe("resolveVisitorCity", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(redis.hmget).mockResolvedValue(null);
   });
 
   it("uses the candidate city when it has at least MIN_LISTINGS matching listings", async () => {
@@ -87,5 +94,54 @@ describe("resolveVisitorCity", () => {
     const result = await resolveVisitorCity("Pasadena");
 
     expect(result).toEqual({ city: FALLBACK_CITY, count: 0 });
+  });
+});
+
+describe("resolveVisitorCity — saved city counts", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("uses the visitor's city from the saved counts without counting live", async () => {
+    vi.mocked(redis.hmget).mockResolvedValue({ cerritos: 147, __ready: 1 });
+
+    const result = await resolveVisitorCity("Cerritos");
+
+    expect(result).toEqual({ city: "Cerritos", count: 147 });
+    expect(prisma.property.count).not.toHaveBeenCalled();
+  });
+
+  it("follows the visitor to a new city on their next visit", async () => {
+    vi.mocked(redis.hmget).mockImplementation((async (_key: string, city: string) =>
+      ({ [city]: city === "cerritos" ? 147 : 3016, __ready: 1 })) as never);
+
+    expect(await resolveVisitorCity("Cerritos")).toEqual({ city: "Cerritos", count: 147 });
+    expect(await resolveVisitorCity("Anaheim")).toEqual({ city: "Anaheim", count: 3016 });
+    expect(await resolveVisitorCity("Cerritos")).toEqual({ city: "Cerritos", count: 147 });
+  });
+
+  it(`still falls back to ${FALLBACK_CITY} when the saved count is under MIN_LISTINGS`, async () => {
+    vi.mocked(redis.hmget).mockImplementation((async (_key: string, city: string) =>
+      ({ [city]: city === "los angeles" ? 21975 : MIN_LISTINGS - 1, __ready: 1 })) as never);
+
+    const result = await resolveVisitorCity("Tiny Town");
+
+    expect(result).toEqual({ city: FALLBACK_CITY, count: 21975 });
+    expect(prisma.property.count).not.toHaveBeenCalled();
+  });
+
+  it(`falls back to ${FALLBACK_CITY} for a city with no listings in the saved map`, async () => {
+    vi.mocked(redis.hmget).mockImplementation((async (_key: string, city: string) =>
+      ({ [city]: city === "los angeles" ? 21975 : null, __ready: 1 })) as never);
+
+    expect(await resolveVisitorCity("Nowhere")).toEqual({ city: FALLBACK_CITY, count: 21975 });
+  });
+
+  it("counts live, exactly as before, when Redis is down", async () => {
+    vi.mocked(redis.hmget).mockRejectedValue(new Error("redis down"));
+    (prisma.property.count as any).mockResolvedValue(10);
+
+    expect(await resolveVisitorCity("Pasadena")).toEqual({ city: "Pasadena", count: 10 });
+    expect(prisma.property.count).toHaveBeenCalledTimes(1);
   });
 });
