@@ -7552,3 +7552,68 @@ speed-check desktop + phone, reuse shared pieces first, ask before placement/cos
 4. Pre-existing, worth its own look: Home/Buy first response 5–9 s (listings DB queries) on both builds.
 5. Older backlog unchanged: Deploy Checklist re-verification at the top of this file; 7d deferred items; CRES E&O;
    ~5 KB phone-menu chunk loaded on desktop.
+
+---
+
+## Session Notes — 2026-10-16 → 2026-10-17 (public launch, CRMLS date fix, font trim, Home/Buy/search speed)
+
+**The site went publicly live 2026-10-16.** All three commits below are pushed to `origin/main` and live
+(`838a2d8..01bba97`). Rules held throughout: desktop untouchable, speed-check desktop + phone, reuse shared pieces,
+ask before every push.
+
+### CRMLS "Last updated" fix (`2e191ff`)
+
+- The 15-minute IDX cron was working (337 rows/hr). The line was wrong: it showed each listing's `syncedAt`, which is
+  only set on first insert, so unchanged listings looked days old.
+- Now a finished sync records its start time in `SiteSettings` key `idx_last_sync_at` (`lib/idx/last-sync.ts`). The
+  listing page and `/api/properties/[mlsNumber]` (`lastSyncAt`) read it, formatted in Pacific time
+  (`lib/crmls-updated.ts`) so the server page (UTC on Vercel) and the drawer agree. No migration.
+
+### Font trim (`8c95b19`)
+
+- `apps/web/src/app/fonts/GoogleSansFlex.woff2` 1,887,540 → 271,536 bytes, pixel-identical; the unused 4 MB `.ttf`
+  was deleted. The font was already Latin-only; the size came from 6 variable axes. Kept wght + opsz + slnt (Chrome
+  draws italic with slnt); pinned wdth/GRAD/ROND.
+- Gotcha: npm `subset-font` silently drops gvar when pinning an axis (every weight renders Regular). The recipe is
+  `docs/fonts/trim-google-sans-flex.py` (fontTools instancer, gvar rebuilt from the original). Python isn't installed
+  on Ryan's PC; a portable Python in the scratchpad was used.
+
+### Home video note (no change)
+
+- One friend's iPhone (Low Power Mode) didn't autoplay the homepage hero. Ryan: ignore unless it recurs. If it does:
+  `public/homepage-video.mp4` is the only hero file that isn't faststart; the candidate fix is a lossless
+  `ffmpeg -c copy -movflags +faststart` remux, only with Ryan's OK.
+
+### Home/Buy/search speed (`01bba97`)
+
+- **Cause:** picking the visitor's city ran a live `count` with ILIKE per city (5–10 s); the "N homes" search totals
+  were 5–12 s on a first visit.
+- **Fix:** an hourly Vercel cron `/api/cron/listing-counts` (`vercel.json`, `2 * * * *`) runs one grouped query
+  (GROUPING SETS by city and by listingType, ~33 s, ~1,193 cities) and saves:
+  - every city's active count as a Redis hash `listings:city-counts`, written atomically (temp key + rename, with a
+    `__ready` field so a missing city reads 0 rather than "no map");
+  - the totals for the 7 linked searches (For Sale, For Rent, the 5 Rent-page cities) under the exact key the search
+    page already reads (`countCacheKey(where)`), with a 3 h TTL.
+- New `lib/listing-counts.ts`. `lib/visitor-city.ts` reads the saved count first and counts live if it's missing
+  (same rule, same Los Angeles fallback below 4 listings). If Redis is ever empty, everything counts live as before.
+- **Redis read timeout 300 ms → 1 s** (shared `redisReadOrNull` in `lib/property-count-cache.ts`). A new server's
+  first Redis read takes ~500 ms. The old limit then triggered a 5–12 s live recount that also overwrote the saved
+  3 h total with a 5-minute copy.
+- **Verified:** HTML identical old-vs-new for 12/12 fake cities; screenshots at 1440/1024/390/320 differed only by
+  run-to-run noise (pulsing button, blurred map pill); saved counts equal live counts (22 cities, 7 searches).
+  Server time: Home with no city 7.9 s → 0.15 s, Buy 0.79 s → 0.14 s. Live after push: Home ~0.42 s, Buy ~0.4–0.5 s,
+  linked searches ~0.2 s.
+- The live site overrides a fake `x-vercel-ip-city` header with the visitor's real location, so city tests only work
+  locally.
+- Neon cost: roughly 45 s/hour of extra compute, about $1–2/month worst case, offset by removing per-visit counts.
+- Pushes don't take the site down: Vercel keeps serving the old build until the new one finishes, then switches in
+  one step. The first few visits after a switch are slower while servers warm up.
+
+### Next Session — Start Here
+
+1. **SEO** (Ryan, next session): rank CnC naturally at the top of California real estate brokerage searches without
+   paid ads. Discuss first, no code until he approves a plan. Phase 6 already built a sitemap, JSON-LD
+   (agent/property/homepage) and metadata; start by auditing what exists.
+2. Re-measure the big search counts to see whether the 2026-10-15 freeze held (look at "dirtied" in EXPLAIN ANALYZE).
+3. Older backlog unchanged: Deploy Checklist re-verification at the top of this file; 7d deferred items; CRES E&O;
+   ~5 KB phone-menu chunk loaded on desktop.
