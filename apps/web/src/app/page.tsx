@@ -1,4 +1,3 @@
-import { localBusinessJsonLd, jsonLdScriptSafe } from "@/lib/json-ld";
 import { pageMeta } from "@/lib/seo";
 import { FAQ } from "@/components/home/FAQ";
 import { GradientBridge } from "@/components/ui/GradientBridge";
@@ -15,10 +14,6 @@ export const metadata = pageMeta("/");
 export default function HomePage() {
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: jsonLdScriptSafe(localBusinessJsonLd()) }}
-      />
       <HeroSection />
       <FeaturedListingsServer />
       <div className="bg-[#F2F0EF] px-16 pt-10 pb-0">

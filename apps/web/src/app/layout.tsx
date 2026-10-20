@@ -7,6 +7,7 @@ import localFont from "next/font/local";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { PHONE_FIELDS_16 } from "@/lib/dashboard-phone";
+import { jsonLdScriptSafe, localBusinessJsonLd, websiteJsonLd } from "@/lib/json-ld";
 import { BRAND, OG_IMAGE, SITE_URL } from "@/lib/seo";
 import "./globals.css";
 
@@ -49,6 +50,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       {/* Phones: every text box at 16px so iPhone Safari doesn't auto-zoom on
           tap (the zoom then carried over to the next page). Desktop unchanged. */}
       <body className={`antialiased ${PHONE_FIELDS_16}`}>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: jsonLdScriptSafe([localBusinessJsonLd(), websiteJsonLd()]) }}
+        />
         <Providers session={session}>
           <Navbar />
           <main className="relative z-10">{children}</main>

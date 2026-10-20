@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { propertyJsonLd, agentJsonLd, localBusinessJsonLd, jsonLdScriptSafe } from "@/lib/json-ld";
+import {
+  propertyJsonLd,
+  agentJsonLd,
+  localBusinessJsonLd,
+  websiteJsonLd,
+  jsonLdScriptSafe,
+} from "@/lib/json-ld";
+import { SITE_URL } from "@/lib/seo";
 
 const baseProperty = {
   mlsNumber: "A12345",
@@ -60,11 +67,69 @@ describe("agentJsonLd", () => {
     expect(result["@type"]).toBe("Person");
     expect(result.url).toBe("https://cncrealtygroup.com/agents/ryan-chong");
   });
+
+  it("names the brokerage CnC Realty", () => {
+    const result = agentJsonLd({ name: "Ryan Chong", slug: "ryan-chong", bio: null, headshot: null, phone: null });
+    expect(result.worksFor.name).toBe("CnC Realty");
+  });
 });
 
 describe("localBusinessJsonLd", () => {
+  const biz = localBusinessJsonLd();
+
   it("sets @type to RealEstateAgent", () => {
-    expect(localBusinessJsonLd()["@type"]).toBe("RealEstateAgent");
+    expect(biz["@type"]).toBe("RealEstateAgent");
+  });
+
+  it("uses the CnC Realty brand, url, logo, image and email", () => {
+    expect(biz.name).toBe("CnC Realty");
+    expect(biz.legalName).toBe("CnC Realty");
+    expect(biz.url).toBe(SITE_URL);
+    expect(biz.logo).toBe(`${SITE_URL}/logo-black.png`);
+    expect(biz.image).toBe(`${SITE_URL}/og-default.jpg`);
+    expect(biz.email).toBe("info@cncrealtygroup.com");
+  });
+
+  it("has the Santa Ana office address", () => {
+    expect(biz.address).toEqual({
+      "@type": "PostalAddress",
+      streetAddress: "830 S. Main St, STE 227",
+      addressLocality: "Santa Ana",
+      addressRegion: "CA",
+      postalCode: "92701",
+      addressCountry: "US",
+    });
+  });
+
+  it("serves the state of California", () => {
+    expect(biz.areaServed).toEqual({ "@type": "State", name: "California" });
+  });
+
+  it("lists the three social profiles and the DRE license", () => {
+    expect(biz.sameAs).toEqual([
+      "https://www.facebook.com/CnCRealtyGroup",
+      "https://www.instagram.com/cncrealty",
+      "https://www.youtube.com/@CnCRealtyGroup",
+    ]);
+    expect(biz.identifier).toEqual({ "@type": "PropertyValue", name: "CA DRE License", value: "02439028" });
+  });
+
+  it("has no telephone and never mentions Los Angeles or CnC Realty Group", () => {
+    expect("telephone" in biz).toBe(false);
+    const json = JSON.stringify(biz);
+    expect(json).not.toContain("Los Angeles");
+    expect(json).not.toContain("CnC Realty Group");
+  });
+});
+
+describe("websiteJsonLd", () => {
+  it("describes the WebSite", () => {
+    expect(websiteJsonLd()).toEqual({
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: "CnC Realty",
+      url: SITE_URL,
+    });
   });
 });
 

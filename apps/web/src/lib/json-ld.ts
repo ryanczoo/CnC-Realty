@@ -1,4 +1,4 @@
-const BASE = "https://cncrealtygroup.com";
+import { SITE_URL, BRAND, OG_IMAGE } from "@/lib/seo";
 
 export function propertyJsonLd(p: {
   mlsNumber: string;
@@ -19,7 +19,7 @@ export function propertyJsonLd(p: {
     "@context": "https://schema.org",
     "@type": "RealEstateListing",
     name: p.address,
-    url: `${BASE}/properties/${p.mlsNumber}`,
+    url: `${SITE_URL}/properties/${p.mlsNumber}`,
     ...(p.description ? { description: p.description } : {}),
     ...(p.photos?.length ? { image: p.photos.slice(0, 5) } : {}),
     ...(p.beds !== null ? { numberOfRooms: p.beds } : {}),
@@ -52,12 +52,12 @@ export function agentJsonLd(a: {
     "@context": "https://schema.org",
     "@type": "Person",
     name: a.name,
-    url: `${BASE}/agents/${a.slug}`,
+    url: `${SITE_URL}/agents/${a.slug}`,
     jobTitle: "Real Estate Agent",
     ...(a.bio ? { description: a.bio } : {}),
     ...(a.headshot ? { image: a.headshot } : {}),
     ...(a.phone ? { telephone: a.phone } : {}),
-    worksFor: { "@type": "RealEstateAgent", name: "CnC Realty Group", url: BASE },
+    worksFor: { "@type": "RealEstateAgent", name: BRAND, url: SITE_URL },
   };
 }
 
@@ -65,17 +65,36 @@ export function localBusinessJsonLd() {
   return {
     "@context": "https://schema.org",
     "@type": "RealEstateAgent",
-    name: "CnC Realty Group",
-    url: BASE,
-    logo: `${BASE}/logo-white.png`,
+    name: BRAND,
+    legalName: BRAND,
+    url: SITE_URL,
+    logo: `${SITE_URL}/logo-black.png`,
+    image: `${SITE_URL}${OG_IMAGE.url}`,
     email: "info@cncrealtygroup.com",
     address: {
       "@type": "PostalAddress",
-      addressLocality: "Los Angeles",
+      streetAddress: "830 S. Main St, STE 227",
+      addressLocality: "Santa Ana",
       addressRegion: "CA",
+      postalCode: "92701",
       addressCountry: "US",
     },
-    areaServed: "California",
+    areaServed: { "@type": "State", name: "California" },
+    sameAs: [
+      "https://www.facebook.com/CnCRealtyGroup",
+      "https://www.instagram.com/cncrealty",
+      "https://www.youtube.com/@CnCRealtyGroup",
+    ],
+    identifier: { "@type": "PropertyValue", name: "CA DRE License", value: "02439028" },
+  };
+}
+
+export function websiteJsonLd() {
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: BRAND,
+    url: SITE_URL,
   };
 }
 
