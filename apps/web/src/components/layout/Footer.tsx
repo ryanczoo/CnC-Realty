@@ -166,7 +166,7 @@ export function Footer() {
           <div className="flex-shrink-0 max-lg:order-3">
             <Image
               src="/logo-white.png"
-              alt="CnC Realty Group"
+              alt="CnC Realty"
               width={280}
               height={280}
               className="object-contain object-left max-lg:h-auto max-lg:w-[180px] max-lg:object-center"

@@ -14,7 +14,7 @@ export default function AccessibilityPage() {
           <section>
             <h2 className="mb-4 font-sans text-xl font-medium text-[#1B1B1B]">Our Commitment</h2>
             <p className="text-base leading-relaxed text-[#1B1B1B]/80">
-              CnC Realty Group is committed to making our website accessible to all users, including those with disabilities. We strive to conform to the <strong>Web Content Accessibility Guidelines (WCAG) 2.1, Level AA</strong> — the widely accepted standard for web accessibility — and we continually work to improve the experience for everyone.
+              CnC Realty is committed to making our website accessible to all users, including those with disabilities. We strive to conform to the <strong>Web Content Accessibility Guidelines (WCAG) 2.1, Level AA</strong> — the widely accepted standard for web accessibility — and we continually work to improve the experience for everyone.
             </p>
           </section>
 

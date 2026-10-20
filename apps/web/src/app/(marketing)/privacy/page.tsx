@@ -17,7 +17,7 @@ export default function PrivacyPage() {
 
           <section>
             <p className="text-base leading-relaxed text-[#1B1B1B]/80">
-              CnC Realty Group ("<strong>CnC</strong>," "we," "us," or "our"), a California licensed real estate brokerage (CA DRE #02439028), is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your personal information when you visit <strong>cncrealtygroup.com</strong> (the "Site") or engage with our services. This policy is intended to comply with the California Consumer Privacy Act of 2018 as amended by the California Privacy Rights Act of 2020 ("CCPA/CPRA"), the California Online Privacy Protection Act ("CalOPPA"), and other applicable law.
+              CnC Realty ("<strong>CnC</strong>," "we," "us," or "our"), a California licensed real estate brokerage (CA DRE #02439028), is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your personal information when you visit <strong>cncrealtygroup.com</strong> (the "Site") or engage with our services. This policy is intended to comply with the California Consumer Privacy Act of 2018 as amended by the California Privacy Rights Act of 2020 ("CCPA/CPRA"), the California Online Privacy Protection Act ("CalOPPA"), and other applicable law.
             </p>
             <p className="mt-4 text-base leading-relaxed text-[#1B1B1B]/80">
               By using our Site, you consent to the practices described in this policy. If you do not agree, please do not use our Site.
@@ -65,7 +65,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="mb-4 font-sans text-xl font-medium text-[#1B1B1B]">4. SMS / Text Message Communications</h2>
             <p className="text-base leading-relaxed text-[#1B1B1B]/80">
-              We will only send you promotional or transactional text messages (SMS) if you have provided express written consent. By providing your phone number and checking any opt-in box on our Site, you consent to receive automated text messages from CnC Realty Group. Message and data rates may apply. You may opt out at any time by replying <strong>STOP</strong> to any text message we send, or by contacting us at <a href="mailto:info@cncrealtygroup.com" className="text-[#9E8C61] underline underline-offset-2">info@cncrealtygroup.com</a>. We do not share your mobile number with third parties for their marketing purposes.
+              We will only send you promotional or transactional text messages (SMS) if you have provided express written consent. By providing your phone number and checking any opt-in box on our Site, you consent to receive automated text messages from CnC Realty. Message and data rates may apply. You may opt out at any time by replying <strong>STOP</strong> to any text message we send, or by contacting us at <a href="mailto:info@cncrealtygroup.com" className="text-[#9E8C61] underline underline-offset-2">info@cncrealtygroup.com</a>. We do not share your mobile number with third parties for their marketing purposes.
             </p>
           </section>
 
@@ -181,7 +181,7 @@ export default function PrivacyPage() {
               If you have questions about this Privacy Policy or wish to exercise your privacy rights, contact us at:
             </p>
             <address className="mt-4 not-italic text-base leading-loose text-[#1B1B1B]/80">
-              <strong>CnC Realty Group</strong><br />
+              <strong>CnC Realty</strong><br />
               Los Angeles, CA<br />
               Email: <a href="mailto:info@cncrealtygroup.com" className="text-[#9E8C61] underline underline-offset-2">info@cncrealtygroup.com</a><br />
               CA DRE #02439028

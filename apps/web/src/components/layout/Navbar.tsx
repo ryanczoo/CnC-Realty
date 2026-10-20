@@ -154,7 +154,7 @@ export function Navbar() {
             >
               <Image
                 src="/logo-white.png"
-                alt="CnC Realty Group"
+                alt="CnC Realty"
                 height={19}
                 width={65}
                 className="object-contain transition-[filter] duration-300"

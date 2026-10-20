@@ -8,12 +8,12 @@ export default function FairHousingPage() {
       <div className="mx-auto max-w-4xl px-8 pt-32 pb-16 lg:px-16">
         <p className="mb-3 font-sans text-xs uppercase tracking-widest text-[#1B1B1B]/40">Legal</p>
         <h1 className="font-sans text-4xl font-light text-[#1B1B1B] lg:text-5xl">Fair Housing Notice</h1>
-        <p className="mt-3 mb-12 font-sans text-sm text-[#1B1B1B]/50">CA DRE #02439028 · CnC Realty Group</p>
+        <p className="mt-3 mb-12 font-sans text-sm text-[#1B1B1B]/50">CA DRE #02439028 · CnC Realty</p>
         <div className="space-y-12 font-sans text-[#1B1B1B] max-lg:[overflow-wrap:anywhere]">
 
           <section>
             <p className="text-base leading-relaxed text-[#1B1B1B]/80">
-              CnC Realty Group is committed to the letter and spirit of U.S. and California fair housing law. We do not discriminate against any person in any aspect of the sale, rental, financing, or appraisal of residential real property on the basis of any characteristic protected by law.
+              CnC Realty is committed to the letter and spirit of U.S. and California fair housing law. We do not discriminate against any person in any aspect of the sale, rental, financing, or appraisal of residential real property on the basis of any characteristic protected by law.
             </p>
           </section>
 
@@ -56,7 +56,7 @@ export default function FairHousingPage() {
           <section>
             <h2 className="mb-4 font-sans text-xl font-medium text-[#1B1B1B]">Our Commitment</h2>
             <p className="mb-3 text-base leading-relaxed text-[#1B1B1B]/80">
-              CnC Realty Group and all of its licensed agents are committed to equal housing opportunity. We do not and will not:
+              CnC Realty and all of its licensed agents are committed to equal housing opportunity. We do not and will not:
             </p>
             <ul className="space-y-2 text-base leading-relaxed text-[#1B1B1B]/80">
               <li>Refuse to sell or rent housing or make housing otherwise unavailable because of a protected characteristic.</li>
@@ -99,12 +99,12 @@ export default function FairHousingPage() {
           </section>
 
           <section>
-            <h2 className="mb-4 font-sans text-xl font-medium text-[#1B1B1B]">Contact CnC Realty Group</h2>
+            <h2 className="mb-4 font-sans text-xl font-medium text-[#1B1B1B]">Contact CnC Realty</h2>
             <p className="mb-4 text-base leading-relaxed text-[#1B1B1B]/80">
               If you have questions about fair housing or concerns about conduct by a CnC agent, please contact us directly:
             </p>
             <address className="not-italic text-base leading-loose text-[#1B1B1B]/80">
-              <strong>CnC Realty Group</strong> — Designated Broker: Ryan Chong<br />
+              <strong>CnC Realty</strong> — Designated Broker: Ryan Chong<br />
               Los Angeles, CA<br />
               Email: <a href="mailto:info@cncrealtygroup.com" className="text-[#9E8C61] underline underline-offset-2">info@cncrealtygroup.com</a><br />
               CA DRE #02439028

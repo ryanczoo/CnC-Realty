@@ -15,7 +15,7 @@ export default function TermsPage() {
 
           <section>
             <p className="text-base leading-relaxed text-[#1B1B1B]/80">
-              Please read these Terms of Service ("Terms") carefully before using <strong>cncrealtygroup.com</strong> (the "Site") operated by CnC Realty Group, a California licensed real estate brokerage (CA DRE #02439028) ("CnC," "we," "us," or "our"). By accessing or using the Site, you agree to be bound by these Terms. If you do not agree to these Terms, do not use the Site.
+              Please read these Terms of Service ("Terms") carefully before using <strong>cncrealtygroup.com</strong> (the "Site") operated by CnC Realty, a California licensed real estate brokerage (CA DRE #02439028) ("CnC," "we," "us," or "our"). By accessing or using the Site, you agree to be bound by these Terms. If you do not agree to these Terms, do not use the Site.
             </p>
           </section>
 
@@ -61,7 +61,7 @@ export default function TermsPage() {
           <section>
             <h2 className="mb-4 font-sans text-xl font-medium text-[#1B1B1B]">4. No Agency Relationship</h2>
             <p className="text-base leading-relaxed text-[#1B1B1B]/80">
-              Use of the Site does not create an agency, brokerage, or fiduciary relationship between you and CnC Realty Group or any of its agents. An agency relationship is only established upon execution of a written representation agreement with a licensed CnC agent.
+              Use of the Site does not create an agency, brokerage, or fiduciary relationship between you and CnC Realty or any of its agents. An agency relationship is only established upon execution of a written representation agreement with a licensed CnC agent.
             </p>
           </section>
 
@@ -75,7 +75,7 @@ export default function TermsPage() {
           <section>
             <h2 className="mb-4 font-sans text-xl font-medium text-[#1B1B1B]">6. Intellectual Property</h2>
             <p className="text-base leading-relaxed text-[#1B1B1B]/80">
-              The Site and its original content, features, and functionality (including but not limited to text, graphics, logos, images, audio clips, and software) are owned by CnC Realty Group or its licensors and are protected by United States and international copyright, trademark, patent, trade secret, and other intellectual property or proprietary rights laws. You may not reproduce, distribute, modify, create derivative works of, publicly display, publicly perform, republish, download, store, or transmit any material from the Site without our prior written consent, except for personal, non-commercial use.
+              The Site and its original content, features, and functionality (including but not limited to text, graphics, logos, images, audio clips, and software) are owned by CnC Realty or its licensors and are protected by United States and international copyright, trademark, patent, trade secret, and other intellectual property or proprietary rights laws. You may not reproduce, distribute, modify, create derivative works of, publicly display, publicly perform, republish, download, store, or transmit any material from the Site without our prior written consent, except for personal, non-commercial use.
             </p>
           </section>
 
@@ -103,7 +103,7 @@ export default function TermsPage() {
           <section>
             <h2 className="mb-4 font-sans text-xl font-medium text-[#1B1B1B]">10. Indemnification</h2>
             <p className="text-base leading-relaxed text-[#1B1B1B]/80">
-              You agree to defend, indemnify, and hold harmless CnC Realty Group, its affiliates, licensors, and service providers, and its and their respective officers, directors, employees, contractors, agents, licensors, suppliers, successors, and assigns from and against any claims, liabilities, damages, judgments, awards, losses, costs, expenses, or fees (including reasonable attorneys' fees) arising out of or relating to your violation of these Terms or your use of the Site.
+              You agree to defend, indemnify, and hold harmless CnC Realty, its affiliates, licensors, and service providers, and its and their respective officers, directors, employees, contractors, agents, licensors, suppliers, successors, and assigns from and against any claims, liabilities, damages, judgments, awards, losses, costs, expenses, or fees (including reasonable attorneys' fees) arising out of or relating to your violation of these Terms or your use of the Site.
             </p>
           </section>
 
@@ -124,7 +124,7 @@ export default function TermsPage() {
           <section>
             <h2 className="mb-4 font-sans text-xl font-medium text-[#1B1B1B]">13. Contact Us</h2>
             <address className="not-italic text-base leading-loose text-[#1B1B1B]/80">
-              <strong>CnC Realty Group</strong><br />
+              <strong>CnC Realty</strong><br />
               Los Angeles, CA<br />
               Email: <a href="mailto:info@cncrealtygroup.com" className="text-[#9E8C61] underline underline-offset-2">info@cncrealtygroup.com</a><br />
               CA DRE #02439028
