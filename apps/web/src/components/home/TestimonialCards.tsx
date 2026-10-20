@@ -11,7 +11,8 @@ export function TestimonialCards() {
       <div className="max-lg:flex-col max-lg:!items-stretch" style={{ display: "flex", gap: "1px", backgroundColor: "#F2F0EF", alignItems: "flex-start" }}>
         {/* Left column — offset down by 200px */}
         <div className="flex flex-1 flex-col max-lg:!mt-0" style={{ marginTop: "200px", gap: "1px" }}>
-          <motion.div {...fadeUp(0)} className="max-lg:!h-[300px]" style={{ height: "420px", overflow: "hidden", position: "relative" }}>
+          {/* On phones the photo moves below Kevin's review, so photos sit between reviews. */}
+          <motion.div {...fadeUp(0)} className="max-lg:!h-[300px] max-lg:order-1" style={{ height: "420px", overflow: "hidden", position: "relative" }}>
             <Image src="/images/testimonials-left.jpg" alt="" fill className="object-cover" />
           </motion.div>
           <motion.div
