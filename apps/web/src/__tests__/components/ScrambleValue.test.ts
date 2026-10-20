@@ -1,5 +1,7 @@
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, it, expect } from "vitest";
-import { countDigits, lockedDigitCount, scrambleSequential } from "@/components/ui/ScrambleValue";
+import { countDigits, lockedDigitCount, scrambleSequential, ScrambleValue } from "@/components/ui/ScrambleValue";
 
 describe("countDigits", () => {
   it("counts digit characters, ignoring punctuation", () => {
@@ -59,5 +61,21 @@ describe("scrambleSequential", () => {
   it("preserves non-digit characters and randomizes every digit when nothing is locked", () => {
     const result = scrambleSequential("12,924+", 0);
     expect(result).toMatch(/^[0-9]{2},[0-9]{3}\+$/);
+  });
+});
+
+describe("ScrambleValue markup", () => {
+  it("renders the real value for crawlers and the placeholder visually", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(ScrambleValue, {
+        value: "100%",
+        triggered: false,
+        className: "font-chopin text-3xl",
+      })
+    );
+    expect(html).toContain('<span class="sr-only">100%</span>');
+    expect(html).toContain('<span aria-hidden="true">–––%</span>');
+    expect(html.startsWith('<p class="font-chopin text-3xl">')).toBe(true);
+    expect(html.endsWith("</p>")).toBe(true);
   });
 });

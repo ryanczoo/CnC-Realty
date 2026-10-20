@@ -88,5 +88,12 @@ export function ScrambleValue({
   className?: string;
 }) {
   const displayed = useScramble(value, triggered, duration);
-  return <p className={className}>{displayed}</p>;
+  // The real value sits in sr-only text so crawlers and screen readers read it from the server HTML;
+  // the scrambling copy is hidden from them.
+  return (
+    <p className={className}>
+      <span className="sr-only">{value}</span>
+      <span aria-hidden="true">{displayed}</span>
+    </p>
+  );
 }
