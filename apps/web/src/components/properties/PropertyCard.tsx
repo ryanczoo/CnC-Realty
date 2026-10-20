@@ -15,6 +15,10 @@ interface Props {
   onSelect?: (mlsNumber: string) => void;
 }
 
+export function isPlainClick(e: Pick<React.MouseEvent, "button" | "metaKey" | "ctrlKey" | "shiftKey" | "altKey">) {
+  return e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey;
+}
+
 export function PropertyCard({ property, isSaved, onToggleSave, onHover, onSelect }: Props) {
   const { data: session } = useSession();
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -130,9 +134,19 @@ export function PropertyCard({ property, isSaved, onToggleSave, onHover, onSelec
   return (
     <>
       {onSelect ? (
-        <div {...sharedProps} onClick={() => onSelect(property.mlsNumber)}>
+        // A real link so crawlers can follow it and visitors can open it in a new tab; a plain click opens the popup.
+        <a
+          href={`/properties/${property.mlsNumber}`}
+          {...sharedProps}
+          className={`${sharedProps.className} outline-none`}
+          onClick={(e) => {
+            if (!isPlainClick(e)) return;
+            e.preventDefault();
+            onSelect(property.mlsNumber);
+          }}
+        >
           {inner}
-        </div>
+        </a>
       ) : (
         <Link href={`/properties/${property.mlsNumber}`} {...sharedProps}>
           {inner}
