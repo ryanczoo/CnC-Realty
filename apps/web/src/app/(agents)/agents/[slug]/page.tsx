@@ -6,6 +6,7 @@ export const revalidate = 300;
 import { prisma } from "@/lib/prisma";
 import { AgentProfileHero } from "@/components/agents/AgentProfileHero";
 import { AgentContactForm } from "@/components/agents/AgentContactForm";
+import { canonicalMeta } from "@/lib/seo";
 import type { Metadata } from "next";
 
 const getAgent = cache((slug: string) =>
@@ -40,12 +41,12 @@ type Props = { params: { slug: string } };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const agent = await getAgent(params.slug);
-  if (!agent) return { title: "Agent Not Found | CnC Realty" };
-  return {
-    title: `${agent.displayName ?? agent.slug} | CnC Realty Group`,
-    description:
-      agent.bio ?? `Connect with ${agent.displayName ?? "a CnC Realty agent"} today.`,
-  };
+  if (!agent) return { title: "Agent Not Found" };
+  return canonicalMeta(
+    `/agents/${agent.slug}`,
+    agent.displayName ?? agent.slug,
+    agent.bio ?? `Connect with ${agent.displayName ?? "a CnC Realty agent"} today.`,
+  );
 }
 
 export default async function AgentProfilePage({ params }: Props) {

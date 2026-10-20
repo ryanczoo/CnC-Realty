@@ -22,17 +22,34 @@ const baseProperty = {
   photos: ["https://cdn.example.com/photo1.jpg"],
   latitude: 34.1478,
   longitude: -118.1445,
+  status: "Active",
 };
 
 describe("propertyJsonLd", () => {
+  it("includes an offer (with price) while the listing is on the market", () => {
+    for (const status of ["Active", "ComingSoon", "ActiveUnderContract"]) {
+      expect(propertyJsonLd({ ...baseProperty, status }).offers).toEqual({
+        "@type": "Offer",
+        price: 850_000,
+        priceCurrency: "USD",
+      });
+    }
+  });
+
+  it("omits offers entirely for Closed and Pending listings", () => {
+    for (const status of ["Closed", "Pending"]) {
+      expect(propertyJsonLd({ ...baseProperty, status })).not.toHaveProperty("offers");
+    }
+  });
+
   it("sets @type to RealEstateListing", () => {
     expect(propertyJsonLd(baseProperty)["@type"]).toBe("RealEstateListing");
   });
 
   it("includes the listing price in offers", () => {
     const result = propertyJsonLd(baseProperty);
-    expect(result.offers.price).toBe(850_000);
-    expect(result.offers.priceCurrency).toBe("USD");
+    expect(result.offers?.price).toBe(850_000);
+    expect(result.offers?.priceCurrency).toBe("USD");
   });
 
   it("builds the canonical URL from mlsNumber", () => {

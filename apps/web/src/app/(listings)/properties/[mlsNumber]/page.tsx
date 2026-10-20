@@ -4,6 +4,8 @@ import { Metadata } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { propertyJsonLd, jsonLdScriptSafe } from "@/lib/json-ld";
+import { canonicalMeta } from "@/lib/seo";
+import { ACTIVE_STATUSES } from "@/lib/listing-counts";
 
 export const revalidate = 300;
 import { prisma } from "@/lib/prisma";
@@ -38,17 +40,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!property) return { title: "Property Not Found" };
 
   const photos = Array.isArray(property.photos) ? (property.photos as string[]) : [];
-  const title = `${property.address}, ${property.city}, ${property.state}`;
-
-  return {
+  const title = `${property.address}, ${property.city}, ${property.state} ${property.zip}`;
+  const meta = canonicalMeta(
+    `/properties/${property.mlsNumber}`,
     title,
-    description: property.description ?? `${title} — $${property.listPrice.toLocaleString()}`,
-    openGraph: {
-      title,
-      description: `$${property.listPrice.toLocaleString()} · ${title}`,
-      images: photos[0] ? [{ url: photos[0], width: 1200, height: 630 }] : [],
-    },
-  };
+    property.description ?? `${title} — $${property.listPrice.toLocaleString()}`,
+    photos[0] ? [{ url: photos[0], width: 1200, height: 630 }] : undefined,
+  );
+
+  // Sold and pending listings keep working for visitors but are hidden from Google.
+  return ACTIVE_STATUSES.includes(property.status)
+    ? meta
+    : { ...meta, robots: { index: false, follow: true } };
 }
 
 export default async function PropertyDetailPage({ params }: PageProps) {
@@ -103,6 +106,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
               photos: photos,
               latitude: property.latitude,
               longitude: property.longitude,
+              status: property.status,
             })
           ),
         }}
@@ -123,8 +127,8 @@ export default async function PropertyDetailPage({ params }: PageProps) {
             {/* Header */}
             <div className="flex items-start justify-between gap-4 max-lg:flex-col max-lg:gap-3">
               <div>
-                <h1 className="text-3xl font-bold">${property.listPrice.toLocaleString()}</h1>
-                <p className="mt-1 text-lg text-[#1B1B1B]/80">{property.address}</p>
+                <p className="text-3xl font-bold">${property.listPrice.toLocaleString()}</p>
+                <h1 className="mt-1 text-lg text-[#1B1B1B]/80">{property.address}</h1>
                 <p className="text-sm text-[#1B1B1B]/70">{property.city}, {property.state} {property.zip}</p>
               </div>
               <div className="flex shrink-0 items-center gap-2">

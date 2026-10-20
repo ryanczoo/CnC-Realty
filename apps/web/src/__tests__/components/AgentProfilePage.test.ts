@@ -18,7 +18,7 @@ vi.mock("@/components/agents/AgentProfileHero", () => ({ AgentProfileHero: () =>
 vi.mock("@/components/agents/AgentContactForm", () => ({ AgentContactForm: () => null }));
 
 import { prisma } from "@/lib/prisma";
-import AgentProfilePage from "../../app/(agents)/agents/[slug]/page";
+import AgentProfilePage, { generateMetadata } from "../../app/(agents)/agents/[slug]/page";
 
 const AGENT = {
   id: "agent-1",
@@ -57,5 +57,31 @@ describe("AgentProfilePage — public Transactions section", () => {
         where: { agentId: "agent-1", status: "CLOSED", transactionSide: { not: "REFERRAL" } },
       })
     );
+  });
+});
+
+describe("AgentProfilePage — generateMetadata", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("titles the page with just the agent's name (the root template adds the brand) and canonicalises it", async () => {
+    vi.mocked(prisma.agent.findUnique).mockResolvedValue(AGENT);
+    const meta = await generateMetadata({ params: { slug: "ryan-chong" } });
+    expect(meta.title).toBe("Ryan Chong");
+    expect(meta.alternates?.canonical).toBe("/agents/ryan-chong");
+    expect(meta.openGraph?.title).toBe("Ryan Chong | CnC Realty");
+  });
+
+  it("uses the agent's bio as the description, else a generic line", async () => {
+    vi.mocked(prisma.agent.findUnique).mockResolvedValue({ ...AGENT, bio: "Twenty years in Pasadena." });
+    expect((await generateMetadata({ params: { slug: "ryan-chong" } })).description).toBe("Twenty years in Pasadena.");
+    vi.mocked(prisma.agent.findUnique).mockResolvedValue(AGENT);
+    expect((await generateMetadata({ params: { slug: "ryan-chong" } })).description).toBe(
+      "Connect with Ryan Chong today.",
+    );
+  });
+
+  it("titles a missing agent 'Agent Not Found'", async () => {
+    vi.mocked(prisma.agent.findUnique).mockResolvedValue(null);
+    expect((await generateMetadata({ params: { slug: "nobody" } })).title).toBe("Agent Not Found");
   });
 });

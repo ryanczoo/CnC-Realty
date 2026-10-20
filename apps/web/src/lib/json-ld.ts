@@ -1,4 +1,5 @@
 import { SITE_URL, BRAND, OG_IMAGE } from "@/lib/seo";
+import { ACTIVE_STATUSES } from "@/lib/listing-counts";
 
 export function propertyJsonLd(p: {
   mlsNumber: string;
@@ -14,6 +15,7 @@ export function propertyJsonLd(p: {
   photos: string[] | null;
   latitude: number | null;
   longitude: number | null;
+  status: string;
 }) {
   return {
     "@context": "https://schema.org",
@@ -26,7 +28,10 @@ export function propertyJsonLd(p: {
     ...(p.sqft !== null
       ? { floorSize: { "@type": "QuantitativeValue", value: p.sqft, unitCode: "SQFT" } }
       : {}),
-    offers: { "@type": "Offer", price: p.listPrice, priceCurrency: "USD" },
+    // Sold/off-market listings keep working for visitors but advertise no price to Google.
+    ...(ACTIVE_STATUSES.includes(p.status)
+      ? { offers: { "@type": "Offer", price: p.listPrice, priceCurrency: "USD" } }
+      : {}),
     address: {
       "@type": "PostalAddress",
       streetAddress: p.address,

@@ -66,7 +66,7 @@ export function AgentHeroSection({ name, title, headshot, phone, onPhotoRef, pho
           </div>
         </div>
 
-        <p className="break-words text-center font-sans text-[1.9rem] font-light leading-[1.25] sm:text-[2.4rem] lg:text-[3rem]">
+        <h1 className="break-words text-center font-sans text-[1.9rem] font-light leading-[1.25] sm:text-[2.4rem] lg:text-[3rem]">
           {allWords.map((word, i) => (
             <span
               key={i}
@@ -85,7 +85,7 @@ export function AgentHeroSection({ name, title, headshot, phone, onPhotoRef, pho
               {i < allWords.length - 1 ? " " : ""}
             </span>
           ))}
-        </p>
+        </h1>
 
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <a

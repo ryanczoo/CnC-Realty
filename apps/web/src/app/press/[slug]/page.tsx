@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { canonicalMeta } from "@/lib/seo";
 import { PostBody } from "@/components/blog/PostBody";
 import { OtherNews } from "@/components/blog/OtherNews";
 
@@ -34,13 +35,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const post = await getPost(slug);
   if (!post) return { title: "Not Found" };
-  return {
-    title: `${post.title} | CnC Realty Group`,
-    description: post.excerpt ?? undefined,
-    openGraph: post.coverImage
-      ? { images: [{ url: post.coverImage }] }
-      : undefined,
-  };
+  return canonicalMeta(
+    `/press/${post.slug}`,
+    post.title,
+    post.excerpt ?? `${post.title} — news from CnC Realty.`,
+    post.coverImage ? [{ url: post.coverImage }] : undefined,
+  );
 }
 
 export default async function PressPostPage({ params }: Props) {
