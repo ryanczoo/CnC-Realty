@@ -127,3 +127,8 @@ export function canonicalMeta(
     },
   };
 }
+
+// Account and email-preference pages: a tab title of their own, kept out of search results.
+export function noindexMeta(title: string): Metadata {
+  return { title, robots: { index: false, follow: false } };
+}

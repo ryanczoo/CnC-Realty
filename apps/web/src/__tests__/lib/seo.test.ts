@@ -97,3 +97,22 @@ describe("constants", () => {
     expect(OG_IMAGE).toEqual({ url: "/og-default.jpg", width: 1200, height: 630, alt: "CnC Realty" });
   });
 });
+
+describe("noindexMeta", () => {
+  it("names the page and keeps it out of search results", async () => {
+    const { noindexMeta } = await import("@/lib/seo");
+    expect(noindexMeta("Sign In")).toEqual({ title: "Sign In", robots: { index: false, follow: false } });
+  });
+
+  it("is applied to every account and email-preference page", async () => {
+    const layouts = await Promise.all([
+      import("@/app/(auth)/login/layout"),
+      import("@/app/(auth)/register/layout"),
+      import("@/app/(auth)/forgot-password/layout"),
+      import("@/app/(auth)/reset-password/layout"),
+      import("@/app/(marketing)/setup-account/layout"),
+      import("@/app/(marketing)/unsubscribe/layout"),
+    ]);
+    for (const l of layouts) expect(l.metadata.robots).toEqual({ index: false, follow: false });
+  });
+});
