@@ -51,7 +51,8 @@ async function runSync(type: string) {
   // reconciling a finished crawl against the feed cost a full investigation
   // before the ~896k shortfall turned out to be exactly this exclusion.
   let skipped = 0;
-  // Every listing written this run, for the IndexNow ping once the crawl is done.
+  // Listings written this run, for the IndexNow ping once the crawl is done.
+  // Not collected on a full resync: millions of records, and it never pings.
   const changedMls: string[] = [];
 
   for await (const { properties: batch, cursor } of fetchProperties(modifiedSince, checkpoint?.cursor)) {
@@ -78,7 +79,7 @@ async function runSync(type: string) {
       settled.forEach((result, idx) => {
         if (result.status === "fulfilled") {
           upserted++;
-          changedMls.push(chunk[idx].mlsNumber);
+          if (type !== "full") changedMls.push(chunk[idx].mlsNumber);
         } else {
           console.error("Upsert failed for", chunk[idx].mlsNumber, result.reason);
           errors++;

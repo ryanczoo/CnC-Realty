@@ -416,6 +416,29 @@ describe("GET /api/idx/sync", () => {
       expect(pingIndexNow).not.toHaveBeenCalled();
     });
 
+    it("does not accumulate listing numbers during a full resync", async () => {
+      page(["FULLA", "FULLB"]);
+      // Plain wrapper (not vi.spyOn): vitest itself pushes, which would recurse.
+      const originalPush = Array.prototype.push;
+      let collected = false;
+      Array.prototype.push = function (this: unknown[], ...items: unknown[]) {
+        if (items.some((a) => a === "FULLA" || a === "FULLB")) collected = true;
+        return originalPush.apply(this, items);
+      };
+      try {
+        const res = await GET(
+          new Request("http://localhost/api/idx/sync?type=full", {
+            headers: { authorization: "Bearer test-secret" },
+          })
+        );
+        expect((await res.json()).upserted).toBe(2);
+      } finally {
+        Array.prototype.push = originalPush;
+      }
+      expect(collected).toBe(false);
+      expect(pingIndexNow).not.toHaveBeenCalled();
+    });
+
     it("pings only after the completion bookkeeping has run", async () => {
       page(["A"]);
       await GET(makeRequest("test-secret"));
