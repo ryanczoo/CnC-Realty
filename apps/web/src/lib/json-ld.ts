@@ -103,6 +103,19 @@ export function websiteJsonLd() {
   };
 }
 
+export function breadcrumbJsonLd(steps: { name: string; path: string }[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: steps.map((s, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: s.name,
+      item: `${SITE_URL}${s.path}`,
+    })),
+  };
+}
+
 // Every caller that embeds one of this file's objects into a
 // <script type="application/ld+json"> tag via dangerouslySetInnerHTML must
 // run the stringified result through this first. JSON.stringify alone does

@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { notFound } from "next/navigation";
-import { agentJsonLd, jsonLdScriptSafe } from "@/lib/json-ld";
+import { agentJsonLd, breadcrumbJsonLd, jsonLdScriptSafe } from "@/lib/json-ld";
 
 export const revalidate = 300;
 import { prisma } from "@/lib/prisma";
@@ -103,6 +103,17 @@ export default async function AgentProfilePage({ params }: Props) {
               headshot: agent.headshot ? `/api/headshot/${agent.userId}` : null,
               phone: agent.phone,
             })
+          ),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: jsonLdScriptSafe(
+            breadcrumbJsonLd([
+              { name: "Home", path: "/" },
+              { name: agent.displayName ?? agent.slug, path: `/agents/${agent.slug}` },
+            ])
           ),
         }}
       />

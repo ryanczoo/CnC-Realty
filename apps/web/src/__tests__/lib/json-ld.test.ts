@@ -5,6 +5,7 @@ import {
   localBusinessJsonLd,
   websiteJsonLd,
   jsonLdScriptSafe,
+  breadcrumbJsonLd,
 } from "@/lib/json-ld";
 import { SITE_URL } from "@/lib/seo";
 
@@ -162,5 +163,25 @@ describe("jsonLdScriptSafe", () => {
     const safe = jsonLdScriptSafe(malicious);
     expect(safe).not.toContain("</script>");
     expect(safe).toContain("\\u003c/script\\u003e");
+  });
+});
+
+describe("breadcrumbJsonLd", () => {
+  it("lists each step with its position and absolute URL", () => {
+    expect(
+      breadcrumbJsonLd([
+        { name: "Home", path: "/" },
+        { name: "Homes for Sale", path: "/properties" },
+        { name: "1 Main St", path: "/properties/123" },
+      ]),
+    ).toEqual({
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: `${SITE_URL}/` },
+        { "@type": "ListItem", position: 2, name: "Homes for Sale", item: `${SITE_URL}/properties` },
+        { "@type": "ListItem", position: 3, name: "1 Main St", item: `${SITE_URL}/properties/123` },
+      ],
+    });
   });
 });

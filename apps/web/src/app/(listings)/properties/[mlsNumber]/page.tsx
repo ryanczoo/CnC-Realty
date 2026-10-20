@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { propertyJsonLd, jsonLdScriptSafe } from "@/lib/json-ld";
+import { propertyJsonLd, breadcrumbJsonLd, jsonLdScriptSafe } from "@/lib/json-ld";
 import { canonicalMeta } from "@/lib/seo";
 import { ACTIVE_STATUSES } from "@/lib/listing-status";
 
@@ -108,6 +108,21 @@ export default async function PropertyDetailPage({ params }: PageProps) {
               longitude: property.longitude,
               status: property.status,
             })
+          ),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: jsonLdScriptSafe(
+            breadcrumbJsonLd([
+              { name: "Home", path: "/" },
+              {
+                name: property.listingType === "FOR_RENT" ? "Homes for Rent" : "Homes for Sale",
+                path: "/properties",
+              },
+              { name: property.address, path: `/properties/${property.mlsNumber}` },
+            ])
           ),
         }}
       />
