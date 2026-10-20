@@ -80,6 +80,13 @@ describe("AgentProfilePage — generateMetadata", () => {
     );
   });
 
+  it("keeps the test agent out of search results but not real agents", async () => {
+    vi.mocked(prisma.agent.findUnique).mockResolvedValue({ ...AGENT, slug: "claude-test-agent" });
+    expect((await generateMetadata({ params: { slug: "claude-test-agent" } })).robots).toEqual({ index: false, follow: false });
+    vi.mocked(prisma.agent.findUnique).mockResolvedValue(AGENT);
+    expect((await generateMetadata({ params: { slug: "ryan-chong" } })).robots).toBeUndefined();
+  });
+
   it("titles a missing agent 'Agent Not Found'", async () => {
     vi.mocked(prisma.agent.findUnique).mockResolvedValue(null);
     expect((await generateMetadata({ params: { slug: "nobody" } })).title).toBe("Agent Not Found");
