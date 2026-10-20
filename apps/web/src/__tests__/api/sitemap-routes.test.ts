@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// unstable_cache needs Next's runtime; here it just calls through.
-vi.mock("next/cache", () => ({ unstable_cache: (fn: unknown) => fn }));
+vi.mock("@/lib/property-count-cache", () => ({
+  cachedCount: vi.fn(),
+  countCacheKey: (w: unknown) => JSON.stringify(w),
+}));
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     property: { count: vi.fn(), findMany: vi.fn() },
@@ -11,6 +13,7 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 import { prisma } from "@/lib/prisma";
+import { cachedCount } from "@/lib/property-count-cache";
 import { GET as indexGET } from "../../app/sitemap.xml/route";
 import { GET as childGET } from "../../app/sitemaps/[name]/route";
 
@@ -21,7 +24,7 @@ describe("GET /sitemap.xml", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("lists pages.xml plus one listings file per 40,000 active listings", async () => {
-    vi.mocked(prisma.property.count).mockResolvedValue(85_000);
+    vi.mocked(cachedCount).mockResolvedValueOnce(60_000).mockResolvedValueOnce(25_000);
     const res = await indexGET();
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toContain("application/xml");
@@ -31,10 +34,15 @@ describe("GET /sitemap.xml", () => {
     expect(xml).toContain("https://cncrealtygroup.com/sitemaps/listings-1.xml");
     expect(xml).toContain("https://cncrealtygroup.com/sitemaps/listings-2.xml");
     expect(xml).not.toContain("listings-3.xml");
+    const keys = vi.mocked(cachedCount).mock.calls.map((c) => c[0]);
+    expect(keys).toEqual([
+      JSON.stringify({ status: { in: ["Active", "ComingSoon", "ActiveUnderContract"] }, listingType: "FOR_SALE" }),
+      JSON.stringify({ status: { in: ["Active", "ComingSoon", "ActiveUnderContract"] }, listingType: "FOR_RENT" }),
+    ]);
   });
 
   it("still returns 200 with pages.xml only when the database throws", async () => {
-    vi.mocked(prisma.property.count).mockRejectedValue(new Error("db down"));
+    vi.mocked(cachedCount).mockRejectedValue(new Error("db down"));
     const res = await indexGET();
     expect(res.status).toBe(200);
     const xml = await res.text();

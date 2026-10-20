@@ -12,6 +12,7 @@ import {
 // Nothing is prerendered at build (the build machine cannot reach the database); each file is
 // rendered on its first request and then cached for an hour.
 export const revalidate = 3600;
+export const maxDuration = 60;
 export const dynamicParams = true;
 export function generateStaticParams() {
   return [];
