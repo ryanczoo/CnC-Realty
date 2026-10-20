@@ -1,5 +1,5 @@
 import { SITE_URL, BRAND, OG_IMAGE } from "@/lib/seo";
-import { ACTIVE_STATUSES } from "@/lib/listing-counts";
+import { ACTIVE_STATUSES } from "@/lib/listing-status";
 
 export function propertyJsonLd(p: {
   mlsNumber: string;

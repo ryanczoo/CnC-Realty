@@ -5,7 +5,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { propertyJsonLd, jsonLdScriptSafe } from "@/lib/json-ld";
 import { canonicalMeta } from "@/lib/seo";
-import { ACTIVE_STATUSES } from "@/lib/listing-counts";
+import { ACTIVE_STATUSES } from "@/lib/listing-status";
 
 export const revalidate = 300;
 import { prisma } from "@/lib/prisma";

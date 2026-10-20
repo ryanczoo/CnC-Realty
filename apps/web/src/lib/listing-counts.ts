@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { redis } from "@/lib/redis";
 import { countCacheKey, redisReadOrNull } from "@/lib/property-count-cache";
 import { buildLocationWhere } from "@/lib/property-search-query";
+import { ACTIVE_STATUSES } from "@/lib/listing-status";
 
 // Counting listings over the whole Property table takes 5–12 s, too slow to do while a visitor waits. An hourly
 // job (api/cron/listing-counts) counts ahead of time instead:
@@ -10,8 +11,7 @@ import { buildLocationWhere } from "@/lib/property-search-query";
 //    reads (lib/property-count-cache.ts), so the search page itself needs no change
 // Saved values outlive a few missed runs; if they're ever gone, both pages count live exactly as before.
 
-// Same statuses, in the same order, as the search page's filter — the order is part of its cache key.
-export const ACTIVE_STATUSES = ["Active", "ComingSoon", "ActiveUnderContract"];
+export { ACTIVE_STATUSES };
 
 // The cities the Rent page links to (components/rent/RentCitiesSlider.tsx).
 export const RENT_CITY_QUERIES = ["Los Angeles", "San Francisco", "San Diego", "Sacramento", "San Jose"];
