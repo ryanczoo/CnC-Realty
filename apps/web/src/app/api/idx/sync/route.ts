@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@cnc/database";
 import { fetchProperties, isKeyCursor } from "@/lib/idx/client";
 import { recordIdxSync } from "@/lib/idx/last-sync";
+import { pingIndexNow } from "@/lib/indexnow";
+import { SITE_URL } from "@/lib/seo";
 
 // maxDuration applies to GET (Vercel Cron, awaits full sync).
 // POST returns 202 immediately — the background runSync() is not bound by this limit.
@@ -49,6 +51,8 @@ async function runSync(type: string) {
   // reconciling a finished crawl against the feed cost a full investigation
   // before the ~896k shortfall turned out to be exactly this exclusion.
   let skipped = 0;
+  // Every listing written this run, for the IndexNow ping once the crawl is done.
+  const changedMls: string[] = [];
 
   for await (const { properties: batch, cursor } of fetchProperties(modifiedSince, checkpoint?.cursor)) {
     const eligible = batch.filter(
@@ -74,6 +78,7 @@ async function runSync(type: string) {
       settled.forEach((result, idx) => {
         if (result.status === "fulfilled") {
           upserted++;
+          changedMls.push(chunk[idx].mlsNumber);
         } else {
           console.error("Upsert failed for", chunk[idx].mlsNumber, result.reason);
           errors++;
@@ -100,6 +105,17 @@ async function runSync(type: string) {
     `[idx-sync] done in ${Date.now() - startedAt}ms — upserted: ${upserted}, ` +
       `skipped (closed rentals): ${skipped}, errors: ${errors}`
   );
+
+  // Tell Bing which listings changed. Skipped for the multi-hour full resync
+  // (it would flood IndexNow with the whole catalogue). pingIndexNow is written
+  // not to throw, but the sync's totals must survive even if it ever does.
+  if (type !== "full") {
+    try {
+      await pingIndexNow(changedMls.map((mls) => `${SITE_URL}/properties/${mls}`));
+    } catch (err) {
+      console.error("[idx-sync] IndexNow ping threw:", err);
+    }
+  }
   return { upserted, skipped, errors, type };
 }
 

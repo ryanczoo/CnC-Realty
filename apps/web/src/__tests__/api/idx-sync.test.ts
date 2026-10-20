@@ -14,9 +14,12 @@ vi.mock("@/lib/idx/client", () => ({
   isKeyCursor: (v: string | undefined | null) => !!v && /^\d+$/.test(v),
 }));
 
+vi.mock("@/lib/indexnow", () => ({ pingIndexNow: vi.fn() }));
+
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@cnc/database";
 import { fetchProperties } from "@/lib/idx/client";
+import { pingIndexNow } from "@/lib/indexnow";
 import { GET } from "../../app/api/idx/sync/route";
 
 function makeRequest(secret: string) {
@@ -34,6 +37,7 @@ describe("GET /api/idx/sync", () => {
     // upsert throw leaks that behaviour into every test after it. Restore a
     // succeeding default; the tests that need failures set their own.
     vi.mocked(prisma.property.upsert).mockImplementation((async () => ({})) as never);
+    vi.mocked(pingIndexNow).mockResolvedValue(undefined);
   });
 
   it("skips upserting a Closed FOR_RENT record but keeps Active FOR_RENT and Closed FOR_SALE", async () => {
@@ -359,5 +363,76 @@ describe("GET /api/idx/sync", () => {
     expect(res.status).toBe(500);
 
     expect(prisma.siteSettings.upsert).not.toHaveBeenCalled();
+  });
+
+  describe("IndexNow notification", () => {
+    function page(ids: string[]) {
+      vi.mocked(fetchProperties).mockImplementation(async function* () {
+        yield {
+          properties: ids.map((id) => ({ mlsNumber: id, status: "Active", listingType: "FOR_SALE" }) as any),
+          cursor: "2026-10-18T00:00:00.000Z",
+        };
+      });
+    }
+
+    it("pings IndexNow once with the url of every successful upsert after a delta run", async () => {
+      page(["A", "B"]);
+      const res = await GET(makeRequest("test-secret"));
+      expect(res.status).toBe(200);
+      expect(pingIndexNow).toHaveBeenCalledTimes(1);
+      expect(pingIndexNow).toHaveBeenCalledWith([
+        "https://cncrealtygroup.com/properties/A",
+        "https://cncrealtygroup.com/properties/B",
+      ]);
+    });
+
+    it("leaves out records whose upsert failed and records that were skipped", async () => {
+      vi.mocked(prisma.property.upsert).mockImplementation((async (args: any) => {
+        if (args.where.mlsNumber === "B") throw new Error("connection reset");
+        return {} as any;
+      }) as any);
+      vi.mocked(fetchProperties).mockImplementation(async function* () {
+        yield {
+          properties: [
+            { mlsNumber: "A", status: "Active", listingType: "FOR_SALE" } as any,
+            { mlsNumber: "B", status: "Active", listingType: "FOR_SALE" } as any,
+            { mlsNumber: "C", status: "Closed", listingType: "FOR_RENT" } as any,
+          ],
+          cursor: "2026-10-18T00:00:00.000Z",
+        };
+      });
+      await GET(makeRequest("test-secret"));
+      expect(pingIndexNow).toHaveBeenCalledWith(["https://cncrealtygroup.com/properties/A"]);
+    });
+
+    it("never pings during a full resync", async () => {
+      page(["A", "B"]);
+      const res = await GET(
+        new Request("http://localhost/api/idx/sync?type=full", {
+          headers: { authorization: "Bearer test-secret" },
+        })
+      );
+      expect(res.status).toBe(200);
+      expect(pingIndexNow).not.toHaveBeenCalled();
+    });
+
+    it("pings only after the completion bookkeeping has run", async () => {
+      page(["A"]);
+      await GET(makeRequest("test-secret"));
+      const pingOrder = vi.mocked(pingIndexNow).mock.invocationCallOrder[0];
+      const deleteOrder = vi.mocked(prisma.syncProgress.deleteMany).mock.invocationCallOrder[0];
+      const settingsOrder = vi.mocked(prisma.siteSettings.upsert).mock.invocationCallOrder[0];
+      expect(pingOrder).toBeGreaterThan(deleteOrder);
+      expect(pingOrder).toBeGreaterThan(settingsOrder);
+    });
+
+    it("still returns the totals when the ping rejects", async () => {
+      page(["A", "B"]);
+      vi.mocked(pingIndexNow).mockRejectedValue(new Error("boom"));
+      const res = await GET(makeRequest("test-secret"));
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body).toMatchObject({ upserted: 2, skipped: 0, errors: 0, type: "delta" });
+    });
   });
 });
