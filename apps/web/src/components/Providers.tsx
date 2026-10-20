@@ -14,7 +14,8 @@ export function Providers({ children, session }: { children: React.ReactNode; se
       posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
         api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
         person_profiles: "identified_only",
-        capture_pageview: true,
+        // Also count in-site page switches, which don't reload the page.
+        capture_pageview: "history_change",
         capture_pageleave: true,
       });
     }
