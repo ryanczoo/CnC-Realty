@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { ICA_INTRO, ICA_SECTIONS, SIGNATURE_LABELS, SUMMARY_TABLE, type IcaParagraph, type RichText } from "@/lib/ica-content";
 
 export const metadata: Metadata = {
-  title: "Independent Contractor Agreement | CnC Realty",
+  title: { absolute: "Independent Contractor Agreement | CnC Realty" },
   description: "CnC Realty Independent Contractor Agreement for licensed real estate agents.",
 };
 

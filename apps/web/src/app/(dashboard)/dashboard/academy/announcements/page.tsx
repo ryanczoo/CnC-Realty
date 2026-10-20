@@ -5,7 +5,7 @@ import { formatDate } from "@/lib/utils";
 import { AnnouncementComposer } from "./AnnouncementComposer";
 import { PHONE_HEADER_STACK } from "@/lib/dashboard-phone";
 
-export const metadata = { title: "Announcements | CnC Realty" };
+export const metadata = { title: { absolute: "Announcements | CnC Realty" } };
 
 export default async function AnnouncementsPage() {
   const session = await getServerSession(authOptions);

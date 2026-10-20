@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowIcon } from "@/components/ui/ArrowIcon";
 import { BlogEditorForm } from "@/components/blog/admin/BlogEditorForm";
 
-export const metadata = { title: "New Post | CnC Realty Admin" };
+export const metadata = { title: { absolute: "New Post | CnC Realty Admin" } };
 
 export default async function NewBlogPostPage() {
   const session = await getServerSession(authOptions);

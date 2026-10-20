@@ -4,7 +4,7 @@ import { PageCTA } from "@/components/ui/PageCTA";
 import { ConfettiCannon } from "@/components/join/ConfettiCannon";
 
 export const metadata: Metadata = {
-  title: "Application Submitted | CnC Realty",
+  title: { absolute: "Application Submitted | CnC Realty" },
   description: "Next steps after submitting your CnC Realty agent application.",
 };
 

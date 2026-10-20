@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { VideoCard } from "@/components/academy/VideoCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 
-export const metadata = { title: "Training Videos | CnC Realty" };
+export const metadata = { title: { absolute: "Training Videos | CnC Realty" } };
 
 export default async function TrainingVideosPage() {
   let videos: {

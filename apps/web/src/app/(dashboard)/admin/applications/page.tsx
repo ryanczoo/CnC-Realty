@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdminPage } from "@/lib/server-utils";
 import { ApplicationsClient } from "./ApplicationsClient";
 
-export const metadata = { title: "Agent Applications | CnC Realty Admin" };
+export const metadata = { title: { absolute: "Agent Applications | CnC Realty Admin" } };
 
 export default async function AdminApplicationsPage() {
   await requireAdminPage();

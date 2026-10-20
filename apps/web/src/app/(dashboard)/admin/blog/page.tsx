@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdminPage } from "@/lib/server-utils";
 import { BlogPostList } from "@/components/blog/admin/BlogPostList";
 
-export const metadata = { title: "Blog Posts | CnC Realty Admin" };
+export const metadata = { title: { absolute: "Blog Posts | CnC Realty Admin" } };
 
 export default async function AdminBlogPage() {
   await requireAdminPage();

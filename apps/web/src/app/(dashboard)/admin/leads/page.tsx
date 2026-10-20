@@ -5,7 +5,7 @@ import { UNASSIGNED_LEADS_WHERE } from "@/lib/unassigned-leads";
 import { parsePage } from "@/lib/pagination";
 import { AdminLeadsClient } from "./AdminLeadsClient";
 
-export const metadata = { title: "All Leads | CnC Realty Admin" };
+export const metadata = { title: { absolute: "All Leads | CnC Realty Admin" } };
 
 const PAGE_SIZE = 100;
 

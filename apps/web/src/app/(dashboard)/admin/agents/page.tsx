@@ -9,7 +9,7 @@ import { DownloadIcaButton } from "./DownloadIcaButton";
 import { formatDate } from "@/lib/utils";
 import { requireAdminPage } from "@/lib/server-utils";
 
-export const metadata = { title: "All Agents | CnC Realty Admin" };
+export const metadata = { title: { absolute: "All Agents | CnC Realty Admin" } };
 
 const ROLE_BADGE: Record<string, string> = {
   ADMIN: "bg-[#9E8C61] text-white",

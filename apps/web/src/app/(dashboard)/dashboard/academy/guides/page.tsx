@@ -5,7 +5,7 @@ const GUIDES = [
   { title: "W-9 Form", href: "/api/documents/w9" },
 ];
 
-export const metadata = { title: "Documents | CnC Realty" };
+export const metadata = { title: { absolute: "Documents | CnC Realty" } };
 
 export default function HelpfulGuidesPage() {
   return (

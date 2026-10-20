@@ -6,7 +6,7 @@ import { requireAdminPage } from "@/lib/server-utils";
 import { formatDateOnly } from "@/lib/utils";
 import { PHONE_TABLE_FRAME } from "@/lib/dashboard-phone";
 
-export const metadata = { title: "Broker Overview | CnC Realty" };
+export const metadata = { title: { absolute: "Broker Overview | CnC Realty" } };
 
 export default async function AdminOverviewPage() {
   await requireAdminPage();

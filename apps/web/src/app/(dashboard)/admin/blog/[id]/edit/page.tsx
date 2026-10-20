@@ -6,7 +6,7 @@ import { ArrowIcon } from "@/components/ui/ArrowIcon";
 import { prisma } from "@/lib/prisma";
 import { BlogEditorForm } from "@/components/blog/admin/BlogEditorForm";
 
-export const metadata = { title: "Edit Post | CnC Realty Admin" };
+export const metadata = { title: { absolute: "Edit Post | CnC Realty Admin" } };
 
 interface Props {
   params: Promise<{ id: string }>;
