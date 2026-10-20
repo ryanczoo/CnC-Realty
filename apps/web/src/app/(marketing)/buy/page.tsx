@@ -1,4 +1,4 @@
-import { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 import { PageCTA } from "@/components/ui/PageCTA";
 import { BuyHero } from "@/components/buy/BuyHero";
 import { BuyFeatures } from "@/components/buy/BuyFeatures";
@@ -31,10 +31,7 @@ const BUY_FAQS = [
   },
 ];
 
-export const metadata: Metadata = {
-  title: "Buy a Home | CnC Realty",
-  description: "Search thousands of California homes with CnC Realty. Expert buyer's agents, live MLS listings, and zero pressure.",
-};
+export const metadata = pageMeta("/buy");
 
 export default function BuyPage() {
   return (

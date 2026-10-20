@@ -1,15 +1,11 @@
-import { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 import { prisma } from "@/lib/prisma";
 import { SearchResults } from "@/components/properties/SearchResults";
 import { PropertyListing, MULTIFAMILY_TYPES, COMMERCIAL_TYPES } from "@/types/property";
 import { buildLocationWhere } from "@/lib/property-search-query";
 import { cachedCount, countCacheKey } from "@/lib/property-count-cache";
 
-export const metadata: Metadata = {
-  title: "Property Search",
-  description:
-    "Search thousands of active CRMLS listings in Southern California.",
-};
+export const metadata = pageMeta("/properties");
 
 interface PageProps {
   searchParams: {

@@ -1,10 +1,7 @@
-import type { Metadata } from "next";
 import Link from "next/link";
+import { pageMeta } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Privacy Policy",
-  description: "CnC Realty Group Privacy Policy — how we collect, use, and protect your personal information under California law.",
-};
+export const metadata = pageMeta("/privacy");
 
 const EFFECTIVE_DATE = "June 15, 2026";
 

@@ -1,9 +1,6 @@
-import type { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Terms of Service",
-  description: "CnC Realty Group Terms of Service — the rules governing your use of cncrealtygroup.com.",
-};
+export const metadata = pageMeta("/terms");
 
 const EFFECTIVE_DATE = "June 15, 2026";
 

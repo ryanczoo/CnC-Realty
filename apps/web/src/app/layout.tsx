@@ -7,6 +7,7 @@ import localFont from "next/font/local";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { PHONE_FIELDS_16 } from "@/lib/dashboard-phone";
+import { BRAND, OG_IMAGE, SITE_URL } from "@/lib/seo";
 import "./globals.css";
 
 const googleSansFlex = localFont({
@@ -29,11 +30,15 @@ const cormorant = Cormorant_Garamond({
   display: "swap",
 });
 
+// No `alternates` here: a root canonical would be inherited by every page that
+// sets none (login, apply, unsubscribe...) and point them all at the homepage.
 export const metadata: Metadata = {
-  title: { default: "CnC Realty Group", template: "%s | CnC Realty Group" },
+  title: { default: "CnC Realty | California Real Estate Brokerage", template: "%s | CnC Realty" },
   description:
-    "California real estate brokerage. Search MLS listings, connect with agents, and grow your business.",
-  metadataBase: new URL("https://cncrealtygroup.com"),
+    "California real estate brokerage. Search homes for sale and rent, connect with local agents, and join CnC Realty.",
+  metadataBase: new URL(SITE_URL),
+  openGraph: { siteName: BRAND, type: "website", images: [OG_IMAGE] },
+  twitter: { card: "summary_large_image" },
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

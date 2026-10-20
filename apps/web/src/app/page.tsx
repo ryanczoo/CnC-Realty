@@ -1,4 +1,5 @@
 import { localBusinessJsonLd, jsonLdScriptSafe } from "@/lib/json-ld";
+import { pageMeta } from "@/lib/seo";
 import { FAQ } from "@/components/home/FAQ";
 import { GradientBridge } from "@/components/ui/GradientBridge";
 import { FeaturedListingsServer } from "@/components/home/FeaturedListingsServer";
@@ -8,6 +9,8 @@ import { ServicesSection } from "@/components/home/ServicesSection";
 import { TestimonialsIntro } from "@/components/home/TestimonialsIntro";
 import { TestimonialCards } from "@/components/home/TestimonialCards";
 import { WhyCnC } from "@/components/home/WhyCnC";
+
+export const metadata = pageMeta("/");
 
 export default function HomePage() {
   return (

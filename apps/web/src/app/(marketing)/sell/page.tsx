@@ -1,4 +1,4 @@
-import { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 import { SellProcess } from "@/components/sell/SellProcess";
 import { SellValues } from "@/components/sell/SellValues";
 import { PageCTA } from "@/components/ui/PageCTA";
@@ -27,10 +27,7 @@ const SELL_FAQS = [
   },
 ];
 
-export const metadata: Metadata = {
-  title: "Sell Your Home | CnC Realty",
-  description: "List with CnC Realty and get full CRMLS exposure, expert pricing, and a dedicated agent to manage your sale from start to close.",
-};
+export const metadata = pageMeta("/sell");
 
 export default function SellPage() {
   return (

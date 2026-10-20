@@ -1,4 +1,4 @@
-import { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 import { RentHero } from "@/components/rent/RentHero";
 import { RentSteps } from "@/components/rent/RentSteps";
 import { RentCitiesSlider } from "@/components/rent/RentCitiesSlider";
@@ -6,10 +6,7 @@ import { FAQ } from "@/components/home/FAQ";
 import { GradientBridge } from "@/components/ui/GradientBridge";
 import { PageCTA } from "@/components/ui/PageCTA";
 
-export const metadata: Metadata = {
-  title: "Rent | CnC Realty",
-  description: "Find your next rental in California with CnC Realty. Live CRMLS lease listings with expert tenant representation.",
-};
+export const metadata = pageMeta("/rent");
 
 const RENT_FAQS = [
   {

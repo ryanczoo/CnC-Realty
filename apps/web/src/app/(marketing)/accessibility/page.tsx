@@ -1,9 +1,6 @@
-import type { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Accessibility",
-  description: "CnC Realty Group's commitment to web accessibility and how to contact us if you experience difficulty accessing our website.",
-};
+export const metadata = pageMeta("/accessibility");
 
 export default function AccessibilityPage() {
   return (

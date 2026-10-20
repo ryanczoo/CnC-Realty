@@ -1,14 +1,11 @@
-import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
+import { pageMeta } from "@/lib/seo";
 import { NewsGrid } from "@/components/blog/NewsGrid";
 import { PressHero } from "@/components/blog/PressHero";
 
 export const revalidate = 300;
 
-export const metadata: Metadata = {
-  title: "Press | CnC Realty Group",
-  description: "Market updates, real estate tips, and news from CnC Realty Group.",
-};
+export const metadata = pageMeta("/press");
 
 export default async function PressPage() {
   let posts: Awaited<ReturnType<typeof fetchPosts>> = [];

@@ -1,4 +1,4 @@
-import { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 import { RevealLine } from "@/components/ui/reveal-text";
 import { JoinHero } from "@/components/join/JoinHero";
 import { StatsBar } from "@/components/join/StatsBar";
@@ -10,10 +10,7 @@ import { CTALineArt } from "@/components/join/CTALineArt";
 import { JoinCTAButtons } from "@/components/join/JoinCTAButtons";
 import { AgentPlan } from "@/components/join/AgentPlan";
 
-export const metadata: Metadata = {
-  title: "Join CnC Realty | Agent Opportunities",
-  description: "100% commission, AI-driven CRM, and real mentorship. Join CnC Realty and build the real estate career you've always wanted.",
-};
+export const metadata = pageMeta("/join");
 
 
 export default function JoinPage() {

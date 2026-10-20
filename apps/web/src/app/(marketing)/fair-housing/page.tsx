@@ -1,9 +1,6 @@
-import type { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Fair Housing Notice",
-  description: "CnC Realty Group Fair Housing Notice — our commitment to equal housing opportunity under federal and California law.",
-};
+export const metadata = pageMeta("/fair-housing");
 
 export default function FairHousingPage() {
   return (
