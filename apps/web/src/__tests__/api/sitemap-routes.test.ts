@@ -104,6 +104,11 @@ describe("GET /sitemaps/listings-N.xml", () => {
     expect(await res.text()).toContain("<loc>https://cncrealtygroup.com/properties/ML123</loc>");
   });
 
+  it("rethrows a database error instead of answering with an empty file", async () => {
+    vi.mocked(prisma.property.findMany).mockRejectedValue(new Error("db down"));
+    await expect(child("listings-0.xml")).rejects.toThrow("db down");
+  });
+
   it("returns 404 for an unknown name", async () => {
     expect((await child("listings-x.xml")).status).toBe(404);
     expect((await child("nope.xml")).status).toBe(404);

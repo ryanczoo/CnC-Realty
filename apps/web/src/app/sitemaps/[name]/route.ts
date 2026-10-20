@@ -50,8 +50,10 @@ async function listingEntries(index: number): Promise<Entry[]> {
     });
     return rows.map((r) => ({ loc: `${SITE_URL}/properties/${r.mlsNumber}`, lastmod: r.updatedAt }));
   } catch (err) {
+    // Not swallowed: an empty file would be cached for an hour. Throwing keeps the last good copy
+    // (or gives crawlers a 5xx to retry when none exists yet).
     console.error("[sitemap] listings query failed:", err);
-    return [];
+    throw err;
   }
 }
 
