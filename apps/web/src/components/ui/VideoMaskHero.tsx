@@ -24,6 +24,7 @@ interface Props {
   playbackRate?: number;
   overlayOpacity?: number;
   videoPosition?: string;
+  heading?: string;
 }
 
 const LINE_Y: Record<number, number[]> = {
@@ -43,11 +44,12 @@ export function phoneWordLayout(lines: string[]): { word: string; y: number }[] 
   return words.map((word, i) => ({ word, y: 960 + (i - mid) * PHONE_LINE_GAP }));
 }
 
-export function VideoMaskHero({ maskId, videoSrc, lines, heightClass = "h-[95vh]", mobileHeightClass = "max-lg:h-[95svh]", playbackRate = 1, overlayOpacity = 0, videoPosition = "object-center" }: Props) {
+export function VideoMaskHero({ maskId, videoSrc, lines, heightClass = "h-[95vh]", mobileHeightClass = "max-lg:h-[95svh]", playbackRate = 1, overlayOpacity = 0, videoPosition = "object-center", heading }: Props) {
   const yPositions = LINE_Y[lines.length] ?? LINE_Y[2];
 
   return (
     <section data-navbar-theme="dark" className={`relative overflow-hidden bg-black ${heightClass} ${mobileHeightClass}`}>
+      {heading && <h1 className="sr-only">{heading}</h1>}
       <video
         autoPlay
         muted
@@ -66,6 +68,7 @@ export function VideoMaskHero({ maskId, videoSrc, lines, heightClass = "h-[95vh]
       )}
 
       <svg
+        aria-hidden="true"
         className="absolute inset-0 h-full w-full max-lg:portrait:hidden"
         viewBox="0 0 1920 1080"
         preserveAspectRatio="xMidYMid slice"
@@ -87,6 +90,7 @@ export function VideoMaskHero({ maskId, videoSrc, lines, heightClass = "h-[95vh]
       </svg>
 
       <svg
+        aria-hidden="true"
         className="absolute inset-0 hidden h-full w-full max-lg:portrait:block"
         viewBox="0 0 1080 1920"
         preserveAspectRatio="xMidYMid slice"

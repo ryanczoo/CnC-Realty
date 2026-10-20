@@ -87,10 +87,13 @@ export default async function PropertiesPage({ searchParams }: PageProps) {
     }));
 
     return (
-      <SearchResults
-        initialProperties={initialProperties}
-        initialTotal={total}
-      />
+      <>
+        <h1 className="sr-only">Homes for Sale in California</h1>
+        <SearchResults
+          initialProperties={initialProperties}
+          initialTotal={total}
+        />
+      </>
     );
   } catch {
     return (

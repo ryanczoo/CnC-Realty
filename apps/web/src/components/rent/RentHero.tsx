@@ -3,5 +3,5 @@
 import { VideoMaskHero } from "@/components/ui/VideoMaskHero";
 
 export function RentHero() {
-  return <VideoMaskHero maskId="rent-hero-mask" videoSrc="/videos/rent-hero.mp4" lines={["RENT", "WITH US"]} />;
+  return <VideoMaskHero maskId="rent-hero-mask" videoSrc="/videos/rent-hero.mp4" lines={["RENT", "WITH US"]} heading="Rent With CnC Realty" />;
 }

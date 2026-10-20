@@ -8,6 +8,7 @@ export function PressHero() {
       maskId="press-hero-mask"
       videoSrc="/videos/news-hero.mp4"
       lines={["PRESS"]}
+      heading="CnC Realty Press"
       heightClass="h-[47.5vh]"
       mobileHeightClass="max-lg:h-[47.5svh]"
       playbackRate={0.5}

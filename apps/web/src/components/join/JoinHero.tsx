@@ -15,6 +15,7 @@ const TEXT_STYLE = {
 export function JoinHero() {
   return (
     <section data-navbar-theme="dark" className="relative h-[95vh] overflow-hidden bg-black max-lg:h-[95svh]">
+      <h1 className="sr-only">Be CnC – Join CnC Realty</h1>
       <video
         autoPlay
         muted
@@ -26,6 +27,7 @@ export function JoinHero() {
       />
 
       <svg
+        aria-hidden="true"
         className="absolute inset-0 h-full w-full max-lg:portrait:hidden"
         viewBox="0 0 1920 1080"
         preserveAspectRatio="xMidYMid slice"
@@ -64,6 +66,7 @@ export function JoinHero() {
       </svg>
 
       <svg
+        aria-hidden="true"
         className="absolute inset-0 hidden h-full w-full max-lg:portrait:block"
         viewBox="0 0 1080 1920"
         preserveAspectRatio="xMidYMid slice"
