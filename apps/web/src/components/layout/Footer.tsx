@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { FieldError } from "@/components/ui/FieldError";
 import { emailError } from "@/lib/form-validation";
@@ -68,12 +69,24 @@ const LEGAL_LINKS = [
   { href: "/terms", label: "Terms" },
 ];
 
+// Footer logo: already on the homepage, a link to "/" does nothing, so jump to the top instead.
+export function onHomeLogoClick(
+  pathname: string | null,
+  e: { preventDefault(): void },
+  scrollToTop = () => window.scrollTo({ top: 0, behavior: "instant" }),
+) {
+  if (pathname !== "/") return;
+  e.preventDefault();
+  scrollToTop();
+}
+
 // True once scroll position y is within two screen heights of the page bottom.
 function isNearBottom(y: number) {
   return document.documentElement.scrollHeight - (y + window.innerHeight) < window.innerHeight * 2;
 }
 
 export function Footer() {
+  const pathname = usePathname();
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [newsletterState, setNewsletterState] = useState<"idle" | "loading" | "done">("idle");
   const [newsletterError, setNewsletterError] = useState<string | null>(null);
@@ -164,13 +177,17 @@ export function Footer() {
 
           {/* Left — large logo */}
           <div className="flex-shrink-0 max-lg:order-3">
-            <Image
-              src="/logo-white.png"
-              alt="CnC Realty"
-              width={280}
-              height={280}
-              className="object-contain object-left max-lg:h-auto max-lg:w-[180px] max-lg:object-center"
-            />
+            <Link href="/" onClick={(e) => onHomeLogoClick(pathname, e)}>
+              <motion.div whileHover={{ scale: 1.05 }} transition={SPRING_HOVER}>
+                <Image
+                  src="/logo-white.png"
+                  alt="CnC Realty"
+                  width={280}
+                  height={280}
+                  className="object-contain object-left max-lg:h-auto max-lg:w-[180px] max-lg:object-center"
+                />
+              </motion.div>
+            </Link>
           </div>
 
           {/* Center — contact + newsletter + socials */}

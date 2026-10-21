@@ -1,5 +1,14 @@
 import { describe, it, expect } from "vitest";
-import { ctaImageSize } from "@/components/home/JoinCnCCTA";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { ctaImageSize, JoinCnCCTA } from "@/components/home/JoinCnCCTA";
+
+describe("JoinCnCCTA", () => {
+  it("Join Now goes straight to the application form", () => {
+    const html = renderToStaticMarkup(createElement(JoinCnCCTA));
+    expect(html).toMatch(/<a[^>]*href="\/join\/apply"[^>]*>\s*Join Now/);
+  });
+});
 
 const num = (s: string) => parseFloat(s);
 

@@ -99,7 +99,7 @@ export function JoinCnCCTA() {
               Be CnC
             </span>
             <MotionLink
-              href="/join"
+              href="/join/apply"
               animate={PULSE_ANIMATE}
               whileHover={{ scale: 1.05, transition: SPRING_HOVER }}
               transition={PULSE_TRANSITION}
