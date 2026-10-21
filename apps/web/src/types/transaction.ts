@@ -135,6 +135,7 @@ export interface ListingFileDetail {
   commissionPercent: number | null;
   commissionAmount: number | null;
   commissionNotes: string | null;
+  photoKey: string | null;
   awaitingReview: boolean;
   createdAt: string;
   updatedAt: string;
@@ -253,6 +254,8 @@ export interface FileDocumentRecord {
   uploadedAt: string;
   reviewStatus: DocumentReviewStatus;
   rejectionNote: string | null;
+  // Added through the Checklist tab's Additional Documents, not a checklist item.
+  isAdditional: boolean;
 }
 
 export interface FileActivityRecord {

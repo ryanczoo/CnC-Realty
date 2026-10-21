@@ -487,6 +487,7 @@ model ListingFile {
   commissionPercent Float?
   commissionAmount  Float?
   commissionNotes   String?
+  photoKey          String?
   awaitingReview    Boolean       @default(false)
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
@@ -689,6 +690,7 @@ model FileDocument {
   uploadedByAgentId String
   uploadedAt        DateTime             @default(now())
   reviewStatus      DocumentReviewStatus @default(PENDING_REVIEW)
+  isAdditional      Boolean              @default(false)
   reviewedByAdminId String?
   reviewedAt        DateTime?
   rejectionNote     String?
