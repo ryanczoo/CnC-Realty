@@ -68,7 +68,10 @@ export function DocumentReviewCard({ document: doc, onReviewed }: Props) {
   // Broker's Remove: any status, including Approved (SkySlope parity). The
   // checklist item stays; the document moves to the Documents tab.
   async function remove() {
-    if (!window.confirm("Remove this document from the checklist item? The checklist item stays; the document moves to the Documents tab.")) return;
+    const message = doc.checklistItemId
+      ? "Remove this document from the checklist item? The checklist item stays; the document moves to the Documents tab."
+      : "Remove this document from Additional Documents? It stays in the file's Documents tab.";
+    if (!window.confirm(message)) return;
     setLoading(true);
     setError(null);
     try {
@@ -112,7 +115,7 @@ export function DocumentReviewCard({ document: doc, onReviewed }: Props) {
             </button>
           </>
         )}
-        {doc.checklistItemId && (
+        {(doc.checklistItemId || doc.isAdditional) && (
           <button onClick={remove} disabled={loading} className="flex items-center gap-1 rounded-full border border-[#1B1B1B]/20 bg-white px-3 py-1 text-xs text-[#1B1B1B] hover:border-[#1B1B1B]/40 disabled:opacity-50">
             Remove
           </button>

@@ -137,4 +137,11 @@ describe("POST /api/documents/[id]/remove", () => {
     expect((await remove()).status).toBe(400);
     expect(prisma.fileDocument.update).not.toHaveBeenCalled();
   });
+
+  it("lets the broker remove an additional document, keeping its status", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(ADMIN as any);
+    vi.mocked(prisma.fileDocument.findUnique).mockResolvedValue(doc({ checklistItemId: null, checklistItem: null, isAdditional: true, reviewStatus: "APPROVED" }) as any);
+    expect((await remove()).status).toBe(200);
+    expect(prisma.fileDocument.update).toHaveBeenCalledWith({ where: { id: "d1" }, data: { checklistItemId: null, isAdditional: false } });
+  });
 });

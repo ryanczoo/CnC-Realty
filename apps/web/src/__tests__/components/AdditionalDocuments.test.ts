@@ -48,4 +48,8 @@ describe("AdditionalDocuments", () => {
     expect(html.indexOf("File exceeds 50MB limit")).toBeGreaterThan(html.indexOf("Additional Documents"));
     expect(html.indexOf("File exceeds 50MB limit")).toBeLessThan(html.indexOf("Pest Inspection Report.pdf"));
   });
+
+  it("admin gets Remove on an additional document's review card", () => {
+    expect(render({ mode: "admin", viewerId: undefined })).toMatch(/>Remove</);
+  });
 });
