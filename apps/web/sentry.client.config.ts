@@ -7,4 +7,7 @@ Sentry.init({
   replaysSessionSampleRate: 0,
   replaysOnErrorSampleRate: 1.0,
   integrations: [Sentry.replayIntegration()],
+  // Browser-extension noise, not our code (e.g. CNC-REALTY-2C "Failed to connect to MetaMask").
+  ignoreErrors: [/MetaMask/i],
+  denyUrls: [/^chrome-extension:///, /^moz-extension:///, /^safari-web-extension:///, /^app:///scripts/inpage.js/],
 });
