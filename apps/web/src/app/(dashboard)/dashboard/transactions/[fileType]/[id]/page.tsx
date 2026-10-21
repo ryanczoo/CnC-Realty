@@ -305,6 +305,7 @@ export default function FileDetailPage() {
           fileType={fileType as "listing" | "transaction"}
           fileId={id}
           checklistItems={file.checklistItems as FileChecklistItemWithDocs[]}
+          documents={file.documents as FileDocumentRecord[]}
           onUploaded={load}
           initialAddress={isPlaceholderAddress(file.propertyAddress) ? "" : file.propertyAddress ?? ""}
         />
@@ -373,6 +374,7 @@ export default function FileDetailPage() {
           fileType={fileType.toUpperCase() as "LISTING" | "TRANSACTION"}
           fileId={id}
           items={file.checklistItems as FileChecklistItemWithDocs[]}
+          documents={file.documents as FileDocumentRecord[]}
           onUploaded={load}
           readOnly={readOnly}
           viewerId={session?.user?.id}

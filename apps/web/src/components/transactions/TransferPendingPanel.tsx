@@ -2,18 +2,19 @@
 import { useState } from "react";
 import { Download } from "lucide-react";
 import { ChecklistPanel } from "./ChecklistPanel";
-import type { FileChecklistItemWithDocs } from "@/types/transaction";
+import type { FileChecklistItemWithDocs, FileDocumentRecord } from "@/types/transaction";
 
 interface Props {
   fileType: "listing" | "transaction";
   fileId: string;
   checklistItems: FileChecklistItemWithDocs[];
+  documents: FileDocumentRecord[];
   onUploaded: () => void;
   /** The address already saved on this file, so a reload shows it back rather than a blank box. */
   initialAddress?: string;
 }
 
-export function TransferPendingPanel({ fileType, fileId, checklistItems, onUploaded, initialAddress = "" }: Props) {
+export function TransferPendingPanel({ fileType, fileId, checklistItems, documents, onUploaded, initialAddress = "" }: Props) {
   const [address, setAddress] = useState(initialAddress);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -90,6 +91,7 @@ export function TransferPendingPanel({ fileType, fileId, checklistItems, onUploa
           fileType={fileType === "listing" ? "LISTING" : "TRANSACTION"}
           fileId={fileId}
           items={checklistItems}
+          documents={documents}
           onUploaded={onUploaded}
         />
       </div>

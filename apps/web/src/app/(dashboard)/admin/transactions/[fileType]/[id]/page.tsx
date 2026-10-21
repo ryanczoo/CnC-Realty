@@ -14,6 +14,8 @@ import { CommissionTab } from "@/components/transactions/CommissionTab";
 import { DocumentsTab } from "@/components/transactions/DocumentsTab";
 import { UploadFileButton } from "@/components/transactions/UploadFileButton";
 import { useFileUpload } from "@/hooks/useFileUpload";
+import { UploadResultLine } from "@/components/ui/UploadResultLine";
+import { AdditionalDocuments } from "@/components/transactions/AdditionalDocuments";
 import { getChecklistProgress, allowedNextStatuses, canDeleteListing, listingStatusOptions, transactionStatusOptions, convertBlockedReason } from "@/lib/transaction-helpers";
 import type { FileDocumentRecord, FileChecklistItemWithDocs, ListingFileDetail, TransactionFileDetail } from "@/types/transaction";
 import { EMAIL_WARNING_TEXT } from "@/lib/file-messages";
@@ -34,7 +36,7 @@ export default function AdminFileDetailPage() {
   // Admin can upload documents too — e.g. acting as a paid transaction
   // coordinator, handling paperwork on the agent's behalf — same mechanism
   // ChecklistPanel gives agents, already permitted server-side for ADMIN.
-  const { uploadingId, error: uploadError, upload } = useFileUpload(
+  const { uploadingId, results: uploadResults, upload } = useFileUpload(
     fileType === "listing" ? "LISTING" : "TRANSACTION",
     id,
     () => load()
@@ -244,7 +246,6 @@ export default function AdminFileDetailPage() {
 
       {tab === "checklist" && (
         <div className="space-y-6">
-          {uploadError && <p className="text-xs text-red-600">{uploadError}</p>}
           {(file.checklistItems ?? []).map((item) => (
             <div key={item.id} className="rounded-xl border border-[#1B1B1B]/10 bg-white p-4">
               <div className="mb-3 flex items-center justify-between gap-2">
@@ -259,6 +260,11 @@ export default function AdminFileDetailPage() {
                   onSelect={(f) => upload(item.id, f)}
                 />
               </div>
+              {uploadResults[item.id] && (
+                <div className="-mt-1.5 mb-3">
+                  <UploadResultLine result={uploadResults[item.id]} />
+                </div>
+              )}
               {item.documents?.length === 0 ? (
                 <p className="text-sm text-[#1B1B1B]/30 italic">No documents uploaded</p>
               ) : (
@@ -274,14 +280,15 @@ export default function AdminFileDetailPage() {
             <p className="text-sm text-[#1B1B1B]/40">No checklist items configured for this file.</p>
           )}
 
-          <div className="flex items-center justify-between border-t border-[#1B1B1B]/10 pt-4">
-            <p className="text-xs font-medium uppercase tracking-wider text-[#1B1B1B]/40">Additional Documents</p>
-            <UploadFileButton
-              label="Add Document"
-              variant="outline"
+          <div>
+            <AdditionalDocuments
+              documents={file.documents as FileDocumentRecord[]}
+              mode="admin"
               uploading={uploadingId === "additional"}
               disabled={uploadingId !== null}
+              result={uploadResults.additional ?? null}
               onSelect={(f) => upload(null, f)}
+              onChanged={load}
             />
           </div>
         </div>
