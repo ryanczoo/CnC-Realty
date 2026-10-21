@@ -12,6 +12,7 @@ import { PartiesTable } from "@/components/transactions/PartiesTable";
 import { OverviewTab } from "@/components/transactions/OverviewTab";
 import { CommissionTab } from "@/components/transactions/CommissionTab";
 import { DocumentsTab } from "@/components/transactions/DocumentsTab";
+import { WithHeaderPhoto } from "@/components/transactions/FileHeaderPhoto";
 import { UploadFileButton } from "@/components/transactions/UploadFileButton";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { UploadResultLine } from "@/components/ui/UploadResultLine";
@@ -149,10 +150,15 @@ export default function AdminFileDetailPage() {
         <div className={`flex items-start justify-between gap-4 ${PHONE_HEADER_STACK}`}>
           <div>
             {file.status !== "PENDING_TRANSFER" && file.propertyAddress ? (
-              <>
+              <WithHeaderPhoto
+                fileType={fileType as "listing" | "transaction"}
+                fileId={id}
+                photoKey={file.photoKey ?? null}
+                address={`${file.propertyAddress}, ${file.city ?? ""}, ${file.state} ${file.zip ?? ""}`}
+              >
                 <h1 className="text-xl font-bold text-[#1B1B1B]">{file.propertyAddress}</h1>
                 <p className="text-xl font-bold text-[#1B1B1B]">{file.city ?? ""}, {file.state} {file.zip ?? ""}</p>
-              </>
+              </WithHeaderPhoto>
             ) : (
               <h1 className="text-xl font-bold text-[#1B1B1B]">
                 {file.status === "PENDING_TRANSFER" ? "Locked — Pending Transfer" : `${file.city ?? ""} ${file.state} ${file.zip ?? ""}`.trim()}

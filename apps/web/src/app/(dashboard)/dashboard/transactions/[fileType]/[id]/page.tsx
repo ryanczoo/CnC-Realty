@@ -13,6 +13,7 @@ import { TransferPendingPanel } from "@/components/transactions/TransferPendingP
 import { OverviewTab } from "@/components/transactions/OverviewTab";
 import { CommissionTab } from "@/components/transactions/CommissionTab";
 import { DocumentsTab } from "@/components/transactions/DocumentsTab";
+import { WithHeaderPhoto } from "@/components/transactions/FileHeaderPhoto";
 import { getChecklistProgress, listingStatusOptions, transactionStatusOptions, convertBlockedReason } from "@/lib/transaction-helpers";
 import { isFileReadOnlyFor, isCommissionLockedFor } from "@/lib/file-lock";
 import { isPlaceholderAddress } from "@/lib/transfer-placeholder";
@@ -225,10 +226,15 @@ export default function FileDetailPage() {
         <div className={`flex items-start justify-between gap-4 ${PHONE_HEADER_STACK}`}>
           <div>
             {!isLocked && file.propertyAddress ? (
-              <>
+              <WithHeaderPhoto
+                fileType={fileType as "listing" | "transaction"}
+                fileId={id}
+                photoKey={file.photoKey ?? null}
+                address={`${file.propertyAddress}, ${file.city ?? ""}, ${file.state} ${file.zip ?? ""}`}
+              >
                 <h1 className="text-xl font-bold text-[#1B1B1B]">{file.propertyAddress}</h1>
                 <p className="text-xl font-bold text-[#1B1B1B]">{file.city ?? ""}, {file.state} {file.zip ?? ""}</p>
-              </>
+              </WithHeaderPhoto>
             ) : (
               <h1 className="text-xl font-bold text-[#1B1B1B]">{title}</h1>
             )}

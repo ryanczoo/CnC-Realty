@@ -166,13 +166,6 @@ export function OverviewTab({
           </div>
         )}
 
-        {!isListing && transaction && !isReferral && transaction.photoKey && (
-          <div className="rounded-xl border border-[#1B1B1B]/10 bg-white p-5 space-y-3">
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Property Photo</h2>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`/api/transactions/${file.id}/photo`} alt="Property" className="w-full rounded-lg object-cover" />
-          </div>
-        )}
 
         {!isListing && transaction && !isReferral && transaction.conditions.length > 0 && (
           <div className="rounded-xl border border-[#1B1B1B]/10 bg-white p-5 space-y-3">
