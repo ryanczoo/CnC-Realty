@@ -8,8 +8,9 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     listingFile: { findUnique: vi.fn() },
     transactionFile: { findUnique: vi.fn() },
-    fileDocument: { create: vi.fn() },
+    fileDocument: { create: vi.fn(), findUnique: vi.fn(), update: vi.fn() },
     fileActivity: { create: vi.fn() },
+    $transaction: vi.fn(async (ops: Promise<unknown>[]) => Promise.all(ops)),
   },
 }));
 
@@ -92,5 +93,40 @@ describe("POST /api/documents", () => {
     vi.mocked(prisma.fileActivity.create).mockResolvedValue({ id: "act1" } as any);
     await POST(req({ fileType: "LISTING", fileId: "f1", checklistItemId: "c1", name: "rla.pdf", r2Key: "transactions/listing/f1/d/rla.pdf", r2Url: "transactions/listing/f1/d/rla.pdf" }));
     expect(vi.mocked(prisma.fileDocument.create).mock.calls[0][0].data).toMatchObject({ isAdditional: false });
+  });
+
+  describe("replacing a rejected additional document", () => {
+    const upload = (replacesDocumentId: string) =>
+      POST(req({ fileType: "LISTING", fileId: "f1", checklistItemId: null, name: "pest-v2.pdf", r2Key: "transactions/listing/f1/d2/pest-v2.pdf", r2Url: "transactions/listing/f1/d2/pest-v2.pdf", replacesDocumentId }));
+    const old = (over: Record<string, unknown> = {}) => ({
+      id: "old1", listingFileId: "f1", transactionFileId: null, isAdditional: true, reviewStatus: "REJECTED", checklistItemId: null, ...over,
+    });
+
+    beforeEach(() => {
+      vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
+      vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "f1", agentId: "a1" } as any);
+      vi.mocked(prisma.fileDocument.create).mockResolvedValue({ id: "d2" } as any);
+      vi.mocked(prisma.fileDocument.update).mockResolvedValue({} as any);
+      vi.mocked(prisma.fileActivity.create).mockResolvedValue({ id: "act1" } as any);
+    });
+
+    it("takes the rejected one's place: new one listed, old one moves to Unattached keeping Rejected", async () => {
+      vi.mocked(prisma.fileDocument.findUnique).mockResolvedValue(old() as any);
+      const res = await upload("old1");
+      expect(res.status).toBe(201);
+      expect(vi.mocked(prisma.fileDocument.create).mock.calls[0][0].data).toMatchObject({ isAdditional: true, checklistItemId: null });
+      expect(prisma.fileDocument.update).toHaveBeenCalledWith({ where: { id: "old1" }, data: { isAdditional: false } });
+    });
+
+    it.each([
+      ["isn't rejected", { reviewStatus: "PENDING_REVIEW" }],
+      ["isn't an additional document", { isAdditional: false }],
+      ["belongs to another file", { listingFileId: "f9" }],
+    ])("refuses when the document being replaced %s", async (_label, over) => {
+      vi.mocked(prisma.fileDocument.findUnique).mockResolvedValue(old(over) as any);
+      expect((await upload("old1")).status).toBe(400);
+      expect(prisma.fileDocument.create).not.toHaveBeenCalled();
+      expect(prisma.fileDocument.update).not.toHaveBeenCalled();
+    });
   });
 });

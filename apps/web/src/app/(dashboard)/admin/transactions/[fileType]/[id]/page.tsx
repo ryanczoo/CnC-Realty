@@ -290,10 +290,11 @@ export default function AdminFileDetailPage() {
             <AdditionalDocuments
               documents={file.documents as FileDocumentRecord[]}
               mode="admin"
-              uploading={uploadingId === "additional"}
-              disabled={uploadingId !== null}
-              result={uploadResults.additional ?? null}
+              uploadingId={uploadingId}
+              results={uploadResults}
+              disabled={false}
               onSelect={(f) => upload(null, f)}
+              onReplace={(id, f) => upload(null, f, id)}
               onChanged={load}
             />
           </div>

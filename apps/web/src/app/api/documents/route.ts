@@ -10,7 +10,7 @@ export async function POST(req: Request) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
-  const { fileType, fileId, checklistItemId, name, r2Key, r2Url, documentId } = body;
+  const { fileType, fileId, checklistItemId, name, r2Key, r2Url, documentId, replacesDocumentId } = body;
 
   if (!fileType || !fileId || !name || !r2Key || !r2Url) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -43,7 +43,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid document key" }, { status: 400 });
   }
 
-  const doc = await prisma.fileDocument.create({
+  // "Upload" on a rejected Additional Documents line: the new document takes that
+  // line, and the rejected one stays in the file (Documents tab, "Unattached",
+  // still Rejected) — the same way a checklist row's newest upload covers its
+  // rejected one.
+  if (replacesDocumentId) {
+    const old = await prisma.fileDocument.findUnique({ where: { id: replacesDocumentId } });
+    const sameFile = old && (isListing ? old.listingFileId : old.transactionFileId) === fileId;
+    if (!old || !sameFile || !old.isAdditional || old.reviewStatus !== "REJECTED" || checklistItemId) {
+      return NextResponse.json({ error: "Only a rejected additional document can be replaced" }, { status: 400 });
+    }
+  }
+
+  const create = prisma.fileDocument.create({
     data: {
       id: documentId ?? undefined,
       fileType,
@@ -59,6 +71,9 @@ export async function POST(req: Request) {
       reviewStatus: "PENDING_REVIEW",
     },
   });
+  const [doc] = replacesDocumentId
+    ? await prisma.$transaction([create, prisma.fileDocument.update({ where: { id: replacesDocumentId }, data: { isAdditional: false } })])
+    : [await create];
 
   await prisma.fileActivity.create({
     data: {

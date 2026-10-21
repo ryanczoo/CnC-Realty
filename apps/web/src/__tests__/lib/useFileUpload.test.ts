@@ -44,4 +44,13 @@ describe("uploadDocument", () => {
       .mockResolvedValueOnce(json({ document: { id: "d" } }));
     expect(await uploadDocument("LISTING", "l1", null, file)).toEqual({ name: "Pest Inspection Report.pdf", ok: true });
   });
+
+  it("tells the server which rejected document the upload replaces", async () => {
+    const f = vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(json({ uploadUrl: "https://r2/put", key: "k", documentId: "d" }))
+      .mockResolvedValueOnce({ ok: true } as Response)
+      .mockResolvedValueOnce(json({ document: { id: "d" } }));
+    await uploadDocument("LISTING", "l1", null, file, "old1");
+    expect(JSON.parse(f.mock.calls[2][1]!.body as string)).toMatchObject({ checklistItemId: null, replacesDocumentId: "old1" });
+  });
 });

@@ -93,10 +93,11 @@ export function ChecklistPanel({ fileType, fileId, items, documents, onUploaded,
       <AdditionalDocuments
         documents={documents}
         mode="agent"
-        uploading={uploadingId === "additional"}
-        disabled={uploadingId !== null || readOnly}
-        result={results.additional ?? null}
+        uploadingId={uploadingId}
+        results={results}
+        disabled={readOnly}
         onSelect={(f) => upload(null, f)}
+        onReplace={(id, f) => upload(null, f, id)}
         viewerId={viewerId}
         onChanged={onUploaded}
       />
