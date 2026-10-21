@@ -17,7 +17,7 @@ import { SIDES, transactionSideLabel, isLeaseSide, FILE_PROPERTY_TYPES, transact
 import { formatDateMDY } from "@/lib/utils";
 import { PartySection, emptyParty, type Party } from "@/components/transactions/PartySection";
 import { CommissionField } from "@/components/transactions/CommissionField";
-import { CheckIcon } from "@/components/ui/CheckIcon";
+import { PhotoUploadField } from "@/components/transactions/PhotoUploadField";
 import { Spinner } from "@/components/ui/Spinner";
 import { RequiredMark } from "@/components/ui/RequiredMark";
 import { WizardStepBar } from "@/components/transactions/WizardStepBar";
@@ -48,8 +48,6 @@ export default function NewTransactionPage() {
   const [tcFeeEnabled, setTcFeeEnabled] = useState(false);
   const [agentRelativeSale, setAgentRelativeSale] = useState(false);
   const [brokerProvidedLead, setBrokerProvidedLead] = useState(false);
-  const [photoUploading, setPhotoUploading] = useState(false);
-  const [photoTempId] = useState(() => crypto.randomUUID());
 
   const [form, setForm] = useState({
     transactionSide: "",
@@ -219,26 +217,6 @@ export default function NewTransactionPage() {
     });
   }
 
-  async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setPhotoUploading(true);
-    try {
-      const params = new URLSearchParams({
-        fileType: "transaction",
-        fileId: photoTempId,
-        filename: file.name,
-        contentType: file.type,
-        size: String(file.size),
-      });
-      const { uploadUrl, key } = await fetch(`/api/upload-url?${params}`).then((r) => r.json());
-      await fetch(uploadUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
-      set("photoKey", key);
-    } finally {
-      setPhotoUploading(false);
-      e.target.value = "";
-    }
-  }
 
   async function submit() {
     setSaving(true);
@@ -444,26 +422,7 @@ export default function NewTransactionPage() {
                 <Field label="School District" value={form.schoolDistrict} onChange={(v) => set("schoolDistrict", v)} placeholder="Optional" />
                 <Field label="Zoning Class" value={form.zoningClass} onChange={(v) => set("zoningClass", v)} placeholder="e.g. R-1" />
               </div>
-              <div className="text-center">
-                <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">Property Photo</label>
-                <label
-                  className={`inline-flex cursor-pointer items-center rounded-full px-4 py-2 text-xs font-medium transition-colors ${
-                    photoUploading ? "bg-zinc-100 text-zinc-400" : "bg-[#1B1B1B] text-white hover:bg-[#1B1B1B]/80"
-                  }`}
-                >
-                  {photoUploading ? "Uploading…" : form.photoKey ? "Replace Photo" : "Upload Photo"}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="sr-only"
-                    disabled={photoUploading}
-                    onChange={handlePhotoChange}
-                  />
-                </label>
-                {form.photoKey && !photoUploading && (
-                  <p className="mt-1.5 inline-flex items-center gap-1 text-xs text-[#9E8C61]">Photo uploaded <CheckIcon size={14} /></p>
-                )}
-              </div>
+              <PhotoUploadField photoKey={form.photoKey} onChange={(k) => set("photoKey", k)} />
             </div>
           </div>
           )

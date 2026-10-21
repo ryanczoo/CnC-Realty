@@ -16,6 +16,7 @@ import { formatDateMDY } from "@/lib/utils";
 import { RequiredMark } from "@/components/ui/RequiredMark";
 import { WizardStepBar } from "@/components/transactions/WizardStepBar";
 import { PHONE_FIELD_PAIR } from "@/lib/dashboard-phone";
+import { PhotoUploadField } from "@/components/transactions/PhotoUploadField";
 
 export default function NewListingPage() {
   const router = useRouter();
@@ -26,7 +27,7 @@ export default function NewListingPage() {
     propertyAddress: "", city: "", state: "CA", zip: "",
     mlsNumber: "", listPrice: "", listingType: "RESIDENTIAL_SALE",
     expirationDate: "", listDate: "",
-    commission: "", commissionNotes: "",
+    commission: "", commissionNotes: "", photoKey: "",
   });
   const [sellers, setSellers] = useState<Party[]>([emptyParty()]);
   // Commission is entered as a % or a flat $ — one value, sent as whichever field the toggle picks.
@@ -114,6 +115,7 @@ export default function NewListingPage() {
                 )}
               </div>
             </div>
+            <PhotoUploadField photoKey={form.photoKey} onChange={(k) => set("photoKey", k)} />
           </div>
         )}
 
