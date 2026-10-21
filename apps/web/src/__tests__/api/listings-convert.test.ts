@@ -87,6 +87,15 @@ describe("POST /api/listings/[id]/convert", () => {
     expect(prisma.transactionFile.create).not.toHaveBeenCalled();
   });
 
+  it("carries the listing photo over", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ ...SALE_LISTING, parties: [], photoKey: "wizard-photos/u1/abc/photo.jpg" } as any);
+    vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "tf-photo" } as any);
+    const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "l1" } });
+    expect(res.status).toBe(201);
+    expect((vi.mocked(prisma.transactionFile.create).mock.calls[0][0].data as any).photoKey).toBe("wizard-photos/u1/abc/photo.jpg");
+  });
+
   it("copies the listing's parties onto the new transaction file", async () => {
     vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
     vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({

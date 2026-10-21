@@ -446,4 +446,26 @@ describe("POST /api/transactions — propertyCategory checklist matching", () =>
       expect.objectContaining({ data: expect.objectContaining({ propertyCategory: "COMMERCIAL" }) })
     );
   });
+
+  it("refuses a photo key that isn't the caller's", async () => {
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u1", agentId: "a1" } } as any);
+    const res = await POST(makeRequest({
+      transactionSide: "PURCHASE", propertyAddress: "1 Test St", city: "Test", zip: "00000", propertyType: "Single Family",
+      photoKey: "transactions/listing/l9/d9/secret.pdf",
+    }));
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("Invalid photo");
+    expect(prisma.transactionFile.create).not.toHaveBeenCalled();
+  });
+
+  it("saves the caller's own photo key", async () => {
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u1", agentId: "a1" } } as any);
+    vi.mocked(prisma.transactionFile.create).mockImplementation((async (args: any) => ({ id: "t1", ...args.data })) as any);
+    const res = await POST(makeRequest({
+      transactionSide: "PURCHASE", propertyAddress: "1 Test St", city: "Test", zip: "00000", propertyType: "Single Family",
+      photoKey: "wizard-photos/u1/abc/photo.jpg",
+    }));
+    expect(res.status).toBe(201);
+    expect((await res.json()).transaction.photoKey).toBe("wizard-photos/u1/abc/photo.jpg");
+  });
 });

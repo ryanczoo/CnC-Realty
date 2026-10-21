@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { isOwnWizardPhoto } from "@/lib/wizard-photo";
 import { prisma } from "@/lib/prisma";
 import { CHECKLIST_ITEMS_WITH_DOCS_INCLUDE } from "@/lib/transaction-helpers";
 import { trimStrings } from "@/lib/form-validation";
@@ -31,10 +32,13 @@ export async function POST(req: Request) {
   if (!agentId) return NextResponse.json({ error: "Agent not found" }, { status: 404 });
 
   const body = trimStrings(await req.json());
-  const { propertyAddress, city, state, zip, mlsNumber, listPrice, listingType, expirationDate, listDate, commissionPercent, commissionAmount, commissionNotes, parties = [] } = body;
+  const { propertyAddress, city, state, zip, mlsNumber, listPrice, listingType, expirationDate, listDate, commissionPercent, commissionAmount, commissionNotes, photoKey, parties = [] } = body;
 
   if (!propertyAddress || !city || !zip || !listPrice || !listingType) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+  }
+  if (photoKey && !isOwnWizardPhoto(photoKey, session.user.id)) {
+    return NextResponse.json({ error: "Invalid photo" }, { status: 400 });
   }
   const datesError = listingDatesError(listDate, expirationDate);
   if (datesError) return NextResponse.json({ error: datesError }, { status: 400 });
@@ -63,6 +67,7 @@ export async function POST(req: Request) {
         commissionPercent: commissionPercent ? parseFloat(commissionPercent) : null,
         commissionAmount: commissionAmount ? parseFloat(commissionAmount) : null,
         commissionNotes: commissionNotes || null,
+        photoKey: photoKey || null,
         parties: {
           create: namedParties.map((p: { role: string; name: string; email?: string; phone?: string; company?: string; licenseNumber?: string }) => ({
             fileType: "LISTING" as const,

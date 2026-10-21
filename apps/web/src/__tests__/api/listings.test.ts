@@ -106,6 +106,18 @@ describe("POST /api/listings", () => {
       { fileType: "LISTING", role: "SELLER", name: "Jane Seller", email: "jane@example.com", phone: "(555) 555-5555", company: null, licenseNumber: null },
     ]);
   });
+
+  it("refuses a photo key that isn't the caller's", async () => {
+    const res = await POST(postJson({ ...VALID_LISTING, photoKey: "wizard-photos/u2/abc/photo.jpg" }));
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("Invalid photo");
+    expect(prisma.listingFile.create).not.toHaveBeenCalled();
+  });
+
+  it("saves the caller's own photo key", async () => {
+    await POST(postJson({ ...VALID_LISTING, photoKey: "wizard-photos/u1/abc/photo.jpg" }));
+    expect(vi.mocked(prisma.listingFile.create).mock.calls[0][0].data).toMatchObject({ photoKey: "wizard-photos/u1/abc/photo.jpg" });
+  });
 });
 
 describe("POST /api/listings — commission as % or $", () => {

@@ -44,3 +44,8 @@ export function buildR2Key(
 ): string {
   return `transactions/${fileType}/${fileId}/${documentId}/${filename}`;
 }
+
+export async function getR2ObjectBuffer(key: string): Promise<Buffer> {
+  const res = await r2.send(new GetObjectCommand({ Bucket: R2_BUCKET, Key: key }));
+  return Buffer.from(await res.Body!.transformToByteArray());
+}

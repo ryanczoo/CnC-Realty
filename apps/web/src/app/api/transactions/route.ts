@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { isOwnWizardPhoto } from "@/lib/wizard-photo";
 import { prisma } from "@/lib/prisma";
 import { CHECKLIST_ITEMS_WITH_DOCS_INCLUDE, isReadyForPending, commissionReady, fileCommissionHas } from "@/lib/transaction-helpers";
 import { commissionPercentError } from "@/lib/file-edit";
@@ -57,6 +58,9 @@ export async function POST(req: Request) {
 
   if (!transactionSide) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+  }
+  if (photoKey && !isOwnWizardPhoto(photoKey, session.user.id)) {
+    return NextResponse.json({ error: "Invalid photo" }, { status: 400 });
   }
   if (transactionSide !== "REFERRAL" && (!propertyAddress || !city || !zip || !propertyType)) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });

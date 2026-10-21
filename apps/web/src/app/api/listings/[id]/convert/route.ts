@@ -49,6 +49,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
         state: listing.state,
         zip: listing.zip,
         mlsNumber: listing.mlsNumber,
+        photoKey: listing.photoKey,
         transactionSide,
         propertyCategory,
         listPrice: listing.listPrice,
