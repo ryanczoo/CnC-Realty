@@ -69,7 +69,7 @@ export default async function PressPostPage({ params }: Props) {
   const displayAuthor =
     post.authorName ??
     post.author?.name ??
-    "CnC Realty Group";
+    "CnC Realty";
 
   const publishedDate = post.publishedAt
     ? new Date(post.publishedAt).toLocaleDateString("en-US", {

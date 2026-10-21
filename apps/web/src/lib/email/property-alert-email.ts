@@ -92,7 +92,7 @@ export async function sendPropertyAlertEmail(
           <tr>
             <td style="background:#F2F0EF;padding:16px 32px;text-align:center;">
               <p style="margin:0;font-size:11px;color:#999;">
-                &copy; ${new Date().getFullYear()} CnC Realty Group &bull; CA DRE #02439028
+                &copy; ${new Date().getFullYear()} CnC Realty &bull; CA DRE #02439028
               </p>
             </td>
           </tr>

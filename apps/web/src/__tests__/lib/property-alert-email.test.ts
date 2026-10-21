@@ -151,4 +151,11 @@ describe("sendPropertyAlertEmail", () => {
       process.env.POSTMARK_SERVER_TOKEN = original;
     }
   });
+
+  it("signs the footer with the legal name CnC Realty", async () => {
+    await sendPropertyAlertEmail("buyer@example.com", "Jordan", ONE_LISTING, "user-1");
+    const html = vi.mocked(sendEmail).mock.calls[0][0].html;
+    expect(html).toContain("CnC Realty &bull; CA DRE #02439028");
+    expect(html).not.toContain("CnC Realty Group");
+  });
 });

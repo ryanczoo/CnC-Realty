@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { renderToStaticMarkup } from "react-dom/server";
 
 vi.mock("react", async (importOriginal) => ({
   ...(await importOriginal<typeof import("react")>()),
@@ -11,7 +12,7 @@ vi.mock("@/components/blog/PostBody", () => ({ PostBody: () => null }));
 vi.mock("@/components/blog/OtherNews", () => ({ OtherNews: () => null }));
 
 import { prisma } from "@/lib/prisma";
-import { generateMetadata } from "../../app/press/[slug]/page";
+import PressPostPage, { generateMetadata } from "../../app/press/[slug]/page";
 
 const POST = {
   id: "p1",
@@ -43,5 +44,23 @@ describe("press post generateMetadata", () => {
     expect((await generateMetadata(props)).openGraph?.images).toEqual([
       expect.objectContaining({ url: "/og-default.jpg" }),
     ]);
+  });
+});
+
+describe("press post byline", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("credits the legal name CnC Realty when the post has no author", async () => {
+    vi.mocked(prisma.blogPost.findUnique).mockResolvedValue({
+      ...POST,
+      content: "",
+      publishedAt: null,
+      authorName: null,
+      author: null,
+    });
+    vi.mocked(prisma.blogPost.findMany).mockResolvedValue([]);
+    const html = renderToStaticMarkup(await PressPostPage(props));
+    expect(html).toContain("CnC Realty");
+    expect(html).not.toContain("CnC Realty Group");
   });
 });
