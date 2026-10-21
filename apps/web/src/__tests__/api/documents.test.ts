@@ -75,4 +75,22 @@ describe("POST /api/documents", () => {
     const res = await POST(req({ fileType: "BOGUS", fileId: "f1", name: "x.pdf", r2Key: "k", r2Url: "u" }));
     expect(res.status).toBe(400);
   });
+
+  it("marks a document uploaded without a checklist item as additional", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "f1", agentId: "a1" } as any);
+    vi.mocked(prisma.fileDocument.create).mockResolvedValue({ id: "doc1" } as any);
+    vi.mocked(prisma.fileActivity.create).mockResolvedValue({ id: "act1" } as any);
+    await POST(req({ fileType: "LISTING", fileId: "f1", checklistItemId: null, name: "pest.pdf", r2Key: "transactions/listing/f1/d/pest.pdf", r2Url: "transactions/listing/f1/d/pest.pdf" }));
+    expect(vi.mocked(prisma.fileDocument.create).mock.calls[0][0].data).toMatchObject({ isAdditional: true });
+  });
+
+  it("marks a document uploaded to a checklist item as not additional", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "f1", agentId: "a1" } as any);
+    vi.mocked(prisma.fileDocument.create).mockResolvedValue({ id: "doc1" } as any);
+    vi.mocked(prisma.fileActivity.create).mockResolvedValue({ id: "act1" } as any);
+    await POST(req({ fileType: "LISTING", fileId: "f1", checklistItemId: "c1", name: "rla.pdf", r2Key: "transactions/listing/f1/d/rla.pdf", r2Url: "transactions/listing/f1/d/rla.pdf" }));
+    expect(vi.mocked(prisma.fileDocument.create).mock.calls[0][0].data).toMatchObject({ isAdditional: false });
+  });
 });

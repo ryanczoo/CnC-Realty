@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getPresignedGetUrl } from "@/lib/r2";
 import { getFileAndVerifyAccess, resolveFileRef } from "@/lib/api-auth";
 
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -19,5 +19,8 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   if (!file) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const url = await getPresignedGetUrl(doc.r2Key);
+  // ?redirect=1 lets a plain link (the Documents tab) open the file directly;
+  // DocumentReviewCard fetches the JSON form.
+  if (new URL(req.url).searchParams.has("redirect")) return NextResponse.redirect(url, 302);
   return NextResponse.json({ url });
 }

@@ -57,4 +57,15 @@ describe("GET /api/documents/[id]/download", () => {
     const res = await GET(new Request("http://localhost"), { params: { id: "doc1" } });
     expect(res.status).toBe(200);
   });
+
+  it("redirects to the presigned URL when asked to", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
+    vi.mocked(prisma.fileDocument.findUnique).mockResolvedValue({
+      id: "doc1", r2Key: "k", listingFileId: "f1", transactionFileId: null,
+    } as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "f1", agentId: "a1" } as any);
+    const res = await GET(new Request("http://localhost/api/documents/doc1/download?redirect=1"), { params: { id: "doc1" } });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("https://r2.example/get-url");
+  });
 });

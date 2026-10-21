@@ -108,4 +108,33 @@ describe("POST /api/documents/[id]/remove", () => {
     expect((await remove()).status).toBe(403);
     expect(prisma.fileDocument.update).not.toHaveBeenCalled();
   });
+
+  it("lets an agent remove their own pending additional document: off the list, Not Submitted, logged", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(AGENT as any);
+    vi.mocked(prisma.fileDocument.findUnique).mockResolvedValue(doc({ checklistItemId: null, checklistItem: null, isAdditional: true }) as any);
+    const res = await remove();
+    expect(res.status).toBe(200);
+    expect(prisma.fileDocument.update).toHaveBeenCalledWith({
+      where: { id: "d1" },
+      data: { checklistItemId: null, isAdditional: false, reviewStatus: "NOT_SUBMITTED" },
+    });
+    expect(vi.mocked(prisma.fileActivity.create).mock.calls[0][0].data).toMatchObject({
+      type: "DOCUMENT_REMOVED",
+      payload: { documentId: "d1", checklistItemName: null },
+    });
+  });
+
+  it("refuses an agent removing someone else's additional document", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(OTHER_AGENT as any);
+    vi.mocked(prisma.fileDocument.findUnique).mockResolvedValue(doc({ checklistItemId: null, checklistItem: null, isAdditional: true }) as any);
+    expect((await remove()).status).toBe(403);
+    expect(prisma.fileDocument.update).not.toHaveBeenCalled();
+  });
+
+  it("still rejects a document that is neither on a checklist item nor additional", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(AGENT as any);
+    vi.mocked(prisma.fileDocument.findUnique).mockResolvedValue(doc({ checklistItemId: null, checklistItem: null, isAdditional: false }) as any);
+    expect((await remove()).status).toBe(400);
+    expect(prisma.fileDocument.update).not.toHaveBeenCalled();
+  });
 });

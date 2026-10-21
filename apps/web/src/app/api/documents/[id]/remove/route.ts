@@ -23,7 +23,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
   if (!isAdmin && doc.uploadedByAgentId !== session.user.id) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  if (!doc.checklistItemId) {
+  if (!doc.checklistItemId && !doc.isAdditional) {
     return NextResponse.json({ error: "This document isn't on a checklist item" }, { status: 400 });
   }
   if (!isAdmin && doc.reviewStatus !== "PENDING_REVIEW") {
@@ -43,6 +43,8 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
       where: { id: doc.id },
       data: {
         checklistItemId: null,
+        // An additional document comes off the Additional Documents list the same way.
+        ...(doc.isAdditional && { isAdditional: false }),
         ...(doc.reviewStatus === "PENDING_REVIEW" && { reviewStatus: "NOT_SUBMITTED" as const }),
       },
     }),

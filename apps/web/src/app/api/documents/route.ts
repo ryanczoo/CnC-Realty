@@ -50,6 +50,8 @@ export async function POST(req: Request) {
       listingFileId: isListing ? fileId : null,
       transactionFileId: isListing ? null : fileId,
       checklistItemId: checklistItemId ?? null,
+      // Added through Additional Documents rather than a checklist item.
+      isAdditional: !checklistItemId,
       name,
       r2Key,
       r2Url,

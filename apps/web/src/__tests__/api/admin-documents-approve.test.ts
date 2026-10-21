@@ -114,4 +114,22 @@ describe("POST /api/admin/documents/[id]/approve — email failure", () => {
     expect(await res.json()).toEqual({ ok: true, emailWarning: true });
     expect(prisma.fileDocument.update).toHaveBeenCalled();
   });
+
+  it("does not send the all-approved email when the approved document is additional", async () => {
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "admin-1", role: "ADMIN" } } as any);
+    vi.mocked(prisma.fileDocument.findUnique).mockResolvedValue({
+      id: "doc-8", fileType: "TRANSACTION", listingFileId: null, transactionFileId: "tx-8", checklistItemId: null, isAdditional: true, name: "pest.pdf",
+    } as any);
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({
+      id: "tx-8", status: "PENDING", propertyAddress: "1 A St", city: "Irvine", state: "CA", zip: "92603",
+      agent: { user: { email: "a@x.com", name: "Ann" } },
+    } as any);
+    vi.mocked(prisma.fileChecklistItem.findMany).mockResolvedValue([]); // checklist already complete
+
+    const res = await POST(new Request("http://localhost/api/admin/documents/doc-8/approve", { method: "POST" }), { params: { id: "doc-8" } });
+
+    expect(res.status).toBe(200);
+    expect(prisma.fileDocument.update).toHaveBeenCalled();
+    expect(sendAllDocsApproved).not.toHaveBeenCalled();
+  });
 });
