@@ -5,6 +5,7 @@ import { TrashIcon } from "@/components/ui/TrashIcon";
 import { DownloadIcon } from "@/components/ui/DownloadIcon";
 import { deleteDocumentPermanently } from "@/lib/document-actions";
 import { PHONE_TABLE_FRAME } from "@/lib/dashboard-phone";
+import { TABLE_HEAD_DARK_ROW, TABLE_HEAD_DARK_CELL } from "@/lib/table-styles";
 
 const STATUS_STYLES: Record<string, string> = {
   APPROVED: "bg-green-100 text-green-700",
@@ -76,12 +77,12 @@ export function DocumentsTab({
     <div className={`rounded-xl border border-[#1B1B1B]/10 bg-white overflow-hidden ${PHONE_TABLE_FRAME}`}>
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-[#1B1B1B]/5 bg-[#F2F0EF]/60">
-            <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Document</th>
-            <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Checklist Item</th>
-            <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Status</th>
-            <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Uploaded</th>
-            <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-[#1B1B1B]/40">Download</th>
+          <tr className={TABLE_HEAD_DARK_ROW}>
+            <th className={`px-5 py-3 text-left ${TABLE_HEAD_DARK_CELL}`}>Document</th>
+            <th className={`px-5 py-3 text-left ${TABLE_HEAD_DARK_CELL}`}>Checklist Item</th>
+            <th className={`px-5 py-3 text-center ${TABLE_HEAD_DARK_CELL}`}>Status</th>
+            <th className={`px-5 py-3 text-center ${TABLE_HEAD_DARK_CELL}`}>Uploaded</th>
+            <th className={`px-5 py-3 text-center ${TABLE_HEAD_DARK_CELL}`}>Download</th>
             {canDelete && <th className="w-12 px-5 py-3" />}
           </tr>
         </thead>
@@ -91,7 +92,9 @@ export function DocumentsTab({
               <tr className="hover:bg-[#F2F0EF]/30 transition-colors">
                 <td className="px-5 py-3 font-medium text-[#1B1B1B]">{doc.name}</td>
                 <td className="px-5 py-3 text-[#1B1B1B]/50">
-                  {doc.checklistItemId ? (itemMap.get(doc.checklistItemId) ?? "—") : "Unattached"}
+                  {doc.checklistItemId
+                    ? (itemMap.get(doc.checklistItemId) ?? "—")
+                    : doc.isAdditional ? "Additional Document" : "Unattached"}
                 </td>
                 <td className="px-5 py-3 text-center">
                   <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLES[doc.reviewStatus] ?? ""}`}>
@@ -101,7 +104,7 @@ export function DocumentsTab({
                 <td className="px-5 py-3 text-center text-[#1B1B1B]/50">{new Date(doc.uploadedAt).toLocaleDateString()}</td>
                 <td className="px-5 py-3 text-center">
                   <a
-                    href={doc.r2Url}
+                    href={`/api/documents/${doc.id}/download?redirect=1`}
                     target="_blank"
                     rel="noopener noreferrer"
                     title="Download"

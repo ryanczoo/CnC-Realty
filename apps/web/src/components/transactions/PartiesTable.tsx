@@ -5,6 +5,7 @@ import { TrashIcon } from "@/components/ui/TrashIcon";
 import { emailError } from "@/lib/form-validation";
 import type { FilePartyRecord, FilePartyRole, FileContextProps } from "@/types/transaction";
 import { PHONE_TABLE_FRAME } from "@/lib/dashboard-phone";
+import { TABLE_HEAD_DARK_ROW, TABLE_HEAD_DARK_CELL } from "@/lib/table-styles";
 
 const ROLE_LABELS: Record<FilePartyRole, string> = {
   BUYER: "Buyer", SELLER: "Seller", LISTING_AGENT: "Listing Agent",
@@ -46,20 +47,20 @@ export function PartiesTable({ fileType, fileId, parties, onChanged, readOnly = 
     <div className={PHONE_TABLE_FRAME}>
       <table className="w-full text-sm max-lg:whitespace-nowrap max-lg:[&_td]:pr-4 max-lg:[&_th]:pr-4">
         <thead>
-          <tr className="border-b border-[#1B1B1B]/10 text-left text-xs font-medium uppercase tracking-wider text-[#1B1B1B]/40">
-            <th className="pb-2">Role</th><th className="pb-2">Name</th><th className="pb-2">Email</th><th className="pb-2">Phone</th><th className="pb-2">Company</th><th className="pb-2">License #</th><th className="pb-2"></th>
+          <tr className={`${TABLE_HEAD_DARK_ROW} text-left`}>
+            <th className={`px-5 py-3 ${TABLE_HEAD_DARK_CELL}`}>Role</th><th className={`px-5 py-3 ${TABLE_HEAD_DARK_CELL}`}>Name</th><th className={`px-5 py-3 ${TABLE_HEAD_DARK_CELL}`}>Email</th><th className={`px-5 py-3 ${TABLE_HEAD_DARK_CELL}`}>Phone</th><th className={`px-5 py-3 ${TABLE_HEAD_DARK_CELL}`}>Company</th><th className={`px-5 py-3 ${TABLE_HEAD_DARK_CELL}`}>License #</th><th className={`px-5 py-3 ${TABLE_HEAD_DARK_CELL}`}></th>
           </tr>
         </thead>
         <tbody>
           {parties.map((p) => (
             <tr key={p.id} className="border-b border-[#1B1B1B]/5 bg-white">
-              <td className="py-2 text-[#1B1B1B]/60">{ROLE_LABELS[p.role]}</td>
-              <td className="py-2 font-medium text-[#1B1B1B]">{p.name}</td>
-              <td className="py-2 text-[#1B1B1B]/60">{p.email ?? "—"}</td>
-              <td className="py-2 text-[#1B1B1B]/60">{p.phone ?? "—"}</td>
-              <td className="py-2 text-[#1B1B1B]/60">{p.company ?? "—"}</td>
-              <td className="py-2 text-[#1B1B1B]/60">{p.licenseNumber ?? "—"}</td>
-              <td className="py-2 text-right">
+              <td className="px-5 py-2 text-[#1B1B1B]/60">{ROLE_LABELS[p.role]}</td>
+              <td className="px-5 py-2 font-medium text-[#1B1B1B]">{p.name}</td>
+              <td className="px-5 py-2 text-[#1B1B1B]/60">{p.email ?? "—"}</td>
+              <td className="px-5 py-2 text-[#1B1B1B]/60">{p.phone ?? "—"}</td>
+              <td className="px-5 py-2 text-[#1B1B1B]/60">{p.company ?? "—"}</td>
+              <td className="px-5 py-2 text-[#1B1B1B]/60">{p.licenseNumber ?? "—"}</td>
+              <td className="px-5 py-2 text-right">
                 {!readOnly && (
                   <button onClick={() => removeParty(p.id)} className="text-[#1B1B1B]/30 hover:text-red-500">
                     <TrashIcon className="h-4 w-4" />
