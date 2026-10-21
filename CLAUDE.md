@@ -7617,3 +7617,96 @@ ask before every push.
 2. Re-measure the big search counts to see whether the 2026-10-15 freeze held (look at "dirtied" in EXPLAIN ANALYZE).
 3. Older backlog unchanged: Deploy Checklist re-verification at the top of this file; 7d deferred items; CRES E&O;
    ~5 KB phone-menu chunk loaded on desktop.
+
+---
+
+## Session Notes — 2026-10-19 → 2026-10-20 (SEO foundation live, Sentry/PostHog, small fixes, Step 4/5 planning)
+
+All pushed to `origin/main` and live (`2c0fffb..19e4c30`). Rules that held throughout: desktop untouchable unless Ryan
+approves, speed-check touched pages only (one desktop + one phone size, numeric scripts, **never** a whole-site
+screenshot sweep), reuse shared components first, ask before every push.
+
+### SEO foundation (steps 1–3) — live
+
+- Spec `docs/superpowers/specs/2026-10-19-seo-foundation-design.md`. 20 commits: sitemap index (`/sitemap.xml` →
+  `/sitemaps/pages.xml` + `/sitemaps/listings-0..5.xml`, 218,196 URLs), canonicals, titles, hidden/readable h1s,
+  business JSON-LD, Join stat numbers readable to Google, search-page cards as real links, noindex on account/email
+  pages + test agent + off-market listings, IndexNow.
+- **IndexNow:** key served at `/indexnow-key.txt` (`app/indexnow-key.txt/route.ts`), value public by design.
+  Vercel env `INDEXNOW_KEY` (Config type, Production). Vercel shows a "Needs Attention" tag on it — key verified
+  working live; likely just a "mark as Sensitive" suggestion, safe to ignore.
+- Ryan requested Google indexing for `/` and `/join` in Search Console.
+- Old `/join-cnc/` 404: **decided no redirect** — nothing real links to it; Google drops it on its own.
+- noindex only hides a page from search results; direct links and site buttons still work (Ryan's question).
+
+### Sentry + PostHog
+
+- `239ac22` Sentry replays now errors-only (`replaysSessionSampleRate: 0`, `replaysOnErrorSampleRate: 1.0`) — the
+  free 50/month were being used up by random sampling. Resets Oct 29. Error reports were only 19/5,000; no charges
+  (pay-as-you-go off).
+- `d39b559` PostHog `capture_pageview: "history_change"` — in-site page switches now count as page views (expect
+  views/visitor to rise; that's accuracy, not traffic). PostHog web analytics domain `https://cncrealtygroup.com`
+  added. PostHog settings fully done: leave cookieless tracking OFF, bounce duration 10s default, no custom channels.
+- Test gotcha: PostHog drops events from headless browsers / `navigator.webdriver` — spoof both in tests.
+
+### Small site changes
+
+- `a5cb155` Homepage testimonials on phones: white-house photo moves below Kevin Luevanos's review
+  (`max-lg:order-1` in `TestimonialCards.tsx`). Desktop unchanged.
+- `19e4c30` **Footer logo is a link home** (`Footer.tsx`): from other pages goes to `/`; on the homepage it **jumps
+  instantly to the top** (Ryan chose jump over smooth scroll — the homepage's scroll animations would replay).
+  Exported helper `onHomeLogoClick(pathname, e)`. Hover grows 5% (top-nav logo uses 15%; footer logo is ~4× bigger).
+  **Homepage CTA "Join Now" → `/join/apply`** (application form). Nav/footer "Join CnC" and the Why CnC button still
+  go to `/join`. Tests: `__tests__/components/Footer.test.ts`, `JoinCnCCTA.test.ts`.
+- Pushing often is fine (zero-downtime swap, no cost, no SEO effect); batch non-urgent cosmetic tweaks, push real
+  fixes right away.
+
+### Step 4 + 5 — decisions so far (no code yet)
+
+Agreed 2026-10-19 (reconfirmed 2026-10-20): **no new page designs** — avoids Google's "same page, city name swapped"
+spam rule.
+
+- **Step 4 = upgrade the existing Join page, no region pages.** Invisible part already live (readable stats + h1).
+  Visible part = **add an FAQ section to `/join`** (it currently has NONE — an older `JoinFaq` was removed in a past
+  redesign). Reuse the shared `components/home/FAQ.tsx` (same as Home/Buy/Sell/Rent, `faqs` prop). Answers are
+  always in the HTML even when folded, so Google reads them. Proposed placement: right above the final
+  "Your Journey Begins Here" section (matches Buy/Sell/Rent) — **Ryan hasn't confirmed placement**.
+- **Draft FAQ (awaiting Ryan's edits)** — numbers checked against `lib/ica-content.ts` and the Join page:
+  1. WHAT IS A 100% COMMISSION BROKERAGE? — keep your whole commission, no splits/caps; $990 flat fee per
+     transaction, $0 monthly.
+  2. HOW MUCH DOES IT COST TO JOIN CNC REALTY? — free to join, no monthly fees; $990 flat fee only when a sale
+     closes, includes E&O up to $1M sale price; $400 per additional $500K above $1M.
+  3. WHAT TOOLS DO I GET AS A CNC AGENT? — custom CRM, transaction management, email campaigns, personal agent
+     webpage, all free; optional transaction coordinator $350/transaction.
+  4. CAN I WORK REMOTELY ANYWHERE IN CALIFORNIA? — cloud-based brokerage, own schedule; Santa Ana office available.
+  5. HOW DO I TRANSFER MY CALIFORNIA LICENSE TO CNC? — apply online, approval decision within 24 hours, update
+     responsible broker in DRE eLicensing; active listings/pending sales transfer via the transfer authorization form.
+  6. HOW DO LEASES AND REFERRALS WORK? — 10% of commission or $200, whichever is greater; no flat fee. (Easiest to
+     drop if 7 is too many.)
+  7. CAN NEW AGENTS JOIN CNC? — optional mentorship program, 75/25 split on the first closed deal, then 100%.
+  - My calls for Ryan to check: no competitor names (fees change → DRE misleading-advertising risk); 7 questions
+    (other FAQs have 4); expectation set — FAQ is a modest gain (Google stopped FAQ rich results in 2023); reviews
+    and backlinks matter more.
+- **Step 5 = existing Search page at city addresses**, e.g. `/homes-for-sale/cerritos`: same layout/cards, opens
+  pre-filtered, heading "Homes for Sale in Cerritos, CA"; Ryan's input limited to heading wording + maybe a short
+  intro. Links: **option B** — city pages link to nearby cities only; existing pages unchanged; found via sitemap.
+- Suggested order: Step 4 first (recruiting is the priority); Step 5 can be built alongside with little of Ryan's
+  time.
+
+### Verification tooling (`.superpowers/pf-survey/`, git-ignored)
+
+- `t9PF.cjs` pixel A/B (whole page incl. footer), `speedAB.cjs` (`ONLY=home RUNS=7`), `orderPF.cjs`, `pvPF.cjs`,
+  new `logoPF.cjs` (footer-logo jump + Join Now href; `URLS=` for live). Baseline worktree
+  `C:\Users\hey_r\Desktop\CnC-old` now at `a5cb155` (detached, built).
+
+### Next Session — Start Here
+
+1. **Ryan reviews the 7 draft Join FAQ questions/answers above** and confirms placement; then build via the shared
+   FAQ component (TDD, desktop pixel check of the rest of `/join`, quick speed check, ask before push).
+2. Then Step 5 (city addresses on the Search page) — short design talk first.
+3. Ryan's own follow-ups: Bing Webmaster "URLs discovered" should rise from 5; GSC Sitemaps + Pages report;
+   Google Business Profile verification → add phone number, then Bing Places; collect reviews (step 6).
+4. Optional/undecided: press-post fallback byline "CnC Realty Group" (`app/press/[slug]/page.tsx:72`) should
+   probably be "CnC Realty".
+5. Cleanup when done comparing: `git worktree remove C:\Users\hey_r\Desktop\CnC-old`; delete
+   `.superpowers/sdd/2026-10-19-seo-foundation/`.
