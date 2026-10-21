@@ -1,49 +1,67 @@
 "use client";
 import { useState } from "react";
+import type { UploadResult } from "@/components/ui/UploadResultLine";
+
+// The server's own reason (e.g. "File exceeds 50MB limit") when it gave one.
+async function reasonFrom(res: Response): Promise<string> {
+  const body = await res.json().catch(() => null);
+  return typeof body?.error === "string" ? body.error : "Upload failed";
+}
 
 // Shared document-upload mechanism — request a presigned R2 URL, PUT the
-// file, then register it as a FileDocument. Used by both the agent-side
-// ChecklistPanel and the admin-side checklist review view, so an admin
-// (e.g. acting as a paid transaction coordinator) has the exact same
-// ability to upload as the file's own agent. itemId is null for an
-// "Additional Documents" upload not tied to a specific checklist item —
-// mirrors ChecklistPanel's own "additional" convention for the in-flight
-// upload id.
+// file, then register it as a FileDocument. itemId is null for an
+// "Additional Documents" upload not tied to a specific checklist item.
+// Never throws: the result says what happened, for UploadResultLine.
+export async function uploadDocument(
+  fileType: "LISTING" | "TRANSACTION",
+  fileId: string,
+  itemId: string | null,
+  file: File,
+): Promise<UploadResult> {
+  const name = file.name;
+  try {
+    const params = new URLSearchParams({
+      fileType: fileType === "LISTING" ? "listing" : "transaction",
+      fileId,
+      filename: file.name,
+      contentType: file.type,
+      size: String(file.size),
+    });
+    const urlRes = await fetch(`/api/upload-url?${params}`);
+    if (!urlRes.ok) return { name, ok: false, error: await reasonFrom(urlRes) };
+    const { uploadUrl, key, documentId } = await urlRes.json();
+
+    const uploadRes = await fetch(uploadUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+    if (!uploadRes.ok) return { name, ok: false, error: "Upload failed" };
+
+    const res = await fetch("/api/documents", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fileType, fileId, checklistItemId: itemId, name: file.name, r2Key: key, r2Url: key, documentId }),
+    });
+    if (!res.ok) return { name, ok: false, error: await reasonFrom(res) };
+    return { name, ok: true };
+  } catch {
+    return { name, ok: false, error: "Upload failed" };
+  }
+}
+
+// Used by both the agent-side ChecklistPanel and the admin-side checklist
+// view, so an admin (e.g. acting as a paid transaction coordinator) has the
+// exact same ability to upload as the file's own agent. results is keyed by
+// checklist item id, or "additional" for the Additional Documents upload.
 export function useFileUpload(fileType: "LISTING" | "TRANSACTION", fileId: string, onUploaded: () => void) {
   const [uploadingId, setUploadingId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [results, setResults] = useState<Record<string, UploadResult>>({});
 
   async function upload(itemId: string | null, file: File) {
-    setUploadingId(itemId ?? "additional");
-    setError(null);
-
-    try {
-      const params = new URLSearchParams({
-        fileType: fileType === "LISTING" ? "listing" : "transaction",
-        fileId,
-        filename: file.name,
-        contentType: file.type,
-        size: String(file.size),
-      });
-      const { uploadUrl, key, documentId } = await fetch(`/api/upload-url?${params}`).then((r) => r.json());
-
-      const uploadRes = await fetch(uploadUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
-      if (!uploadRes.ok) throw new Error("Upload failed");
-
-      const res = await fetch("/api/documents", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileType, fileId, checklistItemId: itemId, name: file.name, r2Key: key, r2Url: key, documentId }),
-      });
-      if (!res.ok) throw new Error("Upload failed");
-
-      onUploaded();
-    } catch {
-      setError("Couldn't upload that file. Please try again.");
-    } finally {
-      setUploadingId(null);
-    }
+    const target = itemId ?? "additional";
+    setUploadingId(target);
+    const result = await uploadDocument(fileType, fileId, itemId, file);
+    setResults((r) => ({ ...r, [target]: result }));
+    setUploadingId(null);
+    if (result.ok) onUploaded();
   }
 
-  return { uploadingId, error, upload };
+  return { uploadingId, results, upload };
 }
