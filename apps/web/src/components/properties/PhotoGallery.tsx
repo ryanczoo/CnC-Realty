@@ -2,8 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import { createPortal } from "react-dom";
-import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { PhotoLightbox } from "@/components/ui/PhotoLightbox";
 import { PhotoSwiper } from "./PhotoSwiper";
 
 interface Props {
@@ -81,65 +80,14 @@ export function PhotoGallery({ photos, address }: Props) {
         className="rounded-2xl lg:hidden max-lg:portrait:aspect-[4/3] max-lg:landscape:h-[60svh]"
       />
 
-      {/* Lightbox — rendered via portal so position:fixed escapes any transformed ancestor (drawer) */}
-      {lightboxIndex !== null && createPortal(
-        <div
-          className="fixed inset-0 z-[500] flex items-center justify-center bg-black/95"
-          onClick={() => setLightboxIndex(null)}
-        >
-          <button
-            className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
-            onClick={(e) => { e.stopPropagation(); setLightboxIndex(null); }}
-            aria-label="Close"
-          >
-            <X className="h-5 w-5" />
-          </button>
-
-          <span className="absolute top-4 left-1/2 -translate-x-1/2 text-sm text-white/60">
-            {lightboxIndex + 1} / {photos.length}
-          </span>
-
-          {lightboxIndex > 0 && (
-            <button
-              className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
-              onClick={(e) => {
-                e.stopPropagation();
-                setLightboxIndex((i) => Math.max(0, (i ?? 1) - 1));
-              }}
-              aria-label="Previous photo"
-            >
-              <ChevronLeft className="h-6 w-6" />
-            </button>
-          )}
-
-          <div
-            className="relative h-[80vh] w-[80vw]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Image
-              src={photos[lightboxIndex]}
-              alt={`${address} photo ${lightboxIndex + 1}`}
-              fill
-              className="object-contain"
-              sizes="80vw"
-              unoptimized
-            />
-          </div>
-
-          {lightboxIndex < photos.length - 1 && (
-            <button
-              className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
-              onClick={(e) => {
-                e.stopPropagation();
-                setLightboxIndex((i) => Math.min(photos.length - 1, (i ?? 0) + 1));
-              }}
-              aria-label="Next photo"
-            >
-              <ChevronRight className="h-6 w-6" />
-            </button>
-          )}
-        </div>,
-        document.body
+      {lightboxIndex !== null && (
+        <PhotoLightbox
+          photos={photos}
+          index={lightboxIndex}
+          alt={(i) => `${address} photo ${i + 1}`}
+          onIndexChange={setLightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+        />
       )}
     </>
   );
