@@ -236,6 +236,8 @@ export default function NewTransactionPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...form,
+        // A photo picked before switching the side to Referral isn't sent.
+        ...(isReferral && { photoKey: "" }),
         // Offer dates hidden for this side (residential lease) are never saved.
         ...(!offerLabels && { offerDate: "", offerExpirationDate: "" }),
         tcFeeEnabled,

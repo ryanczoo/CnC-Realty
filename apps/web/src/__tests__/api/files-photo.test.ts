@@ -63,4 +63,11 @@ describe("GET /api/files/[fileType]/[id]/photo", () => {
     vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ agentId: "a1", photoKey: "k/photo.jpg" } as any);
     expect((await get("listing")).headers.get("Cache-Control")).toBe("private, max-age=3600");
   });
+
+  it("returns 404, not an error, when the stored photo is missing", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(AGENT as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ agentId: "a1", photoKey: "k/photo.jpg" } as any);
+    vi.mocked(getR2ObjectBuffer).mockRejectedValueOnce(new Error("NoSuchKey"));
+    expect((await get("listing")).status).toBe(404);
+  });
 });

@@ -468,4 +468,14 @@ describe("POST /api/transactions — propertyCategory checklist matching", () =>
     expect(res.status).toBe(201);
     expect((await res.json()).transaction.photoKey).toBe("wizard-photos/u1/abc/photo.jpg");
   });
+
+  it("never saves a photo on a referral", async () => {
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u1", agentId: "a1" } } as any);
+    vi.mocked(prisma.transactionFile.create).mockImplementation((async (args: any) => ({ id: "t1", ...args.data })) as any);
+    await POST(makeRequest({
+      transactionSide: "REFERRAL", referredToAgentName: "Pat Lee",
+      photoKey: "wizard-photos/u1/abc/photo.jpg",
+    }));
+    expect(vi.mocked(prisma.transactionFile.create).mock.calls[0][0].data.photoKey).toBeNull();
+  });
 });

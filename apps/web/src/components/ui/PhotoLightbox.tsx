@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -19,11 +19,15 @@ interface Props {
 // arrows only appear with more than one photo. Rendered via portal so
 // position:fixed escapes any transformed ancestor (drawer).
 export function PhotoLightbox({ photos, index, alt, onIndexChange, onClose }: Props) {
+  // One Escape listener while open; the ref keeps it calling the latest onClose
+  // without re-subscribing on every render.
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") closeRef.current(); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, []);
 
   const several = photos.length > 1;
 

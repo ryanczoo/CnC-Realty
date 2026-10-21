@@ -15,7 +15,7 @@ export function PhotoUploadField({ photoKey, onChange }: { photoKey: string; onC
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
-    const res = await uploadWizardPhoto(file);
+    const res = await uploadWizardPhoto(file, photoKey || undefined);
     if (res.ok) {
       onChange(res.photoKey);
       setResult({ name: file.name, ok: true });

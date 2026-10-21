@@ -1,5 +1,6 @@
 // Browser side of a wizard photo upload: ask for an upload URL, PUT the raw
-// photo straight to R2, then have the server shrink it. Never throws.
+// photo straight to R2, then have the server shrink it. replaces = the photo
+// already chosen ("Replace Photo"), which the server then deletes. Never throws.
 async function reasonFrom(res: Response): Promise<string> {
   const body = await res.json().catch(() => null);
   return typeof body?.error === "string" ? body.error : "Upload failed";
@@ -7,6 +8,7 @@ async function reasonFrom(res: Response): Promise<string> {
 
 export async function uploadWizardPhoto(
   file: File,
+  replaces?: string,
 ): Promise<{ ok: true; photoKey: string } | { ok: false; error: string }> {
   try {
     const params = new URLSearchParams({ filename: file.name, contentType: file.type, size: String(file.size) });
@@ -20,7 +22,7 @@ export async function uploadWizardPhoto(
     const res = await fetch("/api/wizard-photo", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key }),
+      body: JSON.stringify({ key, ...(replaces && { replaces }) }),
     });
     if (!res.ok) return { ok: false, error: await reasonFrom(res) };
     const { photoKey } = await res.json();

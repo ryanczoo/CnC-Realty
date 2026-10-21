@@ -28,4 +28,16 @@ describe("uploadWizardPhoto", () => {
     expect(f.mock.calls[2][0]).toBe("/api/wizard-photo");
     expect(JSON.parse(f.mock.calls[2][1]!.body as string)).toEqual({ key: "wizard-photos/u1/a/original" });
   });
+
+  it("tells the server which photo it replaces", async () => {
+    const f = vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(json({ uploadUrl: "https://r2/put", key: "wizard-photos/u1/b/original" }))
+      .mockResolvedValueOnce({ ok: true } as Response)
+      .mockResolvedValueOnce(json({ photoKey: "wizard-photos/u1/b/photo.jpg" }));
+    await uploadWizardPhoto(photo, "wizard-photos/u1/a/photo.jpg");
+    expect(JSON.parse(f.mock.calls[2][1]!.body as string)).toEqual({
+      key: "wizard-photos/u1/b/original",
+      replaces: "wizard-photos/u1/a/photo.jpg",
+    });
+  });
 });

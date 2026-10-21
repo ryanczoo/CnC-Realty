@@ -24,7 +24,13 @@ export async function GET(_req: Request, { params }: { params: { fileType: strin
   const { exists, forbidden } = checkOwnership(file, session.user.agentId, session.user.role);
   if (!exists || forbidden || !file?.photoKey) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const body = await getR2ObjectBuffer(file.photoKey);
+  let body: Buffer;
+  try {
+    body = await getR2ObjectBuffer(file.photoKey);
+  } catch {
+    // Missing from storage: the header photo hides itself on a failed load.
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
   return new Response(new Uint8Array(body), {
     headers: { "Content-Type": "image/jpeg", "Cache-Control": "private, max-age=3600" },
   });

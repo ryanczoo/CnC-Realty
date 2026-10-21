@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, HeadObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const r2 = new S3Client({
@@ -12,10 +12,11 @@ const r2 = new S3Client({
 
 export const R2_BUCKET = process.env.R2_BUCKET ?? "cnc-realty-documents";
 
-export async function getPresignedPutUrl(key: string, contentType: string): Promise<string> {
+// contentLength, when given, is signed into the URL: storage refuses a body of any other size.
+export async function getPresignedPutUrl(key: string, contentType: string, contentLength?: number): Promise<string> {
   return getSignedUrl(
     r2,
-    new PutObjectCommand({ Bucket: R2_BUCKET, Key: key, ContentType: contentType }),
+    new PutObjectCommand({ Bucket: R2_BUCKET, Key: key, ContentType: contentType, ...(contentLength && { ContentLength: contentLength }) }),
     { expiresIn: 300 }
   );
 }
@@ -48,4 +49,21 @@ export function buildR2Key(
 export async function getR2ObjectBuffer(key: string): Promise<Buffer> {
   const res = await r2.send(new GetObjectCommand({ Bucket: R2_BUCKET, Key: key }));
   return Buffer.from(await res.Body!.transformToByteArray());
+}
+
+export async function getR2ObjectSize(key: string): Promise<number> {
+  const res = await r2.send(new HeadObjectCommand({ Bucket: R2_BUCKET, Key: key }));
+  return res.ContentLength ?? 0;
+}
+
+// Every object under prefix, with when it was last written (paged through).
+export async function listR2Objects(prefix: string): Promise<{ key: string; lastModified: Date }[]> {
+  const out: { key: string; lastModified: Date }[] = [];
+  let token: string | undefined;
+  do {
+    const res = await r2.send(new ListObjectsV2Command({ Bucket: R2_BUCKET, Prefix: prefix, ContinuationToken: token }));
+    for (const o of res.Contents ?? []) if (o.Key && o.LastModified) out.push({ key: o.Key, lastModified: o.LastModified });
+    token = res.IsTruncated ? res.NextContinuationToken : undefined;
+  } while (token);
+  return out;
 }

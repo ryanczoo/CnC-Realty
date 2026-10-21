@@ -18,11 +18,15 @@ export async function GET(req: Request) {
   if (!PHOTO_TYPES.includes(contentType)) {
     return NextResponse.json({ error: "Photo must be a JPG or PNG" }, { status: 400 });
   }
+  if (!(size > 0)) {
+    return NextResponse.json({ error: "Photo size is required" }, { status: 400 });
+  }
   if (size > PHOTO_MAX_BYTES) {
     return NextResponse.json({ error: "Photo exceeds 20MB limit" }, { status: 400 });
   }
 
   const key = `${wizardPhotoPrefix(session.user.id)}${createId()}/original`;
-  const uploadUrl = await getPresignedPutUrl(key, contentType);
+  // The stated size is signed in, so storage refuses a bigger body than claimed.
+  const uploadUrl = await getPresignedPutUrl(key, contentType, size);
   return NextResponse.json({ uploadUrl, key });
 }

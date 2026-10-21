@@ -123,7 +123,8 @@ export async function POST(req: Request) {
         numberOfParcels: numberOfParcels ? parseInt(numberOfParcels, 10) : null,
         schoolDistrict: schoolDistrict || null,
         zoningClass: zoningClass || null,
-        photoKey: photoKey || null,
+        // Referrals never carry a property photo.
+        photoKey: transactionSide === "REFERRAL" ? null : photoKey || null,
         transactionSide,
         propertyCategory: category,
         status: initialStatus,

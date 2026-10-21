@@ -18,6 +18,14 @@ const TYPE_LABELS: Record<FileActivityType, string> = {
   DOCUMENT_DELETED:         "Document permanently deleted",
 };
 
+// A removal logged with no checklist item name was an Additional Documents one.
+export function activityLabel(a: Pick<FileActivityRecord, "type" | "payload">): string {
+  if (a.type === "DOCUMENT_REMOVED" && a.payload && a.payload.checklistItemName == null) {
+    return "Document removed from Additional Documents";
+  }
+  return TYPE_LABELS[a.type];
+}
+
 interface Props extends FileContextProps {
   activities: FileActivityRecord[];
   onNoteAdded: () => void;
@@ -53,7 +61,7 @@ export function ActivityFeed({ fileType, fileId, activities, onNoteAdded, readOn
                 <p className="text-sm text-[#1B1B1B]">
                   <span className="font-medium">{a.actor.name ?? a.actor.email}</span>
                   {" "}
-                  {TYPE_LABELS[a.type]}
+                  {activityLabel(a)}
                   {detail && <span className="text-[#1B1B1B]/50"> · {detail}</span>}
                 </p>
                 {reason && <p className="mt-0.5 text-sm text-red-500">Reason: {reason}</p>}
