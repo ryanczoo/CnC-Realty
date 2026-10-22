@@ -6,7 +6,7 @@ const DELETE_VALUE = "__delete__";
 
 // The one status dropdown for file pages — the admin page (every file) and the
 // agent's listing page. Picking a status applies it immediately via onChange.
-// deleteAction (admin only) adds a separated "Delete …" entry that runs its own
+// deleteAction (admin only) adds a separated "Delete" entry that runs its own
 // confirm flow and never changes the status.
 export function FileStatusSelect({
   current,

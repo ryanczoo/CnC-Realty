@@ -196,7 +196,7 @@ export default function AdminFileDetailPage() {
                 </span>
                 {listingDeletable && (
                   <button onClick={deleteListing} className="text-xs text-red-500 hover:text-red-600">
-                    Delete listing…
+                    Delete listing
                   </button>
                 )}
               </>
@@ -206,7 +206,7 @@ export default function AdminFileDetailPage() {
                 statuses={statuses}
                 disabled={statusLoading}
                 onChange={changeStatus}
-                deleteAction={listingDeletable ? { label: "Delete listing…", onSelect: deleteListing } : undefined}
+                deleteAction={listingDeletable ? { label: "Delete listing", onSelect: deleteListing } : undefined}
               />
             )}
           </div>
