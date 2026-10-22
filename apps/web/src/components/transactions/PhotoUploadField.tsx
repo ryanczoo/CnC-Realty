@@ -46,7 +46,8 @@ export function PhotoUploadField({ photoKey, onChange }: { photoKey: string; onC
           onChange={handleChange}
         />
       </label>
-      {!uploading && <UploadResultLine label="Photo uploaded" result={shown} />}
+      {/* align="center" wraps it in its own block, so it sits under the button, not beside it. */}
+      {!uploading && <UploadResultLine label="Photo uploaded" result={shown} align="center" />}
     </div>
   );
 }

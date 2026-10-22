@@ -28,4 +28,9 @@ describe("PhotoUploadField", () => {
   it("never pulses", () => {
     expect(render("")).not.toContain("transform");
   });
+
+  it("puts Photo uploaded on its own line under the button, not beside it", () => {
+    // A block wrapper after the button's </label> breaks the line (both are inline-flex otherwise).
+    expect(render("wizard-photos/u1/a/photo.jpg")).toContain('</label><div class="text-center"><p class="mt-1.5 inline-flex');
+  });
 });
