@@ -4,7 +4,7 @@ import * as T from "../../../../../packages/database/prisma/checklist-templates"
 // Civil Code §2079.10a puts the Megan's Law notice in the sale contract itself, and C.A.R.
 // pre-prints it (RPA ¶10(D), RIPA ¶11(C)): "A separate form DBD is typically not required."
 const DBD_OPTIONAL = "DBD — Megan's Law Database Disclosure (Required if not using C.A.R. RPA/RIPA)";
-const dbd = (items: { name: string }[]) => items.filter((i) => i.name.startsWith("DBD"));
+const dbd = <I extends { name: string }>(items: I[]) => items.filter((i) => i.name.startsWith("DBD"));
 const orders = (items: { order: number }[]) => items.map((i) => i.order);
 
 describe("checklist templates — Megan's Law (DBD)", () => {
