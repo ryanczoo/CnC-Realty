@@ -37,6 +37,15 @@ Ryan found on the way (white text in the admin Checklists form, a bigger propert
    side cards already exists). On the Property step, **Year Built and MLS Number switch places** — Year Built
    (required) on the left, MLS Number (still optional, grey "Optional" placeholder) on the right. MLS Number is not
    moved to Optional Info. The pair stays side by side on phones as today. Nothing else on the step changes.
+1f. **A missing year or property type blocks progress** (files made from a Deal or a transfer, or older files):
+   - A transaction can't become **Pending** (automatic or by the agent) until it has a Property Type and, unless the
+     type is "Land", a Year Built. Closing already requires Pending, so such a file can't close either. This is added
+     to the existing Pending check (`isReadyForPending`); the existing admin override for Pending stays as it is today.
+   - A listing can't be **converted** until it has a Property Type and (unless "Land") a Year Built. The Convert button's
+     existing "why not yet" message names what's missing, like it does for documents (`convertBlockedReason`).
+   - Referral files are never blocked. Agents fill the missing fields in on the file's Overview; saving them runs the
+     checklist re-check (goal 4).
+   - These checks read fields already loaded with the file — no new database query, no slower pages.
 1e. **Shared components:** the card (`OptionCard`) and small heading (`SectionLabel`) now live only inside the
    Transaction wizard page; they move to shared components used by both wizards. The Property Type dropdown is
    extracted the same way. Everything else (`FormField`, `DateField`, `WizardStepBar`, `PhotoUploadField`,
