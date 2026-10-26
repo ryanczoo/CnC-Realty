@@ -149,16 +149,17 @@ export default function AdminFileDetailPage() {
         </Link>
         <div className={`flex items-start justify-between gap-4 ${PHONE_HEADER_STACK}`}>
           <div>
-            {file.status !== "PENDING_TRANSFER" && file.propertyAddress ? (
-              <WithHeaderPhoto
+            <WithHeaderPhoto
                 fileType={fileType as "listing" | "transaction"}
                 fileId={id}
-                photoKey={file.photoKey ?? null}
+                photoKey={file.status !== "PENDING_TRANSFER" && file.propertyAddress ? file.photoKey ?? null : null}
                 address={`${file.propertyAddress}, ${file.city ?? ""}, ${file.state} ${file.zip ?? ""}`}
               >
+            {file.status !== "PENDING_TRANSFER" && file.propertyAddress ? (
+              <>
                 <h1 className="text-xl font-bold text-[#1B1B1B]">{file.propertyAddress}</h1>
                 <p className="text-xl font-bold text-[#1B1B1B]">{file.city ?? ""}, {file.state} {file.zip ?? ""}</p>
-              </WithHeaderPhoto>
+              </>
             ) : (
               <h1 className="text-xl font-bold text-[#1B1B1B]">
                 {file.status === "PENDING_TRANSFER" ? "Locked — Pending Transfer" : `${file.city ?? ""} ${file.state} ${file.zip ?? ""}`.trim()}
@@ -173,6 +174,7 @@ export default function AdminFileDetailPage() {
                 <span className="rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-medium text-orange-700">{pendingCount} pending</span>
               )}
             </div>
+            </WithHeaderPhoto>
           </div>
 
           <div className={`flex items-center gap-2 ${PHONE_HEADER_ACTIONS}`}>

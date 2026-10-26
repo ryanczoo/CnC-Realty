@@ -225,16 +225,17 @@ export default function FileDetailPage() {
       <div className="mb-6">
         <div className={`flex items-start justify-between gap-4 ${PHONE_HEADER_STACK}`}>
           <div>
-            {!isLocked && file.propertyAddress ? (
-              <WithHeaderPhoto
+            <WithHeaderPhoto
                 fileType={fileType as "listing" | "transaction"}
                 fileId={id}
-                photoKey={file.photoKey ?? null}
+                photoKey={!isLocked && file.propertyAddress ? file.photoKey ?? null : null}
                 address={`${file.propertyAddress}, ${file.city ?? ""}, ${file.state} ${file.zip ?? ""}`}
               >
+            {!isLocked && file.propertyAddress ? (
+              <>
                 <h1 className="text-xl font-bold text-[#1B1B1B]">{file.propertyAddress}</h1>
                 <p className="text-xl font-bold text-[#1B1B1B]">{file.city ?? ""}, {file.state} {file.zip ?? ""}</p>
-              </WithHeaderPhoto>
+              </>
             ) : (
               <h1 className="text-xl font-bold text-[#1B1B1B]">{title}</h1>
             )}
@@ -244,6 +245,7 @@ export default function FileDetailPage() {
                 <span className="rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-700">Awaiting Review</span>
               )}
             </div>
+            </WithHeaderPhoto>
           </div>
 
           <div className={`flex shrink-0 gap-2 ${PHONE_HEADER_ACTIONS}`}>

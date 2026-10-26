@@ -10,7 +10,7 @@ interface Props {
 }
 
 // The property photo beside the address in a file page's header (agent and
-// admin). As tall as the two address lines; clicking opens the full-size view
+// admin). As tall as the two address lines plus the status row; clicking opens the full-size view
 // on the same page. Nothing at all when the file has no photo, or when the
 // photo fails to load (no broken-image icon).
 export function FileHeaderPhoto({ fileType, fileId, photoKey, address }: Props) {
@@ -23,7 +23,7 @@ export function FileHeaderPhoto({ fileType, fileId, photoKey, address }: Props) 
     <>
       <button type="button" onClick={() => setOpen(true)} aria-label="View full-size photo" className="shrink-0">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={src} alt={address} onError={() => setBroken(true)} className="h-14 w-[84px] rounded-lg object-cover" />
+        <img src={src} alt={address} onError={() => setBroken(true)} className="h-24 w-36 rounded-lg object-cover" />
       </button>
       {open && (
         <PhotoLightbox photos={[src]} index={0} alt={() => address} onIndexChange={() => {}} onClose={() => setOpen(false)} />
@@ -32,7 +32,7 @@ export function FileHeaderPhoto({ fileType, fileId, photoKey, address }: Props) 
   );
 }
 
-// Puts the header photo to the right of the address lines (children). With no
+// Puts the header photo to the right of the address lines and status row (children). With no
 // photo it renders the children alone, so headers without one are unchanged.
 export function WithHeaderPhoto({ children, ...photo }: Props & { children: React.ReactNode }) {
   if (!photo.photoKey) return <>{children}</>;
