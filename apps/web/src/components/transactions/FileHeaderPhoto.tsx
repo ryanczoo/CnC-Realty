@@ -21,9 +21,12 @@ export function FileHeaderPhoto({ fileType, fileId, photoKey, address }: Props) 
 
   return (
     <>
+      {/* 80px = the two address lines plus the status row beside it (same 3:2
+          shape as before). Phones keep the small size so the address doesn't wrap
+          onto extra lines. */}
       <button type="button" onClick={() => setOpen(true)} aria-label="View full-size photo" className="shrink-0">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={src} alt={address} onError={() => setBroken(true)} className="h-24 w-36 rounded-lg object-cover" />
+        <img src={src} alt={address} onError={() => setBroken(true)} className="h-20 w-[120px] rounded-lg object-cover max-sm:h-14 max-sm:w-[84px]" />
       </button>
       {open && (
         <PhotoLightbox photos={[src]} index={0} alt={() => address} onIndexChange={() => {}} onClose={() => setOpen(false)} />
