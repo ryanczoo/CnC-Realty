@@ -98,3 +98,14 @@ describe("describeActivity: commission changes", () => {
     expect(describeActivity({ type: "COMMISSION_CHANGED", payload: {} })).toEqual({ detail: null, reason: null });
   });
 });
+
+describe("describeActivity — CHECKLIST_UPDATED", () => {
+  it("says what changed and why", () => {
+    expect(describeActivity({ type: "CHECKLIST_UPDATED", payload: { reason: "Year Built set to 1952", added: ["LPD", "Residential Earthquake Hazards Report"], removed: [] } }))
+      .toEqual({ detail: "Year Built set to 1952 — checklist added: LPD, Residential Earthquake Hazards Report", reason: null });
+    expect(describeActivity({ type: "CHECKLIST_UPDATED", payload: { reason: "Year Built set to 2005", added: [], removed: ["LPD"] } }))
+      .toEqual({ detail: "Year Built set to 2005 — checklist removed: LPD", reason: null });
+    expect(describeActivity({ type: "CHECKLIST_UPDATED", payload: { reason: "Year Built set to 1950", added: ["LPD"], removed: ["X"] } }).detail)
+      .toBe("Year Built set to 1950 — checklist added: LPD; removed: X");
+  });
+});

@@ -5,7 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { checkOwnership, assertFileEditable } from "@/lib/api-auth";
 import { changeFileStatus, maybeAutoPending } from "@/lib/file-status";
 import { followDates } from "@/lib/auto-status";
-import { transactionEditData, requiredFieldError, commissionPercentError, transactionCommissionEdit, commissionLockedError } from "@/lib/file-edit";
+import { transactionEditData, requiredFieldError, commissionPercentError, transactionCommissionEdit, commissionLockedError, propertyFactsChange } from "@/lib/file-edit";
+import { applyPropertyFacts } from "@/lib/year-checklist-db";
 import { logCommissionChanges } from "@/lib/commission-log";
 import { transactionDatesError } from "@/lib/transaction-dates";
 import { sendCancellationRequested } from "@/lib/email/transaction-emails";
@@ -72,6 +73,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     ...(referralFeeUpdate && { referralCncFee: referralFeeUpdate.cncFee }),
   };
 
+  const facts = propertyFactsChange(body, tx);
+
   if (body.status && body.status !== tx.status) {
     // An agent's cancellation request must say why; the reason is logged with the
     // status change and emailed to the broker, who approves or declines it.
@@ -90,6 +93,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     });
     if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
     await logCommissionChanges("transaction", params.id, tx, result.file, { userId: session.user.id, role });
+    if (facts) await applyPropertyFacts("transaction", params.id, facts, { userId: session.user.id, role });
     if (isCancellationRequest) {
       await sendSafely(() => sendCancellationRequested({
         address: tx.propertyAddress,
@@ -106,6 +110,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   // A saved date can move the status (Expired -> Pending), and saved details can
   // complete the file (-> Pending).
   const actor = { userId: session.user.id, role } as const;
+  if (facts) await applyPropertyFacts("transaction", params.id, facts, actor);
   await followDates("transaction", params.id, actor);
   await maybeAutoPending(params.id, actor);
   return NextResponse.json({ transaction: updated });

@@ -2,6 +2,7 @@ import { isLeaseSide, listingPriceLabel, commissionDisplay } from "@/types/trans
 import { isCommissionLockedFor } from "@/lib/file-lock";
 import { commissionReady } from "@/lib/transaction-helpers";
 import { resolveCommission, type CommissionInputs } from "@/lib/commission";
+import { yearBuiltError } from "@/lib/year-built";
 
 // Detail edits (the Overview pencils) — which fields each file type accepts, how
 // each is parsed, and which can never be cleared. Shared by the listing and
@@ -127,11 +128,11 @@ export function transactionCommissionEdit(
 export function requiredFieldError(
   kind: "listing" | "transaction",
   body: Record<string, unknown>,
-  file: { transactionSide?: string | null; listingType?: string | null; status?: string | null } & CommissionFile = {},
+  file: { transactionSide?: string | null; listingType?: string | null; status?: string | null; propertyType?: string | null } & CommissionFile = {},
 ): string | null {
   let required: string[];
   if (kind === "listing") {
-    required = ["propertyAddress", "city", "zip", "listPrice"];
+    required = ["propertyAddress", "city", "zip", "listPrice", "propertyType"];
   } else {
     if (file.transactionSide === "REFERRAL") return null;
     const lease = isLeaseSide(file.transactionSide);
@@ -145,6 +146,12 @@ export function requiredFieldError(
   const cleared = required.find((f) => f in body && blank(body[f]));
   const label = cleared === "listPrice" && kind === "listing" ? listingPriceLabel(file.listingType) : LABELS[cleared ?? ""];
   if (cleared) return `${label} can't be blank`;
+  // Year Built: required unless Land (the type sent in this same edit wins).
+  if ("yearBuilt" in body) {
+    const type = "propertyType" in body ? String(body.propertyType ?? "") : file.propertyType;
+    const yearError = yearBuiltError(body.yearBuilt, type);
+    if (yearError) return yearError;
+  }
   if (kind === "transaction" && file.status && file.status !== "PRE_CONTRACT" && TX_COMMISSION.some((f) => f in body)) {
     const side = file.transactionSide ?? "";
     const c = commissionAfterEdit(body, file);
@@ -156,4 +163,23 @@ export function requiredFieldError(
     }
   }
   return null;
+}
+
+// The Year Built / Property Type values this edit actually changes (parsed), or
+// null when it changes neither — saving them re-checks the checklist and keeps a
+// converted listing and its transaction in step (lib/year-checklist-db).
+export function propertyFactsChange(
+  body: Record<string, unknown>,
+  file: { yearBuilt?: number | null; propertyType?: string | null },
+): { yearBuilt?: number | null; propertyType?: string | null } | null {
+  const facts: { yearBuilt?: number | null; propertyType?: string | null } = {};
+  if ("yearBuilt" in body) {
+    const year = blank(body.yearBuilt) ? null : parseInt(String(body.yearBuilt), 10);
+    if (year !== (file.yearBuilt ?? null)) facts.yearBuilt = year;
+  }
+  if ("propertyType" in body) {
+    const type = blank(body.propertyType) ? null : String(body.propertyType).trim();
+    if (type !== (file.propertyType ?? null)) facts.propertyType = type;
+  }
+  return Object.keys(facts).length ? facts : null;
 }

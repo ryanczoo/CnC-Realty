@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("next-auth", () => ({ getServerSession: vi.fn() }));
+vi.mock("@/lib/year-checklist-db", () => ({ applyPropertyFacts: vi.fn() }));
 vi.mock("@/lib/auth", () => ({ authOptions: {} }));
 vi.mock("@/lib/prisma", () => ({
   prisma: {
@@ -525,5 +526,28 @@ describe("PATCH /api/transactions/[id] — Pending dates and date order", () => 
 
   it("allows moving the date to a valid one", async () => {
     expect((await patch({ closeOfEscrow: "2026-11-15" })).status).toBe(200);
+  });
+});
+
+describe("PATCH /api/transactions/[id] — Year Built", () => {
+  const AGENT = { user: { id: "u1", role: "AGENT", agentId: "a1" } };
+  const patch = (body: unknown) => PATCH(new Request("http://localhost", { method: "PATCH", body: JSON.stringify(body) }), { params: { id: "tf1" } });
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getServerSession).mockResolvedValue(AGENT as any);
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({ id: "tf1", agentId: "a1", status: "INCOMPLETE", transactionSide: "LISTING", propertyType: "Condo", yearBuilt: null } as any);
+    vi.mocked(prisma.transactionFile.update).mockResolvedValue({ id: "tf1" } as any);
+  });
+  it("saves the year, keeps the linked listing in step, then checks Pending", async () => {
+    const { applyPropertyFacts } = await import("@/lib/year-checklist-db");
+    const { maybeAutoPending } = await import("@/lib/file-status");
+    expect((await patch({ yearBuilt: "1952" })).status).toBe(200);
+    expect(applyPropertyFacts).toHaveBeenCalledWith("transaction", "tf1", { yearBuilt: 1952 }, { userId: "u1", role: "AGENT" });
+    expect(vi.mocked(applyPropertyFacts).mock.invocationCallOrder[0]).toBeLessThan(vi.mocked(maybeAutoPending).mock.invocationCallOrder[0]);
+  });
+  it("refuses a year out of range or cleared on a non-Land property", async () => {
+    expect((await patch({ yearBuilt: "1400" })).status).toBe(400);
+    expect((await patch({ yearBuilt: "" })).status).toBe(400);
+    expect(prisma.transactionFile.update).not.toHaveBeenCalled();
   });
 });

@@ -1,6 +1,6 @@
 import { statusLabel } from "@/components/transactions/StatusBadge";
 
-type Payload = { name?: unknown; note?: unknown; from?: unknown; to?: unknown; automatic?: unknown; viaTransactionId?: unknown; reason?: unknown; checklistItemName?: unknown; changes?: unknown };
+type Payload = { name?: unknown; note?: unknown; from?: unknown; to?: unknown; automatic?: unknown; viaTransactionId?: unknown; reason?: unknown; checklistItemName?: unknown; changes?: unknown; added?: unknown; removed?: unknown };
 
 const asText = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
 
@@ -29,6 +29,17 @@ export function describeActivity(a: { type: string; payload: unknown }): { detai
       .filter((c) => asText(c.label) && asText(c.from) && asText(c.to))
       .map((c) => `${asText(c.label)}: ${asText(c.from)} → ${asText(c.to)}`);
     return { detail: lines.length ? lines.join("; ") : null, reason: null };
+  }
+  if (a.type === "CHECKLIST_UPDATED") {
+    // "Year Built set to 1952 — checklist added: LPD, …; removed: …"
+    const list = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []);
+    const parts = [
+      list(p.added).length ? `added: ${list(p.added).join(", ")}` : null,
+      list(p.removed).length ? `removed: ${list(p.removed).join(", ")}` : null,
+    ].filter(Boolean);
+    const why = asText(p.reason);
+    const changes = parts.length ? `checklist ${parts.join("; ")}` : null;
+    return { detail: why && changes ? `${why} — ${changes}` : why ?? changes, reason: null };
   }
   if (a.type === "STATUS_CHANGED") {
     // Same readable names as the status badges and dropdown ("Incomplete", "Canceled").

@@ -1,3 +1,4 @@
+import { applyPropertyFacts } from "@/lib/year-checklist-db";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -7,7 +8,7 @@ import { changeFileStatus } from "@/lib/file-status";
 import { FILE_DETAIL_INCLUDE } from "@/lib/transaction-helpers";
 import { trimStrings } from "@/lib/form-validation";
 import { listingDatesError } from "@/lib/listing-dates";
-import { requiredFieldError, commissionPercentError, commissionLockedError } from "@/lib/file-edit";
+import { requiredFieldError, commissionPercentError, commissionLockedError, propertyFactsChange } from "@/lib/file-edit";
 import { logCommissionChanges } from "@/lib/commission-log";
 import { followDates } from "@/lib/auto-status";
 
@@ -70,12 +71,16 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     ...(body.zip !== undefined && { zip: body.zip }),
     ...(body.listPrice !== undefined && { listPrice: parseFloat(body.listPrice) }),
     ...(body.mlsNumber !== undefined && { mlsNumber: body.mlsNumber || null }),
+    ...(body.propertyType !== undefined && { propertyType: body.propertyType || null }),
+    ...(body.yearBuilt !== undefined && { yearBuilt: body.yearBuilt ? parseInt(body.yearBuilt, 10) : null }),
     ...(body.expirationDate !== undefined && { expirationDate: body.expirationDate ? new Date(body.expirationDate) : null }),
     ...(body.listDate !== undefined && { listDate: body.listDate ? new Date(body.listDate) : null }),
     ...(body.commissionPercent !== undefined && { commissionPercent: body.commissionPercent ? parseFloat(body.commissionPercent) : null }),
     ...(body.commissionAmount !== undefined && { commissionAmount: body.commissionAmount ? parseFloat(body.commissionAmount) : null }),
     ...(body.commissionNotes !== undefined && { commissionNotes: body.commissionNotes || null }),
   };
+
+  const facts = propertyFactsChange(body, listing);
 
   if (body.status && body.status !== listing.status) {
     const result = await changeFileStatus({
@@ -87,11 +92,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     });
     if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
     await logCommissionChanges("listing", params.id, listing, result.file, { userId: session.user.id, role });
+    if (facts) await applyPropertyFacts("listing", params.id, facts, { userId: session.user.id, role });
     return NextResponse.json({ listing: result.file, ...(result.emailWarning && { emailWarning: true }) });
   }
 
   const updated = await prisma.listingFile.update({ where: { id: params.id }, data: fieldData });
   await logCommissionChanges("listing", params.id, listing, updated, { userId: session.user.id, role });
+  if (facts) await applyPropertyFacts("listing", params.id, facts, { userId: session.user.id, role });
   // A saved date can move the status (e.g. an extended Expired listing -> Active).
   await followDates("listing", params.id, { userId: session.user.id, role });
   return NextResponse.json({ listing: updated });

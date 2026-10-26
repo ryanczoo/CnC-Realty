@@ -209,3 +209,23 @@ describe("commissionInputError (what a commission box shows while typing)", () =
     expect(commissionInputError("333000", "flat")).toBeNull();
   });
 });
+
+describe("requiredFieldError — Year Built and Property Type", () => {
+  it("a year can't be cleared unless the property is Land", () => {
+    expect(requiredFieldError("transaction", { yearBuilt: "" }, { transactionSide: "PURCHASE", propertyType: "Condo" })).toBe("Year Built is required");
+    expect(requiredFieldError("transaction", { yearBuilt: "" }, { transactionSide: "PURCHASE", propertyType: "Land" })).toBeNull();
+    expect(requiredFieldError("listing", { yearBuilt: "" }, { propertyType: "Condo" })).toBe("Year Built is required");
+  });
+  it("uses the property type sent in the same edit", () => {
+    expect(requiredFieldError("listing", { yearBuilt: "", propertyType: "Land" }, { propertyType: "Condo" })).toBeNull();
+  });
+  it("refuses a year out of range", () => {
+    expect(requiredFieldError("listing", { yearBuilt: "3000" }, { propertyType: "Condo" })).toMatch(/^Year Built must be between 1500 and \d{4}$/);
+  });
+  it("a listing's property type can't be cleared", () => {
+    expect(requiredFieldError("listing", { propertyType: "" }, {})).toBe("Property Type can't be blank");
+  });
+  it("referrals are never checked", () => {
+    expect(requiredFieldError("transaction", { yearBuilt: "" }, { transactionSide: "REFERRAL" })).toBeNull();
+  });
+});

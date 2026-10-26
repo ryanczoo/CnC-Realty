@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("next-auth", () => ({ getServerSession: vi.fn() }));
+vi.mock("@/lib/year-checklist-db", () => ({ applyPropertyFacts: vi.fn() }));
 vi.mock("@/lib/auth", () => ({ authOptions: {} }));
 vi.mock("@sentry/nextjs", () => ({ captureException: vi.fn() }));
 vi.mock("@/lib/r2", () => ({ deleteR2Object: vi.fn() }));
@@ -230,5 +231,37 @@ describe("PATCH /api/listings/[id] — commission review lock + change log", () 
     vi.mocked(getServerSession).mockResolvedValue(ADMIN as any);
     vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ ...BEFORE, awaitingReview: true } as any);
     expect((await patch({ commissionAmount: "15000", commissionPercent: "" })).status).toBe(200);
+  });
+});
+
+describe("PATCH /api/listings/[id] — Year Built and Property Type", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getServerSession).mockResolvedValue(AGENT as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "lf1", agentId: "a1", status: "ACTIVE", propertyType: "Condo", yearBuilt: 2005 } as any);
+    vi.mocked(prisma.listingFile.update).mockResolvedValue({ id: "lf1" } as any);
+  });
+  it("saves the year and re-checks the linked files", async () => {
+    const { applyPropertyFacts } = await import("@/lib/year-checklist-db");
+    const res = await patch({ yearBuilt: "1952" });
+    expect(res.status).toBe(200);
+    expect(vi.mocked(prisma.listingFile.update).mock.calls[0][0].data).toMatchObject({ yearBuilt: 1952 });
+    expect(applyPropertyFacts).toHaveBeenCalledWith("listing", "lf1", { yearBuilt: 1952 }, { userId: "u1", role: "AGENT" });
+  });
+  it("saves a property type", async () => {
+    const { applyPropertyFacts } = await import("@/lib/year-checklist-db");
+    await patch({ propertyType: "Land" });
+    expect(vi.mocked(prisma.listingFile.update).mock.calls[0][0].data).toMatchObject({ propertyType: "Land" });
+    expect(applyPropertyFacts).toHaveBeenCalledWith("listing", "lf1", { propertyType: "Land" }, { userId: "u1", role: "AGENT" });
+  });
+  it("does not re-check when the value didn't change", async () => {
+    const { applyPropertyFacts } = await import("@/lib/year-checklist-db");
+    await patch({ yearBuilt: "2005" });
+    expect(applyPropertyFacts).not.toHaveBeenCalled();
+  });
+  it("refuses a blank or out-of-range year", async () => {
+    expect((await patch({ yearBuilt: "" })).status).toBe(400);
+    expect((await patch({ yearBuilt: "3000" })).status).toBe(400);
+    expect(prisma.listingFile.update).not.toHaveBeenCalled();
   });
 });
