@@ -94,6 +94,10 @@ export function OverviewTab({
             <>
               <InfoRow label={listingPriceLabel(listing.listingType)} value={money(listing.listPrice)} edit={moneyEdit("listPrice", listing.listPrice)} />
               <InfoRow label="Type" value={listingTypeLabel(listing.listingType)} pencilSlot={canEdit} />
+              {show(listing.propertyType) && (
+                <InfoRow label="Property Type" value={listing.propertyType || "—"} edit={edit("propertyType", listing.propertyType, { kind: "select", options: FILE_PROPERTY_TYPES })} />
+              )}
+              {show(listing.yearBuilt) && <InfoRow label="Year Built" value={listing.yearBuilt ? String(listing.yearBuilt) : "—"} edit={edit("yearBuilt", listing.yearBuilt, { restrict: (v) => digitsOnly(v, 4) })} />}
               {show(listing.listDate) && <InfoRow label="List Date" value={date(listing.listDate)} edit={dateEdit("listDate", listing.listDate)} />}
               {show(listing.expirationDate) && <InfoRow label="Expiration" value={date(listing.expirationDate)} edit={dateEdit("expirationDate", listing.expirationDate)} />}
               {show(listing.commissionPercent ?? listing.commissionAmount) && (
