@@ -139,7 +139,7 @@ Ryan found on the way (white text in the admin Checklists form, a bigger propert
    placeholders after unlock, any file made before this ships) get none of the year-based items until someone enters
    the year on the Overview; entering it then adds them. Reason: adding a required LPD to every house of unknown age
    would wrongly block brand-new homes.
-2. **Valid years:** 4 digits, from 1800 to next year (new construction can be listed before completion).
+2. **Valid years:** 4 digits, from 1500 to next year (Ryan: some California buildings predate 1800; new construction can be listed before completion).
 3. **Re-evaluating on a year change applies only to open files** (not Closed, Canceled, Archived, Expired, Withdrawn,
    Referral Successful). It uses the file's current matching template, so it also picks up template edits made since
    the file was created — but only for year-based items; other items are never added or removed by this.
