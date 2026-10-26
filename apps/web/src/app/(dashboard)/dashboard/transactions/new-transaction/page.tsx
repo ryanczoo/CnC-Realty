@@ -13,7 +13,7 @@ import { transactionDatesError } from "@/lib/transaction-dates";
 import { DateField } from "@/components/ui/DateField";
 import { FormField as Field } from "@/components/ui/FormField";
 import { stripDigits, digitsOnly, formatPhoneInput, emailError } from "@/lib/form-validation";
-import { SIDES, transactionSideLabel, isLeaseSide, FILE_PROPERTY_TYPES, transactionListPriceLabel, offerDateLabels, type TransactionSide } from "@/types/transaction";
+import { SIDES, transactionSideLabel, isLeaseSide, transactionListPriceLabel, offerDateLabels, type TransactionSide } from "@/types/transaction";
 import { formatDateMDY } from "@/lib/utils";
 import { PartySection, emptyParty, type Party } from "@/components/transactions/PartySection";
 import { CommissionField } from "@/components/transactions/CommissionField";
@@ -21,6 +21,10 @@ import { PhotoUploadField } from "@/components/transactions/PhotoUploadField";
 import { Spinner } from "@/components/ui/Spinner";
 import { RequiredMark } from "@/components/ui/RequiredMark";
 import { WizardStepBar } from "@/components/transactions/WizardStepBar";
+import { OptionCard } from "@/components/ui/OptionCard";
+import { SectionLabel } from "@/components/ui/SectionLabel";
+import { PropertyTypeSelect } from "@/components/transactions/PropertyTypeSelect";
+import { yearBuiltError, needsYearBuilt } from "@/lib/year-built";
 import { PHONE_FIELD_PAIR } from "@/lib/dashboard-phone";
 
 const STAGES = [
@@ -183,7 +187,7 @@ export default function NewTransactionPage() {
 
   const canAdvance = useMemo(() => {
     if (step === 0) return isReferral ? !!form.transactionSide : (!!form.transactionSide && !!form.propertyCategory);
-    if (step === 1) return isReferral ? (!!form.referredToAgentName && !emailError(form.referredToContactEmail)) : (!!form.propertyAddress && !!form.city && !!form.zip && !!form.propertyType);
+    if (step === 1) return isReferral ? (!!form.referredToAgentName && !emailError(form.referredToContactEmail)) : (!!form.propertyAddress && !!form.city && !!form.zip && !!form.propertyType && !yearBuiltError(form.yearBuilt, form.propertyType));
     if (step === 2) return transactionDetailsReady(detailForm, form.stage, isLease);
     if (step === 3) return partiesReady && partyEmailsValid;
     // Commission is required Under Contract (optional Pre-Contract) — the same
@@ -363,22 +367,11 @@ export default function NewTransactionPage() {
               <Field label="State" value={form.state} onChange={(v) => set("state", v)} />
               <Field label="ZIP" required value={form.zip} onChange={(v) => set("zip", v)} restrict={(v) => digitsOnly(v, 5)} />
             </div>
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">Property Type<RequiredMark /></label>
-              <select
-                value={form.propertyType}
-                onChange={(e) => set("propertyType", e.target.value)}
-                className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2.5 text-sm text-[#1B1B1B] focus:outline-none focus:ring-2 focus:ring-[#9E8C61]/30"
-              >
-                <option value="">Select type…</option>
-                {FILE_PROPERTY_TYPES.map((t) => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
-            </div>
+            <PropertyTypeSelect value={form.propertyType} onChange={(v) => set("propertyType", v)} />
             <div className="grid grid-cols-2 gap-4">
+              <Field label="Year Built" required={needsYearBuilt(form.propertyType)} type="number" value={form.yearBuilt} onChange={(v) => set("yearBuilt", v)} placeholder="e.g. 2005" restrict={(v) => digitsOnly(v, 4)}
+                error={form.yearBuilt.length === 4 ? yearBuiltError(form.yearBuilt, form.propertyType) ?? undefined : undefined} />
               <Field label="MLS Number" value={form.mlsNumber} onChange={(v) => set("mlsNumber", v)} placeholder="Optional" restrict={(v) => digitsOnly(v, 10)} />
-              <Field label="Year Built" type="number" value={form.yearBuilt} onChange={(v) => set("yearBuilt", v)} placeholder="e.g. 2005" restrict={(v) => digitsOnly(v, 4)} />
             </div>
             <div className="border-t border-[#1B1B1B]/5 pt-5 space-y-4">
               <SectionLabel className="text-center">Optional Info</SectionLabel>
@@ -828,28 +821,6 @@ function ArrowIcon({ style }: { style?: React.CSSProperties }) {
       <path d="M16 20.488c0-.13.053-.253.146-.344l13-13.002c.42-.44 1.174.24.706.707l-13 13c-.302.31-.853.096-.853-.362z" />
       <path d="M.852 7.142l14 14.002c.447.447-.273 1.16-.707.707l-14-14c-.444-.445.26-1.155.707-.708z" />
     </svg>
-  );
-}
-
-function SectionLabel({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return (
-    <p className={`mb-4 text-xs font-semibold uppercase tracking-widest text-[#1B1B1B]/40 ${className}`}>{children}</p>
-  );
-}
-
-function OptionCard({
-  selected, onClick, label, desc, className = "",
-}: {
-  selected: boolean; onClick: () => void; label: string; desc?: string; className?: string;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`rounded-xl border p-6 text-center transition-colors ${selected ? "border-[#9E8C61] bg-[#9E8C61]/5" : "border-[#1B1B1B]/10 hover:border-[#1B1B1B]/25"} ${className}`}
-    >
-      <p className="font-semibold text-[#1B1B1B]">{label}</p>
-      {desc && <p className="mt-1 text-xs text-[#1B1B1B]/40">{desc}</p>}
-    </button>
   );
 }
 
