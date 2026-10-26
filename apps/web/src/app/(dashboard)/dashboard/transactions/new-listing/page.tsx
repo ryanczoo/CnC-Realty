@@ -17,6 +17,9 @@ import { RequiredMark } from "@/components/ui/RequiredMark";
 import { WizardStepBar } from "@/components/transactions/WizardStepBar";
 import { PHONE_FIELD_PAIR } from "@/lib/dashboard-phone";
 import { PhotoUploadField } from "@/components/transactions/PhotoUploadField";
+import { PropertyTypeSelect } from "@/components/transactions/PropertyTypeSelect";
+import { OptionCard } from "@/components/ui/OptionCard";
+import { yearBuiltError, needsYearBuilt } from "@/lib/year-built";
 
 export default function NewListingPage() {
   const router = useRouter();
@@ -25,7 +28,7 @@ export default function NewListingPage() {
   const [submitError, setSubmitError] = useState("");
   const [form, setForm] = useState({
     propertyAddress: "", city: "", state: "CA", zip: "",
-    mlsNumber: "", listPrice: "", listingType: "RESIDENTIAL_SALE",
+    mlsNumber: "", listPrice: "", listingType: "", propertyType: "", yearBuilt: "",
     expirationDate: "", listDate: "",
     commission: "", commissionNotes: "", photoKey: "",
   });
@@ -36,7 +39,7 @@ export default function NewListingPage() {
   // Lease listings represent the owner as a landlord — same relabel the
   // Transaction wizard applies to its Sellers section on lease sides.
   const isLease = form.listingType.endsWith("_LEASE");
-  const STEPS = ["Property Info", isLease ? "Landlords" : "Sellers", "Commission", "Review"];
+  const STEPS = ["Listing Type", "Listing Info", isLease ? "Landlords" : "Sellers", "Commission", "Review"];
   // Only shown once both dates are picked — a blank date just keeps Next greyed out.
   const dateOrderError = form.listDate && form.expirationDate ? listingDatesError(form.listDate, form.expirationDate) : null;
 
@@ -79,29 +82,31 @@ export default function NewListingPage() {
       {/* Card */}
       <div className="mx-auto max-w-2xl rounded-2xl border border-[#1B1B1B]/8 bg-white p-10 max-lg:p-5">
         {step === 0 && (
+          <div className="grid grid-cols-2 gap-4">
+            {LISTING_TYPES.map((t) => (
+              <OptionCard key={t.value} selected={form.listingType === t.value} onClick={() => set("listingType", t.value)} label={t.label} />
+            ))}
+          </div>
+        )}
+
+        {step === 1 && (
           <div className="space-y-4">
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">Listing Type<RequiredMark /></label>
-              <select
-                value={form.listingType}
-                onChange={(e) => set("listingType", e.target.value)}
-                className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2.5 text-sm text-[#1B1B1B] focus:outline-none focus:ring-2 focus:ring-[#9E8C61]/30"
-              >
-                {LISTING_TYPES.map((t) => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
-                ))}
-              </select>
-            </div>
             <Field label="Property Address" required value={form.propertyAddress} onChange={(v) => set("propertyAddress", v)} placeholder="123 Main St" />
             <div className="grid grid-cols-3 gap-4">
               <Field label="City" required value={form.city} onChange={(v) => set("city", v)} restrict={stripDigits} />
               <Field label="State" value={form.state} onChange={(v) => set("state", v)} />
               <Field label="ZIP" required value={form.zip} onChange={(v) => set("zip", v)} restrict={(v) => digitsOnly(v, 5)} />
             </div>
-            <Field label="MLS Number" value={form.mlsNumber} onChange={(v) => set("mlsNumber", v)} placeholder="Optional" restrict={(v) => digitsOnly(v, 10)} />
-            {/* Label follows the Listing Type live, in any order: a lease listing's price
-                is its asking monthly rent. */}
-            <Field label={listingPriceLabel(form.listingType)} required value={form.listPrice} onChange={(v) => set("listPrice", v)} placeholder="$" formatCommas />
+            <div className={`grid grid-cols-2 gap-4 ${PHONE_FIELD_PAIR}`}>
+              <Field label="Year Built" required={needsYearBuilt(form.propertyType)} type="number" value={form.yearBuilt} onChange={(v) => set("yearBuilt", v)} placeholder="e.g. 2005" restrict={(v) => digitsOnly(v, 4)}
+                error={form.yearBuilt.length === 4 ? yearBuiltError(form.yearBuilt, form.propertyType) ?? undefined : undefined} />
+              <PropertyTypeSelect value={form.propertyType} onChange={(v) => set("propertyType", v)} />
+            </div>
+            <div className={`grid grid-cols-2 gap-4 ${PHONE_FIELD_PAIR}`}>
+              {/* Label follows the Listing Type: a lease listing's price is its asking monthly rent. */}
+              <Field label={listingPriceLabel(form.listingType)} required value={form.listPrice} onChange={(v) => set("listPrice", v)} placeholder="$" formatCommas />
+              <Field label="MLS Number" value={form.mlsNumber} onChange={(v) => set("mlsNumber", v)} placeholder="Optional" restrict={(v) => digitsOnly(v, 10)} />
+            </div>
             <div className={`grid grid-cols-2 gap-4 ${PHONE_FIELD_PAIR}`}>
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-[#1B1B1B]/50">List Date<RequiredMark /></label>
@@ -119,11 +124,11 @@ export default function NewListingPage() {
           </div>
         )}
 
-        {step === 1 && (
+        {step === 2 && (
           <PartySection label={isLease ? "Landlords" : "Sellers"} parties={sellers} onUpdate={setSellers} required />
         )}
 
-        {step === 2 && (
+        {step === 3 && (
           <div className="space-y-4">
             <CommissionField label="Commission" value={form.commission} onChange={(v) => set("commission", v)} mode={commissionMode} onModeChange={setCommissionMode} />
             <div>
@@ -138,11 +143,13 @@ export default function NewListingPage() {
           </div>
         )}
 
-        {step === 3 && (
+        {step === 4 && (
           <div className="space-y-2 rounded-xl border border-[#1B1B1B]/8 p-4 text-sm">
             <ReviewRow label="Address" value={`${form.propertyAddress}, ${form.city}, ${form.state} ${form.zip}`} />
             <ReviewRow label={listingPriceLabel(form.listingType)} value={form.listPrice ? `$${Number(form.listPrice).toLocaleString()}` : "—"} />
             <ReviewRow label="Type" value={listingTypeLabel(form.listingType)} />
+            <ReviewRow label="Property Type" value={form.propertyType || "—"} />
+            <ReviewRow label="Year Built" value={form.yearBuilt || "—"} />
             <ReviewRow label="List Date" value={formatDateMDY(form.listDate)} />
             <ReviewRow label="Expiration" value={formatDateMDY(form.expirationDate)} />
             {sellers.filter((s) => s.name).map((s, i) => (
