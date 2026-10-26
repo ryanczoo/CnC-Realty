@@ -7710,3 +7710,72 @@ spam rule.
    probably be "CnC Realty".
 5. Cleanup when done comparing: `git worktree remove C:\Users\hey_r\Desktop\CnC-old`; delete
    `.superpowers/sdd/2026-10-19-seo-foundation/`.
+
+## Session Notes — 2026-10-21 → 2026-10-26 (file uploads + photos, Year Built checklist, office phone, small fixes)
+
+All pushed to `origin/main` and live (`a987eeb..e6d202d`). Rules that held: superpowers skills always, reuse shared
+components first, every change covers agent + admin, listings + transactions (both wizards), desktop + phone;
+targeted speed checks on touched pages only; ask before every push. Local dev and prod share one Neon DB — scripts
+and migrations are live immediately; never run the full seed. Only Foster Road (`cmvivu9290001n3iejhf2jtap`) exists.
+
+### File uploads + property photos (live 2026-10-21, `19e4c30..7f4470c`)
+
+- Spec `docs/superpowers/specs/2026-10-21-file-uploads-photos-design.md`, plan `docs/superpowers/plans/2026-10-21-file-uploads-photos.md`.
+- Photo upload in both wizards: browser PUTs to R2 under `wizard-photos/<userId>/…`, server shrinks with sharp to
+  1600px JPEG (size signed into presigned URL + HeadObject check). Nightly `/api/cron/wizard-photo-cleanup` (10:30 UTC).
+- `FileHeaderPhoto` beside the file-page address (120×80; phones <640px keep 84×56), shared `PhotoLightbox` (also the
+  public gallery). Per-row ✓/✗ `UploadResultLine`, shared `XIcon`.
+- Shared `AdditionalDocuments`: follows EXACTLY the checklist remove/reject rules (Ryan confirmed — don't change).
+  Downloads via `/api/documents/[id]/download?redirect=1`. Black table header bars (`lib/table-styles.ts`).
+- Migration: `FileDocument.isAdditional`, `ListingFile.photoKey`. Sentry ignores browser-extension errors.
+- DBD only where it applies (gone from listings; optional on residential purchase/listing/dual).
+
+### Year Built checklist (live 2026-10-26, `e1566d5..f7457f1`)
+
+- Spec `docs/superpowers/specs/2026-10-25-year-built-checklist-design.md`, plan `docs/superpowers/plans/2026-10-25-year-built-checklist.md`.
+- Year Built (1500 → next year) + Property Type required in both wizards except Referral; Land needs no year.
+  New Listing wizard steps: **Listing Type** (4 `OptionCard`s) · Listing Info · Sellers/Landlords · Commission · Review.
+  New Transaction: Year Built left of MLS; first step stays "File Type". Shared `components/ui/OptionCard`,
+  `SectionLabel`, `components/transactions/PropertyTypeSelect` (same 11 types).
+- Year-based items (`builtBefore` N applies when `yearBuilt < N`): LPD <1978 (residential sale + lease, required),
+  Residential Earthquake Report <1960 (residential sale, required), Commercial Earthquake Guide <1975 (optional).
+  WHSD renamed "(required if TDS-exempt)" and optional; DBD reworded.
+- Rules: `lib/year-built.ts`, `lib/year-checklist.ts` (pure), `lib/year-checklist-db.ts` (`recheckYearChecklist`,
+  `applyPropertyFacts` — re-check + linked listing↔transaction sync). Never removes a row with a document; skips
+  Closed/Canceled/Archived/Referral-done (Expired/Withdrawn count as open). Logs `CHECKLIST_UPDATED` activity.
+  Template matching shared in `lib/checklist-template-match.ts` (5 apply sites).
+- Pending + Convert gates need property type + year; **admin Pending override kept** (Ryan's call).
+- Admin Checklists editor: "Only if built before" box. Migration `20261026120000_year_built_checklist` applied live;
+  live data update ran (16 template items have `builtBefore`; Foster Road = 1952 Single Family).
+- Ryan declined the 6 deferred minors (short-year message, admin box message, Land→type prompt, linked
+  auto-Pending, partner Activity line, duplicate LPD race) — don't re-raise.
+
+### Other changes (live 2026-10-26)
+
+- **Office phone (714) 784-0369** (replaces (562) 335-1759): website footer under the address (lucide `Phone`,
+  `tel:+17147840369`), email `defaultFooter`, both transfer-authorization PDFs (`lib/email/attachments/`, regenerated
+  from the Word files in Downloads — phone sits in a text box), business JSON-LD `telephone`. Ryan updates Google
+  Business Profile himself.
+- **23 dashboard fields had near-white text** (cause: `<html class="dark">` + preflight `color: inherit`) → per-field
+  `text-[#1B1B1B]` (tags, action plans, lead tasks, relationships, triggers, checklist editor).
+- `819277a` checklists list **required forms first**, optional last (`FILE_DETAIL_INCLUDE` orderBy).
+- `e6d202d` file status dropdown (`FileStatusSelect`) is a black pill with white text; options white/black.
+
+### Gotchas learned
+
+- Next.js route files can't export non-handler names — helpers go in `lib/`.
+- Prisma enum filters can't mix `ListingStatus` and `TransactionFileStatus` values.
+- Emails load images from `NEXTAUTH_URL`: local test sends use localhost, so images don't show in Outlook — not a
+  prod bug (live image URLs return 200). Prod has its own `NEXTAUTH_SECRET`; locally minted JWTs 401 on the live site.
+- Deploy check without `gh`: `https://api.github.com/repos/ryanczoo/CnC-Realty/commits/<sha>/status` → "Deployment
+  has completed". Build IDs / chunk hashes can't detect a deploy.
+- Google Search Console (10-26): 28 indexed, 4 not indexed (2 reasons) — normal; nothing to do.
+
+### Next Session — Start Here
+
+1. Ryan live-tests: Foster Road checklist (LPD + Earthquake Report, required-first order, black status pill), admin
+   Checklists "Only if built before" box, New Listing wizard (Listing Type step), one photo upload, one
+   Documents-tab download; optionally a real prod email (Forgot Password) to confirm images show.
+2. Still pending from 10-20: Join FAQ (7 drafts above, placement unconfirmed), then Step 5 city search pages.
+3. Tooling: `.superpowers/pf-survey/yearPF.cjs`, `filesPF.cjs`. Cleanup when done comparing:
+   `git worktree remove C:\Users\hey_r\Desktop\CnC-old` (at `a304fcd`).
