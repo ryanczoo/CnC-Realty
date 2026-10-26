@@ -93,7 +93,7 @@ export async function POST(req: Request) {
   // An Under Contract file whose deal is already fully described starts Pending
   // (the same isReadyForPending rule later edits use); Pre-Contract stays put.
   const readyForPending = isReadyForPending(
-    { transactionSide, salePrice: salePrice ? parseFloat(salePrice) : null, leasePrice: leasePrice ? parseFloat(leasePrice) : null, acceptanceDate, closeOfEscrow, leaseSignedDate, leaseStartDate, ...commission },
+    { transactionSide, salePrice: salePrice ? parseFloat(salePrice) : null, leasePrice: leasePrice ? parseFloat(leasePrice) : null, acceptanceDate, closeOfEscrow, leaseSignedDate, leaseStartDate, ...commission, propertyType, yearBuilt: yearBuilt ? parseInt(yearBuilt) : null },
     (parties as { role: string; name?: string }[]).map((p) => ({ role: p.role, name: p.name ?? "" })),
   );
   const initialStatus = transactionSide === "REFERRAL"

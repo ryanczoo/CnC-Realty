@@ -1,3 +1,4 @@
+import { missingPropertyFacts } from "@/lib/year-built";
 import type {
   ListingStatus,
   TransactionFileStatus,
@@ -160,8 +161,13 @@ export function transactionStatusOptions(status: string, role: ActorRole): strin
 // SkySlope's Accepted Contract: every required listing document must be uploaded
 // (In Review or Approved) first — the RLA and AVID are never required again on
 // the transaction, so this is their last checkpoint.
-export function convertBlockedReason(listing: { status: string; checklistItems: FileChecklistItemWithDocs[] }): string | null {
+export function convertBlockedReason(listing: {
+  status: string; checklistItems: FileChecklistItemWithDocs[]; propertyType?: string | null; yearBuilt?: number | null;
+}): string | null {
   if (listing.status !== "ACTIVE") return "Only an Active listing can be converted";
+  // The year decides which disclosures the transaction gets, so it comes first.
+  const facts = missingPropertyFacts(listing);
+  if (facts.length > 0) return `Add the ${facts.join(" and ")} on the Overview before converting`;
   const { satisfied, required } = getChecklistProgress(listing.checklistItems);
   const missing = required - satisfied;
   if (missing > 0) {
@@ -248,10 +254,13 @@ export function isReadyForPending(
     saleCommissionAmount?: number | null;
     listingCommissionPct?: number | null;
     listingCommissionAmount?: number | null;
+    propertyType?: string | null;
+    yearBuilt?: number | null;
   },
   parties: { role: string; name: string }[],
 ): boolean {
   if (tx.transactionSide === "REFERRAL") return false;
+  if (missingPropertyFacts(tx).length > 0) return false;
   const named = (role: string) => parties.some((p) => p.role === role && p.name.trim());
   const details = isLeaseSide(tx.transactionSide)
     ? !!tx.leasePrice && !!tx.leaseSignedDate && !!tx.leaseStartDate

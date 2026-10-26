@@ -238,16 +238,16 @@ describe("convertBlockedReason", () => {
   });
 
   it("allows an Active listing whose required items all have an upload (In Review or Approved)", () => {
-    expect(convertBlockedReason({ status: "ACTIVE", checklistItems: [item(true, ["APPROVED"]), item(true, ["PENDING_REVIEW"]), item(false, [])] })).toBeNull();
+    expect(convertBlockedReason({ status: "ACTIVE", propertyType: "Condo", yearBuilt: 1990, checklistItems: [item(true, ["APPROVED"]), item(true, ["PENDING_REVIEW"]), item(false, [])] })).toBeNull();
   });
 
   it("blocks until every required listing document is uploaded (SkySlope's Accepted Contract rule)", () => {
-    expect(convertBlockedReason({ status: "ACTIVE", checklistItems: [item(true, ["APPROVED"]), item(true, []), item(true, ["REJECTED"])] }))
+    expect(convertBlockedReason({ status: "ACTIVE", propertyType: "Condo", yearBuilt: 1990, checklistItems: [item(true, ["APPROVED"]), item(true, []), item(true, ["REJECTED"])] }))
       .toBe("Upload the 2 remaining required listing documents before converting");
   });
 
   it("uses the singular for one missing document", () => {
-    expect(convertBlockedReason({ status: "ACTIVE", checklistItems: [item(true, [])] }))
+    expect(convertBlockedReason({ status: "ACTIVE", propertyType: "Condo", yearBuilt: 1990, checklistItems: [item(true, [])] }))
       .toBe("Upload the 1 remaining required listing document before converting");
   });
 
@@ -284,8 +284,8 @@ describe("commissionReady (each side needs its own commission)", () => {
 describe("isReadyForPending", () => {
   const seller = { role: "SELLER", name: "Sam Seller" };
   const buyer = { role: "BUYER", name: "Bea Buyer" };
-  const sale = { transactionSide: "LISTING", salePrice: 900000, acceptanceDate: "2026-09-20", closeOfEscrow: "2026-10-20", listingCommissionPct: 2.5 };
-  const lease = { transactionSide: "LEASE_TENANT", leasePrice: 36000, leaseSignedDate: "2026-09-20", leaseStartDate: "2026-10-01", saleCommissionAmount: 3000 };
+  const sale = { transactionSide: "LISTING", salePrice: 900000, acceptanceDate: "2026-09-20", closeOfEscrow: "2026-10-20", listingCommissionPct: 2.5, propertyType: "Condo", yearBuilt: 1990 };
+  const lease = { transactionSide: "LEASE_TENANT", leasePrice: 36000, leaseSignedDate: "2026-09-20", leaseStartDate: "2026-10-01", saleCommissionAmount: 3000, propertyType: "Condo", yearBuilt: 1990 };
 
   it("is not ready without the side's commission (% or $ both count)", () => {
     expect(isReadyForPending({ ...sale, listingCommissionPct: null }, [seller])).toBe(false);
@@ -360,5 +360,26 @@ describe("clientPartyError (past Pre-Contract the side's client can't be removed
     expect(clientPartyError("PURCHASE", "PENDING", [buyer])).toBeNull();
     expect(clientPartyError("PURCHASE", "PRE_CONTRACT", [])).toBeNull();
     expect(clientPartyError("REFERRAL", "PENDING", [])).toBeNull();
+  });
+});
+
+describe("Year Built / Property Type gates", () => {
+  const seller = { role: "SELLER", name: "Sam Seller" };
+  const sale = { transactionSide: "LISTING", salePrice: 900000, acceptanceDate: "2026-09-20", closeOfEscrow: "2026-10-20", listingCommissionPct: 2.5 };
+  it("Pending needs a property type and, unless Land, a year", () => {
+    expect(isReadyForPending({ ...sale, propertyType: null, yearBuilt: 1990 }, [seller])).toBe(false);
+    expect(isReadyForPending({ ...sale, propertyType: "Condo", yearBuilt: null }, [seller])).toBe(false);
+    expect(isReadyForPending({ ...sale, propertyType: "Land", yearBuilt: null }, [seller])).toBe(true);
+    expect(isReadyForPending({ ...sale, propertyType: "Condo", yearBuilt: 1990 }, [seller])).toBe(true);
+  });
+  const docs = [{ id: "c1", name: "RLA", isRequired: true, documents: [{ reviewStatus: "APPROVED" as const }] }];
+  it("Convert names what's missing, after the status check and before documents", () => {
+    expect(convertBlockedReason({ status: "ACTIVE", propertyType: null, yearBuilt: null, checklistItems: docs }))
+      .toBe("Add the property type and year built on the Overview before converting");
+    expect(convertBlockedReason({ status: "ACTIVE", propertyType: "Condo", yearBuilt: null, checklistItems: [{ ...docs[0], documents: [] }] }))
+      .toBe("Add the year built on the Overview before converting");
+    expect(convertBlockedReason({ status: "COMING_SOON", propertyType: null, yearBuilt: null, checklistItems: docs }))
+      .toBe("Only an Active listing can be converted");
+    expect(convertBlockedReason({ status: "ACTIVE", propertyType: "Land", yearBuilt: null, checklistItems: docs })).toBeNull();
   });
 });
