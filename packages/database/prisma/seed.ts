@@ -48,7 +48,7 @@ async function main() {
     listingType: string,
     transactionSide: string,
     propertyCategory: string,
-    items: { name: string; description: string; isRequired: boolean; order: number }[]
+    items: { name: string; description: string; isRequired: boolean; order: number; builtBefore?: number }[]
   ) {
     await prisma.checklistTemplateItem.deleteMany({ where: { templateId: id } });
     return prisma.checklistTemplate.upsert({
