@@ -2,6 +2,10 @@
 import { useState } from "react";
 import { Plus, GripVertical } from "lucide-react";
 import { TrashIcon } from "@/components/ui/TrashIcon";
+import { digitsOnly } from "@/lib/form-validation";
+import { builtBeforeError } from "@/lib/year-built";
+
+const BOX = "rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2 text-sm text-[#1B1B1B]";
 
 interface TemplateItem {
   id: string;
@@ -9,6 +13,7 @@ interface TemplateItem {
   description: string | null;
   order: number;
   isRequired: boolean;
+  builtBefore: number | null;
 }
 
 interface Props {
@@ -19,22 +24,31 @@ interface Props {
 
 export function ChecklistTemplateEditor({ templateId, items, onChanged }: Props) {
   const [adding, setAdding] = useState(false);
-  const [newItem, setNewItem] = useState({ name: "", description: "", isRequired: true });
+  const [newItem, setNewItem] = useState({ name: "", description: "", isRequired: true, builtBefore: "" });
 
   async function addItem() {
-    if (!newItem.name.trim()) return;
+    if (!newItem.name.trim() || builtBeforeError(newItem.builtBefore)) return;
     await fetch(`/api/admin/checklist-templates/${templateId}/items`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...newItem, order: items.length + 1 }),
     });
-    setNewItem({ name: "", description: "", isRequired: true });
+    setNewItem({ name: "", description: "", isRequired: true, builtBefore: "" });
     setAdding(false);
     onChanged();
   }
 
   async function deleteItem(itemId: string) {
     await fetch(`/api/admin/checklist-templates/${templateId}/items/${itemId}`, { method: "DELETE" });
+    onChanged();
+  }
+
+  async function saveBuiltBefore(itemId: string, value: string) {
+    await fetch(`/api/admin/checklist-templates/${templateId}/items/${itemId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ builtBefore: value || null }),
+    });
     onChanged();
   }
 
@@ -56,6 +70,7 @@ export function ChecklistTemplateEditor({ templateId, items, onChanged }: Props)
             <p className="text-sm font-medium text-[#1B1B1B]">{item.name}</p>
             {item.description && <p className="text-xs text-[#1B1B1B]/50">{item.description}</p>}
           </div>
+          <BuiltBeforeBox value={item.builtBefore} onSave={(v) => saveBuiltBefore(item.id, v)} />
           <label className="flex items-center gap-1.5 text-xs text-[#1B1B1B]/50">
             <input type="checkbox" checked={item.isRequired} onChange={() => toggleRequired(item.id, item.isRequired)} className="h-3.5 w-3.5 rounded" />
             Required
@@ -68,8 +83,13 @@ export function ChecklistTemplateEditor({ templateId, items, onChanged }: Props)
 
       {adding ? (
         <div className="rounded-lg border border-[#1B1B1B]/10 p-3 space-y-2">
-          <input value={newItem.name} onChange={(e) => setNewItem((n) => ({ ...n, name: e.target.value }))} placeholder="Document name" className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2 text-sm" />
-          <input value={newItem.description} onChange={(e) => setNewItem((n) => ({ ...n, description: e.target.value }))} placeholder="Description (optional)" className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2 text-sm" />
+          <input value={newItem.name} onChange={(e) => setNewItem((n) => ({ ...n, name: e.target.value }))} placeholder="Document name" className={`w-full ${BOX}`} />
+          <input value={newItem.description} onChange={(e) => setNewItem((n) => ({ ...n, description: e.target.value }))} placeholder="Description (optional)" className={`w-full ${BOX}`} />
+          <label className="flex items-center gap-2 text-xs text-[#1B1B1B]/60">
+            Only if built before
+            <input value={newItem.builtBefore} onChange={(e) => setNewItem((n) => ({ ...n, builtBefore: digitsOnly(e.target.value, 4) }))} placeholder="Any year" inputMode="numeric" className={`w-24 ${BOX}`} />
+            {newItem.builtBefore.length === 4 && builtBeforeError(newItem.builtBefore) && <span className="text-red-500">{builtBeforeError(newItem.builtBefore)}</span>}
+          </label>
           <div className="flex items-center justify-between">
             <label className="flex items-center gap-2 text-sm text-[#1B1B1B]/60">
               <input type="checkbox" checked={newItem.isRequired} onChange={(e) => setNewItem((n) => ({ ...n, isRequired: e.target.checked }))} /> Required
@@ -86,5 +106,25 @@ export function ChecklistTemplateEditor({ templateId, items, onChanged }: Props)
         </button>
       )}
     </div>
+  );
+}
+
+// "Only if built before" on one template item: saved when the box loses focus,
+// blank = every file. Admin-only (this editor lives on the admin Checklists page).
+function BuiltBeforeBox({ value, onSave }: { value: number | null; onSave: (v: string) => void }) {
+  const [text, setText] = useState(value ? String(value) : "");
+  const error = text ? builtBeforeError(text) : null;
+  return (
+    <label className="flex items-center gap-1.5 text-xs text-[#1B1B1B]/50" title={error ?? undefined}>
+      Only if built before
+      <input
+        value={text}
+        onChange={(e) => setText(digitsOnly(e.target.value, 4))}
+        onBlur={() => { if (!error && text !== (value ? String(value) : "")) onSave(text); }}
+        placeholder="Any year"
+        inputMode="numeric"
+        className={`w-20 ${BOX} py-1 ${error ? "border-red-400" : ""}`}
+      />
+    </label>
   );
 }

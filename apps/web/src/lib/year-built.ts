@@ -32,6 +32,11 @@ export function builtBeforeError(value: unknown, now: Date = new Date()): string
   return isBlank(value) ? null : rangeError(value, "Built before", now);
 }
 
+// The admin setting as saved: blank → null (every file), else the year.
+export function parseBuiltBefore(value: unknown): number | null {
+  return isBlank(value) ? null : parseInt(String(value), 10);
+}
+
 // What a file still needs before it can go Pending or be converted.
 export function missingPropertyFacts(f: { propertyType?: string | null; yearBuilt?: number | null }): ("property type" | "year built")[] {
   const missing: ("property type" | "year built")[] = [];

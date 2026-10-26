@@ -77,12 +77,12 @@ export default function ChecklistTemplatesPage() {
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="e.g. Residential Sale — Buyer Side"
-              className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2 text-sm text-[#1B1B1B]"
             />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-[#1B1B1B]/60">File Type<RequiredMark /></label>
-            <select value={newFileType} onChange={(e) => setNewFileType(e.target.value)} className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2 text-sm">
+            <select value={newFileType} onChange={(e) => setNewFileType(e.target.value)} className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2 text-sm text-[#1B1B1B]">
               <option value="LISTING">Listing File (pre-contract, matched by Listing Type)</option>
               <option value="TRANSACTION">Transaction File (matched by Transaction Side)</option>
             </select>
@@ -90,7 +90,7 @@ export default function ChecklistTemplatesPage() {
           <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="mb-1 block text-xs font-medium text-[#1B1B1B]/60">Listing Type</label>
-              <select value={newListingType} onChange={(e) => setNewListingType(e.target.value)} className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2 text-sm">
+              <select value={newListingType} onChange={(e) => setNewListingType(e.target.value)} className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2 text-sm text-[#1B1B1B]">
                 <option value="">Any</option>
                 <option value="RESIDENTIAL_SALE">Residential Sale</option>
                 <option value="RESIDENTIAL_LEASE">Residential Lease</option>
@@ -100,7 +100,7 @@ export default function ChecklistTemplatesPage() {
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-[#1B1B1B]/60">Transaction Side</label>
-              <select value={newSide} onChange={(e) => setNewSide(e.target.value)} className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2 text-sm">
+              <select value={newSide} onChange={(e) => setNewSide(e.target.value)} className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2 text-sm text-[#1B1B1B]">
                 <option value="">Any</option>
                 <option value="PURCHASE">Purchase</option>
                 <option value="LISTING">Listing</option>
@@ -113,7 +113,7 @@ export default function ChecklistTemplatesPage() {
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-[#1B1B1B]/60">Property Category</label>
-              <select value={newPropertyCategory} onChange={(e) => setNewPropertyCategory(e.target.value)} className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2 text-sm">
+              <select value={newPropertyCategory} onChange={(e) => setNewPropertyCategory(e.target.value)} className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2 text-sm text-[#1B1B1B]">
                 <option value="">Any</option>
                 <option value="RESIDENTIAL">Residential</option>
                 <option value="COMMERCIAL">Commercial</option>
