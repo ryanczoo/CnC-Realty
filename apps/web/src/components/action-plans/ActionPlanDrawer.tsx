@@ -77,7 +77,7 @@ export function ActionPlanDrawer({ open, plan, onClose, onSaved }: Props) {
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm outline-none focus:border-[#9E8C61]"
+              className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm outline-none focus:border-[#9E8C61] text-[#1B1B1B]"
               placeholder="e.g. New Lead 7-Day Drip"
             />
           </div>
@@ -87,7 +87,7 @@ export function ActionPlanDrawer({ open, plan, onClose, onSaved }: Props) {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm outline-none focus:border-[#9E8C61] resize-none"
+              className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm outline-none focus:border-[#9E8C61] resize-none text-[#1B1B1B]"
               placeholder="Optional description"
             />
           </div>

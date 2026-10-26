@@ -142,7 +142,7 @@ export function TriggerDrawer({ open, trigger, onClose, onSaved }: Props) {
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm outline-none focus:border-[#9E8C61]"
+              className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm outline-none focus:border-[#9E8C61] text-[#1B1B1B]"
               placeholder="e.g. Auto-qualify drip"
             />
           </div>
@@ -153,7 +153,7 @@ export function TriggerDrawer({ open, trigger, onClose, onSaved }: Props) {
             <select
               value={statusTrigger}
               onChange={(e) => setStatusTrigger(e.target.value)}
-              className="w-full rounded-lg border border-[#1B1B1B]/10 bg-white px-3 py-2 text-sm outline-none focus:border-[#9E8C61]"
+              className="w-full rounded-lg border border-[#1B1B1B]/10 bg-white px-3 py-2 text-sm outline-none focus:border-[#9E8C61] text-[#1B1B1B]"
             >
               {ALL_STATUSES.map((s) => (
                 <option key={s.value} value={s.value}>{s.label}</option>
@@ -188,7 +188,7 @@ export function TriggerDrawer({ open, trigger, onClose, onSaved }: Props) {
             <select
               value={actionPlanId}
               onChange={(e) => setActionPlanId(e.target.value)}
-              className="w-full rounded-lg border border-[#1B1B1B]/10 bg-white px-3 py-2 text-sm outline-none focus:border-[#9E8C61]"
+              className="w-full rounded-lg border border-[#1B1B1B]/10 bg-white px-3 py-2 text-sm outline-none focus:border-[#9E8C61] text-[#1B1B1B]"
             >
               <option value="">— Select a plan —</option>
               {plans.map((p) => (
@@ -204,7 +204,7 @@ export function TriggerDrawer({ open, trigger, onClose, onSaved }: Props) {
               <input
                 value={emailSubject}
                 onChange={(e) => setEmailSubject(e.target.value)}
-                className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm outline-none focus:border-[#9E8C61]"
+                className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm outline-none focus:border-[#9E8C61] text-[#1B1B1B]"
                 placeholder="e.g. Your offer was accepted!"
               />
             </div>
@@ -214,7 +214,7 @@ export function TriggerDrawer({ open, trigger, onClose, onSaved }: Props) {
                 value={emailBody}
                 onChange={(e) => setEmailBody(e.target.value)}
                 rows={5}
-                className="w-full resize-none rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm outline-none focus:border-[#9E8C61]"
+                className="w-full resize-none rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm outline-none focus:border-[#9E8C61] text-[#1B1B1B]"
                 placeholder="Write the email message to send to the lead..."
               />
             </div>

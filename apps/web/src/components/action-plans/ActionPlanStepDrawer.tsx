@@ -114,18 +114,18 @@ export function ActionPlanStepDrawer({ open, planId, step, onClose, onSaved, onD
             <div className="flex-1">
               <label className="mb-1 block text-xs text-[#1B1B1B]/50">Step Order</label>
               <input type="number" min={1} value={stepOrder} onChange={(e) => setStepOrder(Number(e.target.value))}
-                className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm" />
+                className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm text-[#1B1B1B]" />
             </div>
             <div className="flex-1">
               <label className="mb-1 block text-xs text-[#1B1B1B]/50">Delay (days from enrollment)</label>
               <input type="number" min={0} value={delayDays} onChange={(e) => setDelayDays(Number(e.target.value))}
-                className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm" />
+                className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm text-[#1B1B1B]" />
             </div>
           </div>
           <div>
             <label className="mb-1 block text-xs text-[#1B1B1B]/50">Step Type</label>
             <select value={stepType} onChange={(e) => setStepType(e.target.value as "EMAIL" | "TASK")}
-              className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm">
+              className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm text-[#1B1B1B]">
               <option value="EMAIL">Email</option>
               <option value="TASK">Task</option>
             </select>
@@ -135,19 +135,19 @@ export function ActionPlanStepDrawer({ open, planId, step, onClose, onSaved, onD
               <div>
                 <label className="mb-1 block text-xs text-[#1B1B1B]/50">Subject<RequiredMark /></label>
                 <input value={subject} onChange={(e) => setSubject(e.target.value)}
-                  className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm outline-none focus:border-[#9E8C61]"
+                  className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm outline-none focus:border-[#9E8C61] text-[#1B1B1B]"
                   placeholder="e.g. Hi {{first_name}}, welcome to CnC!" />
               </div>
               <div>
                 <label className="mb-1 block text-xs text-[#1B1B1B]/50">Heading (optional — defaults to subject)</label>
                 <input value={heading} onChange={(e) => setHeading(e.target.value)}
-                  className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm outline-none focus:border-[#9E8C61]"
+                  className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm outline-none focus:border-[#9E8C61] text-[#1B1B1B]"
                   placeholder="e.g. A Warm Welcome" />
               </div>
               <div>
                 <label className="mb-1 block text-xs text-[#1B1B1B]/50">Body<RequiredMark /></label>
                 <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={6}
-                  className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm outline-none focus:border-[#9E8C61] resize-none"
+                  className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm outline-none focus:border-[#9E8C61] resize-none text-[#1B1B1B]"
                   placeholder={`Email body...\n\n${HINTS}`} />
                 <p className="mt-1 text-xs text-[#1B1B1B]/40">{HINTS}</p>
               </div>
@@ -157,7 +157,7 @@ export function ActionPlanStepDrawer({ open, planId, step, onClose, onSaved, onD
             <div>
               <label className="mb-1 block text-xs text-[#1B1B1B]/50">Task Title<RequiredMark /></label>
               <input value={taskTitle} onChange={(e) => setTaskTitle(e.target.value)}
-                className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm outline-none focus:border-[#9E8C61]"
+                className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm outline-none focus:border-[#9E8C61] text-[#1B1B1B]"
                 placeholder="e.g. Call {{first_name}} to check in" />
               <p className="mt-1 text-xs text-[#1B1B1B]/40">{HINTS}</p>
             </div>

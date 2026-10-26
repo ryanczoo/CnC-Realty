@@ -27,3 +27,11 @@ describe("onHomeLogoClick", () => {
     expect(scroll).not.toHaveBeenCalled();
   });
 });
+
+describe("Footer phone", () => {
+  it("shows the office phone under the address, tappable to call", () => {
+    const html = renderToStaticMarkup(createElement(Footer));
+    expect(html).toMatch(/<a[^>]*href="tel:\+17147840369"[^>]*>(?:(?!<\/a>)[\s\S])*\(714\) 784-0369<\/a>/);
+    expect(html.indexOf("(714) 784-0369")).toBeGreaterThan(html.indexOf("Santa Ana, CA 92701"));
+  });
+});

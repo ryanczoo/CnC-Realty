@@ -91,7 +91,7 @@ export function AdminTagsClient({ initialTags, autoTagCity: initialAutoTagCity }
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && createTag()}
             placeholder="Tag name"
-            className="flex-1 rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm outline-none focus:border-[#9E8C61]"
+            className="flex-1 rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm outline-none focus:border-[#9E8C61] text-[#1B1B1B]"
           />
           <div className="flex gap-1 max-lg:flex-wrap">
             {PRESET_COLORS.map((c) => (
@@ -148,7 +148,7 @@ export function AdminTagsClient({ initialTags, autoTagCity: initialAutoTagCity }
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && saveEdit(tag.id)}
-                        className="rounded-lg border border-[#9E8C61] px-2 py-1 text-sm outline-none"
+                        className="rounded-lg border border-[#9E8C61] px-2 py-1 text-sm outline-none text-[#1B1B1B]"
                       />
                     ) : (
                       <span className="font-medium text-[#1B1B1B]">{tag.name}</span>

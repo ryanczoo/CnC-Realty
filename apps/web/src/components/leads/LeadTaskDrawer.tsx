@@ -116,7 +116,7 @@ export function LeadTaskDrawer({ open, task, leadId, onClose, onSaved, onDeleted
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm outline-none focus:border-[#9E8C61]"
+              className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm outline-none focus:border-[#9E8C61] text-[#1B1B1B]"
               placeholder="Task title"
             />
           </div>
@@ -126,7 +126,7 @@ export function LeadTaskDrawer({ open, task, leadId, onClose, onSaved, onDeleted
             <select
               value={taskType}
               onChange={(e) => setTaskType(e.target.value)}
-              className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm text-[#1B1B1B]"
             >
               {TASK_TYPES.map((t) => <option key={t} value={t}>{TYPE_LABELS[t]}</option>)}
             </select>
@@ -144,7 +144,7 @@ export function LeadTaskDrawer({ open, task, leadId, onClose, onSaved, onDeleted
               onChange={(e) => setNotes(e.target.value)}
               rows={4}
               placeholder="e.g. Left voicemail, mentioned price drop…"
-              className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm outline-none focus:border-[#9E8C61] resize-none"
+              className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm outline-none focus:border-[#9E8C61] resize-none text-[#1B1B1B]"
             />
           </div>
         </div>

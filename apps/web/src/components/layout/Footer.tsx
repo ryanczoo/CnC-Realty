@@ -8,6 +8,7 @@ import { FieldError } from "@/components/ui/FieldError";
 import { emailError } from "@/lib/form-validation";
 import { motion, useMotionValueEvent, useScroll, useTransform } from "motion/react";
 import { SPRING_HOVER, PULSE_ANIMATE, PULSE_TRANSITION } from "@/lib/motion";
+import { Phone } from "lucide-react";
 
 function EmailIcon() {
   return (
@@ -209,6 +210,14 @@ export function Footer() {
                   Santa Ana, CA 92701
                 </p>
               </div>
+              {/* Same phone icon as the email footer (its PNG was drawn from this lucide icon). */}
+              <a
+                href="tel:+17147840369"
+                className="flex items-center gap-2 font-sans text-base font-light text-white transition-colors hover:text-[#9E8C61]"
+              >
+                <Phone size={15} strokeWidth={2} aria-hidden="true" />
+                (714) 784-0369
+              </a>
             </div>
 
             <div className="flex w-full max-w-[280px] flex-col gap-2">

@@ -515,7 +515,7 @@ describe("sendApplicationApproved", () => {
     expect(html).toContain("info@cncrealtygroup.com");
     expect(html).toContain("02439028");
     expect(html).toContain("built <em>by</em> agents <em>for</em> agents");
-    expect(html).toContain("(562) 335-1759");
+    expect(html).toContain("(714) 784-0369");
   });
 
   it("center-aligns the DRE instructions block underneath the button", async () => {
@@ -632,10 +632,10 @@ describe("sendApplicationApproved", () => {
     // appears a second time in the unrelated DRE bullet instructions, so
     // that one isn't checked for uniqueness here.
     expect(html.match(/- CnC Realty Team/g)?.length).toBe(1);
-    expect(html.match(/\(562\) 335-1759/g)?.length).toBe(1);
+    expect(html.match(/\(714\) 784-0369/g)?.length).toBe(1);
 
     const bodyBeforeFooter = html.slice(0, footerIndex);
-    expect(bodyBeforeFooter).not.toContain("(562) 335-1759");
+    expect(bodyBeforeFooter).not.toContain("(714) 784-0369");
   });
 
   it("uses gray icon images instead of 'Office:'/'Email:' text labels in the footer", async () => {
@@ -650,7 +650,7 @@ describe("sendApplicationApproved", () => {
     expect(html).not.toContain("Email:");
 
     const phoneIconIndex = html.indexOf("icon-phone.png");
-    const phoneNumberIndex = html.indexOf("(562) 335-1759");
+    const phoneNumberIndex = html.indexOf("(714) 784-0369");
     const mailIconIndex = html.indexOf("icon-mail.png");
     const emailAddressIndex = html.lastIndexOf("info@cncrealtygroup.com");
     expect(phoneIconIndex).toBeGreaterThan(-1);
@@ -800,7 +800,7 @@ describe("emailLayout", () => {
     expect(result).not.toContain("- CnC Realty Group");
     expect(result).toContain('<img src="http://localhost:3000/icon-phone.png"');
     expect(result).toContain('<img src="http://localhost:3000/icon-mail.png"');
-    expect(result).toContain("(562) 335-1759");
+    expect(result).toContain("(714) 784-0369");
     expect(result).toContain("info@cncrealtygroup.com");
   });
 

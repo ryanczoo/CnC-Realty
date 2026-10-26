@@ -76,6 +76,7 @@ export function localBusinessJsonLd() {
     logo: `${SITE_URL}/logo-black.png`,
     image: `${SITE_URL}${OG_IMAGE.url}`,
     email: "info@cncrealtygroup.com",
+    telephone: "+1-714-784-0369",
     address: {
       "@type": "PostalAddress",
       streetAddress: "830 S. Main St, STE 227",

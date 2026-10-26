@@ -132,8 +132,7 @@ describe("localBusinessJsonLd", () => {
     expect(biz.identifier).toEqual({ "@type": "PropertyValue", name: "CA DRE License", value: "02439028" });
   });
 
-  it("has no telephone and never mentions Los Angeles or CnC Realty Group", () => {
-    expect("telephone" in biz).toBe(false);
+  it("never mentions Los Angeles or CnC Realty Group", () => {
     const json = JSON.stringify(biz);
     expect(json).not.toContain("Los Angeles");
     expect(json).not.toContain("CnC Realty Group");
@@ -183,5 +182,11 @@ describe("breadcrumbJsonLd", () => {
         { "@type": "ListItem", position: 3, name: "1 Main St", item: `${SITE_URL}/properties/123` },
       ],
     });
+  });
+});
+
+describe("localBusinessJsonLd — phone", () => {
+  it("lists the office phone so Google can match the Business Profile", () => {
+    expect(localBusinessJsonLd().telephone).toBe("+1-714-784-0369");
   });
 });

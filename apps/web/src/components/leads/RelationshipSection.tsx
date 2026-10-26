@@ -77,7 +77,7 @@ export function RelationshipSection({ leadId, relationships, onChanged }: Props)
               value={query}
               onChange={(e) => search(e.target.value)}
               placeholder="Search by name or email..."
-              className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm outline-none focus:border-[#9E8C61]"
+              className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm outline-none focus:border-[#9E8C61] text-[#1B1B1B]"
             />
             {results.length > 0 && !selected && (
               <div className="mt-2 max-h-48 overflow-y-auto rounded-lg border border-[#1B1B1B]/10">
@@ -99,7 +99,7 @@ export function RelationshipSection({ leadId, relationships, onChanged }: Props)
                 <select
                   value={type}
                   onChange={(e) => setType(e.target.value)}
-                  className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-[#1B1B1B]/10 px-3 py-2 text-sm text-[#1B1B1B]"
                 >
                   {REL_TYPES.map((t) => <option key={t} value={t}>{t.charAt(0) + t.slice(1).toLowerCase()}</option>)}
                 </select>
