@@ -67,7 +67,7 @@ describe("POST /api/transactions", () => {
     const res = await POST(makeRequest({
       transactionSide: "PURCHASE",
       propertyAddress: "1 Test St", city: "Test", zip: "00000",
-      propertyType: "Single Family", mlsNumber: "1234567890",
+      propertyType: "Single Family", yearBuilt: "1990", mlsNumber: "1234567890",
       legalDescription: "Lot 4, Block 2, Tract 12345",
       propertyIncludes: "Refrigerator, washer/dryer",
       propertyExcludes: "Wall-mounted TV brackets",
@@ -94,7 +94,7 @@ describe("POST /api/transactions", () => {
     const withParcels = await POST(makeRequest({
       transactionSide: "PURCHASE",
       propertyAddress: "1 Test St", city: "Test", zip: "00000",
-      propertyType: "Single Family", mlsNumber: "1234567890",
+      propertyType: "Single Family", yearBuilt: "1990", mlsNumber: "1234567890",
       numberOfParcels: "3",
     }));
     expect(withParcels.status).toBe(201);
@@ -104,7 +104,7 @@ describe("POST /api/transactions", () => {
     const withoutParcels = await POST(makeRequest({
       transactionSide: "PURCHASE",
       propertyAddress: "1 Test St", city: "Test", zip: "00000",
-      propertyType: "Single Family", mlsNumber: "1234567890",
+      propertyType: "Single Family", yearBuilt: "1990", mlsNumber: "1234567890",
     }));
     expect(withoutParcels.status).toBe(201);
     expect(capturedArgs.data.numberOfParcels).toBeNull();
@@ -122,7 +122,7 @@ describe("POST /api/transactions", () => {
     const res = await POST(makeRequest({
       transactionSide: "DUAL",
       propertyAddress: "1 Test St", city: "Test", zip: "00000",
-      propertyType: "Single Family", mlsNumber: "1234567890",
+      propertyType: "Single Family", yearBuilt: "1990", mlsNumber: "1234567890",
       saleCommissionAmount: "12345.67",
       listingCommissionAmount: "890.12",
     }));
@@ -143,7 +143,7 @@ describe("POST /api/transactions", () => {
     const res = await POST(makeRequest({
       transactionSide: "PURCHASE",
       propertyAddress: "1 Test St", city: "Test", zip: "00000",
-      propertyType: "Single Family", mlsNumber: "1234567890",
+      propertyType: "Single Family", yearBuilt: "1990", mlsNumber: "1234567890",
     }));
     expect(res.status).toBe(201);
     expect(capturedArgs.data.saleCommissionAmount).toBeNull();
@@ -162,7 +162,7 @@ describe("POST /api/transactions", () => {
     const withBooleans = await POST(makeRequest({
       transactionSide: "PURCHASE",
       propertyAddress: "1 Test St", city: "Test", zip: "00000",
-      propertyType: "Single Family", mlsNumber: "1234567890",
+      propertyType: "Single Family", yearBuilt: "1990", mlsNumber: "1234567890",
       agentRelativeSale: true,
       brokerProvidedLead: true,
     }));
@@ -173,7 +173,7 @@ describe("POST /api/transactions", () => {
     const withoutBooleans = await POST(makeRequest({
       transactionSide: "PURCHASE",
       propertyAddress: "1 Test St", city: "Test", zip: "00000",
-      propertyType: "Single Family", mlsNumber: "1234567890",
+      propertyType: "Single Family", yearBuilt: "1990", mlsNumber: "1234567890",
     }));
     expect(withoutBooleans.status).toBe(201);
     expect(capturedArgs.data.agentRelativeSale).toBe(false);
@@ -194,7 +194,7 @@ describe("POST /api/transactions", () => {
       propertyAddress: "1 Test St",
       city: "Test",
       zip: "00000",
-      propertyType: "Single Family",
+      propertyType: "Single Family", yearBuilt: "1990",
       mlsNumber: "1234567890",
       parties: [
         { role: "REFERRAL_AGENT", name: "Jane Outbound", email: "jane@otherbrokerage.com", company: "Other Realty" },
@@ -220,7 +220,7 @@ describe("POST /api/transactions", () => {
 
     const res = await POST(makeRequest({
       transactionSide: "LEASE_TENANT", propertyAddress: "1 Test St", city: "Test", zip: "00000",
-      propertyType: "Single Family", mlsNumber: "1234567890",
+      propertyType: "Single Family", yearBuilt: "1990", mlsNumber: "1234567890",
       leasePrice: "2800",
     }));
     expect(res.status).toBe(201);
@@ -290,7 +290,7 @@ describe("POST /api/transactions", () => {
     const res = await POST(makeRequest({
       transactionSide: "PURCHASE",
       propertyAddress: "1 Test St", city: "Test", zip: "00000",
-      propertyType: "Single Family",
+      propertyType: "Single Family", yearBuilt: "1990",
     }));
     expect(res.status).toBe(201);
     const data = vi.mocked(prisma.transactionFile.create).mock.calls[0][0].data as any;
@@ -301,7 +301,7 @@ describe("POST /api/transactions", () => {
     vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "t-lease" } as any);
     const res = await POST(makeRequest({
       transactionSide: "LEASE_TENANT",
-      propertyAddress: "1 Test St", city: "Test", zip: "00000", propertyType: "Condo", leasePrice: "36000",
+      propertyAddress: "1 Test St", city: "Test", zip: "00000", propertyType: "Condo", yearBuilt: "1990", leasePrice: "36000",
       leaseSignedDate: "2026-09-20", leaseStartDate: "2026-10-01",
     }));
     expect(res.status).toBe(201);
@@ -314,7 +314,7 @@ describe("POST /api/transactions", () => {
     vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "t-sale" } as any);
     await POST(makeRequest({
       transactionSide: "PURCHASE",
-      propertyAddress: "1 Test St", city: "Test", zip: "00000", propertyType: "Condo",
+      propertyAddress: "1 Test St", city: "Test", zip: "00000", propertyType: "Condo", yearBuilt: "1990",
       leaseSignedDate: "2026-09-20", leaseStartDate: "2026-10-01",
     }));
     const data = vi.mocked(prisma.transactionFile.create).mock.calls[0][0].data as any;
@@ -325,7 +325,7 @@ describe("POST /api/transactions", () => {
   describe("starting status", () => {
     const complete = {
       transactionSide: "LISTING", stage: "UNDER_CONTRACT",
-      propertyAddress: "1 Test St", city: "Test", zip: "00000", propertyType: "Condo",
+      propertyAddress: "1 Test St", city: "Test", zip: "00000", propertyType: "Condo", yearBuilt: "1990",
       salePrice: "900000", acceptanceDate: "2026-09-20", closeOfEscrow: "2026-10-20",
       listingCommissionPct: "2.5",
       parties: [{ role: "SELLER", name: "Sam Seller" }],
@@ -398,7 +398,7 @@ describe("POST /api/transactions — propertyCategory checklist matching", () =>
     await POST(makeRequest({
       transactionSide: "PURCHASE", propertyCategory: "COMMERCIAL",
       propertyAddress: "1 Biz Park Dr", city: "Irvine", zip: "92618",
-      propertyType: "Commercial", mlsNumber: "1234567890",
+      propertyType: "Commercial", yearBuilt: "1990", mlsNumber: "1234567890",
     }));
 
     expect(prisma.checklistTemplate.findFirst).toHaveBeenCalledWith(
@@ -419,7 +419,7 @@ describe("POST /api/transactions — propertyCategory checklist matching", () =>
     await POST(makeRequest({
       transactionSide: "PURCHASE",
       propertyAddress: "123 Main St", city: "LA", zip: "90001",
-      propertyType: "Single Family", mlsNumber: "1234567890",
+      propertyType: "Single Family", yearBuilt: "1990", mlsNumber: "1234567890",
     }));
 
     expect(prisma.checklistTemplate.findFirst).toHaveBeenCalledWith(
@@ -439,7 +439,7 @@ describe("POST /api/transactions — propertyCategory checklist matching", () =>
     await POST(makeRequest({
       transactionSide: "PURCHASE", propertyCategory: "COMMERCIAL",
       propertyAddress: "1 Biz Park Dr", city: "Irvine", zip: "92618",
-      propertyType: "Commercial", mlsNumber: "1234567890",
+      propertyType: "Commercial", yearBuilt: "1990", mlsNumber: "1234567890",
     }));
 
     expect(prisma.transactionFile.create).toHaveBeenCalledWith(
@@ -450,7 +450,7 @@ describe("POST /api/transactions — propertyCategory checklist matching", () =>
   it("refuses a photo key that isn't the caller's", async () => {
     vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u1", agentId: "a1" } } as any);
     const res = await POST(makeRequest({
-      transactionSide: "PURCHASE", propertyAddress: "1 Test St", city: "Test", zip: "00000", propertyType: "Single Family",
+      transactionSide: "PURCHASE", propertyAddress: "1 Test St", city: "Test", zip: "00000", propertyType: "Single Family", yearBuilt: "1990",
       photoKey: "transactions/listing/l9/d9/secret.pdf",
     }));
     expect(res.status).toBe(400);
@@ -462,7 +462,7 @@ describe("POST /api/transactions — propertyCategory checklist matching", () =>
     vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u1", agentId: "a1" } } as any);
     vi.mocked(prisma.transactionFile.create).mockImplementation((async (args: any) => ({ id: "t1", ...args.data })) as any);
     const res = await POST(makeRequest({
-      transactionSide: "PURCHASE", propertyAddress: "1 Test St", city: "Test", zip: "00000", propertyType: "Single Family",
+      transactionSide: "PURCHASE", propertyAddress: "1 Test St", city: "Test", zip: "00000", propertyType: "Single Family", yearBuilt: "1990",
       photoKey: "wizard-photos/u1/abc/photo.jpg",
     }));
     expect(res.status).toBe(201);
@@ -477,5 +477,47 @@ describe("POST /api/transactions — propertyCategory checklist matching", () =>
       photoKey: "wizard-photos/u1/abc/photo.jpg",
     }));
     expect(vi.mocked(prisma.transactionFile.create).mock.calls[0][0].data.photoKey).toBeNull();
+  });
+});
+
+describe("POST /api/transactions — Year Built", () => {
+  const LPD = { name: "LPD", description: "lead", order: 2, isRequired: true, builtBefore: 1978 };
+  const template = { items: [{ name: "RPA", description: null, order: 1, isRequired: true, builtBefore: null }, LPD] };
+  const body = (extra: object) => makeRequest({
+    transactionSide: "PURCHASE", propertyAddress: "1 Test St", city: "Test", zip: "00000",
+    propertyType: "Single Family", yearBuilt: "1990", mlsNumber: "1234567890", ...extra,
+  });
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u1", agentId: "a1" } } as any);
+    vi.mocked(prisma.checklistTemplate.findFirst).mockResolvedValue(template as any);
+    vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "tx1" } as any);
+  });
+
+  it("requires a year unless the property is Land", async () => {
+    const res = await POST(body({ yearBuilt: "" }));
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("Year Built is required");
+    expect((await POST(body({ yearBuilt: "", propertyType: "Land" }))).status).toBe(201);
+  });
+
+  it("refuses a year outside 1500 through next year", async () => {
+    const res = await POST(body({ yearBuilt: "1400" }));
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toMatch(/^Year Built must be between 1500 and \d{4}$/);
+  });
+
+  it("adds the lead-paint item only for an older home", async () => {
+    await POST(body({ yearBuilt: "1952" }));
+    const old = (vi.mocked(prisma.transactionFile.create).mock.calls[0][0].data as any).checklistItems.create;
+    expect(old.map((i: any) => [i.name, i.builtBefore])).toEqual([["RPA", null], ["LPD", 1978]]);
+    await POST(body({ yearBuilt: "2005" }));
+    const newer = (vi.mocked(prisma.transactionFile.create).mock.calls[1][0].data as any).checklistItems.create;
+    expect(newer.map((i: any) => i.name)).toEqual(["RPA"]);
+  });
+
+  it("a referral needs no year", async () => {
+    const res = await POST(makeRequest({ transactionSide: "REFERRAL", referredToAgentName: "Pat" }));
+    expect(res.status).toBe(201);
   });
 });

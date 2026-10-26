@@ -1,3 +1,6 @@
+import { checklistTemplateWhere } from "@/lib/checklist-template-match";
+import { checklistCreateData } from "@/lib/year-checklist";
+import { yearBuiltError } from "@/lib/year-built";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -65,6 +68,10 @@ export async function POST(req: Request) {
   if (transactionSide !== "REFERRAL" && (!propertyAddress || !city || !zip || !propertyType)) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
+  if (transactionSide !== "REFERRAL") {
+    const yearError = yearBuiltError(yearBuilt, propertyType);
+    if (yearError) return NextResponse.json({ error: yearError }, { status: 400 });
+  }
   if (transactionSide === "REFERRAL" && !referredToAgentName) {
     return NextResponse.json({ error: "referredToAgentName is required" }, { status: 400 });
   }
@@ -93,14 +100,8 @@ export async function POST(req: Request) {
     ? "PENDING"
     : stage === "PRE_CONTRACT" ? "PRE_CONTRACT" : readyForPending ? "PENDING" : "INCOMPLETE";
 
-  const category = propertyCategory === "COMMERCIAL" ? "COMMERCIAL" : "RESIDENTIAL";
   const template = await prisma.checklistTemplate.findFirst({
-    where: {
-      fileType: "TRANSACTION",
-      isActive: true,
-      OR: [{ transactionSide }, { transactionSide: "ALL" }],
-      AND: [{ OR: [{ propertyCategory: category }, { propertyCategory: "ALL" }] }],
-    },
+    where: checklistTemplateWhere("transaction", { transactionSide, propertyCategory }),
     include: { items: { orderBy: { order: "asc" } } },
   });
 
@@ -126,7 +127,7 @@ export async function POST(req: Request) {
         // Referrals never carry a property photo.
         photoKey: transactionSide === "REFERRAL" ? null : photoKey || null,
         transactionSide,
-        propertyCategory: category,
+        propertyCategory: propertyCategory === "COMMERCIAL" ? "COMMERCIAL" : "RESIDENTIAL",
         status: initialStatus,
         originatingLeadId: originatingLeadId || null,
         listPrice: listPrice ? parseFloat(listPrice) : null,
@@ -175,13 +176,7 @@ export async function POST(req: Request) {
             })),
         } : undefined,
         checklistItems: template ? {
-          create: template.items.map((item) => ({
-            fileType: "TRANSACTION" as const,
-            name: item.name,
-            description: item.description,
-            order: item.order,
-            isRequired: item.isRequired,
-          })),
+          create: checklistCreateData("TRANSACTION", template.items, yearBuilt ? parseInt(yearBuilt) : null),
         } : undefined,
         activities: {
           create: {

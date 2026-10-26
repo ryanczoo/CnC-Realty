@@ -24,9 +24,9 @@ import { POST } from "../../app/api/admin/documents/[id]/approve/route";
 const ADMIN = { user: { id: "admin-1", role: "ADMIN" } } as any;
 
 const TEMPLATE_ITEMS = [
-  { name: "Listing Agreement", description: "RLA", order: 0, isRequired: true },
-  { name: "Agency Disclosure", description: "AD", order: 1, isRequired: true },
-  { name: "Seller Property Questionnaire", description: null, order: 2, isRequired: false },
+  { name: "Listing Agreement", description: "RLA", order: 0, isRequired: true, builtBefore: null },
+  { name: "Agency Disclosure", description: "AD", order: 1, isRequired: true, builtBefore: null },
+  { name: "Seller Property Questionnaire", description: null, order: 2, isRequired: false, builtBefore: null },
 ];
 
 function placeholderListing(overrides: Record<string, unknown> = {}) {
@@ -117,6 +117,7 @@ describe("POST /api/admin/documents/[id]/approve — Critical 1: applies a check
       description: "RLA",
       order: 0,
       isRequired: true,
+      builtBefore: null,
       listingFileId: "listing-1",
     });
   });

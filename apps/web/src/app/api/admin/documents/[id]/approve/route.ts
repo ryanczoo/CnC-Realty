@@ -1,3 +1,5 @@
+import { checklistTemplateWhere } from "@/lib/checklist-template-match";
+import { checklistCreateData } from "@/lib/year-checklist";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -9,20 +11,14 @@ import { clearedListingSentinels } from "@/lib/transfer-placeholder";
 
 const TEMPLATE_ITEMS_INCLUDE = { items: { orderBy: { order: "asc" as const } } };
 
+// A transfer placeholder has no Year Built yet, so year-based items wait until
+// the agent enters one on the Overview (the re-check adds them then).
 function templateItemsCreate(
   fileType: "LISTING" | "TRANSACTION",
-  template: { items: { name: string; description: string | null; order: number; isRequired: boolean }[] } | null
+  template: { items: { name: string; description: string | null; order: number; isRequired: boolean; builtBefore: number | null }[] } | null
 ) {
   if (!template || template.items.length === 0) return undefined;
-  return {
-    create: template.items.map((item) => ({
-      fileType,
-      name: item.name,
-      description: item.description,
-      order: item.order,
-      isRequired: item.isRequired,
-    })),
-  };
+  return { create: checklistCreateData(fileType, template.items, null) };
 }
 
 export async function POST(_req: Request, { params }: { params: { id: string } }) {
@@ -67,11 +63,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
       });
       if (parent?.status === "PENDING_TRANSFER") {
         const template = await prisma.checklistTemplate.findFirst({
-          where: {
-            fileType: "LISTING",
-            isActive: true,
-            OR: [{ listingType: parent.listingType }, { listingType: "ALL" }],
-          },
+          where: checklistTemplateWhere("listing", { listingType: parent.listingType }),
           include: TEMPLATE_ITEMS_INCLUDE,
         });
 
@@ -113,12 +105,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
       });
       if (parent?.status === "PENDING_TRANSFER") {
         const template = await prisma.checklistTemplate.findFirst({
-          where: {
-            fileType: "TRANSACTION",
-            isActive: true,
-            OR: [{ transactionSide: parent.transactionSide }, { transactionSide: "ALL" }],
-            AND: [{ OR: [{ propertyCategory: parent.propertyCategory }, { propertyCategory: "ALL" }] }],
-          },
+          where: checklistTemplateWhere("transaction", { transactionSide: parent.transactionSide, propertyCategory: parent.propertyCategory }),
           include: TEMPLATE_ITEMS_INCLUDE,
         });
 

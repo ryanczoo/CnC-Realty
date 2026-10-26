@@ -50,7 +50,7 @@ describe("whitespace is trimmed before a write", () => {
   it("POST /api/transactions trims propertyAddress and a nested party name", async () => {
     await postTransaction(json({
       transactionSide: "PURCHASE", propertyAddress: "  1 Main St  ", city: " Irvine ", zip: " 92603 ",
-      propertyType: "Single Family", mlsNumber: "1234567890",
+      propertyType: "Single Family", yearBuilt: "1990", mlsNumber: "1234567890",
       parties: [{ role: "BUYER", name: "  Jane Buyer  " }],
     }));
     const data = vi.mocked(prisma.transactionFile.create).mock.calls[0][0].data as any;
@@ -61,7 +61,7 @@ describe("whitespace is trimmed before a write", () => {
 
   it("POST /api/listings trims propertyAddress", async () => {
     await postListing(json({
-      propertyAddress: "  1 Main St  ", city: "Irvine", zip: "92603", listPrice: "500000", listingType: "RESIDENTIAL_SALE",
+      propertyAddress: "  1 Main St  ", city: "Irvine", zip: "92603", listPrice: "500000", listingType: "RESIDENTIAL_SALE", propertyType: "Condo", yearBuilt: "1990",
       listDate: "2026-09-24", expirationDate: "2027-03-24", parties: [{ role: "SELLER", name: "Jane Seller" }],
     }));
     const data = vi.mocked(prisma.listingFile.create).mock.calls[0][0].data as any;

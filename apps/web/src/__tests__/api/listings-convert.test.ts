@@ -21,7 +21,7 @@ const SESSION_AGENT = { user: { id: "u1", role: "AGENT", agentId: "a1" } };
 const SALE_LISTING = {
   id: "l1", agentId: "a1", listingType: "RESIDENTIAL_SALE",
   propertyAddress: "123 Main St", city: "LA", state: "CA", zip: "90001",
-  mlsNumber: "M1", listPrice: 800000, parties: [],
+  mlsNumber: "M1", listPrice: 800000, parties: [], propertyType: "Single Family", yearBuilt: 1990,
   status: "ACTIVE", checklistItems: [{ id: "c1", name: "RLA", isRequired: true, documents: [{ reviewStatus: "PENDING_REVIEW" }] }],
 };
 
@@ -85,6 +85,22 @@ describe("POST /api/listings/[id]/convert", () => {
     const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "l1" } });
     expect(res.status).toBe(400);
     expect(prisma.transactionFile.create).not.toHaveBeenCalled();
+  });
+
+  it("carries Year Built and Property Type over and applies the year-based items", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ ...SALE_LISTING, yearBuilt: 1952 } as any);
+    vi.mocked(prisma.checklistTemplate.findFirst).mockResolvedValue({ items: [
+      { name: "RPA", description: null, order: 1, isRequired: true, builtBefore: null },
+      { name: "LPD", description: null, order: 2, isRequired: true, builtBefore: 1978 },
+      { name: "EQ", description: null, order: 3, isRequired: true, builtBefore: 1950 },
+    ] } as any);
+    vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "tf-y" } as any);
+    const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "l1" } });
+    expect(res.status).toBe(201);
+    const data = vi.mocked(prisma.transactionFile.create).mock.calls[0][0].data as any;
+    expect(data).toMatchObject({ yearBuilt: 1952, propertyType: "Single Family" });
+    expect(data.checklistItems.create.map((i: any) => i.name)).toEqual(["RPA", "LPD"]);
   });
 
   it("carries the listing photo over", async () => {

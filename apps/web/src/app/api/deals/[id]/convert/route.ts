@@ -1,3 +1,5 @@
+import { checklistTemplateWhere } from "@/lib/checklist-template-match";
+import { checklistCreateData } from "@/lib/year-checklist";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, checkOwnership } from "@/lib/api-auth";
@@ -59,13 +61,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
       transactionSide,
       status: "INCOMPLETE",
       checklistItems: template ? {
-        create: template.items.map((item) => ({
-          fileType: "TRANSACTION" as const,
-          name: item.name,
-          description: item.description,
-          order: item.order,
-          isRequired: item.isRequired,
-        })),
+        create: checklistCreateData("TRANSACTION", template.items, null),
       } : undefined,
       [priceField]: deal.price,
     },

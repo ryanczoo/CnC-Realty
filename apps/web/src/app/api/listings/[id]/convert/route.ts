@@ -1,3 +1,5 @@
+import { checklistTemplateWhere } from "@/lib/checklist-template-match";
+import { checklistCreateData } from "@/lib/year-checklist";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -28,12 +30,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
   const propertyCategory = listing.listingType.startsWith("COMMERCIAL") ? "COMMERCIAL" : "RESIDENTIAL";
 
   const template = await prisma.checklistTemplate.findFirst({
-    where: {
-      fileType: "TRANSACTION",
-      isActive: true,
-      OR: [{ transactionSide }, { transactionSide: "ALL" }],
-      AND: [{ OR: [{ propertyCategory }, { propertyCategory: "ALL" }] }],
-    },
+    where: checklistTemplateWhere("transaction", { transactionSide, propertyCategory }),
     include: { items: { orderBy: { order: "asc" } } },
   });
 
@@ -50,6 +47,8 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
         zip: listing.zip,
         mlsNumber: listing.mlsNumber,
         photoKey: listing.photoKey,
+        propertyType: listing.propertyType,
+        yearBuilt: listing.yearBuilt,
         transactionSide,
         propertyCategory,
         listPrice: listing.listPrice,
@@ -68,13 +67,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
           })),
         } : undefined,
         checklistItems: template ? {
-          create: template.items.map((item) => ({
-            fileType: "TRANSACTION" as const,
-            name: item.name,
-            description: item.description,
-            order: item.order,
-            isRequired: item.isRequired,
-          })),
+          create: checklistCreateData("TRANSACTION", template.items, listing.yearBuilt),
         } : undefined,
         activities: {
           create: {

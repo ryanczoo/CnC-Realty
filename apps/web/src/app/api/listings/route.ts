@@ -1,3 +1,6 @@
+import { checklistTemplateWhere } from "@/lib/checklist-template-match";
+import { checklistCreateData } from "@/lib/year-checklist";
+import { yearBuiltError } from "@/lib/year-built";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -32,14 +35,17 @@ export async function POST(req: Request) {
   if (!agentId) return NextResponse.json({ error: "Agent not found" }, { status: 404 });
 
   const body = trimStrings(await req.json());
-  const { propertyAddress, city, state, zip, mlsNumber, listPrice, listingType, expirationDate, listDate, commissionPercent, commissionAmount, commissionNotes, photoKey, parties = [] } = body;
+  const { propertyAddress, city, state, zip, mlsNumber, listPrice, listingType, expirationDate, listDate, commissionPercent, commissionAmount, commissionNotes, photoKey, propertyType, yearBuilt, parties = [] } = body;
 
-  if (!propertyAddress || !city || !zip || !listPrice || !listingType) {
+  if (!propertyAddress || !city || !zip || !listPrice || !listingType || !propertyType) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
   if (photoKey && !isOwnWizardPhoto(photoKey, session.user.id)) {
     return NextResponse.json({ error: "Invalid photo" }, { status: 400 });
   }
+  const yearError = yearBuiltError(yearBuilt, propertyType);
+  if (yearError) return NextResponse.json({ error: yearError }, { status: 400 });
+  const year = yearBuilt ? parseInt(String(yearBuilt), 10) : null;
   const datesError = listingDatesError(listDate, expirationDate);
   if (datesError) return NextResponse.json({ error: datesError }, { status: 400 });
   const pctError = commissionPercentError(body);
@@ -50,7 +56,7 @@ export async function POST(req: Request) {
   }
 
   const template = await prisma.checklistTemplate.findFirst({
-    where: { fileType: "LISTING", isActive: true, OR: [{ listingType }, { listingType: "ALL" }] },
+    where: checklistTemplateWhere("listing", { listingType }),
     include: { items: { orderBy: { order: "asc" } } },
   });
 
@@ -68,6 +74,8 @@ export async function POST(req: Request) {
         commissionAmount: commissionAmount ? parseFloat(commissionAmount) : null,
         commissionNotes: commissionNotes || null,
         photoKey: photoKey || null,
+        propertyType,
+        yearBuilt: year,
         parties: {
           create: namedParties.map((p: { role: string; name: string; email?: string; phone?: string; company?: string; licenseNumber?: string }) => ({
             fileType: "LISTING" as const,
@@ -80,13 +88,7 @@ export async function POST(req: Request) {
           })),
         },
         checklistItems: template ? {
-          create: template.items.map((item) => ({
-            fileType: "LISTING" as const,
-            name: item.name,
-            description: item.description,
-            order: item.order,
-            isRequired: item.isRequired,
-          })),
+          create: checklistCreateData("LISTING", template.items, year),
         } : undefined,
         activities: {
           create: {

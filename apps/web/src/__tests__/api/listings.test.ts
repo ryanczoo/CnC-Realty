@@ -47,6 +47,7 @@ const postJson = (body: unknown) =>
 
 const VALID_LISTING = {
   propertyAddress: "1 Main St", city: "Irvine", zip: "92603", listPrice: "500000", listingType: "RESIDENTIAL_SALE",
+  propertyType: "Single Family", yearBuilt: "1990",
   listDate: "2026-09-24", expirationDate: "2027-03-24",
   parties: [{ role: "SELLER", name: "Jane Seller", email: "jane@example.com", phone: "", company: "", licenseNumber: "" }],
 };
@@ -156,5 +157,40 @@ describe("listing commission % can't exceed 100", () => {
     expect(res.status).toBe(400);
     expect((await res.json()).error).toBe("Commission can't be more than 100%");
     expect(prisma.listingFile.create).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/listings — Property Type and Year Built", () => {
+  const template = { items: [
+    { name: "RLA", description: null, order: 1, isRequired: true, builtBefore: null },
+    { name: "LPD", description: "lead", order: 2, isRequired: true, builtBefore: 1978 },
+  ] };
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u1", agentId: "a1" } } as any);
+    vi.mocked(prisma.checklistTemplate.findFirst).mockResolvedValue(template as any);
+    vi.mocked(prisma.listingFile.create).mockResolvedValue({ id: "lf1" } as any);
+  });
+
+  it("requires a property type", async () => {
+    const res = await POST(postJson({ ...VALID_LISTING, propertyType: "" }));
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("Missing required fields");
+  });
+
+  it("requires a valid year unless the property is Land", async () => {
+    expect((await POST(postJson({ ...VALID_LISTING, yearBuilt: "1400" }))).status).toBe(400);
+    expect((await POST(postJson({ ...VALID_LISTING, yearBuilt: "" }))).status).toBe(400);
+    expect((await POST(postJson({ ...VALID_LISTING, yearBuilt: "", propertyType: "Land" }))).status).toBe(201);
+  });
+
+  it("saves both and applies the year-based items", async () => {
+    await POST(postJson({ ...VALID_LISTING, yearBuilt: "1952" }));
+    const data = vi.mocked(prisma.listingFile.create).mock.calls[0][0].data as any;
+    expect(data).toMatchObject({ yearBuilt: 1952, propertyType: "Single Family" });
+    expect(data.checklistItems.create.map((i: any) => [i.name, i.builtBefore])).toEqual([["RLA", null], ["LPD", 1978]]);
+    await POST(postJson({ ...VALID_LISTING, yearBuilt: "2005" }));
+    const newer = vi.mocked(prisma.listingFile.create).mock.calls[1][0].data as any;
+    expect(newer.checklistItems.create.map((i: any) => i.name)).toEqual(["RLA"]);
   });
 });
