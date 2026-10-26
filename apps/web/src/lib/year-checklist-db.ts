@@ -6,8 +6,10 @@ type Kind = "listing" | "transaction";
 type Actor = { userId: string; role: "ADMIN" | "AGENT" };
 type Facts = { yearBuilt?: number | null; propertyType?: string | null };
 
-// Finished files keep their checklist exactly as it was (spec call 3).
-const FINISHED = new Set(["CLOSED", "CANCELED", "CANCELED_APPROVED", "ARCHIVED", "EXPIRED", "WITHDRAWN", "REFERRAL_SUCCESSFUL", "REFERRAL_UNSUCCESSFUL"]);
+// Finished files keep their checklist exactly as it was. Expired and Withdrawn
+// stay open here: they come back (by a new date, or the broker reactivating),
+// and a revived file must not be missing its year-based forms.
+const FINISHED = new Set(["CLOSED", "CANCELED", "CANCELED_APPROVED", "ARCHIVED", "REFERRAL_SUCCESSFUL", "REFERRAL_UNSUCCESSFUL"]);
 
 const ROWS = { select: { id: true, name: true, isRequired: true, _count: { select: { documents: true } } } };
 

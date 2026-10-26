@@ -104,3 +104,14 @@ describe("applyPropertyFacts", () => {
     expect(prisma.listingFile.update).toHaveBeenCalledWith({ where: { id: "l1" }, data: { propertyType: "Land" } });
   });
 });
+
+describe("recheckYearChecklist — files that can come back", () => {
+  it.each(["EXPIRED", "WITHDRAWN"])("still updates a %s listing, since it can be reactivated by date or by the broker", async (status) => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(listing({ status }) as any);
+    expect((await recheckYearChecklist("listing", "l1", AGENT, "x")).added).toEqual(["LPD", "Residential Earthquake Hazards Report"]);
+  });
+  it("still updates an Expired transaction", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({ id: "t1", status: "EXPIRED", transactionSide: "LISTING", propertyCategory: "RESIDENTIAL", yearBuilt: 1952, checklistItems: [] } as any);
+    expect((await recheckYearChecklist("transaction", "t1", AGENT, "x")).added).toHaveLength(2);
+  });
+});
