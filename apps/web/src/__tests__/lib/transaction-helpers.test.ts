@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calcReferralFee, canTransitionTransaction, pickDisplayPrice, pickDisplayDate, listingStatusOptions, canDeleteListing, convertBlockedReason, sidePartiesReady, commissionReady, clientPartyError, isReadyForPending, transactionStatusOptions, escrowTypeToRole, latestDocument, allowedNextStatuses, canTransitionListing } from "@/lib/transaction-helpers";
+import { FILE_DETAIL_INCLUDE, calcReferralFee, canTransitionTransaction, pickDisplayPrice, pickDisplayDate, listingStatusOptions, canDeleteListing, convertBlockedReason, sidePartiesReady, commissionReady, clientPartyError, isReadyForPending, transactionStatusOptions, escrowTypeToRole, latestDocument, allowedNextStatuses, canTransitionListing } from "@/lib/transaction-helpers";
 
 describe("calcReferralFee", () => {
   it("takes 10% when 10% of the amount exceeds $200", () => {
@@ -381,5 +381,11 @@ describe("Year Built / Property Type gates", () => {
     expect(convertBlockedReason({ status: "COMING_SOON", propertyType: null, yearBuilt: null, checklistItems: docs }))
       .toBe("Only an Active listing can be converted");
     expect(convertBlockedReason({ status: "ACTIVE", propertyType: "Land", yearBuilt: null, checklistItems: docs })).toBeNull();
+  });
+});
+
+describe("FILE_DETAIL_INCLUDE checklist order", () => {
+  it("lists required forms first, then optional ones, each in template order", () => {
+    expect(FILE_DETAIL_INCLUDE.checklistItems.orderBy).toEqual([{ isRequired: "desc" }, { order: "asc" }]);
   });
 });

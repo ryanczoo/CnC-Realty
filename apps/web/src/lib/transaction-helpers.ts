@@ -14,7 +14,8 @@ export function toDbFileType(fileType: "listing" | "transaction"): "LISTING" | "
 
 export const FILE_DETAIL_INCLUDE = {
   parties: true,
-  checklistItems: { include: { documents: true }, orderBy: { order: "asc" as const } },
+  // Required forms first, then optional ones (each in template order).
+  checklistItems: { include: { documents: true }, orderBy: [{ isRequired: "desc" }, { order: "asc" }] as { isRequired?: "desc"; order?: "asc" }[] },
   documents: { orderBy: { uploadedAt: "desc" as const } },
   activities: {
     take: 50,
