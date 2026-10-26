@@ -100,7 +100,7 @@ export type DocumentReviewStatus = "PENDING_REVIEW" | "APPROVED" | "REJECTED" | 
 export type FileActivityType =
   | "FILE_CREATED" | "STATUS_CHANGED" | "DOCUMENT_UPLOADED" | "DOCUMENT_APPROVED"
   | "DOCUMENT_REJECTED" | "SUBMITTED_FOR_REVIEW" | "PARTY_ADDED" | "NOTE_ADDED"
-  | "CONVERTED_TO_TRANSACTION" | "DOCUMENT_REMOVED" | "DOCUMENT_DELETED" | "COMMISSION_CHANGED";
+  | "CONVERTED_TO_TRANSACTION" | "DOCUMENT_REMOVED" | "DOCUMENT_DELETED" | "COMMISSION_CHANGED" | "CHECKLIST_UPDATED";
 
 export type ActorRole = "AGENT" | "ADMIN";
 
@@ -110,6 +110,7 @@ export interface FileChecklistItemWithDocs {
   description?: string | null;
   order?: number;
   isRequired: boolean;
+  builtBefore?: number | null;
   documents: { id?: string; uploadedByAgentId?: string; reviewStatus: DocumentReviewStatus; uploadedAt?: string | Date; rejectionNote?: string | null }[];
 }
 
@@ -136,6 +137,8 @@ export interface ListingFileDetail {
   commissionAmount: number | null;
   commissionNotes: string | null;
   photoKey: string | null;
+  yearBuilt: number | null;
+  propertyType: string | null;
   awaitingReview: boolean;
   createdAt: string;
   updatedAt: string;

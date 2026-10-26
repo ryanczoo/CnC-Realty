@@ -192,6 +192,7 @@ enum FileActivityType {
   DOCUMENT_REMOVED
   DOCUMENT_DELETED
   COMMISSION_CHANGED
+  CHECKLIST_UPDATED
 }
 
 // ─── Phase 5B: Action Plan enums ──────────────────────────────────────────────
@@ -488,6 +489,8 @@ model ListingFile {
   commissionAmount  Float?
   commissionNotes   String?
   photoKey          String?
+  yearBuilt         Int?
+  propertyType      String?
   awaitingReview    Boolean       @default(false)
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
@@ -656,6 +659,7 @@ model ChecklistTemplateItem {
   description String?
   order       Int
   isRequired  Boolean @default(true)
+  builtBefore Int?
 
   template ChecklistTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
 }
@@ -669,6 +673,7 @@ model FileChecklistItem {
   description       String?
   order             Int
   isRequired        Boolean  @default(true)
+  builtBefore       Int?
 
   listingFile     ListingFile?     @relation(fields: [listingFileId], references: [id], onDelete: Cascade)
   transactionFile TransactionFile? @relation(fields: [transactionFileId], references: [id], onDelete: Cascade)

@@ -11,6 +11,7 @@ const TYPE_LABELS: Record<FileActivityType, string> = {
   DOCUMENT_REJECTED:        "Document rejected",
   SUBMITTED_FOR_REVIEW:     "Submitted for review",
   COMMISSION_CHANGED:       "Commission changed",
+  CHECKLIST_UPDATED:        "Checklist updated",
   PARTY_ADDED:              "Party added",
   NOTE_ADDED:               "Note added",
   CONVERTED_TO_TRANSACTION: "Converted to transaction",
