@@ -62,6 +62,10 @@ describe("admin checklist items — skip when converted", () => {
     await PATCH(req("PATCH", { skipWhenConverted: true }), { params: { id: "t1", itemId: "i1" } });
     expect(vi.mocked(prisma.checklistTemplateItem.update).mock.calls[0][0].data).toEqual({ skipWhenConverted: true });
   });
+  it("PATCH saves skipWhenConverted false (uncheck)", async () => {
+    await PATCH(req("PATCH", { skipWhenConverted: false }), { params: { id: "t1", itemId: "i1" } });
+    expect(vi.mocked(prisma.checklistTemplateItem.update).mock.calls[0][0].data).toEqual({ skipWhenConverted: false });
+  });
   it("PATCH rejects a non-boolean skipWhenConverted with 400", async () => {
     const res = await PATCH(req("PATCH", { skipWhenConverted: "yes" }), { params: { id: "t1", itemId: "i1" } });
     expect(res.status).toBe(400);

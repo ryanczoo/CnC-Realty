@@ -75,7 +75,7 @@ export function ChecklistTemplateEditor({ templateId, items, fileType, onChanged
   return (
     <div className="space-y-2">
       {items.map((item) => (
-        <div key={item.id} className="flex items-center gap-3 rounded-lg border border-[#1B1B1B]/10 bg-white px-3 py-2.5">
+        <div key={item.id} className="flex items-center gap-3 max-lg:flex-wrap rounded-lg border border-[#1B1B1B]/10 bg-white px-3 py-2.5">
           <GripVertical className="h-4 w-4 shrink-0 text-[#1B1B1B]/20" />
           <div className="flex-1">
             <p className="text-sm font-medium text-[#1B1B1B]">{item.name}</p>
