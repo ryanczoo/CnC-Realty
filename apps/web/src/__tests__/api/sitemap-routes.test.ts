@@ -12,7 +12,10 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
+vi.mock("@/lib/city-pages", () => ({ getCityPages: vi.fn().mockResolvedValue(null) }));
+
 import { prisma } from "@/lib/prisma";
+import { getCityPages } from "@/lib/city-pages";
 import { cachedCount } from "@/lib/property-count-cache";
 import { GET as indexGET } from "../../app/sitemap.xml/route";
 import { GET as childGET } from "../../app/sitemaps/[name]/route";
@@ -112,5 +115,27 @@ describe("GET /sitemaps/listings-N.xml", () => {
   it("returns 404 for an unknown name", async () => {
     expect((await child("listings-x.xml")).status).toBe(404);
     expect((await child("nope.xml")).status).toBe(404);
+  });
+});
+
+describe("GET /sitemaps/pages.xml city pages", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(prisma.agent.findMany).mockResolvedValue([]);
+    vi.mocked(prisma.blogPost.findMany).mockResolvedValue([]);
+  });
+
+  it("lists every saved city page", async () => {
+    vi.mocked(getCityPages).mockResolvedValue([
+      { slug: "cerritos", name: "Cerritos", county: "Los Angeles", count: 30, lat: 0, lng: 0 },
+    ]);
+    const xml = await (await child("pages.xml")).text();
+    expect(xml).toContain("https://cncrealtygroup.com/homes-for-sale/cerritos");
+  });
+
+  it("lists no city pages when none are saved", async () => {
+    vi.mocked(getCityPages).mockResolvedValue(null);
+    const xml = await (await child("pages.xml")).text();
+    expect(xml).not.toContain("homes-for-sale");
   });
 });
