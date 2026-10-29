@@ -76,7 +76,7 @@ describe("POST /api/transactions/[id]/representation", () => {
   });
 
   it.each([
-    ["LISTING", "LEASE_DUAL"], ["LISTING", "REFERRAL"], ["REFERRAL", "LISTING"], ["LISTING", "LISTING"], ["LISTING", undefined],
+    ["LISTING", "LEASE_DUAL"], ["LEASE_TENANT", "PURCHASE"], ["LISTING", "REFERRAL"], ["REFERRAL", "LISTING"], ["LISTING", "LISTING"], ["LISTING", undefined],
   ])("400 for %s -> %s", async (from, to) => {
     vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(file({ transactionSide: from }) as any);
     const res = await call({ transactionSide: to });
@@ -95,7 +95,7 @@ describe("POST /api/transactions/[id]/representation", () => {
     const created = vi.mocked(prisma.fileChecklistItem.createMany).mock.calls[0][0] as any;
     expect(created.data).toHaveLength(1);
     expect(created.data[0]).toMatchObject({ name: "Buyer Rep Agreement", transactionFileId: "tf1", fileType: "TRANSACTION" });
-    expect(prisma.fileChecklistItem.deleteMany).toHaveBeenCalledWith({ where: { id: { in: ["r3"] } } });
+    expect(prisma.fileChecklistItem.deleteMany).toHaveBeenCalledWith({ where: { id: { in: ["r3"] }, documents: { none: {} } } });
   });
 
   it("a converted file switching DUAL -> LISTING doesn't add RLA/AVID", async () => {
@@ -130,5 +130,35 @@ describe("POST /api/transactions/[id]/representation", () => {
       fileType: "TRANSACTION", transactionFileId: "tf1", actorId: "admin1", actorRole: "ADMIN", type: "REPRESENTATION_CHANGED",
       payload: { from: "LISTING", to: "DUAL", added: ["Buyer Rep Agreement"], removed: ["Listing Only Empty"] },
     });
+  });
+
+  it("LEASE_TENANT -> LEASE_DUAL prices commission from leasePrice", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(file({
+      transactionSide: "LEASE_TENANT", leasePrice: 2000, salePrice: 999999,
+      saleCommissionPct: 50, listingCommissionPct: 50,
+    }) as any);
+    const res = await call({ transactionSide: "LEASE_DUAL" });
+    expect(res.status).toBe(200);
+    expect(vi.mocked(prisma.transactionFile.update).mock.calls[0][0]).toMatchObject({
+      data: { transactionSide: "LEASE_DUAL", saleCommissionAmount: 1000, listingCommissionAmount: 1000, commissionGCI: 2000 },
+    });
+  });
+
+  it("flips a matching row's required flag", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(file({ checklistItems: [row("r1", "Shared")] }) as any);
+    vi.mocked(prisma.checklistTemplate.findFirst).mockResolvedValue({ items: [item("Shared", { isRequired: false })] } as any);
+    await call({ transactionSide: "DUAL" });
+    expect(prisma.fileChecklistItem.update).toHaveBeenCalledWith({ where: { id: "r1" }, data: { isRequired: false } });
+  });
+
+  it("with no matching template, still changes side and commission but no checklist rows", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(file({ checklistItems: [row("r3", "Listing Only Empty")] }) as any);
+    vi.mocked(prisma.checklistTemplate.findFirst).mockResolvedValue(null);
+    const res = await call({ transactionSide: "DUAL" });
+    expect(res.status).toBe(200);
+    expect(vi.mocked(prisma.transactionFile.update).mock.calls[0][0]).toMatchObject({ data: { transactionSide: "DUAL", commissionGCI: 50000 } });
+    expect(prisma.fileChecklistItem.createMany).not.toHaveBeenCalled();
+    expect(prisma.fileChecklistItem.deleteMany).not.toHaveBeenCalled();
+    expect(prisma.fileChecklistItem.update).not.toHaveBeenCalled();
   });
 });

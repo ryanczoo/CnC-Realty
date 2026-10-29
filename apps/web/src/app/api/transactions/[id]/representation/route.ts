@@ -58,7 +58,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     ...(plan.add.length
       ? [prisma.fileChecklistItem.createMany({ data: checklistCreateData("TRANSACTION", plan.add, file.yearBuilt).map((d) => ({ ...d, transactionFileId: file.id })) })]
       : []),
-    ...(plan.removeIds.length ? [prisma.fileChecklistItem.deleteMany({ where: { id: { in: plan.removeIds } } })] : []),
+    ...(plan.removeIds.length ? [prisma.fileChecklistItem.deleteMany({ where: { id: { in: plan.removeIds }, documents: { none: {} } } })] : []),
     ...plan.requiredUpdates.map((u) => prisma.fileChecklistItem.update({ where: { id: u.id }, data: { isRequired: u.isRequired } })),
     prisma.fileActivity.create({
       data: {
