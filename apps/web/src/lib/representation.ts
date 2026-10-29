@@ -40,6 +40,7 @@ export function planRepresentationChange(items: TemplateItemLike[], rows: FileRo
   const add = target.filter((i) => !rows.some((r) => r.name === i.name));
   const removeIds = rows.filter((r) => !targetNames.has(r.name) && r.documentCount === 0).map((r) => r.id);
   const requiredUpdates: { id: string; isRequired: boolean }[] = [];
+  const demotedIds: string[] = [];
   for (const r of rows) {
     const t = target.find((i) => i.name === r.name);
     if (t) {
@@ -47,9 +48,10 @@ export function planRepresentationChange(items: TemplateItemLike[], rows: FileRo
     } else if (r.documentCount > 0 && r.isRequired) {
       // Kept old-type row (it holds a document): no longer required for the new side.
       requiredUpdates.push({ id: r.id, isRequired: false });
+      demotedIds.push(r.id);
     }
   }
-  return { add, removeIds, requiredUpdates };
+  return { add, removeIds, requiredUpdates, demotedIds };
 }
 
 // Finished files can't change side. The route and the Overview pencil both read this one list.

@@ -44,7 +44,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
   const rows = file.checklistItems.map((r) => ({ id: r.id, name: r.name, isRequired: r.isRequired, documentCount: r._count.documents }));
   const plan = template
     ? planRepresentationChange(items, rows, file.yearBuilt)
-    : { add: [], removeIds: [] as string[], requiredUpdates: [] as { id: string; isRequired: boolean }[] };
+    : { add: [], removeIds: [] as string[], requiredUpdates: [] as { id: string; isRequired: boolean }[], demotedIds: [] as string[] };
 
   const price = (isLeaseSide(to) ? file.leasePrice : file.salePrice) ?? 0;
   const commission = resolveCommission(to, price, {
@@ -53,6 +53,8 @@ export async function POST(request: Request, { params }: { params: { id: string 
   });
   const added = plan.add.map((i) => shortItemName(i.name));
   const removed = rows.filter((r) => plan.removeIds.includes(r.id)).map((r) => shortItemName(r.name));
+  // Kept old-type rows (they hold a document) that are no longer required on the new side.
+  const demoted = rows.filter((r) => plan.demotedIds.includes(r.id)).map((r) => shortItemName(r.name));
 
   const results = await prisma.$transaction([
     prisma.transactionFile.update({ where: { id: file.id }, data: { transactionSide: to as never, ...commission } }),
@@ -65,7 +67,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       data: {
         fileType: "TRANSACTION", transactionFileId: file.id, listingFileId: null,
         actorId: session.user.id, actorRole: "ADMIN", type: "REPRESENTATION_CHANGED",
-        payload: { from: file.transactionSide, to, added, removed },
+        payload: { from: file.transactionSide, to, added, removed, demoted },
       },
     }),
   ]);

@@ -1,7 +1,7 @@
 import { statusLabel } from "@/components/transactions/StatusBadge";
 import { transactionSideLabel } from "@/types/transaction";
 
-type Payload = { name?: unknown; note?: unknown; from?: unknown; to?: unknown; automatic?: unknown; viaTransactionId?: unknown; reason?: unknown; checklistItemName?: unknown; changes?: unknown; added?: unknown; removed?: unknown };
+type Payload = { name?: unknown; note?: unknown; from?: unknown; to?: unknown; automatic?: unknown; viaTransactionId?: unknown; reason?: unknown; checklistItemName?: unknown; changes?: unknown; added?: unknown; removed?: unknown; demoted?: unknown };
 
 const asText = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
 
@@ -44,13 +44,14 @@ export function describeActivity(a: { type: string; payload: unknown }): { detai
     return { detail: why && changes ? `${why} — ${changes}` : why ?? changes, reason: null };
   }
   if (a.type === "REPRESENTATION_CHANGED") {
-    // "Changed representation from Listing to Both Purchase & Listing — Added: RLA; Removed: …"
+    // "Changed representation from Listing to Both Purchase & Listing — Added: RLA; Removed: …; Made optional: …"
     const from = asText(p.from);
     const to = asText(p.to);
     if (!from || !to) return { detail: null, reason: null };
     const parts = [
       list(p.added).length ? `Added: ${list(p.added).join(", ")}` : null,
       list(p.removed).length ? `Removed: ${list(p.removed).join(", ")}` : null,
+      list(p.demoted).length ? `Made optional: ${list(p.demoted).join(", ")}` : null,
     ].filter(Boolean);
     const head = `Changed representation from ${transactionSideLabel(from)} to ${transactionSideLabel(to)}`;
     return { detail: parts.length ? `${head} — ${parts.join("; ")}` : head, reason: null };

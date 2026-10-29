@@ -162,6 +162,14 @@ describe("POST /api/transactions/[id]/representation", () => {
     expect(prisma.fileChecklistItem.update).toHaveBeenCalledWith({ where: { id: "r2" }, data: { isRequired: false } });
   });
 
+  it("lists the kept old-type rows it made optional in the activity", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(file({ checklistItems: [row("r2", "Listing Only Doc", 1), row("r1", "Shared")] }) as any);
+    vi.mocked(prisma.checklistTemplate.findFirst).mockResolvedValue({ items: [item("Buyer Rep Agreement"), item("Shared", { isRequired: false })] } as any);
+    await call({ transactionSide: "DUAL" });
+    const data = (vi.mocked(prisma.fileActivity.create).mock.calls[0][0] as any).data;
+    expect(data.payload.demoted).toEqual(["Listing Only Doc"]);
+  });
+
   it("runs maybeAutoPending as the admin after success, not on a 400", async () => {
     vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(file() as any);
     await call({ transactionSide: "DUAL" });

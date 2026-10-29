@@ -120,6 +120,11 @@ describe("describeActivity — REPRESENTATION_CHANGED", () => {
       .toBe("Changed representation from Listing to Both Purchase & Listing — Added: RLA; Removed: X");
   });
 
+  it("names rows made optional, after added and removed", () => {
+    expect(describeActivity({ type: "REPRESENTATION_CHANGED", payload: { from: "DUAL", to: "PURCHASE", added: [], removed: ["SPQ"], demoted: ["RLA"] } }).detail)
+      .toBe("Changed representation from Both Purchase & Listing to Purchase — Removed: SPQ; Made optional: RLA");
+  });
+
   it("reads plainly when the checklist didn't change, and is blank for a bad payload", () => {
     expect(describeActivity({ type: "REPRESENTATION_CHANGED", payload: { from: "PURCHASE", to: "LISTING", added: [], removed: [] } }))
       .toEqual({ detail: "Changed representation from Purchase to Listing", reason: null });

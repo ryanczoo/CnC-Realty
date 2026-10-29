@@ -71,6 +71,10 @@ describe("planRepresentationChange", () => {
   it("keeps a row with a document", () => {
     expect(planRepresentationChange([item("A")], [row("2", "Z", { documentCount: 1 })], null).removeIds).toEqual([]);
   });
+  it("lists only kept old-type rows as demoted, not rows that are optional on the new side", () => {
+    const p = planRepresentationChange([item("A", { isRequired: false })], [row("1", "A"), row("2", "Z", { documentCount: 1 })], null);
+    expect(p.demotedIds).toEqual(["2"]);
+  });
   it("demotes a kept old-type row (has a document) from required", () => {
     const p = planRepresentationChange([item("A")], [row("2", "Z", { documentCount: 1 })], null);
     expect(p.removeIds).toEqual([]);
