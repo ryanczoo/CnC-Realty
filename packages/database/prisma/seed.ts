@@ -48,13 +48,14 @@ async function main() {
     listingType: string,
     transactionSide: string,
     propertyCategory: string,
-    items: { name: string; description: string; isRequired: boolean; order: number; builtBefore?: number }[]
+    items: { name: string; description: string | null; isRequired: boolean; order: number; builtBefore?: number; skipWhenConverted?: boolean }[]
   ) {
     await prisma.checklistTemplateItem.deleteMany({ where: { templateId: id } });
+    const rows = items.map((i) => ({ ...i, skipWhenConverted: i.skipWhenConverted ?? false }));
     return prisma.checklistTemplate.upsert({
       where: { id },
-      update: { name, fileType, listingType, transactionSide, propertyCategory, items: { create: items } },
-      create: { id, name, fileType, listingType, transactionSide, propertyCategory, isActive: true, items: { create: items } },
+      update: { name, fileType, listingType, transactionSide, propertyCategory, items: { create: rows } },
+      create: { id, name, fileType, listingType, transactionSide, propertyCategory, isActive: true, items: { create: rows } },
     });
   }
 
