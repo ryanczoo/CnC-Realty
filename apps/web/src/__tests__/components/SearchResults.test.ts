@@ -15,3 +15,29 @@ describe("shouldRenderMap", () => {
     expect(shouldRenderMap(true, false, false, true)).toBe(true);
   });
 });
+
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { NearbyCities } from "@/components/properties/SearchResults";
+import { filtersFromParams } from "@/hooks/useSearchFilters";
+
+describe("filtersFromParams", () => {
+  it("reads the search filters from the address bar", () => {
+    const f = filtersFromParams(new URLSearchParams("query=Cerritos&minBeds=3"));
+    expect(f).toEqual({
+      query: "Cerritos", listingType: "FOR_SALE", minPrice: "", maxPrice: "", minBeds: "3", minBaths: "", propertyType: "",
+    });
+  });
+});
+
+describe("NearbyCities", () => {
+  it("links each nearby city page", () => {
+    const html = renderToStaticMarkup(createElement(NearbyCities, { cities: [{ name: "Artesia", href: "/homes-for-sale/artesia" }] }));
+    expect(html).toContain("Nearby");
+    expect(html).toContain('href="/homes-for-sale/artesia"');
+    expect(html).toContain(">Artesia<");
+  });
+  it("renders nothing without cities", () => {
+    expect(renderToStaticMarkup(createElement(NearbyCities, { cities: [] }))).toBe("");
+  });
+});

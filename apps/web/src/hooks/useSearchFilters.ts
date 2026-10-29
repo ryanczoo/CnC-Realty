@@ -5,11 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { DEFAULT_FILTERS, SearchFilters } from "@/types/property";
 import { buildFilterQueryString } from "@/lib/search-filters";
 
-export function useSearchFilters() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-
-  const [filters, setFiltersState] = useState<SearchFilters>(() => ({
+export function filtersFromParams(searchParams: Pick<URLSearchParams, "get">): SearchFilters {
+  return {
     query: searchParams.get("query") ?? "",
     listingType: searchParams.get("listingType") ?? "FOR_SALE",
     minPrice: searchParams.get("minPrice") ?? "",
@@ -17,7 +14,14 @@ export function useSearchFilters() {
     minBeds: searchParams.get("minBeds") ?? "",
     minBaths: searchParams.get("minBaths") ?? "",
     propertyType: searchParams.get("propertyType") ?? "",
-  }));
+  };
+}
+
+// The Search page's filters, starting from `initial`. Every change lands on /properties, so a city page
+// (/homes-for-sale/<city>) hands off to the normal search the moment a filter changes.
+export function useFilterState(initial: SearchFilters) {
+  const router = useRouter();
+  const [filters, setFiltersState] = useState<SearchFilters>(initial);
 
   // Applies one or more filters at once — every change is an explicit submit
   // (Enter / the search icon, or a filter dropdown's Apply button). Takes a
@@ -47,4 +51,9 @@ export function useSearchFilters() {
     .some(([, v]) => Boolean(v));
 
   return { filters, applyFilters, clearFilters, hasActiveFilters };
+}
+
+export function useSearchFilters() {
+  const searchParams = useSearchParams();
+  return useFilterState(filtersFromParams(searchParams));
 }

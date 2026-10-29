@@ -4,19 +4,47 @@ import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { useIsMobile, MOBILE_QUERY } from "@/hooks/useIsMobile";
 import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
-import { useSearchFilters } from "@/hooks/useSearchFilters";
+import Link from "next/link";
+import { useFilterState, useSearchFilters } from "@/hooks/useSearchFilters";
 import { useProperties } from "@/hooks/useProperties";
 import { useSavedProperties } from "@/hooks/useSavedProperties";
 import { PropertyCard } from "./PropertyCard";
 import { PropertyMap, MapPlaceholder } from "./PropertyMap";
 import { PropertyDrawer } from "./PropertyDrawer";
 import { FilterBar } from "./FilterBar";
-import { PropertyListing } from "@/types/property";
+import { PropertyListing, SearchFilters } from "@/types/property";
 import { Loader2 } from "lucide-react";
+
+export interface NearbyCity {
+  name: string;
+  href: string;
+}
 
 interface Props {
   initialProperties: PropertyListing[];
   initialTotal: number;
+  // City pages: start from these filters instead of reading the address bar, so the first page of homes is in the
+  // cached HTML. The Search page leaves this out and reads the address bar as before.
+  initialFilters?: SearchFilters;
+  nearby?: NearbyCity[];
+}
+
+type FilterState = ReturnType<typeof useFilterState>;
+
+// The one line of links to nearby city pages, above the cards on a city page.
+export function NearbyCities({ cities }: { cities: NearbyCity[] }) {
+  if (cities.length === 0) return null;
+  return (
+    <nav aria-label="Nearby cities" className="col-span-2 px-1 font-sans text-xs text-white/50 max-sm:col-span-1">
+      Nearby:{" "}
+      {cities.map((c, i) => (
+        <span key={c.href}>
+          {i > 0 && " · "}
+          <Link href={c.href} className="text-white/70 hover:text-[#9E8C61]">{c.name}</Link>
+        </span>
+      ))}
+    </nav>
+  );
 }
 
 // Phones open on the list; the map code (~1.7 MB) downloads only on the first
@@ -35,8 +63,16 @@ export function shouldRenderMap(
   return !phoneAtLoad || mapRequested || (mounted && !isMobile);
 }
 
-function SearchResultsInner({ initialProperties, initialTotal }: Props) {
-  const { filters, applyFilters, clearFilters, hasActiveFilters } = useSearchFilters();
+function UrlSearchResults(props: Props) {
+  return <SearchResultsView {...props} filterState={useSearchFilters()} />;
+}
+
+function SeededSearchResults(props: Props & { initialFilters: SearchFilters }) {
+  return <SearchResultsView {...props} filterState={useFilterState(props.initialFilters)} />;
+}
+
+function SearchResultsView({ initialProperties, initialTotal, nearby, filterState }: Props & { filterState: FilterState }) {
+  const { filters, applyFilters, clearFilters, hasActiveFilters } = filterState;
   const { properties, total, isLoading, isError, hasMore, loadNextPage } = useProperties(
     filters,
     { properties: initialProperties, total: initialTotal }
@@ -113,6 +149,7 @@ function SearchResultsInner({ initialProperties, initialTotal }: Props) {
         {/* List pane — 45% */}
         <div className={`flex w-[45%] flex-col overflow-y-auto max-lg:w-full${showMap ? " max-lg:hidden" : ""}`}>
           <div className="grid grid-cols-2 gap-3 p-3 max-sm:grid-cols-1 max-lg:pb-24">
+            {nearby && <NearbyCities cities={nearby} />}
             {properties.map((p) => (
               <PropertyCard
                 key={p.mlsNumber}
@@ -186,9 +223,10 @@ function SearchResultsInner({ initialProperties, initialTotal }: Props) {
 }
 
 export function SearchResults(props: Props) {
+  if (props.initialFilters) return <SeededSearchResults {...props} initialFilters={props.initialFilters} />;
   return (
     <Suspense fallback={<div className="h-screen bg-[#0f0f0f]" />}>
-      <SearchResultsInner {...props} />
+      <UrlSearchResults {...props} />
     </Suspense>
   );
 }
