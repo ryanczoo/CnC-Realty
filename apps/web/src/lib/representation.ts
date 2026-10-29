@@ -46,8 +46,11 @@ export function planRepresentationChange(items: TemplateItemLike[], rows: FileRo
   return { add, removeIds, requiredUpdates };
 }
 
+// Finished files can't change side. The route and the Overview pencil both read this one list.
+export const REPRESENTATION_FINISHED = ["CLOSED", "CANCELED_APPROVED", "ARCHIVED"] as const;
+
 // Finished files and files locked pending a transfer can't change side (the server refuses too).
-const REPRESENTATION_LOCKED = new Set(["CLOSED", "CANCELED_APPROVED", "ARCHIVED", "PENDING_TRANSFER"]);
+const REPRESENTATION_LOCKED = new Set<string>([...REPRESENTATION_FINISHED, "PENDING_TRANSFER"]);
 
 // The sides the Overview pencil offers for a file, or null when it shouldn't show one.
 export function representationPencilSides(side: string, status: string): readonly TransactionSide[] | null {

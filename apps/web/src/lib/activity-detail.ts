@@ -5,6 +5,8 @@ type Payload = { name?: unknown; note?: unknown; from?: unknown; to?: unknown; a
 
 const asText = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
 
+const list = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []);
+
 // Extra detail for one activity row, read from the payload the API already saves.
 export function describeActivity(a: { type: string; payload: unknown }): { detail: string | null; reason: string | null } {
   const p: Payload = a.payload && typeof a.payload === "object" ? (a.payload as Payload) : {};
@@ -33,7 +35,6 @@ export function describeActivity(a: { type: string; payload: unknown }): { detai
   }
   if (a.type === "CHECKLIST_UPDATED") {
     // "Year Built set to 1952 — checklist added: LPD, …; removed: …"
-    const list = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []);
     const parts = [
       list(p.added).length ? `added: ${list(p.added).join(", ")}` : null,
       list(p.removed).length ? `removed: ${list(p.removed).join(", ")}` : null,
@@ -47,7 +48,6 @@ export function describeActivity(a: { type: string; payload: unknown }): { detai
     const from = asText(p.from);
     const to = asText(p.to);
     if (!from || !to) return { detail: null, reason: null };
-    const list = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []);
     const parts = [
       list(p.added).length ? `Added: ${list(p.added).join(", ")}` : null,
       list(p.removed).length ? `Removed: ${list(p.removed).join(", ")}` : null,

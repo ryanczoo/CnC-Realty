@@ -2,12 +2,12 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/api-auth";
 import { checklistTemplateWhere } from "@/lib/checklist-template-match";
-import { canChangeRepresentation, planRepresentationChange, templateItemsForFile } from "@/lib/representation";
+import { canChangeRepresentation, planRepresentationChange, templateItemsForFile, REPRESENTATION_FINISHED } from "@/lib/representation";
 import { checklistCreateData, shortItemName } from "@/lib/year-checklist";
 import { resolveCommission } from "@/lib/commission";
 import { isLeaseSide } from "@/types/transaction";
 
-const FINISHED = new Set(["CLOSED", "CANCELED_APPROVED", "ARCHIVED"]);
+const FINISHED = new Set<string>(REPRESENTATION_FINISHED);
 
 // Admin only: switch a file between the sides of its own family (Purchase /
 // Listing / Dual, or the lease sides). The checklist is re-planned, the
