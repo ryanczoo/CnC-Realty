@@ -3,7 +3,7 @@
 // items without one apply to every file, as before. File rows are matched to
 // template items by name (rows keep no link to the template).
 
-export type TemplateItemLike = { name: string; description: string | null; order: number; isRequired: boolean; builtBefore: number | null };
+export type TemplateItemLike = { name: string; description: string | null; order: number; isRequired: boolean; builtBefore: number | null; skipWhenConverted?: boolean };
 export type FileRowLike = { id: string; name: string; isRequired: boolean; documentCount: number };
 
 export function builtBeforeApplies(builtBefore: number | null | undefined, yearBuilt: number | null | undefined): boolean {
