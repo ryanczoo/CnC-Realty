@@ -7,8 +7,9 @@ import { prisma } from "@/lib/prisma";
 import { checkOwnership, assertFileEditable } from "@/lib/api-auth";
 import { convertBlockedReason, CHECKLIST_ITEMS_WITH_DOCS_INCLUDE } from "@/lib/transaction-helpers";
 import { convertedCommission } from "@/lib/commission";
+import { convertSideChoices, templateItemsForFile } from "@/lib/representation";
 
-export async function POST(_req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -24,9 +25,14 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
   const blocked = convertBlockedReason(listing);
   if (blocked) return NextResponse.json({ error: blocked }, { status: 400 });
 
-  const transactionSide = listing.listingType === "RESIDENTIAL_LEASE" || listing.listingType === "COMMERCIAL_LEASE"
-    ? "LEASE_LANDLORD"
-    : "LISTING";
+  let body: unknown = null;
+  try { body = await req.json(); } catch { /* missing or invalid JSON falls through to the 400 below */ }
+  const chosen = (body as { transactionSide?: unknown } | null)?.transactionSide;
+  const choices: readonly string[] = convertSideChoices(listing.listingType);
+  if (typeof chosen !== "string" || !choices.includes(chosen)) {
+    return NextResponse.json({ error: "Choose who this transaction represents." }, { status: 400 });
+  }
+  const transactionSide = chosen as "LISTING" | "DUAL" | "LEASE_LANDLORD" | "LEASE_DUAL";
   const propertyCategory = listing.listingType.startsWith("COMMERCIAL") ? "COMMERCIAL" : "RESIDENTIAL";
 
   const template = await prisma.checklistTemplate.findFirst({
@@ -67,7 +73,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
           })),
         } : undefined,
         checklistItems: template ? {
-          create: checklistCreateData("TRANSACTION", template.items, listing.yearBuilt),
+          create: checklistCreateData("TRANSACTION", templateItemsForFile(template.items, true), listing.yearBuilt),
         } : undefined,
         activities: {
           create: {

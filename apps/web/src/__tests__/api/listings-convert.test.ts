@@ -16,6 +16,9 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { POST } from "../../app/api/listings/[id]/convert/route";
 
+const post = (side?: string) =>
+  new Request("http://localhost", { method: "POST", body: JSON.stringify(side === undefined ? {} : { transactionSide: side }) });
+
 const SESSION_AGENT = { user: { id: "u1", role: "AGENT", agentId: "a1" } };
 
 const SALE_LISTING = {
@@ -40,21 +43,21 @@ describe("POST /api/listings/[id]/convert", () => {
 
   it("returns 401 when not authenticated", async () => {
     vi.mocked(getServerSession).mockResolvedValue(null);
-    const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "l1" } });
+    const res = await POST(post("LISTING"), { params: { id: "l1" } });
     expect(res.status).toBe(401);
   });
 
   it("returns 404 when listing not found", async () => {
     vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
     vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(null);
-    const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "l1" } });
+    const res = await POST(post("LISTING"), { params: { id: "l1" } });
     expect(res.status).toBe(404);
   });
 
   it("returns 403 when the listing belongs to a different agent", async () => {
     vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u1", role: "AGENT", agentId: "a2" } } as any);
     vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(SALE_LISTING as any);
-    const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "l1" } });
+    const res = await POST(post("LISTING"), { params: { id: "l1" } });
     expect(res.status).toBe(403);
   });
 
@@ -63,7 +66,7 @@ describe("POST /api/listings/[id]/convert", () => {
     vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(SALE_LISTING as any);
     vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "tf-admin" } as any);
 
-    const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "l1" } });
+    const res = await POST(post("LISTING"), { params: { id: "l1" } });
     expect(res.status).toBe(201);
   });
 
@@ -73,7 +76,7 @@ describe("POST /api/listings/[id]/convert", () => {
       ...SALE_LISTING,
       checklistItems: [{ id: "c1", name: "RLA", isRequired: true, documents: [] }],
     } as any);
-    const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "l1" } });
+    const res = await POST(post("LISTING"), { params: { id: "l1" } });
     expect(res.status).toBe(400);
     expect((await res.json()).error).toBe("Upload the 1 remaining required listing document before converting");
     expect(prisma.transactionFile.create).not.toHaveBeenCalled();
@@ -82,7 +85,7 @@ describe("POST /api/listings/[id]/convert", () => {
   it("refuses to convert a listing that isn't Active", async () => {
     vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
     vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ ...SALE_LISTING, status: "COMING_SOON" } as any);
-    const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "l1" } });
+    const res = await POST(post("LISTING"), { params: { id: "l1" } });
     expect(res.status).toBe(400);
     expect(prisma.transactionFile.create).not.toHaveBeenCalled();
   });
@@ -96,7 +99,7 @@ describe("POST /api/listings/[id]/convert", () => {
       { name: "EQ", description: null, order: 3, isRequired: true, builtBefore: 1950 },
     ] } as any);
     vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "tf-y" } as any);
-    const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "l1" } });
+    const res = await POST(post("LISTING"), { params: { id: "l1" } });
     expect(res.status).toBe(201);
     const data = vi.mocked(prisma.transactionFile.create).mock.calls[0][0].data as any;
     expect(data).toMatchObject({ yearBuilt: 1952, propertyType: "Single Family" });
@@ -107,7 +110,7 @@ describe("POST /api/listings/[id]/convert", () => {
     vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
     vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ ...SALE_LISTING, parties: [], photoKey: "wizard-photos/u1/abc/photo.jpg" } as any);
     vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "tf-photo" } as any);
-    const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "l1" } });
+    const res = await POST(post("LISTING"), { params: { id: "l1" } });
     expect(res.status).toBe(201);
     expect((vi.mocked(prisma.transactionFile.create).mock.calls[0][0].data as any).photoKey).toBe("wizard-photos/u1/abc/photo.jpg");
   });
@@ -122,7 +125,7 @@ describe("POST /api/listings/[id]/convert", () => {
     } as any);
     vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "tf-parties" } as any);
 
-    const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "l1" } });
+    const res = await POST(post("LISTING"), { params: { id: "l1" } });
     expect(res.status).toBe(201);
     expect(prisma.listingFile.findUnique).toHaveBeenCalledWith(
       expect.objectContaining({ include: expect.objectContaining({ parties: true }) })
@@ -138,7 +141,7 @@ describe("POST /api/listings/[id]/convert", () => {
     vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(SALE_LISTING as any);
     vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "tf1" } as any);
 
-    const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "l1" } });
+    const res = await POST(post("LISTING"), { params: { id: "l1" } });
     expect(res.status).toBe(201);
     expect(prisma.transactionFile.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ transactionSide: "LISTING" }) })
@@ -150,7 +153,7 @@ describe("POST /api/listings/[id]/convert", () => {
     vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(LEASE_LISTING as any);
     vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "tf2" } as any);
 
-    const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "l2" } });
+    const res = await POST(post("LEASE_LANDLORD"), { params: { id: "l2" } });
     expect(res.status).toBe(201);
     expect(prisma.transactionFile.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ transactionSide: "LEASE_LANDLORD" }) })
@@ -162,7 +165,7 @@ describe("POST /api/listings/[id]/convert", () => {
     vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(LEASE_LISTING as any);
     vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "tf3" } as any);
 
-    await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "l2" } });
+    await POST(post("LEASE_LANDLORD"), { params: { id: "l2" } });
     expect(prisma.checklistTemplate.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
@@ -195,7 +198,7 @@ describe("POST /api/listings/[id]/convert — commercial propertyCategory", () =
     vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(COMMERCIAL_SALE_LISTING as any);
     vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "tf4" } as any);
 
-    const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "l3" } });
+    const res = await POST(post("LISTING"), { params: { id: "l3" } });
     expect(res.status).toBe(201);
     expect(prisma.transactionFile.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ transactionSide: "LISTING", propertyCategory: "COMMERCIAL" }) })
@@ -207,7 +210,7 @@ describe("POST /api/listings/[id]/convert — commercial propertyCategory", () =
     vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(COMMERCIAL_LEASE_LISTING as any);
     vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "tf5" } as any);
 
-    const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "l4" } });
+    const res = await POST(post("LEASE_LANDLORD"), { params: { id: "l4" } });
     expect(res.status).toBe(201);
     expect(prisma.transactionFile.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ transactionSide: "LEASE_LANDLORD", propertyCategory: "COMMERCIAL" }) })
@@ -219,7 +222,7 @@ describe("POST /api/listings/[id]/convert — commercial propertyCategory", () =
     vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(SALE_LISTING as any);
     vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "tf6" } as any);
 
-    await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "l1" } });
+    await POST(post("LISTING"), { params: { id: "l1" } });
     expect(prisma.transactionFile.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ transactionSide: "LISTING", propertyCategory: "RESIDENTIAL" }) })
     );
@@ -230,7 +233,7 @@ describe("POST /api/listings/[id]/convert — commercial propertyCategory", () =
     vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(COMMERCIAL_LEASE_LISTING as any);
     vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "tf7" } as any);
 
-    await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "l4" } });
+    await POST(post("LEASE_LANDLORD"), { params: { id: "l4" } });
     expect(prisma.checklistTemplate.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
@@ -248,7 +251,7 @@ describe("POST /api/listings/[id]/convert — carries the listing's commission",
     vi.mocked(prisma.$transaction).mockImplementation(((arr: any[]) => Promise.all(arr)) as any);
     vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "tf-c" } as any);
   });
-  const convert = () => POST(new Request("http://localhost", { method: "POST" }), { params: { id: "l1" } });
+  const convert = (side = "LISTING") => POST(post(side), { params: { id: "l1" } });
   const created = () => vi.mocked(prisma.transactionFile.create).mock.calls[0][0].data as any;
 
   it("a sale listing's % becomes the Listing Agent commission", async () => {
@@ -261,7 +264,71 @@ describe("POST /api/listings/[id]/convert — carries the listing's commission",
   it("a lease listing's $ becomes the Lease Commission — including when the broker converts", async () => {
     vi.mocked(getServerSession).mockResolvedValue({ user: { id: "admin1", role: "ADMIN", agentId: null } } as any);
     vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ ...LEASE_LISTING, commissionPercent: null, commissionAmount: 1200, commissionNotes: null } as any);
-    expect((await convert()).status).toBe(201);
+    expect((await convert("LEASE_LANDLORD")).status).toBe(201);
     expect(created()).toMatchObject({ transactionSide: "LEASE_LANDLORD", saleCommissionAmount: 1200, commissionGCI: 1200, agentId: "a1" });
+  });
+});
+
+describe("POST /api/listings/[id]/convert — chosen side", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(prisma.$transaction).mockImplementation(((arr: any[]) => Promise.all(arr)) as any);
+    vi.mocked(prisma.fileActivity.create).mockResolvedValue({} as any);
+    vi.mocked(prisma.checklistTemplate.findFirst).mockResolvedValue(null);
+    vi.mocked(prisma.listingFile.update).mockResolvedValue({} as any);
+    vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "tf-s" } as any);
+    vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
+  });
+  const created = () => vi.mocked(prisma.transactionFile.create).mock.calls[0][0].data as any;
+  const sideOf = () => (vi.mocked(prisma.checklistTemplate.findFirst).mock.calls[0][0] as any).where.OR[0];
+
+  it("creates a DUAL file from a residential sale listing", async () => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(SALE_LISTING as any);
+    expect((await POST(post("DUAL"), { params: { id: "l1" } })).status).toBe(201);
+    expect(created()).toMatchObject({ transactionSide: "DUAL", propertyCategory: "RESIDENTIAL" });
+    expect(sideOf()).toEqual({ transactionSide: "DUAL" });
+  });
+
+  it("creates a LEASE_DUAL file from a residential lease listing", async () => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(LEASE_LISTING as any);
+    expect((await POST(post("LEASE_DUAL"), { params: { id: "l2" } })).status).toBe(201);
+    expect(created()).toMatchObject({ transactionSide: "LEASE_DUAL", propertyCategory: "RESIDENTIAL" });
+    expect(sideOf()).toEqual({ transactionSide: "LEASE_DUAL" });
+  });
+
+  it("creates COMMERCIAL + LISTING from a commercial sale listing", async () => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ ...SALE_LISTING, listingType: "COMMERCIAL_SALE" } as any);
+    expect((await POST(post("LISTING"), { params: { id: "l1" } })).status).toBe(201);
+    expect(created()).toMatchObject({ transactionSide: "LISTING", propertyCategory: "COMMERCIAL" });
+  });
+
+  it("leaves skip-on-convert items off the checklist", async () => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(SALE_LISTING as any);
+    vi.mocked(prisma.checklistTemplate.findFirst).mockResolvedValue({ items: [
+      { name: "RLA", description: null, order: 1, isRequired: true, builtBefore: null, skipWhenConverted: true },
+      { name: "RPA", description: null, order: 2, isRequired: true, builtBefore: null, skipWhenConverted: false },
+    ] } as any);
+    expect((await POST(post("LISTING"), { params: { id: "l1" } })).status).toBe(201);
+    expect(created().checklistItems.create.map((i: any) => i.name)).toEqual(["RPA"]);
+  });
+
+  it.each([
+    ["transactionSide is missing", () => post()],
+    ["the body isn't JSON", () => new Request("http://localhost", { method: "POST", body: "nope" })],
+    ["there is no body", () => new Request("http://localhost", { method: "POST" })],
+    ["a sale listing is sent LEASE_DUAL", () => post("LEASE_DUAL")],
+  ])("400 when %s", async (_n, make) => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(SALE_LISTING as any);
+    const res = await POST(make(), { params: { id: "l1" } });
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("Choose who this transaction represents.");
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.transactionFile.create).not.toHaveBeenCalled();
+  });
+
+  it("DUAL puts the listing commission on the listing side", async () => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ ...SALE_LISTING, commissionPercent: 2.5, commissionAmount: null, commissionNotes: null } as any);
+    expect((await POST(post("DUAL"), { params: { id: "l1" } })).status).toBe(201);
+    expect(created()).toMatchObject({ transactionSide: "DUAL", listingCommissionPct: 2.5, saleCommissionPct: null });
   });
 });
