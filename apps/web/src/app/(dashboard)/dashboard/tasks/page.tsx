@@ -45,7 +45,7 @@ function TaskRow({ task, onCheck }: { task: CrossLeadTask; onCheck: (task: Cross
       />
       <div className="min-w-0 flex-1">
         <p className={`truncate text-sm text-[#1B1B1B] ${PHONE_WRAP_TEXT}`}>{task.title}</p>
-        <p className="text-xs text-[#1B1B1B]/40">
+        <p className={`text-xs text-[#1B1B1B]/40 ${PHONE_WRAP_TEXT}`}>
           {TYPE_LABELS[task.taskType] ?? task.taskType}
           {" · "}
           <Link href={`/dashboard/leads/${task.leadId}`} className="hover:text-[#9E8C61] hover:underline" onClick={(e) => e.stopPropagation()}>
@@ -164,7 +164,7 @@ export default function TasksDashboardPage() {
               <input type="checkbox" checked disabled className="h-4 w-4 accent-[#9E8C61]" />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm line-through text-[#1B1B1B]/60">{t.title}</p>
-                <p className="text-xs text-[#1B1B1B]/30">
+                <p className={`text-xs text-[#1B1B1B]/30 ${PHONE_WRAP_TEXT}`}>
                   {TYPE_LABELS[t.taskType] ?? t.taskType}
                   {" · "}
                   <Link href={`/dashboard/leads/${t.leadId}`} className="hover:underline">
