@@ -325,7 +325,7 @@ export function ServicesSection() {
       {/* Lead capture modal */}
       {modalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm max-lg:px-4"
+          role="dialog" aria-modal="true" aria-label="Let's get started" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm max-lg:px-4"
           onClick={(e) => { if (e.target === e.currentTarget) { setModalOpen(false); setModalStatus("idle"); setModalForm({ firstName: "", lastName: "", email: "", phone: "", dealType: "Buy" });} }}
         >
           <div className="relative w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl max-lg:max-h-[90dvh] max-lg:overflow-y-auto max-lg:p-6">

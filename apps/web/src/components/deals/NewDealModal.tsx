@@ -93,7 +93,7 @@ export function NewDealModal({ open, onClose, onSaved, initialLeadId, initialLea
   }
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center ${open ? "" : "hidden"} ${PHONE_POPUP_FRAME}`}>
+    <div role="dialog" aria-modal="true" aria-label="New Deal" className={`fixed inset-0 z-50 flex items-center justify-center ${open ? "" : "hidden"} ${PHONE_POPUP_FRAME}`}>
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
       <div className={`relative w-full max-w-md rounded-2xl bg-white p-6 shadow-xl ${PHONE_POPUP_PANEL}`}>
         <div className="mb-5 flex items-center justify-between">

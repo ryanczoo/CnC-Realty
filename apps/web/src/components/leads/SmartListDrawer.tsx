@@ -342,7 +342,7 @@ export function SmartListDrawer({ open, onClose, initial, onSaved }: Props) {
   const canSave = name.trim().length > 0 && conditions.length > 0 && !saving;
 
   return (
-    <div className={`fixed inset-0 z-50 flex justify-end${open ? "" : " hidden"}`}>
+    <div role="dialog" aria-modal="true" aria-label="Smart List" className={`fixed inset-0 z-50 flex justify-end${open ? "" : " hidden"}`}>
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/20"

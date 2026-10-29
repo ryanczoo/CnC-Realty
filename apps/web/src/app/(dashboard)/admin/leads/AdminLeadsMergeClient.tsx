@@ -177,7 +177,7 @@ export function AdminLeadsMergeClient({ leads }: Props) {
       </div>
 
       {merging && (
-        <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40 ${PHONE_POPUP_FRAME}`}>
+        <div role="dialog" aria-modal="true" aria-label="Merge Leads" className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40 ${PHONE_POPUP_FRAME}`}>
           <div className={`w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl ${PHONE_POPUP_PANEL}`}>
             <h3 className="mb-2 font-sans text-lg font-light text-[#1B1B1B]">
               Merge Leads

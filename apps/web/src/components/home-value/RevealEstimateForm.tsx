@@ -94,7 +94,7 @@ export function RevealEstimateForm({ address, zip, beds, sqft }: Props) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 max-lg:items-start max-lg:overflow-y-auto max-lg:py-6"
+            role="dialog" aria-modal="true" aria-label="Get Your Exact Estimate" className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 max-lg:items-start max-lg:overflow-y-auto max-lg:py-6"
             onClick={() => setOpen(false)}
           >
             <motion.div

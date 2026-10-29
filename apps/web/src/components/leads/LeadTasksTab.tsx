@@ -179,7 +179,7 @@ export function LeadTasksTab({ leadId, initialTasks }: Props) {
 
       {/* New Task panel */}
       {newTaskOpen && (
-        <div className={`fixed inset-0 z-50 flex items-end justify-end ${PHONE_POPUP_FRAME}`}>
+        <div role="dialog" aria-modal="true" aria-label="New Task" className={`fixed inset-0 z-50 flex items-end justify-end ${PHONE_POPUP_FRAME}`}>
           <div className="absolute inset-0 bg-black/20" onClick={() => setNewTaskOpen(false)} />
           <div className={`relative w-full max-w-md rounded-t-2xl bg-white p-6 shadow-2xl sm:rounded-2xl sm:m-4 ${PHONE_POPUP_PANEL}`}>
             <h3 className="mb-4 font-sans text-lg font-light">New Task</h3>

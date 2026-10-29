@@ -155,7 +155,7 @@ export function PropertyCard({ property, isSaved, onToggleSave, onHover, onSelec
 
       {showLoginModal && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm"
+          role="dialog" aria-modal="true" aria-label="Sign in to save" className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm"
           onClick={() => setShowLoginModal(false)}
         >
           <div

@@ -107,7 +107,7 @@ export function PropertyDrawer({ mlsNumber, onClose }: Props) {
         animate={{ x: 0 }}
         exit={{ x: "100%" }}
         transition={{ type: "spring", stiffness: 320, damping: 32 }}
-        className="fixed bottom-0 right-0 z-50 flex flex-col overflow-hidden bg-[#F2F0EF] shadow-2xl max-lg:!w-full"
+        role="dialog" aria-modal="true" aria-label="Property details" className="fixed bottom-0 right-0 z-50 flex flex-col overflow-hidden bg-[#F2F0EF] shadow-2xl max-lg:!w-full"
         style={{ top: "64px", width: "min(880px, 63vw)" }}
       >
         {/* Top bar */}

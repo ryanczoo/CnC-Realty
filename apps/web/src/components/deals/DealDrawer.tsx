@@ -109,7 +109,7 @@ export function DealDrawer({ open, deal, onClose, onSaved, onDeleted, onConverte
   const hasLinkedFile = !!deal?.transactionFileId;
 
   return (
-    <div className={`fixed inset-0 z-40 ${open ? "" : "hidden"}`}>
+    <div role="dialog" aria-modal="true" aria-label="Deal details" className={`fixed inset-0 z-40 ${open ? "" : "hidden"}`}>
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
       <div className={`absolute ${DRAWER_PANEL_POSITION} flex w-full max-w-lg flex-col bg-white shadow-xl`}>
         <div className="flex items-center justify-between border-b border-[#1B1B1B]/10 px-6 py-4">

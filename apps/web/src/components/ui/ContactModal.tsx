@@ -74,7 +74,7 @@ export function ContactModal({ open, source, onClose }: ContactModalProps) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 max-lg:items-start max-lg:pb-4 max-lg:pt-20"
+          role="dialog" aria-modal="true" aria-label="Let's Chat" className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 max-lg:items-start max-lg:pb-4 max-lg:pt-20"
           onClick={onClose}
         >
           <motion.div

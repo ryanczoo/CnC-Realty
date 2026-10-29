@@ -62,7 +62,7 @@ export function ConvertListingModal({
   }
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40 ${PHONE_POPUP_FRAME}`}>
+    <div role="dialog" aria-modal="true" aria-label="Convert to Transaction" className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40 ${PHONE_POPUP_FRAME}`}>
       <div className={`w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl ${PHONE_POPUP_PANEL}`}>
         <div className="mb-1 flex items-center justify-between">
           <h3 className="font-sans text-lg font-light text-[#1B1B1B]">Convert to Transaction</h3>

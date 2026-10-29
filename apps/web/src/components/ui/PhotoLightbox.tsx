@@ -33,7 +33,7 @@ export function PhotoLightbox({ photos, index, alt, onIndexChange, onClose }: Pr
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[500] flex items-center justify-center bg-black/95"
+      role="dialog" aria-modal="true" aria-label="Photo viewer" className="fixed inset-0 z-[500] flex items-center justify-center bg-black/95"
       onClick={onClose}
     >
       <button

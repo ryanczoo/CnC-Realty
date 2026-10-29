@@ -69,7 +69,7 @@ export function RelationshipSection({ leadId, relationships, onChanged }: Props)
       </button>
 
       {open && (
-        <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40 ${PHONE_POPUP_FRAME}`}>
+        <div role="dialog" aria-modal="true" aria-label="Link a Contact" className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40 ${PHONE_POPUP_FRAME}`}>
           <div className={`w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl ${PHONE_POPUP_PANEL}`}>
             <h3 className="mb-4 font-sans text-lg font-light text-[#1B1B1B]">Link a Contact</h3>
             <input
