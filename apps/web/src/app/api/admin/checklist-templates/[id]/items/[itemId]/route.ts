@@ -11,6 +11,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string; it
   const body = await req.json();
   const yearError = body.builtBefore !== undefined ? builtBeforeError(body.builtBefore) : null;
   if (yearError) return NextResponse.json({ error: yearError }, { status: 400 });
+  if (body.skipWhenConverted !== undefined && typeof body.skipWhenConverted !== "boolean") {
+    return NextResponse.json({ error: "skipWhenConverted must be true or false" }, { status: 400 });
+  }
   const item = await prisma.checklistTemplateItem.update({
     where: { id: params.itemId },
     data: {
@@ -19,6 +22,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string; it
       ...(body.order !== undefined && { order: body.order }),
       ...(body.isRequired !== undefined && { isRequired: body.isRequired }),
       ...(body.builtBefore !== undefined && { builtBefore: parseBuiltBefore(body.builtBefore) }),
+      ...(body.skipWhenConverted !== undefined && { skipWhenConverted: body.skipWhenConverted }),
     },
   });
 

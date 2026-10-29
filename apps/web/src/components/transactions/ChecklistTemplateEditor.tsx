@@ -14,17 +14,19 @@ interface TemplateItem {
   order: number;
   isRequired: boolean;
   builtBefore: number | null;
+  skipWhenConverted: boolean;
 }
 
 interface Props {
   templateId: string;
   items: TemplateItem[];
+  fileType: "LISTING" | "TRANSACTION";
   onChanged: () => void;
 }
 
-export function ChecklistTemplateEditor({ templateId, items, onChanged }: Props) {
+export function ChecklistTemplateEditor({ templateId, items, fileType, onChanged }: Props) {
   const [adding, setAdding] = useState(false);
-  const [newItem, setNewItem] = useState({ name: "", description: "", isRequired: true, builtBefore: "" });
+  const [newItem, setNewItem] = useState({ name: "", description: "", isRequired: true, builtBefore: "", skipWhenConverted: false });
 
   async function addItem() {
     if (!newItem.name.trim() || builtBeforeError(newItem.builtBefore)) return;
@@ -33,7 +35,7 @@ export function ChecklistTemplateEditor({ templateId, items, onChanged }: Props)
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...newItem, order: items.length + 1 }),
     });
-    setNewItem({ name: "", description: "", isRequired: true, builtBefore: "" });
+    setNewItem({ name: "", description: "", isRequired: true, builtBefore: "", skipWhenConverted: false });
     setAdding(false);
     onChanged();
   }
@@ -48,6 +50,15 @@ export function ChecklistTemplateEditor({ templateId, items, onChanged }: Props)
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ builtBefore: value || null }),
+    });
+    onChanged();
+  }
+
+  async function toggleSkipWhenConverted(itemId: string, current: boolean) {
+    await fetch(`/api/admin/checklist-templates/${templateId}/items/${itemId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ skipWhenConverted: !current }),
     });
     onChanged();
   }
@@ -71,6 +82,12 @@ export function ChecklistTemplateEditor({ templateId, items, onChanged }: Props)
             {item.description && <p className="text-xs text-[#1B1B1B]/50">{item.description}</p>}
           </div>
           <BuiltBeforeBox value={item.builtBefore} onSave={(v) => saveBuiltBefore(item.id, v)} />
+          {fileType === "TRANSACTION" && (
+            <label className="flex items-center gap-1.5 text-xs text-[#1B1B1B]/50">
+              <input type="checkbox" checked={item.skipWhenConverted} onChange={() => toggleSkipWhenConverted(item.id, item.skipWhenConverted)} className="h-3.5 w-3.5 rounded" />
+              Skip when converted from a CnC listing
+            </label>
+          )}
           <label className="flex items-center gap-1.5 text-xs text-[#1B1B1B]/50">
             <input type="checkbox" checked={item.isRequired} onChange={() => toggleRequired(item.id, item.isRequired)} className="h-3.5 w-3.5 rounded" />
             Required
@@ -90,6 +107,12 @@ export function ChecklistTemplateEditor({ templateId, items, onChanged }: Props)
             <input value={newItem.builtBefore} onChange={(e) => setNewItem((n) => ({ ...n, builtBefore: digitsOnly(e.target.value, 4) }))} placeholder="Any year" inputMode="numeric" className={`w-24 ${BOX}`} />
             {newItem.builtBefore.length === 4 && builtBeforeError(newItem.builtBefore) && <span className="text-red-500">{builtBeforeError(newItem.builtBefore)}</span>}
           </label>
+          {fileType === "TRANSACTION" && (
+            <label className="flex items-center gap-2 text-xs text-[#1B1B1B]/60">
+              <input type="checkbox" checked={newItem.skipWhenConverted} onChange={(e) => setNewItem((n) => ({ ...n, skipWhenConverted: e.target.checked }))} />
+              Skip when converted from a CnC listing
+            </label>
+          )}
           <div className="flex items-center justify-between">
             <label className="flex items-center gap-2 text-sm text-[#1B1B1B]/60">
               <input type="checkbox" checked={newItem.isRequired} onChange={(e) => setNewItem((n) => ({ ...n, isRequired: e.target.checked }))} /> Required

@@ -48,3 +48,29 @@ describe("admin checklist items — built before", () => {
     expect((await PATCH(req("PATCH", { builtBefore: 1978 }), { params: { id: "t1", itemId: "i1" } })).status).toBe(403);
   });
 });
+
+describe("admin checklist items — skip when converted", () => {
+  it("POST defaults skipWhenConverted to false", async () => {
+    await POST(req("POST", { name: "AD", order: 1 }), { params: { id: "t1" } });
+    expect(vi.mocked(prisma.checklistTemplateItem.create).mock.calls[0][0].data).toMatchObject({ skipWhenConverted: false });
+  });
+  it("POST saves skipWhenConverted true", async () => {
+    expect((await POST(req("POST", { name: "AD", order: 1, skipWhenConverted: true }), { params: { id: "t1" } })).status).toBe(201);
+    expect(vi.mocked(prisma.checklistTemplateItem.create).mock.calls[0][0].data).toMatchObject({ skipWhenConverted: true });
+  });
+  it("PATCH saves skipWhenConverted true", async () => {
+    await PATCH(req("PATCH", { skipWhenConverted: true }), { params: { id: "t1", itemId: "i1" } });
+    expect(vi.mocked(prisma.checklistTemplateItem.update).mock.calls[0][0].data).toEqual({ skipWhenConverted: true });
+  });
+  it("PATCH rejects a non-boolean skipWhenConverted with 400", async () => {
+    const res = await PATCH(req("PATCH", { skipWhenConverted: "yes" }), { params: { id: "t1", itemId: "i1" } });
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("skipWhenConverted must be true or false");
+    expect(prisma.checklistTemplateItem.update).not.toHaveBeenCalled();
+  });
+  it("POST rejects a non-boolean skipWhenConverted with 400", async () => {
+    const res = await POST(req("POST", { name: "AD", order: 1, skipWhenConverted: "yes" }), { params: { id: "t1" } });
+    expect(res.status).toBe(400);
+    expect(prisma.checklistTemplateItem.create).not.toHaveBeenCalled();
+  });
+});

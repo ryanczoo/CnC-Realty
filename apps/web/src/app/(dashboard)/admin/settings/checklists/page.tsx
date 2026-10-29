@@ -172,6 +172,7 @@ export default function ChecklistTemplatesPage() {
                   <ChecklistTemplateEditor
                     templateId={t.id}
                     items={t.items ?? []}
+                    fileType={t.fileType}
                     onChanged={load}
                   />
                 </div>

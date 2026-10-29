@@ -8,13 +8,16 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { name, description, order, isRequired, builtBefore } = await req.json();
+  const { name, description, order, isRequired, builtBefore, skipWhenConverted } = await req.json();
   if (!name || order === undefined) return NextResponse.json({ error: "name and order required" }, { status: 400 });
   const yearError = builtBeforeError(builtBefore);
   if (yearError) return NextResponse.json({ error: yearError }, { status: 400 });
+  if (skipWhenConverted !== undefined && typeof skipWhenConverted !== "boolean") {
+    return NextResponse.json({ error: "skipWhenConverted must be true or false" }, { status: 400 });
+  }
 
   const item = await prisma.checklistTemplateItem.create({
-    data: { templateId: params.id, name, description: description ?? null, order, isRequired: isRequired ?? true, builtBefore: parseBuiltBefore(builtBefore) },
+    data: { templateId: params.id, name, description: description ?? null, order, isRequired: isRequired ?? true, builtBefore: parseBuiltBefore(builtBefore), skipWhenConverted: skipWhenConverted ?? false },
   });
 
   return NextResponse.json({ item }, { status: 201 });
