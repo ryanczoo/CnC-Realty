@@ -7,6 +7,7 @@
     { "path": "/api/cron/action-plans", "schedule": "0 8 * * *" },
     { "path": "/api/cron/listing-expiration-warnings", "schedule": "0 17 * * *" },
     { "path": "/api/cron/campaign-deliveries", "schedule": "0 * * * *" },
-    { "path": "/api/cron/wizard-photo-cleanup", "schedule": "30 10 * * *" }
+    { "path": "/api/cron/wizard-photo-cleanup", "schedule": "30 10 * * *" },
+    { "path": "/api/cron/city-pages", "schedule": "20 9 * * *" }
   ]
 }
