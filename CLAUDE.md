@@ -7779,3 +7779,43 @@ and migrations are live immediately; never run the full seed. Only Foster Road (
 2. Still pending from 10-20: Join FAQ (7 drafts above, placement unconfirmed), then Step 5 city search pages.
 3. Tooling: `.superpowers/pf-survey/yearPF.cjs`, `filesPF.cjs`. Cleanup when done comparing:
    `git worktree remove C:\Users\hey_r\Desktop\CnC-old` (at `a304fcd`).
+
+---
+
+## Session Notes — 2026-10-28 → 2026-10-29 (AD optional, listing-document rows, Dual at Convert, change representation)
+
+Live 2026-10-29 (`e6d202d6..c2ac8b72`). Spec `docs/superpowers/specs/2026-10-28-checklist-ad-and-dual-convert-design.md`,
+plan `docs/superpowers/plans/2026-10-28-checklist-ad-and-dual-convert.md`. Built subagent-driven.
+
+### What shipped
+
+- **AD optional everywhere:** every AD row renamed "AD — Agency Disclosure (if not already included)" (`AD_ITEM_NAME`
+  in `checklist-templates.ts`), optional, ordered after the last required item (10 templates + Foster Road). Reason:
+  AD is printed inside RLA/RLAN/RLASR/CLA/BRBC/RPA/CPA (not LL/RLMM).
+- **Listing-document rows** required at the top of the 8 Listing/Dual transaction templates (RLA+AVID, RLA, LL, CLA).
+- **`ChecklistTemplateItem.skipWhenConverted`** (migration `20261028120000_skip_when_converted`, applied live): rows
+  ticked are left off when a file comes from **Convert** (the listing already has them). Ticked on all Fix-2 rows +
+  Dual's AVID. Admin Checklists checkbox "Skip when converted from a CnC listing" beside "Only if built before",
+  transaction templates only. Known accepted limit: agent using the New Transaction wizard for a CnC listing is asked
+  for the RLA again.
+- **Convert pop-up** (`ConvertListingModal.tsx`, cards from `lib/convert-choices.ts`, wizard `SIDES` wording):
+  Listing vs Dual / Lease Landlord vs Lease Dual; Convert greyed until a card is picked. API requires
+  `{transactionSide}` else 400. Modal lazy-loaded (`next/dynamic` + hover/focus/touch preload) to keep framer-motion
+  out of file-page first-load JS.
+- **Change representation** (admin only, any ADMIN): pencil on Overview "Transaction Side" row → POST
+  `api/transactions/[id]/representation`. Within sale group or lease group only; never sale↔lease or Referral.
+  Refused on CLOSED/CANCELED_APPROVED/ARCHIVED (`REPRESENTATION_FINISHED`) and PENDING_TRANSFER; allowed on
+  CANCELED_PENDING. Rows with documents never removed (kept old-type rows demoted to optional); `commissionGCI`
+  recomputed; `REPRESENTATION_CHANGED` activity; then `maybeAutoPending`. Logic in `lib/representation.ts`.
+
+### Deferred minors (not fixed)
+
+Activity line doesn't list demoted rows; preload has no `.catch`; no `role="dialog"` on pop-up; add-form checkbox on
+its own row; dropdown also lists the current side (no-op).
+
+### Next Session — Start Here
+
+1. Ryan live-tests: Convert pop-up (needs an Active listing with required docs — Foster Road's Convert is disabled),
+   admin Checklists "Skip when converted" box, Foster Road AD row.
+2. Still pending: Join FAQ (7 drafts), Step 5 city search pages,
+   `git worktree remove C:\Users\hey_r\Desktop\CnC-old`.
