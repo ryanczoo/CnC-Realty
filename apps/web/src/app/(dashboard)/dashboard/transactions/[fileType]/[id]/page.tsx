@@ -252,9 +252,9 @@ export default function FileDetailPage() {
             {isListing && listing?.status === "ACTIVE" && !readOnly && (
               <ConvertListingButton
                 listingId={id}
+                listingType={listing.listingType}
                 blockedReason={convertBlockedReason(listing)}
                 onConverted={(transactionId) => router.push(`/dashboard/transactions/transaction/${transactionId}`)}
-                onError={setActionError}
               />
             )}
             {linkedTransactionId && (

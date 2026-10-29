@@ -181,9 +181,9 @@ export default function AdminFileDetailPage() {
             {listing?.status === "ACTIVE" && (
               <ConvertListingButton
                 listingId={id}
+                listingType={listing.listingType}
                 blockedReason={convertBlockedReason(listing)}
                 onConverted={(transactionId) => router.push(`/admin/transactions/transaction/${transactionId}`)}
-                onError={setActionError}
               />
             )}
             {linkedTransactionId && (
