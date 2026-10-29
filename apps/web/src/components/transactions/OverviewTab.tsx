@@ -42,6 +42,7 @@ export function OverviewTab({
         kind: "select",
         raw: transactionSideLabel(transaction.transactionSide),
         options: repSides.map(transactionSideLabel),
+        currentOption: transactionSideLabel(transaction.transactionSide),
         onSave: async (label) => {
           const next = SIDES.find((x) => x.label === label)?.value;
           if (!next) return "Choose a representation.";

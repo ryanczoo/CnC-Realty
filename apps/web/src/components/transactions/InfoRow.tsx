@@ -15,9 +15,25 @@ export interface InfoRowEdit {
   restrict?: (v: string) => string;
   inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
   options?: readonly string[];
+  // kind "select": the value the file has now — shown as "X (current)" and not pickable.
+  currentOption?: string;
   // kind "commission": the %/$ toggle's starting side; onSave gets the side chosen.
   mode?: "pct" | "flat";
   onSave: (value: string, mode?: "pct" | "flat") => Promise<string | null>;
+}
+
+// A select's choices, with the current one (if given) labelled and greyed out.
+export function SelectOptions({ options, current }: { options: readonly string[]; current?: string }) {
+  return (
+    <>
+      <option value="">Select…</option>
+      {options.map((o) => (
+        <option key={o} value={o} disabled={o === current}>
+          {o === current ? `${o} (current)` : o}
+        </option>
+      ))}
+    </>
+  );
 }
 
 // Shared label/value row used across the file-detail tabs — extracted so
@@ -71,8 +87,7 @@ export function InfoRow({ label, value, edit, pencilSlot = false }: { label: str
                   aria-label={label}
                   className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2 text-sm text-[#1B1B1B] focus:outline-none focus:ring-2 focus:ring-[#9E8C61]/30"
                 >
-                  <option value="">Select…</option>
-                  {edit.options?.map((o) => <option key={o} value={o}>{o}</option>)}
+                  <SelectOptions options={edit.options ?? []} current={edit.currentOption} />
                 </select>
               ) : (
                 <FormField
