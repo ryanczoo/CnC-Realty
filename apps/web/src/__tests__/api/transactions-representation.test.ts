@@ -12,6 +12,9 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
+vi.mock("@/lib/file-status", () => ({ maybeAutoPending: vi.fn() }));
+
+import { maybeAutoPending } from "@/lib/file-status";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { POST } from "../../app/api/transactions/[id]/representation/route";
@@ -149,6 +152,23 @@ describe("POST /api/transactions/[id]/representation", () => {
     vi.mocked(prisma.checklistTemplate.findFirst).mockResolvedValue({ items: [item("Shared", { isRequired: false })] } as any);
     await call({ transactionSide: "DUAL" });
     expect(prisma.fileChecklistItem.update).toHaveBeenCalledWith({ where: { id: "r1" }, data: { isRequired: false } });
+  });
+
+  it("demotes a kept old-type row (has a document) to optional", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(file({ checklistItems: [row("r2", "Listing Only Doc", 1)] }) as any);
+    vi.mocked(prisma.checklistTemplate.findFirst).mockResolvedValue({ items: [item("Buyer Rep Agreement")] } as any);
+    await call({ transactionSide: "DUAL" });
+    expect(prisma.fileChecklistItem.deleteMany).not.toHaveBeenCalled();
+    expect(prisma.fileChecklistItem.update).toHaveBeenCalledWith({ where: { id: "r2" }, data: { isRequired: false } });
+  });
+
+  it("runs maybeAutoPending as the admin after success, not on a 400", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(file() as any);
+    await call({ transactionSide: "DUAL" });
+    expect(maybeAutoPending).toHaveBeenCalledWith("tf1", { userId: "admin1", role: "ADMIN" });
+    vi.mocked(maybeAutoPending).mockClear();
+    await call({ transactionSide: "LEASE_DUAL" });
+    expect(maybeAutoPending).not.toHaveBeenCalled();
   });
 
   it("with no matching template, still changes side and commission but no checklist rows", async () => {

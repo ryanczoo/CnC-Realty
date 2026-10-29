@@ -71,6 +71,15 @@ describe("planRepresentationChange", () => {
   it("keeps a row with a document", () => {
     expect(planRepresentationChange([item("A")], [row("2", "Z", { documentCount: 1 })], null).removeIds).toEqual([]);
   });
+  it("demotes a kept old-type row (has a document) from required", () => {
+    const p = planRepresentationChange([item("A")], [row("2", "Z", { documentCount: 1 })], null);
+    expect(p.removeIds).toEqual([]);
+    expect(p.requiredUpdates).toEqual([{ id: "2", isRequired: false }]);
+  });
+  it("leaves a kept old-type row alone when it is already optional", () => {
+    const p = planRepresentationChange([item("A")], [row("2", "Z", { documentCount: 1, isRequired: false })], null);
+    expect(p.requiredUpdates).toEqual([]);
+  });
   it("flips required", () => {
     const p = planRepresentationChange([item("A", { isRequired: false })], [row("1", "A")], null);
     expect(p.requiredUpdates).toEqual([{ id: "1", isRequired: false }]);

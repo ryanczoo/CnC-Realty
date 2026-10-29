@@ -5,6 +5,7 @@ import { checklistTemplateWhere } from "@/lib/checklist-template-match";
 import { canChangeRepresentation, planRepresentationChange, templateItemsForFile, REPRESENTATION_FINISHED } from "@/lib/representation";
 import { checklistCreateData, shortItemName } from "@/lib/year-checklist";
 import { resolveCommission } from "@/lib/commission";
+import { maybeAutoPending } from "@/lib/file-status";
 import { isLeaseSide } from "@/types/transaction";
 
 const FINISHED = new Set<string>(REPRESENTATION_FINISHED);
@@ -68,5 +69,6 @@ export async function POST(request: Request, { params }: { params: { id: string 
       },
     }),
   ]);
+  await maybeAutoPending(file.id, { userId: session.user.id, role: "ADMIN" });
   return NextResponse.json({ transactionFile: results[0] });
 }

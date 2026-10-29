@@ -32,7 +32,8 @@ export function templateItemsForFile(items: TemplateItemLike[], converted: boole
 
 // What a representation change does to an existing checklist (rows matched to
 // template items by name): add what's missing, drop empty rows no longer wanted,
-// and flip required where it differs. A row holding a document is never removed.
+// and flip required where it differs. A row holding a document is never removed,
+// but if it is not in the new template it is demoted to optional.
 export function planRepresentationChange(items: TemplateItemLike[], rows: FileRowLike[], yearBuilt: number | null) {
   const target = items.filter((i) => builtBeforeApplies(i.builtBefore, yearBuilt));
   const targetNames = new Set(target.map((i) => i.name));
@@ -41,7 +42,12 @@ export function planRepresentationChange(items: TemplateItemLike[], rows: FileRo
   const requiredUpdates: { id: string; isRequired: boolean }[] = [];
   for (const r of rows) {
     const t = target.find((i) => i.name === r.name);
-    if (t && t.isRequired !== r.isRequired) requiredUpdates.push({ id: r.id, isRequired: t.isRequired });
+    if (t) {
+      if (t.isRequired !== r.isRequired) requiredUpdates.push({ id: r.id, isRequired: t.isRequired });
+    } else if (r.documentCount > 0 && r.isRequired) {
+      // Kept old-type row (it holds a document): no longer required for the new side.
+      requiredUpdates.push({ id: r.id, isRequired: false });
+    }
   }
   return { add, removeIds, requiredUpdates };
 }

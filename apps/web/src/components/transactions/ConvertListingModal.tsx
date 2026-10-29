@@ -48,12 +48,14 @@ export function ConvertListingModal({
       const body = await res.json().catch(() => null);
       if (!res.ok) {
         setError(body?.error ?? "Couldn't convert this listing. Please try again.");
+        inFlight.current = false;
+        setConverting(false);
         return;
       }
+      // Success: stay locked (no reset) until the navigation that follows.
       onConverted(body.transactionFile.id);
     } catch {
       setError("Couldn't convert this listing. Please try again.");
-    } finally {
       inFlight.current = false;
       setConverting(false);
     }
