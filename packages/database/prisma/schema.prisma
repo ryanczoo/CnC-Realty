@@ -193,6 +193,7 @@ enum FileActivityType {
   DOCUMENT_DELETED
   COMMISSION_CHANGED
   CHECKLIST_UPDATED
+  REPRESENTATION_CHANGED
 }
 
 // ─── Phase 5B: Action Plan enums ──────────────────────────────────────────────
@@ -660,6 +661,7 @@ model ChecklistTemplateItem {
   order       Int
   isRequired  Boolean @default(true)
   builtBefore Int?
+  skipWhenConverted Boolean @default(false)
 
   template ChecklistTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
 }
