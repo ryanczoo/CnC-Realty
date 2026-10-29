@@ -5,6 +5,7 @@ import {
   canChangeRepresentation,
   templateItemsForFile,
   planRepresentationChange,
+  representationPencilSides,
 } from "@/lib/representation";
 import type { TemplateItemLike, FileRowLike } from "@/lib/year-checklist";
 
@@ -77,5 +78,19 @@ describe("planRepresentationChange", () => {
   it("ignores inapplicable year items", () => {
     const p = planRepresentationChange([item("LPD", { builtBefore: 1978 })], [], 2000);
     expect(p.add).toEqual([]);
+  });
+});
+
+describe("representationPencilSides", () => {
+  it("offers the family of the file's side", () => {
+    expect(representationPencilSides("LISTING", "ACTIVE")).toEqual(["PURCHASE", "LISTING", "DUAL"]);
+    expect(representationPencilSides("LEASE_TENANT", "PENDING")).toEqual(["LEASE_TENANT", "LEASE_LANDLORD", "LEASE_DUAL"]);
+  });
+  it("offers nothing for referrals, unknown sides, or finished/locked files", () => {
+    expect(representationPencilSides("REFERRAL", "PENDING")).toBeNull();
+    expect(representationPencilSides("???", "PENDING")).toBeNull();
+    for (const s of ["CLOSED", "CANCELED_APPROVED", "ARCHIVED", "PENDING_TRANSFER"]) {
+      expect(representationPencilSides("PURCHASE", s)).toBeNull();
+    }
   });
 });

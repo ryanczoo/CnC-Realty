@@ -1,4 +1,5 @@
 import { statusLabel } from "@/components/transactions/StatusBadge";
+import { transactionSideLabel } from "@/types/transaction";
 
 type Payload = { name?: unknown; note?: unknown; from?: unknown; to?: unknown; automatic?: unknown; viaTransactionId?: unknown; reason?: unknown; checklistItemName?: unknown; changes?: unknown; added?: unknown; removed?: unknown };
 
@@ -40,6 +41,19 @@ export function describeActivity(a: { type: string; payload: unknown }): { detai
     const why = asText(p.reason);
     const changes = parts.length ? `checklist ${parts.join("; ")}` : null;
     return { detail: why && changes ? `${why} — ${changes}` : why ?? changes, reason: null };
+  }
+  if (a.type === "REPRESENTATION_CHANGED") {
+    // "Changed representation from Listing to Both Purchase & Listing — Added: RLA; Removed: …"
+    const from = asText(p.from);
+    const to = asText(p.to);
+    if (!from || !to) return { detail: null, reason: null };
+    const list = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []);
+    const parts = [
+      list(p.added).length ? `Added: ${list(p.added).join(", ")}` : null,
+      list(p.removed).length ? `Removed: ${list(p.removed).join(", ")}` : null,
+    ].filter(Boolean);
+    const head = `Changed representation from ${transactionSideLabel(from)} to ${transactionSideLabel(to)}`;
+    return { detail: parts.length ? `${head} — ${parts.join("; ")}` : head, reason: null };
   }
   if (a.type === "STATUS_CHANGED") {
     // Same readable names as the status badges and dropdown ("Incomplete", "Canceled").

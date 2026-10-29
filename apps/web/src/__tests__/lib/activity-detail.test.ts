@@ -109,3 +109,20 @@ describe("describeActivity — CHECKLIST_UPDATED", () => {
       .toBe("Year Built set to 1950 — checklist added: LPD; removed: X");
   });
 });
+
+describe("describeActivity — REPRESENTATION_CHANGED", () => {
+  it("names the old and new side, then what changed on the checklist", () => {
+    expect(describeActivity({ type: "REPRESENTATION_CHANGED", payload: { from: "LISTING", to: "DUAL", added: ["RLA"], removed: [] } }).detail)
+      .toBe("Changed representation from Listing to Both Purchase & Listing — Added: RLA");
+    expect(describeActivity({ type: "REPRESENTATION_CHANGED", payload: { from: "DUAL", to: "PURCHASE", added: [], removed: ["RLA", "SPQ"] } }).detail)
+      .toBe("Changed representation from Both Purchase & Listing to Purchase — Removed: RLA, SPQ");
+    expect(describeActivity({ type: "REPRESENTATION_CHANGED", payload: { from: "LISTING", to: "DUAL", added: ["RLA"], removed: ["X"] } }).detail)
+      .toBe("Changed representation from Listing to Both Purchase & Listing — Added: RLA; Removed: X");
+  });
+
+  it("reads plainly when the checklist didn't change, and is blank for a bad payload", () => {
+    expect(describeActivity({ type: "REPRESENTATION_CHANGED", payload: { from: "PURCHASE", to: "LISTING", added: [], removed: [] } }))
+      .toEqual({ detail: "Changed representation from Purchase to Listing", reason: null });
+    expect(describeActivity({ type: "REPRESENTATION_CHANGED", payload: {} })).toEqual({ detail: null, reason: null });
+  });
+});

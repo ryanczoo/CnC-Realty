@@ -45,3 +45,12 @@ export function planRepresentationChange(items: TemplateItemLike[], rows: FileRo
   }
   return { add, removeIds, requiredUpdates };
 }
+
+// Finished files and files locked pending a transfer can't change side (the server refuses too).
+const REPRESENTATION_LOCKED = new Set(["CLOSED", "CANCELED_APPROVED", "ARCHIVED", "PENDING_TRANSFER"]);
+
+// The sides the Overview pencil offers for a file, or null when it shouldn't show one.
+export function representationPencilSides(side: string, status: string): readonly TransactionSide[] | null {
+  if (REPRESENTATION_LOCKED.has(status)) return null;
+  return representationGroup(side);
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { saveFileField, saveFileFields } from "@/lib/file-actions";
+import { saveFileField, saveFileFields, changeRepresentation } from "@/lib/file-actions";
 
 const fetchMock = vi.fn();
 beforeEach(() => { fetchMock.mockReset(); vi.stubGlobal("fetch", fetchMock); });
@@ -35,5 +35,24 @@ describe("saveFileFields", () => {
     fetchMock.mockResolvedValue({ ok: true, json: async () => ({}) });
     expect(await saveFileFields("listing", "l1", { commissionAmount: "15000", commissionPercent: "" })).toBeNull();
     expect(fetchMock.mock.calls[0][1].body).toBe(JSON.stringify({ commissionAmount: "15000", commissionPercent: "" }));
+  });
+});
+
+describe("changeRepresentation", () => {
+  it("POSTs the new side to the representation route and returns null on success", async () => {
+    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ transactionFile: {} }) });
+    expect(await changeRepresentation("t1", "DUAL")).toBeNull();
+    expect(fetchMock).toHaveBeenCalledWith("/api/transactions/t1/representation", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ transactionSide: "DUAL" }),
+    });
+  });
+
+  it("returns the server's error text, or a fallback", async () => {
+    fetchMock.mockResolvedValue({ ok: false, json: async () => ({ error: "That change isn't allowed." }) });
+    expect(await changeRepresentation("t1", "REFERRAL")).toBe("That change isn't allowed.");
+    fetchMock.mockResolvedValue({ ok: false, json: async () => { throw new Error("no body"); } });
+    expect(await changeRepresentation("t1", "DUAL")).toBe("Couldn't save this change. Please try again.");
   });
 });

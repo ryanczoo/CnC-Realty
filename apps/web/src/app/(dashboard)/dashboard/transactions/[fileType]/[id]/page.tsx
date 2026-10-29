@@ -349,6 +349,7 @@ export default function FileDetailPage() {
           satisfied={satisfied}
           required={required}
           canEdit={canEditDetails}
+          canChangeRepresentation={viewerIsAdmin}
           commissionLocked={isCommissionLockedFor(file.awaitingReview, session?.user?.role ?? "AGENT")}
           // A saved detail can resolve an earlier refusal (e.g. extending the
           // expiration), so clear the old message along with the reload.

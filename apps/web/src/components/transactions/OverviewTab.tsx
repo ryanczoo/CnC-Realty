@@ -1,9 +1,10 @@
 import { InfoRow, type InfoRowEdit } from "./InfoRow";
 import { formatDateOnly } from "@/lib/utils";
-import { saveFileField, saveFileFields } from "@/lib/file-actions";
+import { saveFileField, saveFileFields, changeRepresentation } from "@/lib/file-actions";
+import { representationPencilSides } from "@/lib/representation";
 import { digitsOnly, stripDigits } from "@/lib/form-validation";
 import {
-  listingTypeLabel, transactionSideLabel, isLeaseSide, FILE_PROPERTY_TYPES,
+  listingTypeLabel, transactionSideLabel, isLeaseSide, SIDES, FILE_PROPERTY_TYPES,
   listingPriceLabel, transactionListPriceLabel, offerDateLabels, commissionDisplay,
   type ListingFileDetail, type TransactionFileDetail,
 } from "@/types/transaction";
@@ -12,9 +13,10 @@ import {
 // the same file. Extracted so both sides stay in sync automatically instead
 // of drifting apart as separate implementations. With canEdit, editable rows
 // get a pencil (and always show, "—" when empty, so a missing value can be
-// added); State, Listing Type and Transaction Side are never editable.
+// added); State and Listing Type are never editable. Transaction Side gets a
+// pencil only for the broker (canChangeRepresentation), on files that can still switch.
 export function OverviewTab({
-  file, isListing, listing, transaction, progressPct, satisfied, required, canEdit = false, commissionLocked = false, onSaved,
+  file, isListing, listing, transaction, progressPct, satisfied, required, canEdit = false, commissionLocked = false, canChangeRepresentation = false, onSaved,
 }: {
   file: ListingFileDetail | TransactionFileDetail;
   isListing: boolean;
@@ -27,10 +29,29 @@ export function OverviewTab({
   // Agent viewing a file in broker review (isCommissionLockedFor): commission
   // rows lose their pencil; the broker's page never passes this.
   commissionLocked?: boolean;
+  // Broker only: lets the Transaction Side row switch sides within its family.
+  canChangeRepresentation?: boolean;
   onSaved?: () => void;
 }) {
   const isReferral = !isListing && transaction?.transactionSide === "REFERRAL";
   const isLease = !isListing && isLeaseSide(transaction?.transactionSide);
+  // The broker's pencil on Transaction Side: offered only for a side that has a family, on a file still open.
+  const repSides = canChangeRepresentation && transaction ? representationPencilSides(transaction.transactionSide, transaction.status) : null;
+  const representationEdit: InfoRowEdit | undefined = repSides && transaction
+    ? {
+        kind: "select",
+        raw: transactionSideLabel(transaction.transactionSide),
+        options: repSides.map(transactionSideLabel),
+        onSave: async (label) => {
+          const next = SIDES.find((x) => x.label === label)?.value;
+          if (!next) return "Choose a representation.";
+          if (next === transaction.transactionSide) return null;
+          const err = await changeRepresentation(transaction.id, next);
+          if (!err) onSaved?.();
+          return err;
+        },
+      }
+    : undefined;
   const offerLabels = transaction ? offerDateLabels(transaction.transactionSide, transaction.propertyCategory) : null;
 
   const edit = (field: string, raw: unknown, opts: Partial<InfoRowEdit> = {}): InfoRowEdit | undefined =>
@@ -116,7 +137,7 @@ export function OverviewTab({
               )}
               {show(transaction.yearBuilt) && <InfoRow label="Year Built" value={transaction.yearBuilt ? String(transaction.yearBuilt) : "—"} edit={edit("yearBuilt", transaction.yearBuilt, { restrict: (v) => digitsOnly(v, 4) })} />}
               {!isLease && show(transaction.escrowNumber) && <InfoRow label="Escrow #" value={transaction.escrowNumber || "—"} edit={edit("escrowNumber", transaction.escrowNumber)} />}
-              <InfoRow label="Transaction Side" value={transactionSideLabel(transaction.transactionSide)} pencilSlot={canEdit} />
+              <InfoRow label="Transaction Side" value={transactionSideLabel(transaction.transactionSide)} pencilSlot={canEdit} edit={representationEdit} />
               <InfoRow label={transactionListPriceLabel(transaction.transactionSide)} value={money(transaction.listPrice)} edit={moneyEdit("listPrice", transaction.listPrice)} />
               {isLease
                 ? <InfoRow label="Total Lease Amount" value={money(transaction.leasePrice)} edit={moneyEdit("leasePrice", transaction.leasePrice)} />
