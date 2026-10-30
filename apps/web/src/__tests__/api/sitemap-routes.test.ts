@@ -19,6 +19,7 @@ import { getCityPages } from "@/lib/city-pages";
 import { cachedCount } from "@/lib/property-count-cache";
 import { GET as indexGET } from "../../app/sitemap.xml/route";
 import { GET as childGET } from "../../app/sitemaps/[name]/route";
+import { GET as citiesGET } from "../../app/sitemaps/cities.xml/route";
 
 const child = (name: string) =>
   childGET(new Request(`http://localhost/sitemaps/${name}`), { params: { name } });
@@ -33,6 +34,7 @@ describe("GET /sitemap.xml", () => {
     expect(res.headers.get("content-type")).toContain("application/xml");
     const xml = await res.text();
     expect(xml).toContain("https://cncrealtygroup.com/sitemaps/pages.xml");
+    expect(xml).toContain("https://cncrealtygroup.com/sitemaps/cities.xml");
     expect(xml).toContain("https://cncrealtygroup.com/sitemaps/listings-0.xml");
     expect(xml).toContain("https://cncrealtygroup.com/sitemaps/listings-1.xml");
     expect(xml).toContain("https://cncrealtygroup.com/sitemaps/listings-2.xml");
@@ -118,24 +120,27 @@ describe("GET /sitemaps/listings-N.xml", () => {
   });
 });
 
-describe("GET /sitemaps/pages.xml city pages", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(prisma.agent.findMany).mockResolvedValue([]);
-    vi.mocked(prisma.blogPost.findMany).mockResolvedValue([]);
-  });
+describe("GET /sitemaps/cities.xml", () => {
+  beforeEach(() => vi.clearAllMocks());
 
   it("lists every saved city page", async () => {
     vi.mocked(getCityPages).mockResolvedValue([
       { slug: "cerritos", name: "Cerritos", county: "Los Angeles", count: 30, lat: 0, lng: 0 },
     ]);
-    const xml = await (await child("pages.xml")).text();
-    expect(xml).toContain("https://cncrealtygroup.com/homes-for-sale/cerritos");
+    const res = await citiesGET();
+    expect(res.headers.get("content-type")).toContain("application/xml");
+    expect(await res.text()).toContain("<loc>https://cncrealtygroup.com/homes-for-sale/cerritos</loc>");
   });
 
-  it("lists no city pages when none are saved", async () => {
+  it("is an empty list when none are saved", async () => {
     vi.mocked(getCityPages).mockResolvedValue(null);
-    const xml = await (await child("pages.xml")).text();
-    expect(xml).not.toContain("homes-for-sale");
+    expect(await (await citiesGET()).text()).not.toContain("<loc>");
+  });
+
+  it("pages.xml no longer reads the city list", async () => {
+    vi.mocked(prisma.agent.findMany).mockResolvedValue([]);
+    vi.mocked(prisma.blogPost.findMany).mockResolvedValue([]);
+    await child("pages.xml");
+    expect(getCityPages).not.toHaveBeenCalled();
   });
 });

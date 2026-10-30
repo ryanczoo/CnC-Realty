@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { ACTIVE_STATUSES } from "@/lib/listing-status";
 import { SITE_URL } from "@/lib/seo";
-import { getCityPages } from "@/lib/city-pages";
 import {
   EXCLUDED_AGENT_SLUGS,
   LISTINGS_PER_SITEMAP,
@@ -37,8 +36,6 @@ async function pagesEntries(): Promise<Entry[]> {
   } catch (err) {
     console.error("[sitemap] pages query failed:", err);
   }
-  // City search pages come from the daily saved list (lib/city-pages.ts); none listed when it is missing.
-  for (const c of (await getCityPages()) ?? []) entries.push({ loc: `${SITE_URL}/homes-for-sale/${c.slug}` });
   return entries;
 }
 

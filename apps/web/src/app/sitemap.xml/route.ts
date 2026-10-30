@@ -21,7 +21,7 @@ async function activeCount(listingType: "FOR_SALE" | "FOR_RENT"): Promise<number
 }
 
 export async function GET() {
-  const locs = [sitemapUrl("pages.xml")];
+  const locs = [sitemapUrl("pages.xml"), sitemapUrl("cities.xml")];
   try {
     const counts = await Promise.all([activeCount("FOR_SALE"), activeCount("FOR_RENT")]);
     const total = counts[0] + counts[1];
