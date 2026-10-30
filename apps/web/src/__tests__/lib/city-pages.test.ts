@@ -59,7 +59,32 @@ describe("refreshCityPages", () => {
   });
 });
 
+describe("refreshCityPages spelling variants", () => {
+  it("merges groups that make the same page address", async () => {
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([
+      { name: "La Cañada Flintridge", county: "Los Angeles", n: 30, lat: 34.2, lng: -118.2 },
+      { name: "La Canada Flintridge", county: "Los Angeles", n: 10, lat: 34.6, lng: -118.6 },
+    ] as never);
+    expect(await refreshCityPages()).toEqual({ cities: 1 });
+    const saved = JSON.parse(vi.mocked(redis.set).mock.calls[0][1] as string) as CityPage[];
+    expect(saved).toEqual([
+      { slug: "la-canada-flintridge", name: "La Cañada Flintridge", county: "Los Angeles", count: 40, lat: 34.3, lng: -118.3 },
+    ]);
+  });
+  it("keeps a city whose variants only reach 20 together", async () => {
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([
+      { name: "Cerritos", county: "Los Angeles", n: 15, lat: 1, lng: 1 },
+      { name: "CERRITOS", county: "Los Angeles", n: 5, lat: 1, lng: 1 },
+    ] as never);
+    expect(await refreshCityPages()).toEqual({ cities: 1 });
+  });
+});
+
 describe("getCityPages", () => {
+  it("fails loudly when Redis can't be read, so pages error instead of 404ing", async () => {
+    vi.mocked(redis.get).mockRejectedValue(new Error("redis down"));
+    await expect(getCityPages()).rejects.toThrow();
+  });
   it("is null when nothing is saved", async () => {
     vi.mocked(redis.get).mockResolvedValue(null);
     expect(await getCityPages()).toBeNull();

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { redis } from "@/lib/redis";
-import { redisReadOrNull } from "@/lib/property-count-cache";
 import { ACTIVE_STATUSES } from "@/lib/listing-status";
 import { canonicalMeta } from "@/lib/seo";
 
@@ -74,17 +73,43 @@ export async function refreshCityPages(): Promise<{ cities: number }> {
       AND latitude IS NOT NULL AND longitude IS NOT NULL
     GROUP BY lower(city)`;
 
-  const list: CityPage[] = rows
-    .filter((r) => r.n >= CITY_PAGE_MIN_LISTINGS && r.name && citySlug(r.name))
-    .map((r) => ({ slug: citySlug(r.name), name: r.name, county: r.county, count: r.n, lat: r.lat, lng: r.lng }));
+  // Spelling variants ("La Cañada"/"La Canada") make the same address: merge them, keeping the bigger group's name
+  // and a count-weighted centre.
+  const bySlug = new Map<string, CityPage & { top: number }>();
+  for (const r of rows) {
+    const slug = r.name ? citySlug(r.name) : "";
+    if (!slug) continue;
+    const prev = bySlug.get(slug);
+    if (!prev) {
+      bySlug.set(slug, { slug, name: r.name, county: r.county, count: r.n, lat: r.lat, lng: r.lng, top: r.n });
+      continue;
+    }
+    const count = prev.count + r.n;
+    prev.lat = (prev.lat * prev.count + r.lat * r.n) / count;
+    prev.lng = (prev.lng * prev.count + r.lng * r.n) / count;
+    prev.count = count;
+    if (r.n > prev.top) Object.assign(prev, { name: r.name, county: r.county, top: r.n });
+  }
+  const list: CityPage[] = Array.from(bySlug.values())
+    .filter((c) => c.count >= CITY_PAGE_MIN_LISTINGS)
+    .map((c) => ({ slug: c.slug, name: c.name, county: c.county, count: c.count, lat: c.lat, lng: c.lng }));
 
   await redis.set(CITY_PAGES_KEY, JSON.stringify(list), { ex: CITY_PAGES_TTL_SECONDS });
   return { cities: list.length };
 }
 
-// The saved list, or null when it's missing or Redis can't answer in time.
+const READ_TIMEOUT_MS = 2000;
+
+// The saved list, or null when none is saved. Throws when Redis can't answer, so a city page returns a server
+// error (search engines retry) rather than "not found" (search engines drop the page).
 export async function getCityPages(): Promise<CityPage[] | null> {
-  const saved = await redisReadOrNull(() => redis.get<CityPage[] | string>(CITY_PAGES_KEY), "city-pages");
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const saved = await Promise.race([
+    redis.get<CityPage[] | string>(CITY_PAGES_KEY),
+    new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error("city-pages: Redis read timed out")), READ_TIMEOUT_MS);
+    }),
+  ]).finally(() => clearTimeout(timer));
   if (saved == null) return null;
   return typeof saved === "string" ? (JSON.parse(saved) as CityPage[]) : saved;
 }

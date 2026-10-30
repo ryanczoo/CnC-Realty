@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { notFound } from "next/navigation";
 import { unstable_cache } from "next/cache";
 import { SearchResults } from "@/components/properties/SearchResults";
@@ -17,11 +18,12 @@ interface PageProps {
   params: { city: string };
 }
 
-async function findCity(slug: string) {
+// One Redis read per visit, shared by the page and its metadata.
+const findCity = cache(async (slug: string) => {
   const cities = await getCityPages();
   const city = cities?.find((c) => c.slug === slug);
   return city ? { city, cities: cities! } : null;
-}
+});
 
 export async function generateMetadata({ params }: PageProps) {
   const found = await findCity(params.city);
