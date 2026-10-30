@@ -123,6 +123,14 @@ describe("GET /api/properties — query search", () => {
     expect(JSON.stringify(call.where)).not.toContain("city");
   });
 
+  it("matches the city exactly (no city-or-area contains) when a city page loads more homes", async () => {
+    await GET(makeRequest("city=Walnut&query=Walnut"));
+
+    const call = vi.mocked(prisma.property.findMany).mock.calls[0][0]!;
+    expect((call.where as any).city).toEqual({ equals: "Walnut", mode: "insensitive" });
+    expect((call.where as any).OR).toBeUndefined();
+  });
+
   it("applies no location filter when query is empty", async () => {
     await GET(makeRequest());
 

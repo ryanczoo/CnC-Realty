@@ -76,6 +76,11 @@ function placeWhere(place: string, cityHint?: string): Prisma.PropertyWhereInput
   return cityOrArea(place);
 }
 
+// City pages (/homes-for-sale/<city>): that city only — "Walnut" is not Walnut Creek or Walnut Park.
+export function exactCityWhere(city: string): Prisma.PropertyWhereInput {
+  return { city: { equals: city, mode: "insensitive" } };
+}
+
 export function buildLocationWhere(raw: string): Prisma.PropertyWhereInput {
   const q = raw.replace(/\s+/g, " ").trim();
   const parts = q.split(",").map((s) => s.trim()).filter(Boolean);

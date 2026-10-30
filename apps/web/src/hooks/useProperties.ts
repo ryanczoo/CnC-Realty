@@ -12,9 +12,25 @@ interface UsePropertiesResult {
   loadNextPage: () => void;
 }
 
+// One page of /api/properties. A city page (exactCity) asks for its city exactly; the Search page asks for the typed place.
+export function propertiesParams(f: SearchFilters, page: number, exactCity = false): URLSearchParams {
+  const params = new URLSearchParams();
+  if (f.query) params.set(exactCity ? "city" : "query", f.query);
+  if (f.minPrice) params.set("minPrice", f.minPrice);
+  if (f.maxPrice) params.set("maxPrice", f.maxPrice);
+  if (f.minBeds) params.set("minBeds", f.minBeds);
+  if (f.minBaths) params.set("minBaths", f.minBaths);
+  if (f.propertyType) params.set("propertyType", f.propertyType);
+  params.set("listingType", f.listingType);
+  params.set("page", String(page));
+  params.set("limit", "20");
+  return params;
+}
+
 export function useProperties(
   filters: SearchFilters,
-  initialData?: { properties: PropertyListing[]; total: number }
+  initialData?: { properties: PropertyListing[]; total: number },
+  exactCity = false
 ): UsePropertiesResult {
   const [pages, setPages] = useState<PropertyListing[][]>(
     initialData ? [initialData.properties] : []
@@ -37,20 +53,9 @@ export function useProperties(
   const initialDataRef = useRef(initialData);
 
   const fetchPage = useCallback(async (f: SearchFilters, page: number, signal?: AbortSignal) => {
-    const params = new URLSearchParams();
-    if (f.query) params.set("query", f.query);
-    if (f.minPrice) params.set("minPrice", f.minPrice);
-    if (f.maxPrice) params.set("maxPrice", f.maxPrice);
-    if (f.minBeds) params.set("minBeds", f.minBeds);
-    if (f.minBaths) params.set("minBaths", f.minBaths);
-    if (f.propertyType) params.set("propertyType", f.propertyType);
-    params.set("listingType", f.listingType);
-    params.set("page", String(page));
-    params.set("limit", "20");
-
-    const res = await fetch(`/api/properties?${params}`, { signal });
+    const res = await fetch(`/api/properties?${propertiesParams(f, page, exactCity)}`, { signal });
     return res.json() as Promise<{ properties: PropertyListing[]; total: number; pages: number }>;
-  }, []);
+  }, [exactCity]);
 
   useEffect(() => {
     if (isFirstRender.current && initialDataRef.current) {

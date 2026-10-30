@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { PropertyListing, MULTIFAMILY_TYPES, COMMERCIAL_TYPES } from "@/types/property";
-import { buildLocationWhere } from "@/lib/property-search-query";
+import { buildLocationWhere, exactCityWhere } from "@/lib/property-search-query";
 import { cachedCount, countCacheKey } from "@/lib/property-count-cache";
 
 // The first page of results the Search page (/properties) and the city pages (/homes-for-sale/<city>) render on the
@@ -8,6 +8,8 @@ import { cachedCount, countCacheKey } from "@/lib/property-count-cache";
 
 export interface SearchPageParams {
   query?: string;
+  // A city page: match this city exactly instead of the typed place.
+  city?: string;
   listingType?: string;
   minPrice?: string;
   maxPrice?: string;
@@ -24,7 +26,9 @@ export function searchPageWhere(params: SearchPageParams): Record<string, unknow
     listingType: params.listingType ?? "FOR_SALE",
   };
 
-  if (params.query?.trim()) {
+  if (params.city?.trim()) {
+    Object.assign(where, exactCityWhere(params.city.trim()));
+  } else if (params.query?.trim()) {
     Object.assign(where, buildLocationWhere(params.query.trim()));
   }
 

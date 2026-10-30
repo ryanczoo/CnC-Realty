@@ -9,8 +9,9 @@ import { DEFAULT_FILTERS } from "@/types/property";
 
 // One page per city with enough homes for sale (lib/city-pages.ts), reached from Google and the sitemap — the
 // Search page opened on that city. The root layout reads the login cookie, so the page itself renders per visit;
-// its homes are cached for an hour per city, so visits don't query the database.
-const loadCityHomes = unstable_cache((name: string) => loadSearchPage({ query: name }), ["city-page-homes"], {
+// its homes (that city only, not cities whose names contain it) are cached for an hour per city, so visits don't
+// query the database.
+const loadCityHomes = unstable_cache((name: string) => loadSearchPage({ city: name }), ["city-page-homes-exact"], {
   revalidate: 3600,
 });
 
@@ -49,6 +50,7 @@ export default async function CityHomesPage({ params }: PageProps) {
         initialProperties={initial.properties}
         initialTotal={initial.total}
         initialFilters={{ ...DEFAULT_FILTERS, query: city.name }}
+        exactCity
         nearby={nearbyCities(city, cities).map((c) => ({ name: c.name, href: `/homes-for-sale/${c.slug}` }))}
       />
     </>

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@cnc/database";
 import { MULTIFAMILY_TYPES, COMMERCIAL_TYPES } from "@/types/property";
 import { redis } from "@/lib/redis";
-import { buildLocationWhere } from "@/lib/property-search-query";
+import { buildLocationWhere, exactCityWhere } from "@/lib/property-search-query";
 import { cachedCount, countCacheKey } from "@/lib/property-count-cache";
 
 export async function GET(req: Request) {
@@ -26,6 +26,7 @@ export async function GET(req: Request) {
   const minBathsVal = rawMinBaths ? parseFloat(rawMinBaths) : null;
 
   const query = searchParams.get("query");
+  const city = searchParams.get("city");
   const propertyType = searchParams.get("propertyType");
   const listingType = searchParams.get("listingType") ?? "FOR_SALE";
 
@@ -34,7 +35,9 @@ export async function GET(req: Request) {
     listingType,
   };
 
-  if (query?.trim()) {
+  if (city?.trim()) {
+    Object.assign(where, exactCityWhere(city.trim()));
+  } else if (query?.trim()) {
     Object.assign(where, buildLocationWhere(query.trim()));
   }
 

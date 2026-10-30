@@ -27,6 +27,8 @@ interface Props {
   // cached HTML. The Search page leaves this out and reads the address bar as before.
   initialFilters?: SearchFilters;
   nearby?: NearbyCity[];
+  // City pages: homes in that city only (the Search page keeps its broad place match).
+  exactCity?: boolean;
 }
 
 type FilterState = ReturnType<typeof useFilterState>;
@@ -71,11 +73,12 @@ function SeededSearchResults(props: Props & { initialFilters: SearchFilters }) {
   return <SearchResultsView {...props} filterState={useFilterState(props.initialFilters)} />;
 }
 
-function SearchResultsView({ initialProperties, initialTotal, nearby, filterState }: Props & { filterState: FilterState }) {
+function SearchResultsView({ initialProperties, initialTotal, nearby, exactCity, filterState }: Props & { filterState: FilterState }) {
   const { filters, applyFilters, clearFilters, hasActiveFilters } = filterState;
   const { properties, total, isLoading, isError, hasMore, loadNextPage } = useProperties(
     filters,
-    { properties: initialProperties, total: initialTotal }
+    { properties: initialProperties, total: initialTotal },
+    exactCity
   );
   const { savedSet, toggle } = useSavedProperties();
   const [hoveredId, setHoveredId] = useState<string | null>(null);

@@ -18,6 +18,16 @@ describe("searchPageWhere", () => {
       ...base, listingType: "FOR_SALE", ...buildLocationWhere("Cerritos"),
     });
   });
+  it("matches the city exactly for a city page, never a city that only contains the name", () => {
+    expect(searchPageWhere({ city: " Walnut " })).toEqual({
+      ...base, listingType: "FOR_SALE", city: { equals: "Walnut", mode: "insensitive" },
+    });
+  });
+  it("uses the exact city instead of the typed place when both are given", () => {
+    const where = searchPageWhere({ city: "Bell", query: "Bell" });
+    expect(where.city).toEqual({ equals: "Bell", mode: "insensitive" });
+    expect(where.OR).toBeUndefined();
+  });
   it("applies price, beds, baths and listing type", () => {
     expect(searchPageWhere({ listingType: "FOR_RENT", minPrice: "1000", maxPrice: "x", minBeds: "3", minBaths: "1.5" })).toEqual({
       ...base, listingType: "FOR_RENT", listPrice: { gte: 1000 }, beds: { gte: 3 }, baths: { gte: 1.5 },

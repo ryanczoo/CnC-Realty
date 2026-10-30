@@ -20,6 +20,8 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { NearbyCities } from "@/components/properties/SearchResults";
 import { filtersFromParams } from "@/hooks/useSearchFilters";
+import { propertiesParams } from "@/hooks/useProperties";
+import { DEFAULT_FILTERS } from "@/types/property";
 
 describe("filtersFromParams", () => {
   it("reads the search filters from the address bar", () => {
@@ -39,5 +41,21 @@ describe("NearbyCities", () => {
   });
   it("renders nothing without cities", () => {
     expect(renderToStaticMarkup(createElement(NearbyCities, { cities: [] }))).toBe("");
+  });
+});
+
+describe("propertiesParams", () => {
+  const f = { ...DEFAULT_FILTERS, query: "Walnut", minBeds: "3" };
+  it("asks for the typed place on the Search page", () => {
+    const p = propertiesParams(f, 2);
+    expect(p.get("query")).toBe("Walnut");
+    expect(p.get("city")).toBeNull();
+    expect(p.get("page")).toBe("2");
+    expect(p.get("minBeds")).toBe("3");
+  });
+  it("asks for that exact city on a city page", () => {
+    const p = propertiesParams(f, 2, true);
+    expect(p.get("city")).toBe("Walnut");
+    expect(p.get("query")).toBeNull();
   });
 });
