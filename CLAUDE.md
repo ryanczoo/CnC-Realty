@@ -7817,5 +7817,77 @@ its own row; dropdown also lists the current side (no-op).
 
 1. Ryan live-tests: Convert pop-up (needs an Active listing with required docs — Foster Road's Convert is disabled),
    admin Checklists "Skip when converted" box, Foster Road AD row.
-2. Still pending: Join FAQ (7 drafts), Step 5 city search pages,
-   `git worktree remove C:\Users\hey_r\Desktop\CnC-old`.
+2. Still pending: Join FAQ (7 drafts). (Step 5 city pages and the CnC-old removal: done 2026-10-29, see below.)
+
+---
+
+## Session Notes — 2026-10-29 (city search pages, exact city match, 6 small fixes, Google OAuth branding)
+
+All pushed to `origin/main` 2026-10-29 (`6cce2192..9d8393fa` plus this notes commit). Plan
+`docs/superpowers/plans/2026-10-29-city-pages-and-six-fixes.md` (9 tasks, executed inline, final review by an opus
+subagent, one fix pass). Suite 2300/2300, tsc clean. No migration, no new env vars.
+
+### City search pages (SEO step 5) — live
+
+- `/homes-for-sale/<city>`: the existing Search page opened on one city. No navbar/footer links; found via Google and
+  the sitemap only. Hidden (sr-only) h1 "Homes for Sale in X, CA"; one "Nearby:" line of 6 links above the cards
+  (`NearbyCities` in `SearchResults.tsx`). Heading + nearby line appear only on city pages (Ryan confirmed).
+- Scope: the 6 SoCal counties (Los Angeles, Orange, Riverside, San Bernardino, San Diego, Ventura), cities with at
+  least 20 active for-sale listings — 373 cities today.
+- `lib/city-pages.ts`: daily cron `/api/cron/city-pages` (`vercel.json`, `20 9 * * *`) runs one grouped query
+  (~19 s) and saves the list to Redis `listings:city-pages` (3-day TTL). Spelling variants that share a slug are
+  merged. `getCityPages()` throws if Redis can't answer, so the page returns 500, not 404 (Google retries a 500 but
+  drops a 404). Title/description via `cityPageMeta` (the layout template adds " | CnC Realty").
+- **Exact city match** (`9d8393fa`, Ryan approved): city pages show only that city — first 20 via
+  `loadSearchPage({ city })`, load-more via `/api/properties?city=` (`exactCityWhere` in
+  `lib/property-search-query.ts`, `propertiesParams(..., exactCity)` in `hooks/useProperties.ts`). Before, 58 of 373
+  pages were mostly other cities (Walnut showed Walnut Creek, Bell showed Bellflower, Riverside showed all of Riverside
+  County). The homepage search bar and `/properties` keep the broad city-or-neighborhood match. Changing a filter on a
+  city page goes to `/properties` (broad), by design. Checked: no city page has a second spelling, so exact match
+  loses nothing.
+- Shared pieces: `lib/property-search-page.ts` (`searchPageWhere`/`loadSearchPage`, also used by /properties),
+  `components/properties/SearchUnavailable.tsx`, `useFilterState(initial)` + `filtersFromParams` in
+  `hooks/useSearchFilters.ts`; `SearchResults` takes `initialFilters` (cards are in the HTML for Google), `nearby`,
+  `exactCity`.
+- Gotchas: the root layout reads cookies, so ISR / `generateStaticParams` threw DYNAMIC_SERVER_USAGE — city homes are
+  cached with `unstable_cache` (1 h, key `city-page-homes-exact` + city name). Upstash fetches with `no-store`,
+  which breaks ISR route handlers, so cities have their own force-dynamic `/sitemaps/cities.xml` (listed in
+  `/sitemap.xml`); `pages.xml` unchanged at 21 URLs.
+- Speed (old vs new builds side by side): repeat visits ~0.1 s on both; first visit after the hourly refresh
+  0.6–2.1 s; load-more 0.15–0.30 s (was 0.17–0.82 s); desktop and phone browser load equal. Phone LCP moves with the
+  first listing photo's file size (MLS photos load directly), not the code.
+- Ryan's questions answered: Google won't penalize broad matches, only rank mismatched pages lower; "25+ homes" in the
+  snippet with more homes on the page is fine (Ryan's call).
+
+### The 6 fixes — live
+
+1. Representation activity line lists rows "Made optional" (`planRepresentationChange` returns `demotedIds`).
+2. Admin representation dropdown shows the current type as "X (current)", disabled (`SelectOptions` in
+   `InfoRow.tsx`, `InfoRowEdit.currentOption`).
+3. `role="dialog" aria-modal aria-label` on 16 pop-ups (PropertyDrawer: on its panel).
+4. Opened custom-list pill scrolls into view on phones (`lib/pill-scroll.ts`, `SmartListSidebar`, `aria-current`).
+5. Tasks page lead-name line wraps on phones (`PHONE_WRAP_TEXT`).
+6. Smart-list edit/delete buttons 44px on phones (`max-lg:min-h-11 max-lg:min-w-11`).
+
+Deferred minors (not fixed): city query lists statuses/counties by index instead of `Prisma.join`;
+`SearchUnavailable` returns 200 on city pages; a filter change on a city page fires one /api/properties fetch before
+navigating.
+
+### Google OAuth branding
+
+Ryan was signed into Cloud Console with his personal Gmail. Steps he did: add ryanchong@cncrealtygroup.com as Owner
+(IAM), switch the support email, then (after ~24 h) Branding → "I have fixed the issues".
+
+### Cleanup
+
+Test servers stopped; `C:\Users\hey_r\Desktop\CnC-old` worktree removed; plan workspace
+`.superpowers/sdd/2026-10-29-city-pages-and-six-fixes/` deleted.
+
+### Next Session — Start Here
+
+1. After this deploy: the city list is already in Redis (3-day TTL) and the daily cron refreshes it. Confirm
+   `https://cncrealtygroup.com/sitemaps/cities.xml` lists ~373 URLs and `/homes-for-sale/cerritos` loads, then Ryan
+   submits/checks the sitemap in Google Search Console.
+2. Ryan: Google OAuth "I have fixed the issues" once the 24 h passes (if not already done).
+3. Still pending: Join FAQ (7 drafts in the 2026-10-19/20 notes, placement unconfirmed).
+4. Stale notes to ignore: the press-post fallback byline and cursor-rename items in older notes are done.
