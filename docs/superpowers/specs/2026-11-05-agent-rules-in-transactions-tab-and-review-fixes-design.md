@@ -80,7 +80,8 @@ referral. (The July referral test passed because it ran on the agent page with a
   keep the current spot).
 - These saves come from the Admin page, so they carry no marker and run with admin rights.
 - On the Admin page, Referral Broker Review must only be reachable through the amount step, so the fee is always
-  calculated. The status dropdown must not offer it on its own.
+  calculated. The status dropdown must not offer it on its own, and `/api/admin/files/.../status` refuses it (400)
+  so it can't be set without an amount by any other route either. This fixes today's gap.
 - The agent's own referral steps stay on the agent page unchanged.
 - Admin account only. Agents never see the broker steps, the same as today.
 
