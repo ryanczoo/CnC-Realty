@@ -7,6 +7,7 @@ import { STATUS_ICONS } from "./document-status-icons";
 import { UploadResultLine, type UploadResult } from "@/components/ui/UploadResultLine";
 import { removeFromChecklist } from "@/lib/document-actions";
 import { TrashIcon } from "@/components/ui/TrashIcon";
+import { useFileFetch } from "./AgentViewContext";
 
 interface Props {
   documents: FileDocumentRecord[];
@@ -30,6 +31,7 @@ interface Props {
 // remove-and-rejection rules as checklist rows; a rejected line gets the
 // checklist row's Upload button.
 export function AdditionalDocuments({ documents, mode, uploadingId, results, disabled, onSelect, onReplace, viewerId, onChanged }: Props) {
+  const fileFetch = useFileFetch();
   const [removeError, setRemoveError] = useState<string | null>(null);
   const additional = documents
     .filter((d) => d.isAdditional)
@@ -38,7 +40,7 @@ export function AdditionalDocuments({ documents, mode, uploadingId, results, dis
   async function remove(documentId: string) {
     if (!window.confirm("Remove this document from the checklist? It stays in the file's Documents tab.")) return;
     setRemoveError(null);
-    const err = await removeFromChecklist(documentId);
+    const err = await removeFromChecklist(documentId, fileFetch);
     if (err) { setRemoveError(err); return; }
     onChanged();
   }

@@ -14,6 +14,8 @@ import { OverviewTab } from "@/components/transactions/OverviewTab";
 import { CommissionTab } from "@/components/transactions/CommissionTab";
 import { DocumentsTab } from "@/components/transactions/DocumentsTab";
 import { WithHeaderPhoto } from "@/components/transactions/FileHeaderPhoto";
+import { AgentViewProvider } from "@/components/transactions/AgentViewContext";
+import { withAgentView } from "@/lib/agent-view";
 import { getChecklistProgress, listingStatusOptions, transactionStatusOptions, convertBlockedReason } from "@/lib/transaction-helpers";
 import { isFileReadOnlyFor, isCommissionLockedFor, statusOptionsDuringReview, REVIEW_WAIT_MESSAGE } from "@/lib/file-lock";
 import { isPlaceholderAddress } from "@/lib/transfer-placeholder";
@@ -121,7 +123,7 @@ export default function FileDetailPage() {
     setActionError(null);
     setSubmitNotice(null);
     try {
-      const res = await fetch(endpoint, { method: "POST" });
+      const res = await fetch(endpoint, withAgentView({ method: "POST" }));
       const body = await res.json().catch(() => null);
       if (!res.ok) {
         setActionError(body?.error ?? "Couldn't submit this file. Please try again.");
@@ -141,11 +143,11 @@ export default function FileDetailPage() {
     setActionError(null);
     setSubmitNotice(null);
     try {
-      const res = await fetch(`/api/${isListingFile ? "listings" : "transactions"}/${id}`, {
+      const res = await fetch(`/api/${isListingFile ? "listings" : "transactions"}/${id}`, withAgentView({
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status, ...(cancellationReason !== undefined && { cancellationReason }) }),
-      });
+      }));
       if (!res.ok) {
         const body = await res.json().catch(() => null);
         setActionError(body?.error ?? "Couldn't change the status. Please try again.");
@@ -229,6 +231,7 @@ export default function FileDetailPage() {
   const visibleTabs = computeVisibleTabs(isListing, isReferral);
 
   return (
+    <AgentViewProvider>
     <div>
       <div className="mb-6">
         <div className={`flex items-start justify-between gap-4 ${PHONE_HEADER_STACK}`}>
@@ -426,6 +429,7 @@ export default function FileDetailPage() {
       </>
       )}
     </div>
+    </AgentViewProvider>
   );
 }
 
@@ -453,11 +457,11 @@ function TasksTab({
     if (!form.title.trim()) return;
     setAdding(true);
     try {
-      const res = await fetch("/api/file-tasks", {
+      const res = await fetch("/api/file-tasks", withAgentView({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fileType, fileId, ...form }),
-      });
+      }));
       if (res.ok) {
         const data = await res.json();
         onTasksChanged([...tasks, data.task]);
@@ -473,18 +477,18 @@ function TasksTab({
     const previous = tasks;
     const optimistic = tasks.map((t) => t.id === task.id ? { ...t, done: !t.done } : t);
     onTasksChanged(optimistic);
-    const res = await fetch(`/api/file-tasks/${task.id}`, {
+    const res = await fetch(`/api/file-tasks/${task.id}`, withAgentView({
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ done: !task.done }),
-    });
+    }));
     if (!res.ok) onTasksChanged(previous);
   }
 
   async function deleteTask(taskId: string) {
     const previous = tasks;
     onTasksChanged(tasks.filter((t) => t.id !== taskId));
-    const res = await fetch(`/api/file-tasks/${taskId}`, { method: "DELETE" });
+    const res = await fetch(`/api/file-tasks/${taskId}`, withAgentView({ method: "DELETE" }));
     if (!res.ok) onTasksChanged(previous);
   }
 

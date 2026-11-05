@@ -7,6 +7,7 @@ import { PHONE_POPUP_FRAME, PHONE_POPUP_PANEL } from "@/lib/dashboard-phone";
 import { convertChoiceCards } from "@/lib/convert-choices";
 import { OptionCard } from "@/components/ui/OptionCard";
 import { XIcon } from "@/components/ui/XIcon";
+import { useFileFetch } from "./AgentViewContext";
 
 // The Convert to Transaction pop-up: pick who the transaction represents, then
 // Convert. Errors from the convert call show inside the pop-up.
@@ -21,6 +22,7 @@ export function ConvertListingModal({
   onConverted: (transactionId: string) => void;
   onClose: () => void;
 }) {
+  const fileFetch = useFileFetch();
   const [side, setSide] = useState("");
   const [converting, setConverting] = useState(false);
   const [error, setError] = useState("");
@@ -40,7 +42,7 @@ export function ConvertListingModal({
     setConverting(true);
     setError("");
     try {
-      const res = await fetch(`/api/listings/${listingId}/convert`, {
+      const res = await fileFetch(`/api/listings/${listingId}/convert`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ transactionSide: side }),

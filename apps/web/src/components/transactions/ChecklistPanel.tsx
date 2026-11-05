@@ -8,6 +8,7 @@ import { latestDocument } from "@/lib/transaction-helpers";
 import { removeFromChecklist } from "@/lib/document-actions";
 import { TrashIcon } from "@/components/ui/TrashIcon";
 import { RequiredMark } from "@/components/ui/RequiredMark";
+import { useFileFetch } from "./AgentViewContext";
 import { UploadResultLine } from "@/components/ui/UploadResultLine";
 import { STATUS_ICONS } from "./document-status-icons";
 import { AdditionalDocuments } from "./AdditionalDocuments";
@@ -26,13 +27,14 @@ interface Props {
 
 
 export function ChecklistPanel({ fileType, fileId, items, documents, onUploaded, readOnly = false, viewerId }: Props) {
-  const { uploadingId, results, upload } = useFileUpload(fileType, fileId, onUploaded);
+  const fileFetch = useFileFetch();
+  const { uploadingId, results, upload } = useFileUpload(fileType, fileId, onUploaded, fileFetch);
   const [removeError, setRemoveError] = useState<string | null>(null);
 
   async function remove(documentId: string) {
     if (!window.confirm("Remove this document from the checklist? It stays in the file's Documents tab.")) return;
     setRemoveError(null);
-    const err = await removeFromChecklist(documentId);
+    const err = await removeFromChecklist(documentId, fileFetch);
     if (err) { setRemoveError(err); return; }
     onUploaded();
   }

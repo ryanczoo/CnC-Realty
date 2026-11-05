@@ -2,6 +2,7 @@
 import { useState } from "react";
 import type { FileActivityRecord, FileActivityType, FileContextProps } from "@/types/transaction";
 import { describeActivity } from "@/lib/activity-detail";
+import { useFileFetch } from "./AgentViewContext";
 
 const TYPE_LABELS: Record<FileActivityType, string> = {
   FILE_CREATED:             "File created",
@@ -37,11 +38,12 @@ interface Props extends FileContextProps {
 export function ActivityFeed({ fileType, fileId, activities, onNoteAdded, readOnly = false }: Props) {
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
+  const fileFetch = useFileFetch();
 
   async function addNote() {
     if (!note.trim()) return;
     setSaving(true);
-    await fetch(`/api/files/${fileType}/${fileId}/note`, {
+    await fileFetch(`/api/files/${fileType}/${fileId}/note`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ note }),

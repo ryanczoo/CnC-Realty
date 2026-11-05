@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Download } from "lucide-react";
 import { ChecklistPanel } from "./ChecklistPanel";
+import { useFileFetch } from "./AgentViewContext";
 import type { FileChecklistItemWithDocs, FileDocumentRecord } from "@/types/transaction";
 
 interface Props {
@@ -15,6 +16,7 @@ interface Props {
 }
 
 export function TransferPendingPanel({ fileType, fileId, checklistItems, documents, onUploaded, initialAddress = "" }: Props) {
+  const fileFetch = useFileFetch();
   const [address, setAddress] = useState(initialAddress);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -27,7 +29,7 @@ export function TransferPendingPanel({ fileType, fileId, checklistItems, documen
     setError(null);
     const endpoint = fileType === "listing" ? `/api/listings/${fileId}` : `/api/transactions/${fileId}`;
     try {
-      const res = await fetch(endpoint, {
+      const res = await fileFetch(endpoint, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ propertyAddress: address }),

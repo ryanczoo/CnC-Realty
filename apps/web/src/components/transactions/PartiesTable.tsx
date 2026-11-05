@@ -6,6 +6,7 @@ import { emailError } from "@/lib/form-validation";
 import type { FilePartyRecord, FilePartyRole, FileContextProps } from "@/types/transaction";
 import { PHONE_TABLE_FRAME } from "@/lib/dashboard-phone";
 import { TABLE_HEAD_DARK_ROW, TABLE_HEAD_DARK_CELL } from "@/lib/table-styles";
+import { useFileFetch } from "./AgentViewContext";
 
 const ROLE_LABELS: Record<FilePartyRole, string> = {
   BUYER: "Buyer", SELLER: "Seller", LISTING_AGENT: "Listing Agent",
@@ -21,6 +22,7 @@ interface Props extends FileContextProps {
 }
 
 export function PartiesTable({ fileType, fileId, parties, onChanged, readOnly = false }: Props) {
+  const fileFetch = useFileFetch();
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ role: "BUYER" as FilePartyRole, name: "", email: "", phone: "", company: "", licenseNumber: "" });
 
@@ -28,7 +30,7 @@ export function PartiesTable({ fileType, fileId, parties, onChanged, readOnly = 
 
   async function addParty() {
     if (emailErr) return;
-    await fetch(`/api/files/${fileType}/${fileId}/parties`, {
+    await fileFetch(`/api/files/${fileType}/${fileId}/parties`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
@@ -39,7 +41,7 @@ export function PartiesTable({ fileType, fileId, parties, onChanged, readOnly = 
   }
 
   async function removeParty(partyId: string) {
-    await fetch(`/api/files/${fileType}/${fileId}/parties/${partyId}`, { method: "DELETE" });
+    await fileFetch(`/api/files/${fileType}/${fileId}/parties/${partyId}`, { method: "DELETE" });
     onChanged();
   }
 

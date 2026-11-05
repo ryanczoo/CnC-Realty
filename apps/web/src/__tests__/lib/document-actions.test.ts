@@ -23,6 +23,17 @@ describe("removeFromChecklist", () => {
   });
 });
 
+describe("fetchImpl", () => {
+  it("removeFromChecklist and deleteDocumentPermanently use the fetch they are given", async () => {
+    const spy = vi.fn().mockResolvedValue(ok());
+    await removeFromChecklist("d1", spy as unknown as typeof fetch);
+    expect(spy).toHaveBeenCalledWith("/api/documents/d1/remove", { method: "POST" });
+    await deleteDocumentPermanently("d1", "r", spy as unknown as typeof fetch);
+    expect(spy).toHaveBeenCalledWith("/api/documents/d1", expect.objectContaining({ method: "DELETE" }));
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
 describe("deleteDocumentPermanently", () => {
   it("DELETEs with the reason and returns null on success", async () => {
     fetchMock.mockResolvedValue(ok());

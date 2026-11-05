@@ -26,6 +26,7 @@ import { SectionLabel } from "@/components/ui/SectionLabel";
 import { PropertyTypeSelect } from "@/components/transactions/PropertyTypeSelect";
 import { yearBuiltError, needsYearBuilt } from "@/lib/year-built";
 import { PHONE_FIELD_PAIR } from "@/lib/dashboard-phone";
+import { withAgentView } from "@/lib/agent-view";
 
 const STAGES = [
   { value: "UNDER_CONTRACT", label: "Under Contract", desc: "You have a signed agreement" },
@@ -265,11 +266,11 @@ export default function NewTransactionPage() {
       if (validConditions.length > 0) {
         await Promise.all(
           validConditions.map((c) =>
-            fetch(`/api/transactions/${transaction.id}/conditions`, {
+            fetch(`/api/transactions/${transaction.id}/conditions`, withAgentView({
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(c),
-            })
+            }))
           )
         );
       }
