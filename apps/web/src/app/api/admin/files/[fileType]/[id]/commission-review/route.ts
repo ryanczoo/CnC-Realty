@@ -13,8 +13,8 @@ export async function POST(req: Request, { params }: { params: { fileType: strin
     return NextResponse.json({ error: "Unknown file type" }, { status: 400 });
   }
 
-  const body = await req.json().catch(() => ({}));
-  if (body.decision !== "approve" && body.decision !== "reject") {
+  const body = await req.json().catch(() => null);
+  if (typeof body !== "object" || body === null || Array.isArray(body) || (body.decision !== "approve" && body.decision !== "reject")) {
     return NextResponse.json({ error: "decision must be approve or reject" }, { status: 400 });
   }
   const reason = typeof body.reason === "string" ? body.reason.trim() : "";

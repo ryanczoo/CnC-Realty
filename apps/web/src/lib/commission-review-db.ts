@@ -1,4 +1,5 @@
 import { Prisma } from "@cnc/database";
+import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/prisma";
 import { commissionChanges, transactionCommissionEdit } from "@/lib/file-edit";
 import { buildPendingCommission, isAfterReview, hasPendingCommission, type PendingCommission } from "@/lib/commission-review";
@@ -120,26 +121,33 @@ export type ResolveResult =
   | { ok: true; file: Record<string, unknown>; emailWarning?: boolean }
   | { ok: false; status: number; error: string };
 
+const ALREADY_DECIDED = "This change was already decided";
+class AlreadyDecided extends Error {}
+
 // The broker decides a commission change an agent asked for after approval.
 // Approve keeps the new commission; reject puts back the old one (a transaction
 // recomputes its dollar amounts and GCI the way a normal save does). Either way the
 // pending change is cleared, and so is the review flag if every required document
-// is approved. The commission restore, the clear and the flag go in ONE update, so a
-// failure cannot half-apply; the activity row and the email follow only once it
-// has succeeded.
+// is approved. The write only lands if the same change is still pending (matched on
+// requestedAt), so a double click or an Approve-vs-Reject race applies once; the
+// loser gets a 409. The write and the activity row commit together, and the email
+// goes out only after that commit.
 export async function resolveCommissionChange(
   kind: Kind,
   fileId: string,
   decision: { approve: true } | { approve: false; reason: string },
   actor: Actor,
 ): Promise<ResolveResult> {
-  const include = { checklistItems: CHECKLIST_ITEMS_WITH_DOCS_INCLUDE, agent: { include: { user: true } } };
+  const include = {
+    checklistItems: CHECKLIST_ITEMS_WITH_DOCS_INCLUDE,
+    agent: { include: { user: { select: { name: true, email: true } } } },
+  };
   const file = (kind === "listing"
     ? await prisma.listingFile.findUnique({ where: { id: fileId }, include })
     : await prisma.transactionFile.findUnique({ where: { id: fileId }, include })
   ) as unknown as (FileRow & {
     checklistItems: unknown;
-    agent?: { user?: { email: string; name: string | null } | null } | null;
+    agent?: { user?: { email: string | null; name: string | null } | null } | null;
   }) | null;
   if (!file) return { ok: false, status: 404, error: "File not found" };
 
@@ -153,36 +161,55 @@ export async function resolveCommissionChange(
       ? { commissionPercent: pending.before.commissionPercent ?? null, commissionAmount: pending.before.commissionAmount ?? null }
       : transactionCommissionEdit(pending.before, file as Parameters<typeof transactionCommissionEdit>[1]);
   const data = { ...restore, pendingCommission: Prisma.DbNull, ...(ready && { awaitingReview: false }) };
+  const stillPending = { id: fileId, pendingCommission: { path: ["requestedAt"], equals: pending.requestedAt } };
 
-  const written = (kind === "listing"
-    ? await prisma.listingFile.update({ where: { id: fileId }, data: data as Prisma.ListingFileUpdateInput })
-    : await prisma.transactionFile.update({ where: { id: fileId }, data: data as Prisma.TransactionFileUpdateInput })
-  ) as unknown as Record<string, unknown>;
+  let written: Record<string, unknown>;
+  try {
+    written = await prisma.$transaction(async (tx) => {
+      const { count } = kind === "listing"
+        ? await tx.listingFile.updateMany({ where: stillPending, data: data as Prisma.ListingFileUpdateManyMutationInput })
+        : await tx.transactionFile.updateMany({ where: stillPending, data: data as Prisma.TransactionFileUpdateManyMutationInput });
+      if (count === 0) throw new AlreadyDecided();
 
-  await prisma.fileActivity.create({
-    data: {
-      fileType: kind === "listing" ? "LISTING" : "TRANSACTION",
-      ...(kind === "listing" ? { listingFileId: fileId } : { transactionFileId: fileId }),
-      actorId: actor.userId,
-      actorRole: actor.role,
-      type: decision.approve ? "COMMISSION_CHANGE_APPROVED" : "COMMISSION_CHANGE_REJECTED",
-      payload: decision.approve ? { changes: pending.changes } : { changes: pending.changes, reason: decision.reason },
-    },
-  });
+      await tx.fileActivity.create({
+        data: {
+          fileType: kind === "listing" ? "LISTING" : "TRANSACTION",
+          ...(kind === "listing" ? { listingFileId: fileId } : { transactionFileId: fileId }),
+          actorId: actor.userId,
+          actorRole: actor.role,
+          type: decision.approve ? "COMMISSION_CHANGE_APPROVED" : "COMMISSION_CHANGE_REJECTED",
+          payload: decision.approve ? { changes: pending.changes } : { changes: pending.changes, reason: decision.reason },
+        },
+      });
+
+      return (kind === "listing"
+        ? await tx.listingFile.findUnique({ where: { id: fileId } })
+        : await tx.transactionFile.findUnique({ where: { id: fileId } })
+      ) as unknown as Record<string, unknown>;
+    });
+  } catch (err) {
+    if (err instanceof AlreadyDecided) return { ok: false, status: 409, error: ALREADY_DECIDED };
+    throw err;
+  }
 
   let emailFailed = false;
-  const agentUser = file.agent?.user;
-  if (!decision.approve && agentUser) {
-    const { failed } = await sendSafely(() => sendCommissionChangeRejected({
-      agentEmail: agentUser.email,
-      agentName: agentUser.name ?? "Agent",
-      fileType: kind === "listing" ? "Listing" : "Transaction",
-      address: file.propertyAddress ?? null,
-      fileId,
-      reason: decision.reason,
-      changes: pending.changes,
-    }));
-    emailFailed = failed;
+  if (!decision.approve) {
+    const agentUser = file.agent?.user;
+    if (agentUser?.email) {
+      const { failed } = await sendSafely(() => sendCommissionChangeRejected({
+        agentEmail: agentUser.email as string,
+        agentName: agentUser.name ?? "Agent",
+        fileType: kind === "listing" ? "Listing" : "Transaction",
+        address: file.propertyAddress ?? null,
+        fileId,
+        reason: decision.reason,
+        changes: pending.changes,
+      }));
+      emailFailed = failed;
+    } else {
+      Sentry.captureMessage(`Commission change rejected on ${kind} ${fileId} but the agent has no email on file`, "warning");
+      emailFailed = true;
+    }
   }
   return { ok: true, file: written, ...(emailFailed && { emailWarning: true }) };
 }
