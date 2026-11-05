@@ -15,7 +15,8 @@ import { CommissionTab } from "@/components/transactions/CommissionTab";
 import { DocumentsTab } from "@/components/transactions/DocumentsTab";
 import { WithHeaderPhoto } from "@/components/transactions/FileHeaderPhoto";
 import { AgentViewProvider } from "@/components/transactions/AgentViewContext";
-import { withAgentView } from "@/lib/agent-view";
+import { ReferralActions } from "@/components/transactions/ReferralActions";
+import { withAgentView, adminFilePathFor } from "@/lib/agent-view";
 import { getChecklistProgress, listingStatusOptions, transactionStatusOptions, convertBlockedReason } from "@/lib/transaction-helpers";
 import { isFileReadOnlyFor, isCommissionLockedFor, statusOptionsDuringReview, REVIEW_WAIT_MESSAGE } from "@/lib/file-lock";
 import { isPlaceholderAddress } from "@/lib/transfer-placeholder";
@@ -28,10 +29,8 @@ import type {
   FileDocumentRecord,
   FileTaskRecord,
 } from "@/types/transaction";
-import { sanitizeCurrencyInput, formatCurrencyDisplay } from "@/lib/form-validation";
 import { formatDateOnly, isDateOnlyPast } from "@/lib/utils";
 import { Spinner } from "@/components/ui/Spinner";
-import { EMAIL_WARNING_TEXT } from "@/lib/file-messages";
 
 type Tab = "overview" | "checklist" | "parties" | "activity" | "commission" | "documents" | "tasks";
 
@@ -107,6 +106,15 @@ export default function FileDetailPage() {
       .catch((err) => { if (err.name !== "AbortError") setLoading(false); });
   }
 
+  // An admin who opens another agent's file from the Agent section belongs in the
+  // Admin section. Uses the session and the file already loaded: no extra fetch.
+  const adminPath = file
+    ? adminFilePathFor(session?.user ?? {}, file, isListingFile ? "listing" : "transaction", id)
+    : null;
+  useEffect(() => {
+    if (adminPath) router.replace(adminPath);
+  }, [adminPath, router]);
+
   useEffect(() => {
     requestedTabRef.current = typeof window !== "undefined"
       ? new URLSearchParams(window.location.search).get("tab")
@@ -175,6 +183,8 @@ export default function FileDetailPage() {
     if (await changeStatus("CANCELED_PENDING", cancelReason.trim())) setShowCancelForm(false);
   }
 
+  if (adminPath) return null;
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -201,13 +211,13 @@ export default function FileDetailPage() {
 
   const isReferral = !isListing && transaction?.transactionSide === "REFERRAL";
   const isLocked = file.status === "PENDING_TRANSFER";
-  const viewerIsAdmin = session?.user?.role === "ADMIN";
-  const readOnly = isFileReadOnlyFor(isListing ? "listing" : "transaction", file.status, session?.user?.role ?? "AGENT");
+  // This page is the Agent section: the viewer is treated as an agent, even an admin.
+  const readOnly = isFileReadOnlyFor(isListing ? "listing" : "transaction", file.status, "AGENT");
   const statusOptions = listing
     ? listingStatusOptions(listing.status, "AGENT")
     : transaction && !isReferral && !isLocked ? transactionStatusOptions(transaction.status, "AGENT") : [];
-  // While the broker reviews a file an agent may only pick the exit status; the server never blocks an admin, so neither does this page.
-  const inReview = !!file.awaitingReview && !viewerIsAdmin;
+  // While the broker reviews a file an agent may only pick the exit status.
+  const inReview = !!file.awaitingReview;
   const statusChoices = inReview ? statusOptionsDuringReview(isListing ? "listing" : "transaction", statusOptions) : statusOptions;
   // Pencil editing on the Overview: the file's own agent, while it isn't locked
   // (closed/canceled) or a Pending Transfer placeholder; never referral cards.
@@ -264,7 +274,7 @@ export default function FileDetailPage() {
               <ConvertListingButton
                 listingId={id}
                 listingType={listing.listingType}
-                blockedReason={convertBlockedReason(listing, viewerIsAdmin ? "ADMIN" : "AGENT")}
+                blockedReason={convertBlockedReason(listing, "AGENT")}
                 onConverted={(transactionId) => router.push(`/dashboard/transactions/transaction/${transactionId}`)}
               />
             )}
@@ -276,7 +286,7 @@ export default function FileDetailPage() {
             {isReferral && transaction && (
               <ReferralActions
                 transaction={transaction}
-                viewerIsAdmin={viewerIsAdmin}
+                mode="agent"
                 viewerIsFileAgent={viewerIsFileAgent}
                 onDone={load}
               />
@@ -288,14 +298,14 @@ export default function FileDetailPage() {
             )}
             {!readOnly && statusOptions.length > 0 && (
               <div className="flex flex-col items-end gap-1 max-lg:items-stretch">
-              <FileStatusSelect
-                current={file.status}
-                statuses={[file.status, ...statusChoices]}
-                disabled={statusChanging || (inReview && statusChoices.length === 0)}
-                onChange={onStatusPicked}
-                optionLabel={(s) => (s === "CANCELED_PENDING" && s !== file.status ? "Request Cancellation" : statusLabel(s))}
-              />
-              {inReview && <p className="text-xs text-[#1B1B1B]/50">{REVIEW_WAIT_MESSAGE}</p>}
+                <FileStatusSelect
+                  current={file.status}
+                  statuses={[file.status, ...statusChoices]}
+                  disabled={statusChanging || (inReview && statusChoices.length === 0)}
+                  onChange={onStatusPicked}
+                  optionLabel={(s) => (s === "CANCELED_PENDING" && s !== file.status ? "Request Cancellation" : statusLabel(s))}
+                />
+                {inReview && <p className="text-xs text-[#1B1B1B]/50">{REVIEW_WAIT_MESSAGE}</p>}
               </div>
             )}
           </div>
@@ -364,8 +374,8 @@ export default function FileDetailPage() {
           satisfied={satisfied}
           required={required}
           canEdit={canEditDetails}
-          canChangeRepresentation={viewerIsAdmin}
-          commissionLocked={isCommissionLockedFor(file.awaitingReview, session?.user?.role ?? "AGENT")}
+          canChangeRepresentation={false}
+          commissionLocked={isCommissionLockedFor(file.awaitingReview, "AGENT")}
           pendingCommission={file.pendingCommission}
           reviewWait={inReview}
           // A saved detail can resolve an earlier refusal (e.g. extending the
@@ -642,119 +652,3 @@ function TaskRow({
     </div>
   );
 }
-
-// ─── Referral Status Actions ──────────────────────────────────────────────────
-
-function ReferralActions({
-  transaction,
-  viewerIsAdmin,
-  viewerIsFileAgent,
-  onDone,
-}: {
-  transaction: TransactionFileDetail;
-  viewerIsAdmin: boolean;
-  viewerIsFileAgent: boolean;
-  onDone: () => void;
-}) {
-  const [amount, setAmount] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [warning, setWarning] = useState(false);
-
-  async function patch(payload: Record<string, unknown>) {
-    setSubmitting(true);
-    setError(null);
-    setWarning(false);
-    try {
-      const res = await fetch(`/api/transactions/${transaction.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        setError(body?.error ?? "Failed to update status. Please try again.");
-        return;
-      }
-      const okBody = await res.json().catch(() => null);
-      if (okBody?.emailWarning) setWarning(true);
-      onDone();
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  const status = transaction.status;
-
-  let content: React.ReactNode = null;
-
-  if (status === "PENDING" && viewerIsFileAgent) {
-    content = (
-      <>
-        <button
-          onClick={() => patch({ status: "REFERRAL_SUCCESSFUL" })}
-          disabled={submitting}
-          className="rounded-full bg-[#9E8C61] px-4 py-2 text-sm text-white disabled:opacity-50"
-        >
-          Referral Successful
-        </button>
-        <button
-          onClick={() => patch({ status: "REFERRAL_UNSUCCESSFUL" })}
-          disabled={submitting}
-          className="rounded-full border border-[#1B1B1B]/20 px-4 py-2 text-sm text-[#1B1B1B]/70 hover:border-[#1B1B1B]/40 disabled:opacity-50"
-        >
-          Referral Unsuccessful
-        </button>
-      </>
-    );
-  } else if (status === "REFERRAL_SUCCESSFUL" && viewerIsAdmin) {
-    content = (
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (!amount.trim()) return;
-          patch({ status: "REFERRAL_BROKER_REVIEW", referralAmountReceived: amount });
-        }}
-        className="flex items-center gap-2 max-lg:flex-col max-lg:items-stretch"
-      >
-        <input
-          type="text"
-          inputMode="decimal"
-          required
-          placeholder="Amount received"
-          value={formatCurrencyDisplay(amount)}
-          onChange={(e) => setAmount(sanitizeCurrencyInput(e.target.value, 12))}
-          className="w-40 rounded-lg border border-[#1B1B1B]/15 bg-[#F2F0EF] px-3 py-2 text-sm text-[#1B1B1B] outline-none focus:border-[#1B1B1B]/40 max-lg:w-full"
-        />
-        <button
-          type="submit"
-          disabled={submitting}
-          className="rounded-full bg-[#9E8C61] px-4 py-2 text-sm text-white disabled:opacity-50"
-        >
-          Submit for Broker Review
-        </button>
-      </form>
-    );
-  } else if ((status === "REFERRAL_BROKER_REVIEW" || status === "REFERRAL_UNSUCCESSFUL") && viewerIsAdmin) {
-    content = (
-      <button
-        onClick={() => patch({ status: "CLOSED" })}
-        disabled={submitting}
-        className="rounded-full bg-[#9E8C61] px-4 py-2 text-sm text-white disabled:opacity-50"
-      >
-        Mark Closed
-      </button>
-    );
-  }
-
-  if (!content && !warning) return null;
-
-  return (
-    <div className="flex flex-col items-end gap-1.5 max-lg:items-stretch">
-      {content && <div className="flex items-center gap-2 max-lg:flex-col max-lg:items-stretch">{content}</div>}
-      {error && <p className="text-xs text-red-600">{error}</p>}
-      {warning && <p className="mt-2 text-xs text-amber-700">{EMAIL_WARNING_TEXT}</p>}
-    </div>
-  );
-}
-

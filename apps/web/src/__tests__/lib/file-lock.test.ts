@@ -45,6 +45,10 @@ describe("isFileReadOnlyFor", () => {
   it("is editable for an agent on an open file", () => {
     expect(isFileReadOnlyFor("listing", "ACTIVE", "AGENT")).toBe(false);
   });
+  // The Agent-section file page always passes "AGENT", even for an admin viewer.
+  it("is read-only on a closed transaction for the literal agent role the agent page passes", () => {
+    expect(isFileReadOnlyFor("transaction", "CLOSED", "AGENT")).toBe(true);
+  });
 });
 
 describe("assertFileEditable", () => {
@@ -71,6 +75,9 @@ describe("shared messages", () => {
 
 describe("isCommissionLockedFor (agents can't change commission during broker review)", () => {
   it("locks an agent while the file is Awaiting Review", () => {
+    expect(isCommissionLockedFor(true, "AGENT")).toBe(true);
+  });
+  it("locks the literal agent role the agent page passes, whoever is viewing", () => {
     expect(isCommissionLockedFor(true, "AGENT")).toBe(true);
   });
   it("never locks the broker, and not before review", () => {
