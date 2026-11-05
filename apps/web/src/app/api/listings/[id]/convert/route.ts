@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { checkOwnership, assertFileEditable } from "@/lib/api-auth";
+import { checkOwnership, assertFileEditable, actingRole } from "@/lib/api-auth";
 import { convertBlockedReason, CHECKLIST_ITEMS_WITH_DOCS_INCLUDE } from "@/lib/transaction-helpers";
 import { convertedCommission } from "@/lib/commission";
 import { convertSideChoices, templateItemsForFile } from "@/lib/representation";
@@ -13,17 +13,19 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  // An admin in the Agent section sends the agent-view marker and is treated as an agent.
+  const role = actingRole(session.user.role, req) === "ADMIN" ? "ADMIN" : "AGENT";
   const listingRecord = await prisma.listingFile.findUnique({
     where: { id: params.id },
     include: { parties: true, checklistItems: CHECKLIST_ITEMS_WITH_DOCS_INCLUDE },
   });
-  const { exists, forbidden, record: listing } = checkOwnership(listingRecord, session.user.agentId, session.user.role);
+  const { exists, forbidden, record: listing } = checkOwnership(listingRecord, session.user.agentId, role);
   if (!exists || !listing) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (forbidden) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  const locked = assertFileEditable("listing", listing.status, session.user.role);
+  const locked = assertFileEditable("listing", listing.status, role);
   if (locked) return locked;
-  const isAdmin = session.user.role === "ADMIN";
-  const blocked = convertBlockedReason(listing, isAdmin ? "ADMIN" : "AGENT");
+  const isAdmin = role === "ADMIN";
+  const blocked = convertBlockedReason(listing, role);
   if (blocked) return NextResponse.json({ error: blocked }, { status: 400 });
 
   let body: unknown = null;
@@ -41,7 +43,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     include: { items: { orderBy: { order: "asc" } } },
   });
 
-  const actorRole = session.user.role === "ADMIN" ? "ADMIN" as const : "AGENT" as const;
+  const actorRole = role;
 
   const [txFile] = await prisma.$transaction([
     prisma.transactionFile.create({

@@ -21,6 +21,7 @@ import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/prisma";
 import { PATCH } from "../../app/api/listings/[id]/route";
 import { followDates } from "@/lib/auto-status";
+import { AGENT_VIEW_HEADER } from "@/lib/agent-view";
 
 const AGENT = { user: { id: "u1", role: "AGENT", agentId: "a1" } };
 const ADMIN = { user: { id: "admin1", role: "ADMIN", agentId: null } };
@@ -315,5 +316,46 @@ describe("PATCH /api/listings/[id] - commission change after broker review", () 
     const res = await patch({ commissionPercent: "2", status: "COMING_SOON" });
     expect(res.status).toBe(500);
     expect(Sentry.captureException).toHaveBeenCalled();
+  });
+});
+
+// An admin working in the Agent section sends the agent-view marker and is
+// treated as an agent: only their own files, and the agent's commission lock.
+describe("PATCH /api/listings/[id] — agent-view marker", () => {
+  const VIEWING_ADMIN = { user: { id: "admin1", role: "ADMIN", agentId: "a1" } };
+  const IN_REVIEW = { id: "lf1", agentId: "a1", status: "ACTIVE", awaitingReview: true };
+  const send = (body: unknown, marked: boolean) =>
+    PATCH(
+      new Request("http://localhost", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...(marked && { [AGENT_VIEW_HEADER]: "1" }) },
+        body: JSON.stringify(body),
+      }),
+      { params: { id: "lf1" } },
+    );
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(prisma.fileActivity.create).mockResolvedValue({} as any);
+    vi.mocked(prisma.listingFile.update).mockResolvedValue({ id: "lf1" } as any);
+    vi.mocked(getServerSession).mockResolvedValue(VIEWING_ADMIN as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(IN_REVIEW as any);
+  });
+
+  it("locks the commission on the admin's own file while it awaits review", async () => {
+    const res = await send({ commissionPercent: "3" }, true);
+    expect(res.status).toBe(403);
+    expect((await res.json()).error).toBe("Commission is locked while this file is in broker review");
+    expect(prisma.listingFile.update).not.toHaveBeenCalled();
+  });
+
+  it("lets the same admin edit the commission without the marker", async () => {
+    expect((await send({ commissionPercent: "3" }, false)).status).toBe(200);
+  });
+
+  it("refuses another agent's file with the marker, allows it without", async () => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ ...IN_REVIEW, agentId: "a2", awaitingReview: false } as any);
+    expect((await send({ commissionNotes: "x" }, true)).status).toBe(403);
+    expect((await send({ commissionNotes: "x" }, false)).status).toBe(200);
   });
 });

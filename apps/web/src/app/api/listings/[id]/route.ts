@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { checkOwnership, assertFileEditable } from "@/lib/api-auth";
+import { checkOwnership, assertFileEditable, actingRole } from "@/lib/api-auth";
 import { changeFileStatus } from "@/lib/file-status";
 import { FILE_DETAIL_INCLUDE } from "@/lib/transaction-helpers";
 import { trimStrings } from "@/lib/form-validation";
@@ -41,17 +41,17 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const listing = await prisma.listingFile.findUnique({ where: { id: params.id } });
   if (!listing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const isAdmin = session.user.role === "ADMIN";
-  const { forbidden } = checkOwnership(listing, session.user.agentId, session.user.role);
+  // An admin in the Agent section sends the agent-view marker and is treated as an agent.
+  const role = actingRole(session.user.role, req) === "ADMIN" ? "ADMIN" : "AGENT";
+  const { forbidden } = checkOwnership(listing, session.user.agentId, role);
   if (forbidden) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const locked = assertFileEditable("listing", listing.status, session.user.role);
+  const locked = assertFileEditable("listing", listing.status, role);
   if (locked) return locked;
 
   const body = trimStrings(await req.json());
-  const role = isAdmin ? "ADMIN" : "AGENT";
   const commissionLocked = commissionLockedError("listing", body, listing, role);
   if (commissionLocked) return NextResponse.json({ error: commissionLocked }, { status: 403 });
   const required = requiredFieldError("listing", body, listing) ?? commissionPercentError(body);

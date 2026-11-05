@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getFileAndVerifyAccess, assertFileEditable } from "@/lib/api-auth";
+import { getFileAndVerifyAccess, assertFileEditable, actingRole } from "@/lib/api-auth";
 import { trimStrings } from "@/lib/form-validation";
 
 export async function GET(req: Request) {
@@ -44,9 +44,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "fileType must be 'listing' or 'transaction'" }, { status: 400 });
   }
 
-  const file = await getFileAndVerifyAccess(fileType, fileId, session.user.agentId, session.user.role);
+  // An admin in the Agent section sends the agent-view marker and is treated as an agent.
+  const role = actingRole(session.user.role, req);
+  const file = await getFileAndVerifyAccess(fileType, fileId, session.user.agentId, role);
   if (!file) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  const locked = assertFileEditable(fileType, file.status, session.user.role);
+  const locked = assertFileEditable(fileType, file.status, role);
   if (locked) return locked;
 
   const task = await prisma.fileTask.create({

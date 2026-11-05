@@ -22,6 +22,7 @@ import { GET, PATCH } from "../../app/api/transactions/[id]/route";
 import { followDates } from "@/lib/auto-status";
 import { sendCancellationRequested } from "@/lib/email/transaction-emails";
 import { maybeAutoPending } from "@/lib/file-status";
+import { AGENT_VIEW_HEADER } from "@/lib/agent-view";
 
 function makeRequest() {
   return new Request("http://localhost/api/transactions/tf1");
@@ -605,5 +606,69 @@ describe("PATCH /api/transactions/[id] - commission change after broker review",
     await patch({ city: "Irvine" });
     expect(prisma.transactionFile.update).toHaveBeenCalledTimes(1);
     expect((vi.mocked(prisma.transactionFile.update).mock.calls[0][0].data as any).awaitingReview).toBeUndefined();
+  });
+});
+
+// An admin working in the Agent section sends the agent-view marker and is
+// treated as an agent. The marker can only remove rights.
+describe("PATCH /api/transactions/[id] — agent-view marker", () => {
+  const VIEWING_ADMIN = { user: { id: "admin1", role: "ADMIN", agentId: "a1" } };
+  const IN_REVIEW = { id: "tf1", agentId: "a1", status: "INCOMPLETE", awaitingReview: true, checklistItems: READY_ITEMS };
+  const send = (body: unknown, session: unknown, marked: boolean) => {
+    vi.mocked(getServerSession).mockResolvedValue(session as any);
+    return PATCH(
+      new Request("http://localhost", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...(marked && { [AGENT_VIEW_HEADER]: "1" }) },
+        body: JSON.stringify(body),
+      }),
+      { params: { id: "tf1" } },
+    );
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(prisma.fileActivity.create).mockResolvedValue({} as any);
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(IN_REVIEW as any);
+    vi.mocked(prisma.transactionFile.update).mockResolvedValue({ id: "tf1", status: "PRE_CONTRACT" } as any);
+  });
+
+  it("makes the admin wait for broker review on a non-exit status change", async () => {
+    const res = await send({ status: "PRE_CONTRACT" }, VIEWING_ADMIN, true);
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("Waiting for broker review");
+    expect(prisma.transactionFile.update).not.toHaveBeenCalled();
+  });
+
+  it("allows the same status change without the marker", async () => {
+    expect((await send({ status: "PRE_CONTRACT" }, VIEWING_ADMIN, false)).status).toBe(200);
+  });
+
+  it("logs the status change as the agent's when the marker is sent", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({ ...IN_REVIEW, awaitingReview: false } as any);
+    expect((await send({ status: "PRE_CONTRACT" }, VIEWING_ADMIN, true)).status).toBe(200);
+    expect(vi.mocked(prisma.fileActivity.create).mock.calls[0][0].data).toMatchObject({ actorRole: "AGENT", type: "STATUS_CHANGED" });
+    // The agent can't clear the review flag, so it is not written.
+    expect("awaitingReview" in (vi.mocked(prisma.transactionFile.update).mock.calls[0][0].data as object)).toBe(false);
+  });
+
+  it("locks the commission on the admin's own file while it awaits review", async () => {
+    const res = await send({ saleCommissionPct: "3" }, VIEWING_ADMIN, true);
+    expect(res.status).toBe(403);
+    expect(prisma.transactionFile.update).not.toHaveBeenCalled();
+  });
+
+  it("refuses another agent's file with the marker, allows it without", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({ ...IN_REVIEW, agentId: "a2", awaitingReview: false } as any);
+    expect((await send({ commissionNotes: "x" }, VIEWING_ADMIN, true)).status).toBe(403);
+    expect((await send({ commissionNotes: "x" }, VIEWING_ADMIN, false)).status).toBe(200);
+  });
+
+  it("treats an agent session with a forged marker exactly like one without", async () => {
+    const withMarker = await send({ status: "PRE_CONTRACT" }, AGENT_SESSION, true);
+    const without = await send({ status: "PRE_CONTRACT" }, AGENT_SESSION, false);
+    expect(withMarker.status).toBe(without.status);
+    expect(await withMarker.json()).toEqual(await without.json());
+    expect(without.status).toBe(400);
   });
 });

@@ -17,6 +17,7 @@ vi.mock("@/lib/prisma", () => ({
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { POST } from "../../app/api/documents/route";
+import { AGENT_VIEW_HEADER } from "@/lib/agent-view";
 
 const SESSION_AGENT = { user: { id: "u1", role: "AGENT", agentId: "a1" } };
 
@@ -128,5 +129,41 @@ describe("POST /api/documents", () => {
       expect(prisma.fileDocument.create).not.toHaveBeenCalled();
       expect(prisma.fileDocument.update).not.toHaveBeenCalled();
     });
+  });
+});
+
+describe("POST /api/documents — agent-view marker", () => {
+  const VIEWING_ADMIN = { user: { id: "admin1", role: "ADMIN", agentId: "a1" } };
+  const body = {
+    fileType: "LISTING", fileId: "f1", name: "real.pdf",
+    r2Key: "transactions/listing/f1/doc123/real.pdf", r2Url: "transactions/listing/f1/doc123/real.pdf",
+  };
+  const marked = () =>
+    new Request("http://localhost/api/documents", { method: "POST", headers: { [AGENT_VIEW_HEADER]: "1" }, body: JSON.stringify(body) });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getServerSession).mockResolvedValue(VIEWING_ADMIN as any);
+    vi.mocked(prisma.fileDocument.create).mockResolvedValue({ id: "doc1" } as any);
+    vi.mocked(prisma.fileActivity.create).mockResolvedValue({} as any);
+  });
+
+  it("refuses another agent's file with the marker, allows it without", async () => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "f1", agentId: "a2", status: "ACTIVE" } as any);
+    expect((await POST(marked())).status).toBe(403);
+    expect(prisma.fileDocument.create).not.toHaveBeenCalled();
+    expect((await POST(req(body))).status).toBe(201);
+  });
+
+  it("logs the upload as the agent's when the marker is sent", async () => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "f1", agentId: "a1", status: "ACTIVE" } as any);
+    expect((await POST(marked())).status).toBe(201);
+    expect(vi.mocked(prisma.fileActivity.create).mock.calls[0][0].data).toMatchObject({ actorRole: "AGENT", type: "DOCUMENT_UPLOADED" });
+  });
+
+  it("locks a closed file for the admin with the marker, open without", async () => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "f1", agentId: "a1", status: "CLOSED" } as any);
+    expect((await POST(marked())).status).toBe(403);
+    expect((await POST(req(body))).status).toBe(201);
   });
 });

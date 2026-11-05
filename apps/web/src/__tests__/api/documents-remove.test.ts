@@ -15,6 +15,7 @@ vi.mock("@/lib/prisma", () => ({
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { POST } from "../../app/api/documents/[id]/remove/route";
+import { AGENT_VIEW_HEADER } from "@/lib/agent-view";
 
 const AGENT = { user: { id: "u1", role: "AGENT", agentId: "a1" } };
 const OTHER_AGENT = { user: { id: "u2", role: "AGENT", agentId: "a2" } };
@@ -143,5 +144,55 @@ describe("POST /api/documents/[id]/remove", () => {
     vi.mocked(prisma.fileDocument.findUnique).mockResolvedValue(doc({ checklistItemId: null, checklistItem: null, isAdditional: true, reviewStatus: "APPROVED" }) as any);
     expect((await remove()).status).toBe(200);
     expect(prisma.fileDocument.update).toHaveBeenCalledWith({ where: { id: "d1" }, data: { checklistItemId: null, isAdditional: false } });
+  });
+});
+
+// An admin working in the Agent section sends the agent-view marker and is
+// treated as an agent: only their own In Review uploads can be removed.
+describe("POST /api/documents/[id]/remove — agent-view marker", () => {
+  const VIEWING_ADMIN = { user: { id: "admin1", role: "ADMIN", agentId: "a1" } };
+  const removeAs = (marked: boolean) =>
+    POST(new Request("http://localhost", { method: "POST", headers: marked ? { [AGENT_VIEW_HEADER]: "1" } : {} }), { params: { id: "d1" } });
+
+  beforeEach(() => {
+    vi.resetAllMocks();
+    vi.mocked(getServerSession).mockResolvedValue(VIEWING_ADMIN as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ status: "ACTIVE" } as any);
+    vi.mocked(prisma.fileDocument.update).mockResolvedValue({} as any);
+    vi.mocked(prisma.fileActivity.create).mockResolvedValue({} as any);
+    vi.mocked(prisma.$transaction).mockImplementation((async (ops: Promise<unknown>[]) => Promise.all(ops)) as any);
+  });
+
+  it("refuses an approved document with the marker, allows it without", async () => {
+    vi.mocked(prisma.fileDocument.findUnique).mockResolvedValue(doc({ uploadedByAgentId: "admin1", reviewStatus: "APPROVED" }) as any);
+    const res = await removeAs(true);
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("Only documents still in review can be removed");
+    expect(prisma.fileDocument.update).not.toHaveBeenCalled();
+    expect((await removeAs(false)).status).toBe(200);
+  });
+
+  it("refuses another agent's upload with the marker, allows it without", async () => {
+    vi.mocked(prisma.fileDocument.findUnique).mockResolvedValue(doc({ uploadedByAgentId: "u2" }) as any);
+    expect((await removeAs(true)).status).toBe(403);
+    expect(prisma.fileDocument.update).not.toHaveBeenCalled();
+    expect((await removeAs(false)).status).toBe(200);
+  });
+
+  it("removes the admin's own In Review upload and logs it as the agent's", async () => {
+    vi.mocked(prisma.fileDocument.findUnique).mockResolvedValue(doc({ uploadedByAgentId: "admin1" }) as any);
+    expect((await removeAs(true)).status).toBe(200);
+    expect(prisma.fileDocument.update).toHaveBeenCalledWith({
+      where: { id: "d1" },
+      data: { checklistItemId: null, reviewStatus: "NOT_SUBMITTED" },
+    });
+    expect(vi.mocked(prisma.fileActivity.create).mock.calls[0][0].data).toMatchObject({ actorRole: "AGENT", type: "DOCUMENT_REMOVED" });
+  });
+
+  it("locks a closed file for the admin with the marker", async () => {
+    vi.mocked(prisma.fileDocument.findUnique).mockResolvedValue(doc({ uploadedByAgentId: "admin1" }) as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ status: "CLOSED" } as any);
+    expect((await removeAs(true)).status).toBe(403);
+    expect((await removeAs(false)).status).toBe(200);
   });
 });

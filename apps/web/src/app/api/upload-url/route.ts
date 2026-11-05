@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getPresignedPutUrl, buildR2Key } from "@/lib/r2";
-import { getFileAndVerifyAccess, assertFileEditable } from "@/lib/api-auth";
+import { getFileAndVerifyAccess, assertFileEditable, actingRole } from "@/lib/api-auth";
 import { createId } from "@paralleldrive/cuid2";
 
 const ALLOWED_TYPES = [
@@ -38,9 +38,11 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "File exceeds 50MB limit" }, { status: 400 });
   }
 
-  const file = await getFileAndVerifyAccess(fileType, fileId, session.user.agentId, session.user.role);
+  // An admin in the Agent section sends the agent-view marker and is treated as an agent.
+  const role = actingRole(session.user.role, req);
+  const file = await getFileAndVerifyAccess(fileType, fileId, session.user.agentId, role);
   if (!file) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  const locked = assertFileEditable(fileType, file.status, session.user.role);
+  const locked = assertFileEditable(fileType, file.status, role);
   if (locked) return locked;
 
   const documentId = createId();

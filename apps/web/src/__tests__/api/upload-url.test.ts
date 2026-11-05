@@ -20,6 +20,7 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { getPresignedPutUrl } from "@/lib/r2";
 import { GET } from "../../app/api/upload-url/route";
+import { AGENT_VIEW_HEADER } from "@/lib/agent-view";
 
 const SESSION_AGENT = { user: { id: "u1", role: "AGENT", agentId: "a1" } };
 
@@ -55,5 +56,29 @@ describe("GET /api/upload-url", () => {
 
     const res = await GET(req("bogus", "f1"));
     expect(res.status).toBe(400);
+  });
+});
+
+describe("GET /api/upload-url — agent-view marker", () => {
+  const VIEWING_ADMIN = { user: { id: "admin1", role: "ADMIN", agentId: "a1" } };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getServerSession).mockResolvedValue(VIEWING_ADMIN as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "f1", agentId: "a2", status: "ACTIVE" } as any);
+  });
+
+  it("refuses another agent's file with the marker, allows it without", async () => {
+    const url = "http://localhost/api/upload-url?fileType=listing&fileId=f1&filename=doc.pdf&contentType=application/pdf&size=1000";
+    expect((await GET(new Request(url, { headers: { [AGENT_VIEW_HEADER]: "1" } }))).status).toBe(403);
+    expect(getPresignedPutUrl).not.toHaveBeenCalled();
+    expect((await GET(req("listing", "f1"))).status).toBe(200);
+  });
+
+  it("locks a closed file for the admin with the marker, open without", async () => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "f1", agentId: "a1", status: "CLOSED" } as any);
+    const url = "http://localhost/api/upload-url?fileType=listing&fileId=f1&filename=doc.pdf&contentType=application/pdf&size=1000";
+    expect((await GET(new Request(url, { headers: { [AGENT_VIEW_HEADER]: "1" } }))).status).toBe(403);
+    expect((await GET(req("listing", "f1"))).status).toBe(200);
   });
 });

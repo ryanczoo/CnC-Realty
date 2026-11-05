@@ -2,17 +2,19 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { resolveFileRef, assertFileEditable } from "@/lib/api-auth";
+import { resolveFileRef, assertFileEditable, actingRole } from "@/lib/api-auth";
 
 // "Remove from checklist" (SkySlope-style): takes a document off its checklist
 // item without deleting it. The file stays in R2 and in the Documents tab as
 // Unattached (B&P §10148 retention); the checklist item goes back to needing a
 // document. Agents: only their own In Review uploads (which then drop out of the
 // broker's review queue as Not Submitted). Broker: any document, status kept.
-export async function POST(_req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const isAdmin = session.user.role === "ADMIN";
+  // An admin in the Agent section sends the agent-view marker and is treated as an agent.
+  const role = actingRole(session.user.role, req);
+  const isAdmin = role === "ADMIN";
 
   const doc = await prisma.fileDocument.findUnique({
     where: { id: params.id },
@@ -35,7 +37,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
   const parent = ref.fileType === "listing"
     ? await prisma.listingFile.findUnique({ where: { id: ref.fileId }, select: { status: true } })
     : await prisma.transactionFile.findUnique({ where: { id: ref.fileId }, select: { status: true } });
-  const locked = assertFileEditable(ref.fileType, parent?.status, session.user.role);
+  const locked = assertFileEditable(ref.fileType, parent?.status, role);
   if (locked) return locked;
 
   await prisma.$transaction([

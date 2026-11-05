@@ -7,6 +7,7 @@ vi.mock("@/lib/api-auth", () => ({
   assertFileEditable: vi.fn(() => null),
   checkOwnership: vi.fn(),
   requireAuth: vi.fn(),
+  actingRole: vi.fn((role: string) => role),
 }));
 vi.mock("@/lib/prisma", () => ({
   prisma: {

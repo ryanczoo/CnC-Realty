@@ -1,3 +1,4 @@
+import { AGENT_VIEW_HEADER } from "@/lib/agent-view";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("next-auth", () => ({ getServerSession: vi.fn() }));
@@ -385,5 +386,44 @@ describe("POST /api/listings/[id]/convert — chosen side", () => {
     vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ ...SALE_LISTING, commissionPercent: 2.5, commissionAmount: null, commissionNotes: null } as any);
     expect((await POST(post("DUAL"), { params: { id: "l1" } })).status).toBe(201);
     expect(created()).toMatchObject({ transactionSide: "DUAL", listingCommissionPct: 2.5, saleCommissionPct: null });
+  });
+});
+
+// An admin working in the Agent section sends the agent-view marker and is
+// treated as an agent: they wait for broker review, and the review flag stays.
+describe("POST /api/listings/[id]/convert — agent-view marker", () => {
+  const VIEWING_ADMIN = { user: { id: "admin1", role: "ADMIN", agentId: "a1" } };
+  const marked = () =>
+    new Request("http://localhost", { method: "POST", headers: { [AGENT_VIEW_HEADER]: "1" }, body: JSON.stringify({ transactionSide: "LISTING" }) });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(prisma.$transaction).mockImplementation(((arr: any[]) => Promise.all(arr)) as any);
+    vi.mocked(prisma.fileActivity.create).mockResolvedValue({} as any);
+    vi.mocked(prisma.checklistTemplate.findFirst).mockResolvedValue(null);
+    vi.mocked(prisma.listingFile.update).mockResolvedValue({} as any);
+    vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "tf" } as any);
+    vi.mocked(getServerSession).mockResolvedValue(VIEWING_ADMIN as any);
+  });
+
+  it("makes the admin wait while the listing awaits broker review", async () => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ ...SALE_LISTING, awaitingReview: true } as any);
+    const res = await POST(marked(), { params: { id: "l1" } });
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("Waiting for broker review");
+    expect(prisma.transactionFile.create).not.toHaveBeenCalled();
+  });
+
+  it("does not clear the review flag when converting with the marker", async () => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(SALE_LISTING as any);
+    const res = await POST(marked(), { params: { id: "l1" } });
+    expect(res.status).toBe(201);
+    expect(vi.mocked(prisma.listingFile.update).mock.calls[0][0].data).not.toHaveProperty("awaitingReview");
+    expect(vi.mocked(prisma.fileActivity.create).mock.calls.at(-1)![0].data).toMatchObject({ actorRole: "AGENT" });
+  });
+
+  it("refuses another agent's listing with the marker", async () => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ ...SALE_LISTING, agentId: "a2" } as any);
+    expect((await POST(marked(), { params: { id: "l1" } })).status).toBe(403);
   });
 });

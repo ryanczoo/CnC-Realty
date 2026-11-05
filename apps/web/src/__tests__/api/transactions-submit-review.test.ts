@@ -1,3 +1,4 @@
+import { AGENT_VIEW_HEADER } from "@/lib/agent-view";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("next-auth", () => ({ getServerSession: vi.fn() }));
@@ -138,5 +139,25 @@ describe("POST /api/transactions/[id]/submit-review — review submission", () =
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true });
     expect(prisma.transactionFile.update).toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/transactions/[id]/submit-review — agent-view marker", () => {
+  const VIEWING_ADMIN = { user: { id: "admin1", role: "ADMIN", agentId: "a1" } };
+  const post = (marked: boolean) =>
+    POST(new Request("http://localhost", { method: "POST", headers: marked ? { [AGENT_VIEW_HEADER]: "1" } : {} }), { params: { id: "tf1" } });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({ ...TX, agentId: "a2" } as any);
+    vi.mocked(prisma.transactionFile.update).mockResolvedValue({} as any);
+    vi.mocked(prisma.fileActivity.create).mockResolvedValue({} as any);
+    vi.mocked(getServerSession).mockResolvedValue(VIEWING_ADMIN as any);
+  });
+
+  it("refuses another agent's transaction with the marker, allows it without", async () => {
+    expect((await post(true)).status).toBe(403);
+    expect(prisma.transactionFile.update).not.toHaveBeenCalled();
+    expect((await post(false)).status).toBe(200);
   });
 });

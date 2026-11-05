@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getFileAndVerifyAccess, resolveFileRef } from "@/lib/api-auth";
+import { getFileAndVerifyAccess, resolveFileRef, actingRole } from "@/lib/api-auth";
 import { isFileReadOnlyFor } from "@/lib/file-lock";
 import { FILE_LOCKED_MESSAGE } from "@/lib/file-messages";
 import { trimStrings } from "@/lib/form-validation";
@@ -47,7 +47,9 @@ export async function PATCH(req: Request, { params }: { params: { fileType: stri
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const check = await verifyPartyAccess(params.partyId, session.user.agentId, session.user.role);
+  // An admin in the Agent section sends the agent-view marker and is treated as an agent.
+  const role = actingRole(session.user.role, req);
+  const check = await verifyPartyAccess(params.partyId, session.user.agentId, role);
   if ("error" in check) return NextResponse.json({ error: check.error }, { status: check.status });
 
   const body = trimStrings(await req.json());
@@ -69,11 +71,13 @@ export async function PATCH(req: Request, { params }: { params: { fileType: stri
   return NextResponse.json({ party: updated });
 }
 
-export async function DELETE(_req: Request, { params }: { params: { fileType: string; id: string; partyId: string } }) {
+export async function DELETE(req: Request, { params }: { params: { fileType: string; id: string; partyId: string } }) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const check = await verifyPartyAccess(params.partyId, session.user.agentId, session.user.role);
+  // An admin in the Agent section sends the agent-view marker and is treated as an agent.
+  const role = actingRole(session.user.role, req);
+  const check = await verifyPartyAccess(params.partyId, session.user.agentId, role);
   if ("error" in check) return NextResponse.json({ error: check.error }, { status: check.status });
 
   const error = await clientRemovalError(check.party, check.ref, null);

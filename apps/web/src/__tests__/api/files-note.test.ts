@@ -15,6 +15,7 @@ vi.mock("@/lib/prisma", () => ({
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { POST } from "../../app/api/files/[fileType]/[id]/note/route";
+import { AGENT_VIEW_HEADER } from "@/lib/agent-view";
 
 const SESSION_AGENT = { user: { id: "u1", role: "AGENT", agentId: "a1" } };
 
@@ -49,5 +50,30 @@ describe("POST /api/files/[fileType]/[id]/note", () => {
 
     const res = await POST(req("some note"), { params: { fileType: "bogus", id: "f1" } });
     expect(res.status).toBe(400);
+  });
+});
+
+describe("POST /api/files/[fileType]/[id]/note — agent-view marker", () => {
+  const VIEWING_ADMIN = { user: { id: "admin1", role: "ADMIN", agentId: "a1" } };
+  const marked = (note: string) =>
+    new Request("http://localhost/api/files/listing/f1/note", { method: "POST", headers: { [AGENT_VIEW_HEADER]: "1" }, body: JSON.stringify({ note }) });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getServerSession).mockResolvedValue(VIEWING_ADMIN as any);
+    vi.mocked(prisma.fileActivity.create).mockResolvedValue({ id: "act1" } as any);
+  });
+
+  it("refuses another agent's file with the marker, allows it without", async () => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "f1", agentId: "a2" } as any);
+    expect((await POST(marked("hi"), { params: { fileType: "listing", id: "f1" } })).status).toBe(403);
+    expect(prisma.fileActivity.create).not.toHaveBeenCalled();
+    expect((await POST(req("hi"), { params: { fileType: "listing", id: "f1" } })).status).toBe(200);
+  });
+
+  it("records the note as the agent's when the marker is sent", async () => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "f1", agentId: "a1" } as any);
+    expect((await POST(marked("hi"), { params: { fileType: "listing", id: "f1" } })).status).toBe(200);
+    expect(vi.mocked(prisma.fileActivity.create).mock.calls[0][0].data).toMatchObject({ actorRole: "AGENT" });
   });
 });

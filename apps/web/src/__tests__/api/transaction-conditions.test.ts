@@ -1,3 +1,4 @@
+import { AGENT_VIEW_HEADER } from "@/lib/agent-view";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("next-auth", () => ({ getServerSession: vi.fn() }));
@@ -143,5 +144,31 @@ describe("POST /api/transactions/[id]/conditions", () => {
 
     const res = await POST(makeRequest({ name: "x" }), { params: { id: "tf1" } });
     expect(res.status).toBe(201);
+  });
+});
+
+describe("POST /api/transactions/[id]/conditions — agent-view marker", () => {
+  const VIEWING_ADMIN = { user: { id: "admin1", role: "ADMIN", agentId: "a1" } };
+  const post = (marked: boolean) =>
+    POST(
+      new Request("http://localhost", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(marked && { [AGENT_VIEW_HEADER]: "1" }) },
+        body: JSON.stringify({ name: "Inspection" }),
+      }),
+      { params: { id: "tf1" } },
+    );
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getServerSession).mockResolvedValue(VIEWING_ADMIN as any);
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({ id: "tf1", agentId: "a2", status: "PENDING" } as any);
+    vi.mocked(prisma.fileCondition.create).mockResolvedValue({ id: "c1" } as any);
+  });
+
+  it("refuses another agent's transaction with the marker, allows it without", async () => {
+    expect((await post(true)).status).toBe(403);
+    expect(prisma.fileCondition.create).not.toHaveBeenCalled();
+    expect((await post(false)).status).toBe(201);
   });
 });

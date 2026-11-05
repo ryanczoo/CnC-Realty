@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { checkOwnership, assertFileEditable } from "@/lib/api-auth";
+import { checkOwnership, assertFileEditable, actingRole } from "@/lib/api-auth";
 import { changeFileStatus, maybeAutoPending } from "@/lib/file-status";
 import { followDates } from "@/lib/auto-status";
 import { transactionEditData, requiredFieldError, commissionPercentError, transactionCommissionEdit, commissionLockedError, propertyFactsChange } from "@/lib/file-edit";
@@ -41,15 +41,16 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const tx = await prisma.transactionFile.findUnique({ where: { id: params.id } });
   if (!tx) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const isAdmin = session.user.role === "ADMIN";
-  const { forbidden } = checkOwnership(tx, session.user.agentId, session.user.role);
+  // An admin in the Agent section sends the agent-view marker and is treated as an agent.
+  const role = actingRole(session.user.role, req) === "ADMIN" ? "ADMIN" : "AGENT";
+  const isAdmin = role === "ADMIN";
+  const { forbidden } = checkOwnership(tx, session.user.agentId, role);
   if (forbidden) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const locked = assertFileEditable("transaction", tx.status, session.user.role);
+  const locked = assertFileEditable("transaction", tx.status, role);
   if (locked) return locked;
 
   const body = trimStrings(await req.json());
-  const role = isAdmin ? "ADMIN" : "AGENT";
 
   const referralFeeUpdate =
     body.status === "REFERRAL_BROKER_REVIEW" && body.referralAmountReceived !== undefined

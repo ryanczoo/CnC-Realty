@@ -6,6 +6,7 @@ vi.mock("@/lib/api-auth", () => ({
   getFileAndVerifyAccess: vi.fn(),
   assertFileEditable: vi.fn(() => null),
   resolveFileRef: vi.fn(),
+  actingRole: vi.fn((role: string) => role),
 }));
 vi.mock("@/lib/file-lock", () => ({ isFileReadOnlyFor: vi.fn(() => false) }));
 // Adding a party also re-checks automatic Pending; this file only tests trimming.

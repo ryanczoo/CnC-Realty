@@ -18,6 +18,7 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { POST } from "../../app/api/files/[fileType]/[id]/parties/route";
 import { maybeAutoPending } from "@/lib/file-status";
+import { AGENT_VIEW_HEADER } from "@/lib/agent-view";
 
 const SESSION_AGENT = { user: { id: "u1", role: "AGENT", agentId: "a1" } };
 
@@ -81,5 +82,36 @@ describe("adding a party can complete a transaction", () => {
     vi.mocked(prisma.fileActivity.create).mockResolvedValue({} as any);
     await POST(req({ role: "SELLER", name: "Sam" }), { params: { fileType: "listing", id: "f1" } });
     expect(maybeAutoPending).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/files/[fileType]/[id]/parties — agent-view marker", () => {
+  const VIEWING_ADMIN = { user: { id: "admin1", role: "ADMIN", agentId: "a1" } };
+  const marked = (type: string, id: string) =>
+    new Request(`http://localhost/api/files/${type}/${id}/parties`, {
+      method: "POST",
+      headers: { [AGENT_VIEW_HEADER]: "1" },
+      body: JSON.stringify({ role: "BUYER", name: "Jane" }),
+    });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getServerSession).mockResolvedValue(VIEWING_ADMIN as any);
+    vi.mocked(prisma.fileParty.create).mockResolvedValue({ id: "p1" } as any);
+    vi.mocked(prisma.fileActivity.create).mockResolvedValue({} as any);
+  });
+
+  it("refuses another agent's file with the marker, allows it without", async () => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "f1", agentId: "a2" } as any);
+    expect((await POST(marked("listing", "f1"), { params: { fileType: "listing", id: "f1" } })).status).toBe(404);
+    expect(prisma.fileParty.create).not.toHaveBeenCalled();
+    expect((await POST(req({ role: "BUYER", name: "Jane" }), { params: { fileType: "listing", id: "f1" } })).status).toBe(201);
+  });
+
+  it("logs the party and the automatic Pending check as the agent's when the marker is sent", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({ id: "t1", agentId: "a1", status: "INCOMPLETE" } as any);
+    expect((await POST(marked("transaction", "t1"), { params: { fileType: "transaction", id: "t1" } })).status).toBe(201);
+    expect(vi.mocked(prisma.fileActivity.create).mock.calls[0][0].data).toMatchObject({ actorRole: "AGENT", type: "PARTY_ADDED" });
+    expect(maybeAutoPending).toHaveBeenCalledWith("t1", { userId: "admin1", role: "AGENT" });
   });
 });

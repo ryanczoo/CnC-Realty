@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, checkOwnership, assertFileEditable } from "@/lib/api-auth";
+import { requireAuth, checkOwnership, assertFileEditable, actingRole } from "@/lib/api-auth";
 import { trimStrings } from "@/lib/form-validation";
 
 type Params = { params: { id: string } };
@@ -25,11 +25,13 @@ export async function POST(req: Request, { params }: Params) {
   const { session, error } = await requireAuth("AGENT");
   if (error) return error;
 
+  // An admin in the Agent section sends the agent-view marker and is treated as an agent.
+  const role = actingRole(session.user.role, req);
   const txFile = await prisma.transactionFile.findUnique({ where: { id: params.id } });
-  const { exists, forbidden, record } = checkOwnership(txFile, session.user.agentId, session.user.role);
+  const { exists, forbidden, record } = checkOwnership(txFile, session.user.agentId, role);
   if (!exists || !record) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (forbidden) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  const locked = assertFileEditable("transaction", record.status, session.user.role);
+  const locked = assertFileEditable("transaction", record.status, role);
   if (locked) return locked;
 
   const body = trimStrings(await req.json().catch(() => null));

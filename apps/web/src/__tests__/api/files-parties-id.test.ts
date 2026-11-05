@@ -15,6 +15,7 @@ vi.mock("@/lib/prisma", () => ({
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { PATCH, DELETE } from "../../app/api/files/[fileType]/[id]/parties/[partyId]/route";
+import { AGENT_VIEW_HEADER } from "@/lib/agent-view";
 
 const SESSION_AGENT = { user: { id: "u1", role: "AGENT", agentId: "a1" } };
 const PARAMS = { params: { fileType: "listing", id: "f1", partyId: "p1" } };
@@ -109,5 +110,42 @@ describe("a transaction's last client can't be removed past Pre-Contract", () =>
     vi.mocked(prisma.transactionFile.findUnique).mockResolvedValueOnce({ id: "t1", agentId: "a1", status: "PENDING" } as any);
     vi.mocked(prisma.fileParty.update).mockResolvedValue(onlyBuyer as any);
     expect((await PATCH(txPatch({ name: "Beatrice" }), TX_PARAMS)).status).toBe(200);
+  });
+});
+
+describe("PATCH/DELETE /api/files/[fileType]/[id]/parties/[partyId] — agent-view marker", () => {
+  const VIEWING_ADMIN = { user: { id: "admin1", role: "ADMIN", agentId: "a1" } };
+  const MARK = { [AGENT_VIEW_HEADER]: "1" };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getServerSession).mockResolvedValue(VIEWING_ADMIN as any);
+    vi.mocked(prisma.fileParty.findUnique).mockResolvedValue({ id: "p1", listingFileId: "f1", transactionFileId: null } as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "f1", agentId: "a2", status: "ACTIVE" } as any);
+    vi.mocked(prisma.fileParty.update).mockResolvedValue({ id: "p1" } as any);
+    vi.mocked(prisma.fileParty.delete).mockResolvedValue({} as any);
+  });
+
+  it("PATCH: refuses another agent's party with the marker, allows it without", async () => {
+    const edit = (headers: Record<string, string>) =>
+      PATCH(new Request("http://localhost", { method: "PATCH", headers, body: JSON.stringify({ name: "Jane" }) }), PARAMS);
+    expect((await edit(MARK)).status).toBe(403);
+    expect(prisma.fileParty.update).not.toHaveBeenCalled();
+    expect((await edit({})).status).toBe(200);
+  });
+
+  it("DELETE: refuses another agent's party with the marker, allows it without", async () => {
+    const del = (headers: Record<string, string>) => DELETE(new Request("http://localhost", { method: "DELETE", headers }), PARAMS);
+    expect((await del(MARK)).status).toBe(403);
+    expect(prisma.fileParty.delete).not.toHaveBeenCalled();
+    expect((await del({})).status).toBe(200);
+  });
+
+  it("PATCH: a closed listing is locked for the admin with the marker, open without", async () => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "f1", agentId: "a1", status: "CLOSED" } as any);
+    const edit = (headers: Record<string, string>) =>
+      PATCH(new Request("http://localhost", { method: "PATCH", headers, body: JSON.stringify({ name: "Jane" }) }), PARAMS);
+    expect((await edit(MARK)).status).toBe(403);
+    expect((await edit({})).status).toBe(200);
   });
 });

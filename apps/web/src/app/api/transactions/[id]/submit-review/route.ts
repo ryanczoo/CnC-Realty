@@ -2,24 +2,26 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { checkOwnership, assertFileEditable } from "@/lib/api-auth";
+import { checkOwnership, assertFileEditable, actingRole } from "@/lib/api-auth";
 import { getChecklistProgress, CHECKLIST_ITEMS_WITH_DOCS_INCLUDE } from "@/lib/transaction-helpers";
 import { sendSubmitForReview } from "@/lib/email/transaction-emails";
 import { canClearReview } from "@/lib/commission-review";
 import { sendSafely } from "@/lib/email/send-safely";
 
-export async function POST(_req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  // An admin in the Agent section sends the agent-view marker and is treated as an agent.
+  const role = actingRole(session.user.role, req);
   const txRecord = await prisma.transactionFile.findUnique({
     where: { id: params.id },
     include: { checklistItems: CHECKLIST_ITEMS_WITH_DOCS_INCLUDE, agent: { include: { user: true } } },
   });
-  const { exists, forbidden, record: tx } = checkOwnership(txRecord, session.user.agentId, session.user.role);
+  const { exists, forbidden, record: tx } = checkOwnership(txRecord, session.user.agentId, role);
   if (!exists || !tx) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (forbidden) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  const locked = assertFileEditable("transaction", tx.status, session.user.role);
+  const locked = assertFileEditable("transaction", tx.status, role);
   if (locked) return locked;
 
   const { satisfied, required } = getChecklistProgress(tx.checklistItems);

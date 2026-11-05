@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getFileAndVerifyAccess, assertFileEditable } from "@/lib/api-auth";
+import { getFileAndVerifyAccess, assertFileEditable, actingRole } from "@/lib/api-auth";
 import { trimStrings } from "@/lib/form-validation";
 
 export async function POST(req: Request, { params }: { params: { fileType: string; id: string } }) {
@@ -13,14 +13,16 @@ export async function POST(req: Request, { params }: { params: { fileType: strin
     return NextResponse.json({ error: "fileType must be 'listing' or 'transaction'" }, { status: 400 });
   }
   const isListing = params.fileType === "listing";
+  // An admin in the Agent section sends the agent-view marker and is treated as an agent.
+  const role = actingRole(session.user.role, req) === "ADMIN" ? "ADMIN" : "AGENT";
   const file = await getFileAndVerifyAccess(
     isListing ? "listing" : "transaction",
     params.id,
     session.user.agentId,
-    session.user.role
+    role
   );
   if (!file) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  const locked = assertFileEditable(isListing ? "listing" : "transaction", file.status, session.user.role);
+  const locked = assertFileEditable(isListing ? "listing" : "transaction", file.status, role);
   if (locked) return locked;
 
   const { note } = trimStrings(await req.json());
@@ -32,7 +34,7 @@ export async function POST(req: Request, { params }: { params: { fileType: strin
       listingFileId: isListing ? params.id : null,
       transactionFileId: isListing ? null : params.id,
       actorId: session.user.id,
-      actorRole: session.user.role === "ADMIN" ? "ADMIN" : "AGENT",
+      actorRole: role,
       type: "NOTE_ADDED",
       note,
     },

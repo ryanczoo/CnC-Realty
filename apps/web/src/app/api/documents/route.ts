@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getFileAndVerifyAccess, assertFileEditable } from "@/lib/api-auth";
+import { getFileAndVerifyAccess, assertFileEditable, actingRole } from "@/lib/api-auth";
 import { buildR2Key } from "@/lib/r2";
 
 export async function POST(req: Request) {
@@ -20,14 +20,16 @@ export async function POST(req: Request) {
   }
 
   const isListing = fileType === "LISTING";
+  // An admin in the Agent section sends the agent-view marker and is treated as an agent.
+  const role = actingRole(session.user.role, req) === "ADMIN" ? "ADMIN" : "AGENT";
   const file = await getFileAndVerifyAccess(
     isListing ? "listing" : "transaction",
     fileId,
     session.user.agentId,
-    session.user.role
+    role
   );
   if (!file) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  const locked = assertFileEditable(isListing ? "listing" : "transaction", file.status, session.user.role);
+  const locked = assertFileEditable(isListing ? "listing" : "transaction", file.status, role);
   if (locked) return locked;
 
   // r2Key/r2Url come from the client — verify the key actually belongs to
@@ -81,7 +83,7 @@ export async function POST(req: Request) {
       listingFileId: isListing ? fileId : null,
       transactionFileId: isListing ? null : fileId,
       actorId: session.user.id,
-      actorRole: session.user.role === "ADMIN" ? "ADMIN" : "AGENT",
+      actorRole: role,
       type: "DOCUMENT_UPLOADED",
       payload: { documentId: doc.id, name },
     },
