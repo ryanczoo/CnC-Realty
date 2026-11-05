@@ -44,11 +44,11 @@ type CommissionFile = {
   saleCommissionPct?: number | null; saleCommissionAmount?: number | null;
   listingCommissionPct?: number | null; listingCommissionAmount?: number | null;
 };
-const TX_COMMISSION = ["saleCommissionPct", "saleCommissionAmount", "listingCommissionPct", "listingCommissionAmount"] as const;
+export const TX_COMMISSION = ["saleCommissionPct", "saleCommissionAmount", "listingCommissionPct", "listingCommissionAmount"] as const;
 const PCT_FIELDS = ["commissionPercent", "saleCommissionPct", "listingCommissionPct"] as const;
 const numOrNull = (v: unknown) => (blank(v) ? null : parseFloat(String(v)));
 
-const LISTING_COMMISSION = ["commissionPercent", "commissionAmount"] as const;
+export const LISTING_COMMISSION = ["commissionPercent", "commissionAmount"] as const;
 
 // While the broker reviews a file (Awaiting Review), its commission is theirs to
 // change — an agent's commission edit is refused (SkySlope locks it at approval).

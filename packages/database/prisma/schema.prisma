@@ -194,6 +194,8 @@ enum FileActivityType {
   COMMISSION_CHANGED
   CHECKLIST_UPDATED
   REPRESENTATION_CHANGED
+  COMMISSION_CHANGE_APPROVED
+  COMMISSION_CHANGE_REJECTED
 }
 
 // ─── Phase 5B: Action Plan enums ──────────────────────────────────────────────
@@ -493,6 +495,8 @@ model ListingFile {
   yearBuilt         Int?
   propertyType      String?
   awaitingReview    Boolean       @default(false)
+  reviewSubmittedAt DateTime?
+  pendingCommission Json?
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
 
@@ -557,6 +561,8 @@ model TransactionFile {
   commissionSplit      Float?
   commissionNotes      String?
   awaitingReview       Boolean               @default(false)
+  reviewSubmittedAt    DateTime?
+  pendingCommission    Json?
   tcFeeEnabled         Boolean               @default(false)
   agentRelativeSale    Boolean               @default(false)
   brokerProvidedLead   Boolean               @default(false)

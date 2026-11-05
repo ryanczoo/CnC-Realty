@@ -1,3 +1,5 @@
+import type { PendingCommission } from "@/lib/commission-review";
+
 export type ListingStatus =
   | "INCOMPLETE" | "PENDING_TRANSFER" | "COMING_SOON" | "ACTIVE" | "ACTIVE_UNDER_CONTRACT"
   | "EXPIRED" | "WITHDRAWN" | "CANCELED" | "CLOSED";
@@ -140,6 +142,8 @@ export interface ListingFileDetail {
   yearBuilt: number | null;
   propertyType: string | null;
   awaitingReview: boolean;
+  reviewSubmittedAt: string | null;
+  pendingCommission: PendingCommission | null;
   createdAt: string;
   updatedAt: string;
   parties: FilePartyRecord[];
@@ -208,6 +212,8 @@ export interface TransactionFileDetail {
   referralAmountReceived: number | null;
   referralCncFee: number | null;
   awaitingReview: boolean;
+  reviewSubmittedAt: string | null;
+  pendingCommission: PendingCommission | null;
   createdAt: string;
   updatedAt: string;
   parties: FilePartyRecord[];
