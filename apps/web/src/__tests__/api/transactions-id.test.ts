@@ -559,6 +559,7 @@ describe("PATCH /api/transactions/[id] - commission change after broker review",
     id: "tf1", agentId: "a1", status: "PENDING", transactionSide: "PURCHASE", propertyAddress: "34 Elm Ave", salePrice: 500000,
     awaitingReview: false, reviewSubmittedAt: new Date("2026-10-01T00:00:00.000Z"), pendingCommission: null,
     saleCommissionPct: 2.5, saleCommissionAmount: 12500, listingCommissionPct: null, listingCommissionAmount: null,
+    checklistItems: [],
   };
   beforeEach(() => {
     vi.clearAllMocks();
@@ -567,21 +568,42 @@ describe("PATCH /api/transactions/[id] - commission change after broker review",
     vi.mocked(prisma.fileActivity.create).mockResolvedValue({} as any);
   });
 
-  it("sends the file back to the broker on a plain save and responds with the flagged file", async () => {
-    vi.mocked(prisma.transactionFile.update)
-      .mockResolvedValueOnce({ ...REVIEWED, saleCommissionPct: 2, saleCommissionAmount: 10000 } as any)
-      .mockResolvedValueOnce({ ...REVIEWED, saleCommissionPct: 2, saleCommissionAmount: 10000, awaitingReview: true } as any);
+  it("a plain save writes the new commission and the re-flag in ONE update", async () => {
+    vi.mocked(prisma.transactionFile.update).mockResolvedValue({ ...REVIEWED, saleCommissionPct: 2, awaitingReview: true } as any);
     const res = await patch({ saleCommissionPct: "2", saleCommissionAmount: "" });
     expect(res.status).toBe(200);
-    const calls = vi.mocked(prisma.transactionFile.update).mock.calls;
-    expect(calls[1][0]).toMatchObject({ where: { id: "tf1" }, data: { awaitingReview: true } });
-    expect(((calls[1][0].data as any).pendingCommission).before.saleCommissionPct).toBe(2.5);
+    expect(prisma.transactionFile.update).toHaveBeenCalledTimes(1);
+    const data = vi.mocked(prisma.transactionFile.update).mock.calls[0][0].data as any;
+    expect(data.saleCommissionPct).toBe(2);
+    expect(data.awaitingReview).toBe(true);
+    expect(data.pendingCommission.before.saleCommissionPct).toBe(2.5);
     expect((await res.json()).transaction.awaitingReview).toBe(true);
+  });
+
+  it("a status change with a commission change re-flags with a second write and responds with it", async () => {
+    vi.mocked(prisma.transactionFile.update)
+      .mockResolvedValueOnce({ ...REVIEWED, status: "CANCELED_PENDING", saleCommissionPct: 2 } as any)
+      .mockResolvedValueOnce({ ...REVIEWED, status: "CANCELED_PENDING", saleCommissionPct: 2, awaitingReview: true } as any);
+    const res = await patch({ saleCommissionPct: "2", saleCommissionAmount: "", status: "CANCELED_PENDING", cancellationReason: "Buyer backed out" });
+    expect(res.status).toBe(200);
+    const calls = vi.mocked(prisma.transactionFile.update).mock.calls;
+    expect((calls[0][0].data as any).status).toBe("CANCELED_PENDING");
+    expect(calls[1][0]).toMatchObject({ data: { awaitingReview: true } });
+    expect((await res.json()).transaction.awaitingReview).toBe(true);
+  });
+
+  it("reports an error when the re-flag write fails after a status change", async () => {
+    vi.mocked(prisma.transactionFile.update)
+      .mockResolvedValueOnce({ ...REVIEWED, status: "CANCELED_PENDING", saleCommissionPct: 2 } as any)
+      .mockRejectedValueOnce(new Error("db down"));
+    const res = await patch({ saleCommissionPct: "2", saleCommissionAmount: "", status: "CANCELED_PENDING", cancellationReason: "Buyer backed out" });
+    expect(res.status).toBe(500);
   });
 
   it("does nothing extra when commission didn't change", async () => {
     vi.mocked(prisma.transactionFile.update).mockResolvedValue({ ...REVIEWED, city: "Irvine" } as any);
     await patch({ city: "Irvine" });
     expect(prisma.transactionFile.update).toHaveBeenCalledTimes(1);
+    expect((vi.mocked(prisma.transactionFile.update).mock.calls[0][0].data as any).awaitingReview).toBeUndefined();
   });
 });

@@ -8,7 +8,8 @@ import { followDates } from "@/lib/auto-status";
 import { transactionEditData, requiredFieldError, commissionPercentError, transactionCommissionEdit, commissionLockedError, propertyFactsChange } from "@/lib/file-edit";
 import { applyPropertyFacts } from "@/lib/year-checklist-db";
 import { logCommissionChanges } from "@/lib/commission-log";
-import { afterCommissionSave } from "@/lib/commission-review-db";
+import * as Sentry from "@sentry/nextjs";
+import { afterCommissionSave, planCommissionReview, finishCommissionReview } from "@/lib/commission-review-db";
 import { transactionDatesError } from "@/lib/transaction-dates";
 import { sendCancellationRequested } from "@/lib/email/transaction-emails";
 import { sendSafely } from "@/lib/email/send-safely";
@@ -95,7 +96,15 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     });
     if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
     await logCommissionChanges("transaction", params.id, tx, result.file, { userId: session.user.id, role });
-    const reflagged = await afterCommissionSave("transaction", params.id, tx, result.file, commissionActor);
+    // The review fields cannot ride along with a status change, so they are written
+    // separately; a failure here is reported, never answered with a silent 200.
+    let reflagged: Record<string, unknown> | null = null;
+    try {
+      reflagged = await afterCommissionSave("transaction", params.id, tx, result.file, commissionActor);
+    } catch (err) {
+      Sentry.captureException(err);
+      return NextResponse.json({ error: "The status changed, but the commission change could not be sent for broker review. Please try again." }, { status: 500 });
+    }
     if (facts) await applyPropertyFacts("transaction", params.id, facts, { userId: session.user.id, role });
     if (isCancellationRequest) {
       await sendSafely(() => sendCancellationRequested({
@@ -108,14 +117,17 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     return NextResponse.json({ transaction: reflagged ?? result.file, ...(result.emailWarning && { emailWarning: true }) });
   }
 
-  const updated = await prisma.transactionFile.update({ where: { id: params.id }, data: fieldData });
+  // The commission re-flag is decided first and saved in the same update, so a
+  // commission change can never be saved without its broker review.
+  const plan = await planCommissionReview("transaction", tx, { ...tx, ...fieldData }, commissionActor);
+  const updated = await prisma.transactionFile.update({ where: { id: params.id }, data: { ...fieldData, ...plan.data } });
   await logCommissionChanges("transaction", params.id, tx, updated, { userId: session.user.id, role });
-  const reflagged = await afterCommissionSave("transaction", params.id, tx, updated, commissionActor);
+  await finishCommissionReview(plan.followUp, "transaction", params.id, tx, commissionActor);
   // A saved date can move the status (Expired -> Pending), and saved details can
   // complete the file (-> Pending).
   const actor = { userId: session.user.id, role } as const;
   if (facts) await applyPropertyFacts("transaction", params.id, facts, actor);
   await followDates("transaction", params.id, actor);
   await maybeAutoPending(params.id, actor);
-  return NextResponse.json({ transaction: reflagged ?? updated });
+  return NextResponse.json({ transaction: updated });
 }

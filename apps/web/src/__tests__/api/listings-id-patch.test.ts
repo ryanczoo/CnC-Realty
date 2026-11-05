@@ -17,6 +17,7 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 import { getServerSession } from "next-auth";
+import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/prisma";
 import { PATCH } from "../../app/api/listings/[id]/route";
 import { followDates } from "@/lib/auto-status";
@@ -280,6 +281,18 @@ describe("PATCH /api/listings/[id] - commission change after broker review", () 
     vi.mocked(prisma.agent.findUnique).mockResolvedValue({ user: { email: "a@x.com", name: "Ann" } } as any);
   });
 
+  it("a plain save writes the new commission and the re-flag in ONE update", async () => {
+    vi.mocked(prisma.listingFile.update).mockResolvedValue({ ...REVIEWED, commissionPercent: 2, awaitingReview: true } as any);
+    const res = await patch({ commissionPercent: "2" });
+    expect(res.status).toBe(200);
+    expect(prisma.listingFile.update).toHaveBeenCalledTimes(1);
+    const data = vi.mocked(prisma.listingFile.update).mock.calls[0][0].data as any;
+    expect(data.commissionPercent).toBe(2);
+    expect(data.awaitingReview).toBe(true);
+    expect(data.pendingCommission.before.commissionPercent).toBe(2.5);
+    expect((await res.json()).listing.awaitingReview).toBe(true);
+  });
+
   it("applies the status change, then sends the file back to the broker, in one response", async () => {
     vi.mocked(prisma.listingFile.update)
       .mockResolvedValueOnce({ ...REVIEWED, status: "COMING_SOON", commissionPercent: 2 } as any)
@@ -295,13 +308,12 @@ describe("PATCH /api/listings/[id] - commission change after broker review", () 
     expect(body.listing.status).toBe("COMING_SOON");
   });
 
-  it("sends the file back to the broker on a plain save too", async () => {
+  it("reports an error, not a silent 200, when the re-flag write fails after a status change", async () => {
     vi.mocked(prisma.listingFile.update)
-      .mockResolvedValueOnce({ ...REVIEWED, commissionPercent: 2 } as any)
-      .mockResolvedValueOnce({ ...REVIEWED, commissionPercent: 2, awaitingReview: true } as any);
-    const res = await patch({ commissionPercent: "2" });
-    expect(res.status).toBe(200);
-    expect(vi.mocked(prisma.listingFile.update).mock.calls[1][0]).toMatchObject({ data: { awaitingReview: true } });
-    expect((await res.json()).listing.awaitingReview).toBe(true);
+      .mockResolvedValueOnce({ ...REVIEWED, status: "COMING_SOON", commissionPercent: 2 } as any)
+      .mockRejectedValueOnce(new Error("db down"));
+    const res = await patch({ commissionPercent: "2", status: "COMING_SOON" });
+    expect(res.status).toBe(500);
+    expect(Sentry.captureException).toHaveBeenCalled();
   });
 });
