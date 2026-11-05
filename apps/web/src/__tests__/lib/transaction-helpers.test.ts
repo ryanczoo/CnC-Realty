@@ -1,6 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { FILE_DETAIL_INCLUDE, calcReferralFee, canTransitionTransaction, pickDisplayPrice, pickDisplayDate, listingStatusOptions, canDeleteListing, convertBlockedReason, sidePartiesReady, commissionReady, clientPartyError, isReadyForPending, transactionStatusOptions, escrowTypeToRole, latestDocument, allowedNextStatuses, canTransitionListing } from "@/lib/transaction-helpers";
 
+const REAL_PENDING = {
+  before: { commissionPercent: 2.5, commissionAmount: null },
+  changes: [{ label: "Commission", from: "2.5%", to: "2%" }],
+  requestedAt: "2026-10-02T00:00:00.000Z",
+};
+
 describe("calcReferralFee", () => {
   it("takes 10% when 10% of the amount exceeds $200", () => {
     expect(calcReferralFee(5000)).toEqual({ cncFee: 500, agentNet: 4500 });
@@ -260,15 +266,19 @@ describe("convertBlockedReason", () => {
       expect(convertBlockedReason({ ...ok, awaitingReview: true }, "ADMIN")).toBeNull();
     });
     it("tells an agent to wait, and the broker to decide, while a commission change is pending", () => {
-      const pending = { ...ok, pendingCommission: { commissionPercent: 3 } };
+      const pending = { ...ok, pendingCommission: REAL_PENDING };
       expect(convertBlockedReason(pending, "AGENT")).toBe("Waiting for broker review");
       expect(convertBlockedReason(pending, "ADMIN")).toBe("Approve or reject the commission change first");
     });
     it("shows the broker the pending change even when the file awaits review", () => {
-      expect(convertBlockedReason({ ...ok, awaitingReview: true, pendingCommission: {} }, "ADMIN")).toBe("Approve or reject the commission change first");
+      expect(convertBlockedReason({ ...ok, awaitingReview: true, pendingCommission: REAL_PENDING }, "ADMIN")).toBe("Approve or reject the commission change first");
+    });
+    it("treats a stored {} as no pending change", () => {
+      expect(convertBlockedReason({ ...ok, pendingCommission: {} }, "ADMIN")).toBeNull();
+      expect(convertBlockedReason({ ...ok, pendingCommission: {} }, "AGENT")).toBeNull();
     });
     it("keeps the existing reasons first", () => {
-      expect(convertBlockedReason({ ...ok, status: "COMING_SOON", awaitingReview: true, pendingCommission: {} }, "AGENT")).toBe("Only an Active listing can be converted");
+      expect(convertBlockedReason({ ...ok, status: "COMING_SOON", awaitingReview: true, pendingCommission: REAL_PENDING }, "AGENT")).toBe("Only an Active listing can be converted");
     });
   });
 

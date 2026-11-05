@@ -1,4 +1,5 @@
 import { missingPropertyFacts } from "@/lib/year-built";
+import { hasPendingCommission } from "@/lib/commission-review";
 import { REVIEW_WAIT_MESSAGE, PENDING_COMMISSION_MESSAGE } from "@/lib/file-lock";
 import type {
   ListingStatus,
@@ -179,8 +180,8 @@ export function convertBlockedReason(listing: {
     return `Upload the ${missing} remaining required listing document${missing === 1 ? "" : "s"} before converting`;
   }
   // An agent just waits; "approve or reject" is an instruction only the broker can act on.
-  if (role === "AGENT") return listing.awaitingReview || listing.pendingCommission ? REVIEW_WAIT_MESSAGE : null;
-  return listing.pendingCommission ? PENDING_COMMISSION_MESSAGE : null;
+  if (role === "AGENT") return listing.awaitingReview || hasPendingCommission(listing.pendingCommission) ? REVIEW_WAIT_MESSAGE : null;
+  return hasPendingCommission(listing.pendingCommission) ? PENDING_COMMISSION_MESSAGE : null;
 }
 
 // Which named parties a side needs — each side needs its own client (the buyer

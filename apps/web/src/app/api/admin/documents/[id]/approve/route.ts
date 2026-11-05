@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { hasPendingCommission } from "@/lib/commission-review";
 import { isReadyToClose } from "@/lib/transaction-helpers";
 import { sendAllDocsApproved } from "@/lib/email/transaction-emails";
 import { sendSafely } from "@/lib/email/send-safely";
@@ -164,7 +165,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
 
     // The last required document is approved: unless a commission change is still
     // waiting on the broker, nothing is left to review, so the badge clears.
-    if (fileRecord && fileRecord.pendingCommission === null) {
+    if (fileRecord && !hasPendingCommission(fileRecord.pendingCommission)) {
       if (isListing) await prisma.listingFile.update({ where: { id: fileId }, data: { awaitingReview: false } });
       else await prisma.transactionFile.update({ where: { id: fileId }, data: { awaitingReview: false } });
     }

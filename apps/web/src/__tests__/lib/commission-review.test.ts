@@ -4,6 +4,7 @@ import {
   buildPendingCommission,
   isAfterReview,
   canClearReview,
+  hasPendingCommission,
 } from "@/lib/commission-review";
 import type { FileChecklistItemWithDocs } from "@/types/transaction";
 
@@ -59,13 +60,34 @@ describe("isAfterReview", () => {
   });
 });
 
+const REAL_PENDING = {
+  before: { commissionPercent: 2.5, commissionAmount: null },
+  changes: [{ label: "Commission", from: "2.5%", to: "2%" }],
+  requestedAt: "2026-10-02T00:00:00.000Z",
+};
+
+describe("hasPendingCommission", () => {
+  it("is false for null, undefined, {}, and an empty changes list", () => {
+    expect(hasPendingCommission(null)).toBe(false);
+    expect(hasPendingCommission(undefined)).toBe(false);
+    expect(hasPendingCommission({})).toBe(false);
+    expect(hasPendingCommission({ changes: [] })).toBe(false);
+  });
+  it("is true for a real pending commission", () => {
+    expect(hasPendingCommission(REAL_PENDING)).toBe(true);
+  });
+});
+
 describe("canClearReview", () => {
   const approved = [item(true, "APPROVED"), item(false, null)];
   it("true when ready to close and no pending commission", () => {
     expect(canClearReview(approved, null)).toBe(true);
   });
   it("false while a commission change is pending", () => {
-    expect(canClearReview(approved, { before: {}, changes: [], requestedAt: "x" })).toBe(false);
+    expect(canClearReview(approved, REAL_PENDING)).toBe(false);
+  });
+  it("true when the stored value is not a real pending change", () => {
+    expect(canClearReview(approved, {})).toBe(true);
   });
   it("false when a required item is not approved", () => {
     expect(canClearReview([item(true, "PENDING")], null)).toBe(false);

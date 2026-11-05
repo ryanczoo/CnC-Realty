@@ -22,6 +22,12 @@ import { prisma } from "@/lib/prisma";
 import { sendAllDocsApproved } from "@/lib/email/transaction-emails";
 import { POST } from "../../app/api/admin/documents/[id]/approve/route";
 
+const REAL_PENDING = {
+  before: { commissionPercent: 2.5, commissionAmount: null },
+  changes: [{ label: "Commission", from: "2.5%", to: "2%" }],
+  requestedAt: "2026-10-02T00:00:00.000Z",
+};
+
 describe("POST /api/admin/documents/[id]/approve — PENDING_TRANSFER unlock", () => {
   beforeEach(() => vi.clearAllMocks());
 
@@ -188,12 +194,25 @@ describe("POST /api/admin/documents/[id]/approve — Awaiting Review badge clear
     vi.mocked(prisma.fileDocument.findUnique).mockResolvedValue({
       id: "d4", fileType: "LISTING", listingFileId: "l4", transactionFileId: null, checklistItemId: "c1", name: "a.pdf",
     } as any);
-    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "l4", status: "ACTIVE", pendingCommission: { commissionPercent: 2.5 }, ...fileFields } as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "l4", status: "ACTIVE", pendingCommission: REAL_PENDING, ...fileFields } as any);
     vi.mocked(prisma.fileChecklistItem.findMany).mockResolvedValue([]);
 
     await call("d4");
 
     expect(prisma.listingFile.update).not.toHaveBeenCalled();
+  });
+
+  it("clears the badge when the stored pendingCommission is {} (not a real change)", async () => {
+    admin();
+    vi.mocked(prisma.fileDocument.findUnique).mockResolvedValue({
+      id: "d4", fileType: "LISTING", listingFileId: "l4", transactionFileId: null, checklistItemId: "c1", name: "a.pdf",
+    } as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "l4", status: "ACTIVE", pendingCommission: {}, ...fileFields } as any);
+    vi.mocked(prisma.fileChecklistItem.findMany).mockResolvedValue([]);
+
+    await call("d4");
+
+    expect(prisma.listingFile.update).toHaveBeenCalledWith({ where: { id: "l4" }, data: { awaitingReview: false } });
   });
 
   it("does not touch the badge when an additional document is approved", async () => {

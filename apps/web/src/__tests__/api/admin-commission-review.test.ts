@@ -89,6 +89,14 @@ describe("POST commission-review - errors", () => {
     expect(prisma.listingFile.update).not.toHaveBeenCalled();
   });
 
+  it("400 when the stored pendingCommission is {} (not a real change)", async () => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(listing({ pendingCommission: {} }) as any);
+    const res = await call("listing", { decision: "approve" });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "There's no commission change to review" });
+    expect(prisma.listingFile.update).not.toHaveBeenCalled();
+  });
+
   it.each([[undefined], [""], ["   "]])("400 when rejecting with reason %j", async (reason) => {
     vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(listing() as any);
     const res = await call("listing", { decision: "reject", reason });

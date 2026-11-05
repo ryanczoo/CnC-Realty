@@ -57,13 +57,19 @@ export default function AdminFileDetailPage() {
 
   // Approve or reject an agent's commission change; resolves to an error message, or null once saved.
   async function reviewCommission(d: { approve: true } | { approve: false; reason: string }): Promise<string | null> {
-    const res = await fetch(`/api/admin/files/${fileType}/${id}/commission-review`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(d.approve ? { decision: "approve" } : { decision: "reject", reason: d.reason }),
-    });
+    const FAILED = "Couldn't save that decision. Please try again.";
+    let res: Response;
+    try {
+      res = await fetch(`/api/admin/files/${fileType}/${id}/commission-review`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(d.approve ? { decision: "approve" } : { decision: "reject", reason: d.reason }),
+      });
+    } catch {
+      return FAILED;
+    }
     const body = await res.json().catch(() => null);
-    if (!res.ok) return body?.error ?? "Couldn't save that decision. Please try again.";
+    if (!res.ok) return body?.error ?? FAILED;
     setActionError(null);
     setEmailWarning(!!body?.emailWarning);
     await load();

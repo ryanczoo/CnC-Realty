@@ -1,7 +1,7 @@
 import { Prisma } from "@cnc/database";
 import { prisma } from "@/lib/prisma";
 import { commissionChanges, transactionCommissionEdit } from "@/lib/file-edit";
-import { buildPendingCommission, isAfterReview, type PendingCommission } from "@/lib/commission-review";
+import { buildPendingCommission, isAfterReview, hasPendingCommission, type PendingCommission } from "@/lib/commission-review";
 import { CHECKLIST_ITEMS_WITH_DOCS_INCLUDE, isReadyToClose } from "@/lib/transaction-helpers";
 import { sendCommissionChangeRequest, sendCommissionChangeRejected } from "@/lib/email/transaction-emails";
 import { sendSafely } from "@/lib/email/send-safely";
@@ -51,8 +51,8 @@ export async function planCommissionReview(
     };
   }
 
-  const pending = before.pendingCommission as PendingCommission | null | undefined;
-  if (!pending) return none;
+  const pending = before.pendingCommission;
+  if (!hasPendingCommission(pending)) return none;
   const items = await prisma.fileChecklistItem.findMany({
     where: kind === "listing" ? { listingFileId: fileIdOf(before) } : { transactionFileId: fileIdOf(before) },
     ...CHECKLIST_ITEMS_WITH_DOCS_INCLUDE,
@@ -143,8 +143,8 @@ export async function resolveCommissionChange(
   }) | null;
   if (!file) return { ok: false, status: 404, error: "File not found" };
 
-  const pending = file.pendingCommission as PendingCommission | null | undefined;
-  if (!pending) return { ok: false, status: 400, error: "There's no commission change to review" };
+  const pending = file.pendingCommission;
+  if (!hasPendingCommission(pending)) return { ok: false, status: 400, error: "There's no commission change to review" };
 
   const ready = isReadyToClose(file.checklistItems as unknown as FileChecklistItemWithDocs[]);
   const restore = decision.approve

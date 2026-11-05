@@ -374,6 +374,15 @@ describe("changeFileStatus: while a file awaits review", () => {
     expect(r.ok).toBe(true);
   });
 
+  it("an automatic move by an admin actor leaves the Awaiting Review flag alone", async () => {
+    const COMPLETE = { transactionSide: "LISTING", salePrice: 900000, acceptanceDate: new Date("2026-09-20"), closeOfEscrow: new Date("2026-10-20"), listingCommissionPct: 2.5, propertyType: "Condo", yearBuilt: 1990, parties: [{ role: "SELLER", name: "Sam" }] };
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx({ status: "PRE_CONTRACT", awaitingReview: true, ...COMPLETE }) as any);
+    await maybeAutoPending("f1", ADMIN);
+    const data = vi.mocked(prisma.transactionFile.update).mock.calls[0][0].data as Record<string, unknown>;
+    expect(data.status).toBe("PENDING");
+    expect(data).not.toHaveProperty("awaitingReview");
+  });
+
   it("maybeAutoPending still moves a flagged, complete transaction to Pending", async () => {
     const COMPLETE = { transactionSide: "LISTING", salePrice: 900000, acceptanceDate: new Date("2026-09-20"), closeOfEscrow: new Date("2026-10-20"), listingCommissionPct: 2.5, propertyType: "Condo", yearBuilt: 1990, parties: [{ role: "SELLER", name: "Sam" }] };
     vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx({ status: "PRE_CONTRACT", awaitingReview: true, ...COMPLETE }) as any);
@@ -384,7 +393,11 @@ describe("changeFileStatus: while a file awaits review", () => {
 
 describe("changeFileStatus: while a commission change is pending", () => {
   const PENDING_MSG = { ok: false, status: 400, error: "Approve or reject the commission change first" };
-  const pendingChange = { saleCommissionPct: 3 };
+  const pendingChange = {
+    before: { saleCommissionPct: 2.5 },
+    changes: [{ label: "Sale commission", from: "2.5%", to: "3%" }],
+    requestedAt: "2026-10-02T00:00:00.000Z",
+  };
   const listing = (over: Record<string, unknown> = {}) => ({
     id: "l1", agentId: "a1", status: "ACTIVE", checklistItems: [], awaitingReview: true, pendingCommission: pendingChange,
     listDate: new Date("2020-01-01T00:00:00.000Z"), expirationDate: new Date("2099-01-01T00:00:00.000Z"), ...over,
@@ -402,6 +415,14 @@ describe("changeFileStatus: while a commission change is pending", () => {
     const r = await changeFileStatus({ kind: "listing", fileId: "l1", toStatus: "CANCELED", actor: ADMIN });
     expect(r).toEqual(PENDING_MSG);
     expect(prisma.listingFile.update).not.toHaveBeenCalled();
+  });
+
+  it("treats a stored {} as no pending change: finishing is allowed and the flag clears", async () => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(listing({ pendingCommission: {} }) as any);
+    const r = await changeFileStatus({ kind: "listing", fileId: "l1", toStatus: "CANCELED", actor: ADMIN });
+    expect(r.ok).toBe(true);
+    const data = vi.mocked(prisma.listingFile.update).mock.calls[0][0].data as Record<string, unknown>;
+    expect(data.awaitingReview).toBe(false);
   });
 
   it("allows an admin's other change but keeps the Awaiting Review flag", async () => {

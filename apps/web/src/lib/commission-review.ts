@@ -39,6 +39,13 @@ export function isAfterReview(file: {
   return !!file.reviewSubmittedAt && !file.awaitingReview;
 }
 
+// The one "is a commission change waiting for the broker" check. A stored value
+// only counts when it lists at least one change; null, {} or an empty list don't.
+export function hasPendingCommission(p: unknown): p is PendingCommission {
+  const changes = (p as { changes?: unknown } | null | undefined)?.changes;
+  return Array.isArray(changes) && changes.length > 0;
+}
+
 export function canClearReview(items: FileChecklistItemWithDocs[], pendingCommission: unknown): boolean {
-  return isReadyToClose(items) && !pendingCommission;
+  return isReadyToClose(items) && !hasPendingCommission(pendingCommission);
 }

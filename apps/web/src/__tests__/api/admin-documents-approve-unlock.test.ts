@@ -9,8 +9,8 @@ vi.mock("@/lib/prisma", () => {
     fileActivity: { create: vi.fn() },
     fileChecklistItem: { findMany: vi.fn(), createMany: vi.fn() },
     checklistTemplate: { findFirst: vi.fn() },
-    listingFile: { findUnique: vi.fn(), updateMany: vi.fn() },
-    transactionFile: { findUnique: vi.fn(), updateMany: vi.fn() },
+    listingFile: { findUnique: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
+    transactionFile: { findUnique: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
   };
   mockPrisma.$transaction = vi.fn(async (cb: any) => cb(mockPrisma));
   return { prisma: mockPrisma };

@@ -32,6 +32,12 @@ const LEASE_LISTING = {
   ...SALE_LISTING, id: "l2", listingType: "RESIDENTIAL_LEASE",
 };
 
+const REAL_PENDING = {
+  before: { commissionPercent: 2.5, commissionAmount: null },
+  changes: [{ label: "Commission", from: "2.5%", to: "2%" }],
+  requestedAt: "2026-10-02T00:00:00.000Z",
+};
+
 describe("POST /api/listings/[id]/convert", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -98,15 +104,22 @@ describe("POST /api/listings/[id]/convert", () => {
 
   it("tells an agent to wait while a commission change is pending", async () => {
     vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
-    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ ...SALE_LISTING, pendingCommission: { commissionPercent: 3 } } as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ ...SALE_LISTING, pendingCommission: REAL_PENDING } as any);
     const res = await POST(post("LISTING"), { params: { id: "l1" } });
     expect(res.status).toBe(400);
     expect((await res.json()).error).toBe("Waiting for broker review");
   });
 
+  it("lets the broker convert when the stored pendingCommission is {} (not a real change)", async () => {
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u3", role: "ADMIN", agentId: null } } as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ ...SALE_LISTING, pendingCommission: {} } as any);
+    const res = await POST(post("LISTING"), { params: { id: "l1" } });
+    expect((await res.json()).error).not.toBe("Approve or reject the commission change first");
+  });
+
   it("refuses the broker too while a commission change is pending", async () => {
     vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u3", role: "ADMIN", agentId: null } } as any);
-    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ ...SALE_LISTING, pendingCommission: { commissionPercent: 3 } } as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ ...SALE_LISTING, pendingCommission: REAL_PENDING } as any);
     const res = await POST(post("LISTING"), { params: { id: "l1" } });
     expect(res.status).toBe(400);
     expect((await res.json()).error).toBe("Approve or reject the commission change first");

@@ -100,6 +100,11 @@ describe("planCommissionReview - admin", () => {
     const before = listing({ awaitingReview: true, pendingCommission: PENDING });
     expect(await planCommissionReview("listing", before, before, ADMIN)).toEqual(NOTHING);
   });
+
+  it("treats a stored {} as no pending change", async () => {
+    const before = listing({ awaitingReview: true, pendingCommission: {} });
+    expect(await planCommissionReview("listing", before, listing({ commissionPercent: 2 }), ADMIN)).toEqual(NOTHING);
+  });
 });
 
 describe("finishCommissionReview", () => {

@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { ApproveRejectButtons, RejectReasonForm } from "@/components/ui/ApproveReject";
 import { REVIEW_WAIT_MESSAGE } from "@/lib/file-lock";
-import type { PendingCommission } from "@/lib/commission-review";
+import { hasPendingCommission, type PendingCommission } from "@/lib/commission-review";
 
 // The small block under a file's commission rows on the Overview. Shared by
 // the agent and broker pages: both see the pending change lines; the broker
@@ -20,7 +20,8 @@ export function CommissionReviewBlock({
   const [rejecting, setRejecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (!pendingCommission && !reviewWait) return null;
+  const pending = hasPendingCommission(pendingCommission) ? pendingCommission : null;
+  if (!pending && !reviewWait) return null;
 
   async function run(decision: { approve: true } | { approve: false; reason: string }) {
     if (!onReview) return;
@@ -30,6 +31,8 @@ export function CommissionReviewBlock({
       const err = await onReview(decision);
       if (err) setError(err);
       else setRejecting(false);
+    } catch {
+      setError("Couldn't save that decision. Please try again.");
     } finally {
       setBusy(false);
     }
@@ -37,10 +40,10 @@ export function CommissionReviewBlock({
 
   return (
     <div className="space-y-1.5 border-t border-[#1B1B1B]/5 pt-3">
-      {pendingCommission?.changes?.map((c) => (
+      {pending?.changes.map((c) => (
         <p key={c.label} className="text-sm text-[#1B1B1B]/70">{c.label}: {c.from} → {c.to}</p>
       ))}
-      {pendingCommission && onReview && (
+      {pending && onReview && (
         <>
           <div className="flex items-center gap-2 pt-1">
             <ApproveRejectButtons busy={busy} onApprove={() => run({ approve: true })} onToggleReject={() => setRejecting((v) => !v)} />

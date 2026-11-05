@@ -9,6 +9,7 @@ import {
   CHECKLIST_ITEMS_WITH_DOCS_INCLUDE,
 } from "@/lib/transaction-helpers";
 import { REVIEW_WAIT_MESSAGE, PENDING_COMMISSION_MESSAGE, reviewExitStatus, isFinishingStatus } from "@/lib/file-lock";
+import { hasPendingCommission } from "@/lib/commission-review";
 import { sendFileClosed } from "@/lib/email/transaction-emails";
 import { sendSafely } from "@/lib/email/send-safely";
 import type { ListingStatus, TransactionFileStatus, FileChecklistItemWithDocs } from "@/types/transaction";
@@ -63,7 +64,7 @@ export async function changeFileStatus({
     return { ok: false, status: 400, error: REVIEW_WAIT_MESSAGE };
   }
   // A pending commission change must be decided before any file-finishing status (any role).
-  if (file.pendingCommission && isFinishingStatus(kind, toStatus)) {
+  if (hasPendingCommission(file.pendingCommission) && isFinishingStatus(kind, toStatus)) {
     return { ok: false, status: 400, error: PENDING_COMMISSION_MESSAGE };
   }
   // Pending means the deal is fully described (isReadyForPending); only the broker
@@ -94,8 +95,8 @@ export async function changeFileStatus({
   const data = {
     ...safeExtra,
     status: toStatus,
-    // The broker's change ends the review, unless a commission change is still waiting for a decision.
-    ...(actor.role === "ADMIN" && !file.pendingCommission && { awaitingReview: false }),
+    // The broker's own (not system-made) change ends the review, unless a commission change is still waiting for a decision.
+    ...(actor.role === "ADMIN" && !automatic && !hasPendingCommission(file.pendingCommission) && { awaitingReview: false }),
   };
   const activityData = {
     fileType: isListing ? ("LISTING" as const) : ("TRANSACTION" as const),
