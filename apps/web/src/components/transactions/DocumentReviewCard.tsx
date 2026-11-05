@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
-import { XCircle, ExternalLink } from "lucide-react";
-import { CheckCircleIcon } from "@/components/ui/CheckCircleIcon";
+import { ExternalLink } from "lucide-react";
+import { ApproveRejectButtons, RejectReasonForm } from "@/components/ui/ApproveReject";
 import type { FileDocumentRecord } from "@/types/transaction";
 import { EMAIL_WARNING_TEXT } from "@/lib/file-messages";
 import { removeFromChecklist } from "@/lib/document-actions";
@@ -12,7 +12,6 @@ interface Props {
 }
 
 export function DocumentReviewCard({ document: doc, onReviewed }: Props) {
-  const [rejectNote, setRejectNote] = useState("");
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +40,7 @@ export function DocumentReviewCard({ document: doc, onReviewed }: Props) {
     }
   }
 
-  async function reject() {
+  async function reject(rejectNote: string) {
     if (!rejectNote.trim()) return;
     setLoading(true);
     setError(null);
@@ -106,14 +105,7 @@ export function DocumentReviewCard({ document: doc, onReviewed }: Props) {
           <ExternalLink className="h-3 w-3" /> View
         </button>
         {doc.reviewStatus === "PENDING_REVIEW" && (
-          <>
-            <button onClick={approve} disabled={loading} className="flex items-center gap-1 rounded-full bg-green-600 px-3 py-1 text-xs text-white hover:bg-green-700 disabled:opacity-50">
-              <CheckCircleIcon size={12} /> Approve
-            </button>
-            <button onClick={() => setShowRejectForm((v) => !v)} className="flex items-center gap-1 rounded-full bg-red-500 px-3 py-1 text-xs text-white hover:bg-red-600">
-              <XCircle className="h-3 w-3" /> Reject
-            </button>
-          </>
+          <ApproveRejectButtons busy={loading} onApprove={approve} onToggleReject={() => setShowRejectForm((v) => !v)} />
         )}
         {(doc.checklistItemId || doc.isAdditional) && (
           <button onClick={remove} disabled={loading} className="flex items-center gap-1 rounded-full border border-[#1B1B1B]/20 bg-white px-3 py-1 text-xs text-[#1B1B1B] hover:border-[#1B1B1B]/40 disabled:opacity-50">
@@ -125,15 +117,7 @@ export function DocumentReviewCard({ document: doc, onReviewed }: Props) {
       {warning && <p className="mt-2 text-xs text-amber-700">{EMAIL_WARNING_TEXT}</p>}
 
       {showRejectForm && (
-        <div className="mt-3 space-y-2">
-          <textarea value={rejectNote} onChange={(e) => setRejectNote(e.target.value)} placeholder="Rejection reason (required)" rows={2} className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2 text-sm text-[#1B1B1B] placeholder:text-[#1B1B1B]/25" />
-          <div className="flex justify-end gap-2">
-            <button onClick={() => setShowRejectForm(false)} className="text-sm text-[#1B1B1B]/50">Cancel</button>
-            <button onClick={reject} disabled={loading || !rejectNote.trim()} className="rounded-full bg-red-500 px-4 py-1.5 text-sm text-white disabled:opacity-40">
-              {loading ? "Saving…" : "Confirm Reject"}
-            </button>
-          </div>
-        </div>
+        <RejectReasonForm busy={loading} onCancel={() => setShowRejectForm(false)} onConfirm={reject} />
       )}
     </div>
   );
