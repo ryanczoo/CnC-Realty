@@ -441,6 +441,13 @@ describe("PATCH /api/transactions/[id] — commission edits", () => {
     expect(prisma.transactionFile.update).not.toHaveBeenCalled();
   });
 
+  it.each(["abc", "Infinity"])("rejects a non-numeric commission (%s)", async (bad) => {
+    const res = await patch({ saleCommissionPct: bad, saleCommissionAmount: "" });
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("Commission must be a number");
+    expect(prisma.transactionFile.update).not.toHaveBeenCalled();
+  });
+
   it("won't clear the commission once past Pre-Contract", async () => {
     vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({ ...PURCHASE, status: "PENDING", saleCommissionPct: 2.5 } as any);
     const res = await patch({ saleCommissionPct: "", saleCommissionAmount: "" });
@@ -694,6 +701,20 @@ describe("PATCH /api/transactions/[id] — Broker Review needs an amount", () =>
   it("rejects a missing amount", async () => {
     const res = await send({ status: "REFERRAL_BROKER_REVIEW" });
     expect(res.status).toBe(400);
+  });
+
+  it.each([["abc"], [true], ["Infinity"], [{}]])("rejects a non-numeric amount (%j)", async (bad) => {
+    const res = await send({ status: "REFERRAL_BROKER_REVIEW", referralAmountReceived: bad });
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("Enter the referral amount received first");
+    expect(prisma.transactionFile.update).not.toHaveBeenCalled();
+  });
+
+  it("uses the same parsed amount for the guard and the stored value", async () => {
+    await send({ status: "REFERRAL_BROKER_REVIEW", referralAmountReceived: "5000" });
+    expect(prisma.transactionFile.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ referralAmountReceived: 5000, referralCncFee: 500 }) })
+    );
   });
 
   it("accepts a real amount and writes the fee", async () => {

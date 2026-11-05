@@ -92,6 +92,15 @@ export function commissionPercentError(body: Record<string, unknown>): string | 
     : null;
 }
 
+// Every commission box must hold a real number — "abc" or "Infinity" would
+// otherwise reach the database as NaN / Infinity.
+export function commissionNumberError(body: Record<string, unknown>): string | null {
+  const fields: readonly string[] = [...TX_COMMISSION, ...LISTING_COMMISSION];
+  return fields.some((f) => f in body && !blank(body[f]) && !Number.isFinite(parseFloat(String(body[f]))))
+    ? "Commission must be a number"
+    : null;
+}
+
 // The same rule for one commission box while it's being typed in (the shared
 // CommissionField and both wizards' Next gates): only a % can be over 100.
 export function commissionInputError(value: string, mode: "pct" | "flat"): string | null {

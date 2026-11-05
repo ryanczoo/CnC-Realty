@@ -357,6 +357,13 @@ describe("POST /api/transactions", () => {
       expect(res.status).toBe(400);
       expect((await res.json()).error).toBe("Commission can't be more than 100%");
     });
+
+    it.each(["abc", "Infinity"])("rejects a non-numeric commission (%s)", async (bad) => {
+      const res = await POST(makeRequest({ ...complete, saleCommissionPct: bad }));
+      expect(res.status).toBe(400);
+      expect((await res.json()).error).toBe("Commission must be a number");
+      expect(prisma.transactionFile.create).not.toHaveBeenCalled();
+    });
     const created = () => (vi.mocked(prisma.transactionFile.create).mock.calls[0][0].data as any).status;
     beforeEach(() => vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "t-new" } as any));
 

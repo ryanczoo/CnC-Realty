@@ -124,6 +124,17 @@ describe("POST commission-review - body shape", () => {
   });
 });
 
+describe("POST commission-review - pending change without requestedAt", () => {
+  it("409s and writes nothing (an undefined path filter could match any row)", async () => {
+    mockFile("listing", listing({ pendingCommission: { ...LISTING_PENDING, requestedAt: undefined } }));
+    const res = await call("listing", { decision: "approve" });
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: "This change was already decided" });
+    expect(prisma.listingFile.updateMany).not.toHaveBeenCalled();
+    expect(prisma.fileActivity.create).not.toHaveBeenCalled();
+  });
+});
+
 describe("POST commission-review - already decided", () => {
   it.each([["approve", {}], ["reject", { reason: "No" }]])("409 on %s when the change was already decided, with no activity and no email", async (decision, extra) => {
     mockFile("listing", listing());

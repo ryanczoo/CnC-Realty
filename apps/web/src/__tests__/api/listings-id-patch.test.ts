@@ -194,6 +194,13 @@ describe("PATCH /api/listings/[id] — commission % can't exceed 100", () => {
     expect((await res.json()).error).toBe("Commission can't be more than 100%");
     expect(prisma.listingFile.update).not.toHaveBeenCalled();
   });
+
+  it.each(["abc", "Infinity"])("rejects a non-numeric commission (%s)", async (bad) => {
+    const res = await patch({ commissionPercent: bad, commissionAmount: "" });
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("Commission must be a number");
+    expect(prisma.listingFile.update).not.toHaveBeenCalled();
+  });
 });
 
 describe("PATCH /api/listings/[id] — commission review lock + change log", () => {

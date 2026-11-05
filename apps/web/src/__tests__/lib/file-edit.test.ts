@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { transactionEditData, requiredFieldError, commissionPercentError, transactionCommissionEdit, commissionLockedError, commissionChanges, commissionInputError } from "@/lib/file-edit";
+import { transactionEditData, requiredFieldError, commissionPercentError, transactionCommissionEdit, commissionLockedError, commissionChanges, commissionInputError, commissionNumberError } from "@/lib/file-edit";
 
 describe("transactionEditData", () => {
   it("parses each editable field type and ignores anything not editable", () => {
@@ -73,6 +73,25 @@ describe("commissionPercentError", () => {
   it("allows 100 or less, and blanks", () => {
     expect(commissionPercentError({ saleCommissionPct: "100", listingCommissionPct: 2.5, commissionPercent: "" })).toBeNull();
     expect(commissionPercentError({})).toBeNull();
+  });
+});
+
+describe("commissionNumberError", () => {
+  it.each(["abc", "Infinity", "-Infinity", "NaN"])("refuses %s", (v) => {
+    expect(commissionNumberError({ saleCommissionPct: v })).toBe("Commission must be a number");
+    expect(commissionNumberError({ commissionAmount: v })).toBe("Commission must be a number");
+  });
+
+  it("checks every transaction and listing commission field", () => {
+    for (const f of ["saleCommissionPct", "saleCommissionAmount", "listingCommissionPct", "listingCommissionAmount", "commissionPercent", "commissionAmount"]) {
+      expect(commissionNumberError({ [f]: "abc" })).toBe("Commission must be a number");
+    }
+  });
+
+  it("allows blanks, absent fields and real numbers", () => {
+    expect(commissionNumberError({ saleCommissionPct: "", listingCommissionPct: "  ", commissionAmount: null })).toBeNull();
+    expect(commissionNumberError({})).toBeNull();
+    expect(commissionNumberError({ saleCommissionPct: "2.5", commissionAmount: 15000, listingCommissionPct: 0 })).toBeNull();
   });
 });
 

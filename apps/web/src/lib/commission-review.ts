@@ -26,6 +26,7 @@ export function buildPendingCommission(
   const kept: Record<string, number | null> = {};
   for (const f of commissionFields(kind)) {
     const v = before[f];
+    if (typeof v === "number" && !Number.isFinite(v)) throw new Error("Commission must be a number");
     kept[f] = typeof v === "number" ? v : null;
   }
   return { before: kept, changes, requestedAt: now.toISOString() };

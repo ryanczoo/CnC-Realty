@@ -158,6 +158,13 @@ describe("listing commission % can't exceed 100", () => {
     expect((await res.json()).error).toBe("Commission can't be more than 100%");
     expect(prisma.listingFile.create).not.toHaveBeenCalled();
   });
+
+  it.each(["abc", "Infinity"])("rejects a non-numeric commission (%s)", async (bad) => {
+    const res = await POST(postJson({ ...VALID_LISTING, commissionPercent: bad }));
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("Commission must be a number");
+    expect(prisma.listingFile.create).not.toHaveBeenCalled();
+  });
 });
 
 describe("POST /api/listings — Property Type and Year Built", () => {

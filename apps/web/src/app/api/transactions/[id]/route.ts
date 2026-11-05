@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { checkOwnership, assertFileEditable, actingRole } from "@/lib/api-auth";
 import { changeFileStatus, maybeAutoPending } from "@/lib/file-status";
 import { followDates } from "@/lib/auto-status";
-import { transactionEditData, requiredFieldError, commissionPercentError, transactionCommissionEdit, commissionLockedError, propertyFactsChange } from "@/lib/file-edit";
+import { transactionEditData, requiredFieldError, commissionPercentError, commissionNumberError, transactionCommissionEdit, commissionLockedError, propertyFactsChange } from "@/lib/file-edit";
 import { applyPropertyFacts } from "@/lib/year-checklist-db";
 import { logCommissionChanges } from "@/lib/commission-log";
 import * as Sentry from "@sentry/nextjs";
@@ -52,23 +52,24 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   const body = trimStrings(await req.json());
 
+  let referralAmount: number | null = null;
   if (body.status === "REFERRAL_BROKER_REVIEW") {
-    const amount = typeof body.referralAmountReceived === "string" ? body.referralAmountReceived.trim() : body.referralAmountReceived;
-    if (amount === undefined || amount === null || amount === "" || !Number.isFinite(Number(amount))) {
+    const raw = body.referralAmountReceived;
+    const usable = (typeof raw === "string" || typeof raw === "number") && String(raw).trim() !== "";
+    referralAmount = usable ? parseFloat(String(raw)) : NaN;
+    if (!Number.isFinite(referralAmount)) {
       return NextResponse.json({ error: "Enter the referral amount received first" }, { status: 400 });
     }
   }
 
-  const referralFeeUpdate =
-    body.status === "REFERRAL_BROKER_REVIEW" && body.referralAmountReceived !== undefined
-      ? calcReferralFee(parseFloat(body.referralAmountReceived))
-      : null;
+  const referralFeeUpdate = referralAmount !== null ? calcReferralFee(referralAmount) : null;
 
   // Detail fields follow the shared edit rules (lib/file-edit): parsed, blanks ->
   // null, required ones can't be cleared.
   const commissionLocked = commissionLockedError("transaction", body, tx, role);
   if (commissionLocked) return NextResponse.json({ error: commissionLocked }, { status: 403 });
   const required = requiredFieldError("transaction", body, tx)
+    ?? commissionNumberError(body)
     ?? commissionPercentError(body)
     ?? transactionDatesError(body, tx, { side: tx.transactionSide, propertyCategory: tx.propertyCategory });
   if (required) return NextResponse.json({ error: required }, { status: 400 });
@@ -79,7 +80,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     ...(body.commissionGCI !== undefined && { commissionGCI: body.commissionGCI ? parseFloat(body.commissionGCI) : null }),
     ...(body.commissionSplit !== undefined && { commissionSplit: body.commissionSplit ? parseFloat(body.commissionSplit) : null }),
     ...(body.commissionNotes !== undefined && { commissionNotes: body.commissionNotes || null }),
-    ...(body.referralAmountReceived !== undefined && { referralAmountReceived: parseFloat(body.referralAmountReceived) }),
+    ...(referralAmount !== null
+      ? { referralAmountReceived: referralAmount }
+      : body.referralAmountReceived !== undefined && { referralAmountReceived: parseFloat(body.referralAmountReceived) }),
     ...(referralFeeUpdate && { referralCncFee: referralFeeUpdate.cncFee }),
   };
 

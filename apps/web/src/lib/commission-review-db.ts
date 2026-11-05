@@ -154,6 +154,9 @@ export async function resolveCommissionChange(
   const pending = file.pendingCommission;
   if (!hasPendingCommission(pending)) return { ok: false, status: 400, error: "There's no commission change to review" };
 
+  // Without a requestedAt the stillPending filter below would have nothing to match on.
+  if (typeof pending.requestedAt !== "string") return { ok: false, status: 409, error: ALREADY_DECIDED };
+
   const ready = isReadyToClose(file.checklistItems as unknown as FileChecklistItemWithDocs[]);
   const restore = decision.approve
     ? {}

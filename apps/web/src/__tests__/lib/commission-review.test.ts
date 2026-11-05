@@ -41,6 +41,12 @@ describe("buildPendingCommission", () => {
       requestedAt: "2026-11-04T00:00:00.000Z",
     });
   });
+  it("throws on a non-finite commission value", () => {
+    for (const bad of [NaN, Infinity, -Infinity]) {
+      expect(() => buildPendingCommission("listing", { commissionPercent: bad }, [], new Date(0))).toThrow("Commission must be a number");
+    }
+    expect(() => buildPendingCommission("transaction", { saleCommissionPct: NaN }, [], new Date(0))).toThrow("Commission must be a number");
+  });
   it("fills missing keys with null", () => {
     const p = buildPendingCommission("listing", { commissionPercent: 3 }, [], new Date(0));
     expect(p.before).toEqual({ commissionPercent: 3, commissionAmount: null });

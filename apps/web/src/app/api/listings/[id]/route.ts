@@ -8,7 +8,7 @@ import { changeFileStatus } from "@/lib/file-status";
 import { FILE_DETAIL_INCLUDE } from "@/lib/transaction-helpers";
 import { trimStrings } from "@/lib/form-validation";
 import { listingDatesError } from "@/lib/listing-dates";
-import { requiredFieldError, commissionPercentError, commissionLockedError, propertyFactsChange } from "@/lib/file-edit";
+import { requiredFieldError, commissionPercentError, commissionNumberError, commissionLockedError, propertyFactsChange } from "@/lib/file-edit";
 import { logCommissionChanges } from "@/lib/commission-log";
 import * as Sentry from "@sentry/nextjs";
 import { afterCommissionSave, planCommissionReview, finishCommissionReview } from "@/lib/commission-review-db";
@@ -54,7 +54,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const body = trimStrings(await req.json());
   const commissionLocked = commissionLockedError("listing", body, listing, role);
   if (commissionLocked) return NextResponse.json({ error: commissionLocked }, { status: 403 });
-  const required = requiredFieldError("listing", body, listing) ?? commissionPercentError(body);
+  const required = requiredFieldError("listing", body, listing) ?? commissionNumberError(body) ?? commissionPercentError(body);
   if (required) return NextResponse.json({ error: required }, { status: 400 });
 
   // Only validated when this edit touches a date, so older listings created
