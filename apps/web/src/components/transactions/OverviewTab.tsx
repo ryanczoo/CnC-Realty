@@ -1,4 +1,6 @@
 import { InfoRow, type InfoRowEdit } from "./InfoRow";
+import { CommissionReviewBlock } from "./CommissionReviewBlock";
+import type { PendingCommission } from "@/lib/commission-review";
 import { formatDateOnly } from "@/lib/utils";
 import { saveFileField, saveFileFields, changeRepresentation } from "@/lib/file-actions";
 import { representationPencilSides } from "@/lib/representation";
@@ -16,7 +18,7 @@ import {
 // added); State and Listing Type are never editable. Transaction Side gets a
 // pencil only for the broker (canChangeRepresentation), on files that can still switch.
 export function OverviewTab({
-  file, isListing, listing, transaction, progressPct, satisfied, required, canEdit = false, commissionLocked = false, canChangeRepresentation = false, onSaved,
+  file, isListing, listing, transaction, progressPct, satisfied, required, canEdit = false, commissionLocked = false, canChangeRepresentation = false, pendingCommission, reviewWait = false, onCommissionReview, onSaved,
 }: {
   file: ListingFileDetail | TransactionFileDetail;
   isListing: boolean;
@@ -31,6 +33,12 @@ export function OverviewTab({
   commissionLocked?: boolean;
   // Broker only: lets the Transaction Side row switch sides within its family.
   canChangeRepresentation?: boolean;
+  // A commission change waiting on the broker, shown under the commission rows.
+  pendingCommission?: PendingCommission | null;
+  // Agent viewing a flagged file: shows "Waiting for broker review" under the commission rows.
+  reviewWait?: boolean;
+  // Broker only: Approve / Reject the pending change; resolves to an error message or null.
+  onCommissionReview?: (decision: { approve: true } | { approve: false; reason: string }) => Promise<string | null>;
   onSaved?: () => void;
 }) {
   const isReferral = !isListing && transaction?.transactionSide === "REFERRAL";
@@ -129,6 +137,7 @@ export function OverviewTab({
                   pencilSlot={canEdit} edit={commissionEdit("commissionPercent", "commissionAmount", listing.commissionPercent, listing.commissionAmount)}
                 />
               )}
+              <CommissionReviewBlock pendingCommission={pendingCommission} reviewWait={reviewWait} onReview={onCommissionReview} />
             </>
           )}
           {!isListing && transaction && !isReferral && (
@@ -161,6 +170,7 @@ export function OverviewTab({
                   )}
                 </>
               )}
+              <CommissionReviewBlock pendingCommission={pendingCommission} reviewWait={reviewWait} onReview={onCommissionReview} />
               {show(transaction.legalDescription) && <InfoRow label="Legal Description" value={transaction.legalDescription || "—"} edit={edit("legalDescription", transaction.legalDescription)} />}
               {show(transaction.propertyIncludes) && <InfoRow label="Property Includes" value={transaction.propertyIncludes || "—"} edit={edit("propertyIncludes", transaction.propertyIncludes)} />}
               {show(transaction.propertyExcludes) && <InfoRow label="Property Excludes" value={transaction.propertyExcludes || "—"} edit={edit("propertyExcludes", transaction.propertyExcludes)} />}

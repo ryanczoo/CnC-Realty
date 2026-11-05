@@ -55,6 +55,21 @@ export default function AdminFileDetailPage() {
 
   useEffect(() => { load(); }, [id, fileType]);
 
+  // Approve or reject an agent's commission change; resolves to an error message, or null once saved.
+  async function reviewCommission(d: { approve: true } | { approve: false; reason: string }): Promise<string | null> {
+    const res = await fetch(`/api/admin/files/${fileType}/${id}/commission-review`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(d.approve ? { decision: "approve" } : { decision: "reject", reason: d.reason }),
+    });
+    const body = await res.json().catch(() => null);
+    if (!res.ok) return body?.error ?? "Couldn't save that decision. Please try again.";
+    setActionError(null);
+    setEmailWarning(!!body?.emailWarning);
+    await load();
+    return null;
+  }
+
   async function changeStatus(newStatus: string) {
     setStatusLoading(true);
     setActionError(null);
@@ -247,6 +262,8 @@ export default function AdminFileDetailPage() {
           required={required}
           canEdit={!isReferralFile && file.status !== "PENDING_TRANSFER"}
           canChangeRepresentation
+          pendingCommission={file.pendingCommission}
+          onCommissionReview={reviewCommission}
           // A saved detail can resolve an earlier refusal (e.g. extending the
           // expiration), so clear the old message along with the reload.
           onSaved={() => { setActionError(null); load(); }}

@@ -15,7 +15,7 @@ import { CommissionTab } from "@/components/transactions/CommissionTab";
 import { DocumentsTab } from "@/components/transactions/DocumentsTab";
 import { WithHeaderPhoto } from "@/components/transactions/FileHeaderPhoto";
 import { getChecklistProgress, listingStatusOptions, transactionStatusOptions, convertBlockedReason } from "@/lib/transaction-helpers";
-import { isFileReadOnlyFor, isCommissionLockedFor } from "@/lib/file-lock";
+import { isFileReadOnlyFor, isCommissionLockedFor, statusOptionsDuringReview, REVIEW_WAIT_MESSAGE } from "@/lib/file-lock";
 import { isPlaceholderAddress } from "@/lib/transfer-placeholder";
 import { DateField } from "@/components/ui/DateField";
 import { PHONE_HEADER_STACK, PHONE_HEADER_ACTIONS, PHONE_FIELD_PAIR } from "@/lib/dashboard-phone";
@@ -67,6 +67,8 @@ export default function FileDetailPage() {
   const [showCancelForm, setShowCancelForm] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
+  // A neutral note after Submit for Review when nothing was left to review (not an error).
+  const [submitNotice, setSubmitNotice] = useState<string | null>(null);
   const [tasks, setTasks] = useState<FileTaskRecord[]>([]);
   const abortRef = useRef<AbortController | null>(null);
   // Holds the raw "?tab=" query param until the file has loaded and we actually
@@ -117,13 +119,15 @@ export default function FileDetailPage() {
       : `/api/transactions/${id}/submit-review`;
     setSubmitting(true);
     setActionError(null);
+    setSubmitNotice(null);
     try {
       const res = await fetch(endpoint, { method: "POST" });
+      const body = await res.json().catch(() => null);
       if (!res.ok) {
-        const body = await res.json().catch(() => null);
         setActionError(body?.error ?? "Couldn't submit this file. Please try again.");
         return;
       }
+      if (body?.alreadyApproved) setSubmitNotice("Everything is already approved — nothing to review.");
       load();
     } finally {
       setSubmitting(false);
@@ -135,6 +139,7 @@ export default function FileDetailPage() {
   async function changeStatus(status: string, cancellationReason?: string) {
     setStatusChanging(true);
     setActionError(null);
+    setSubmitNotice(null);
     try {
       const res = await fetch(`/api/${isListingFile ? "listings" : "transactions"}/${id}`, {
         method: "PATCH",
@@ -199,6 +204,9 @@ export default function FileDetailPage() {
   const statusOptions = listing
     ? listingStatusOptions(listing.status, "AGENT")
     : transaction && !isReferral && !isLocked ? transactionStatusOptions(transaction.status, "AGENT") : [];
+  // While the broker reviews a file an agent may only pick the exit status; the server never blocks an admin, so neither does this page.
+  const inReview = !!file.awaitingReview && !viewerIsAdmin;
+  const statusChoices = inReview ? statusOptionsDuringReview(isListing ? "listing" : "transaction", statusOptions) : statusOptions;
   // Pencil editing on the Overview: the file's own agent, while it isn't locked
   // (closed/canceled) or a Pending Transfer placeholder; never referral cards.
   const canEditDetails = !readOnly && !isLocked && !isReferral && session?.user?.agentId != null && session.user.agentId === file.agentId;
@@ -276,13 +284,16 @@ export default function FileDetailPage() {
               </button>
             )}
             {!readOnly && statusOptions.length > 0 && (
+              <div className="flex flex-col items-end gap-1 max-lg:items-stretch">
               <FileStatusSelect
                 current={file.status}
-                statuses={[file.status, ...statusOptions]}
-                disabled={statusChanging}
+                statuses={[file.status, ...statusChoices]}
+                disabled={statusChanging || (inReview && statusChoices.length === 0)}
                 onChange={onStatusPicked}
                 optionLabel={(s) => (s === "CANCELED_PENDING" && s !== file.status ? "Request Cancellation" : statusLabel(s))}
               />
+              {inReview && <p className="text-xs text-[#1B1B1B]/50">{REVIEW_WAIT_MESSAGE}</p>}
+              </div>
             )}
           </div>
         </div>
@@ -306,6 +317,7 @@ export default function FileDetailPage() {
           </div>
         )}
         {actionError && <p className="mt-2 text-xs text-red-600">{actionError}</p>}
+        {submitNotice && <p className="mt-2 text-xs text-[#1B1B1B]/60">{submitNotice}</p>}
       </div>
 
       {isLocked && (
@@ -351,6 +363,8 @@ export default function FileDetailPage() {
           canEdit={canEditDetails}
           canChangeRepresentation={viewerIsAdmin}
           commissionLocked={isCommissionLockedFor(file.awaitingReview, session?.user?.role ?? "AGENT")}
+          pendingCommission={file.pendingCommission}
+          reviewWait={inReview}
           // A saved detail can resolve an earlier refusal (e.g. extending the
           // expiration), so clear the old message along with the reload.
           onSaved={() => { setActionError(null); load(); }}
