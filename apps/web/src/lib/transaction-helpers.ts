@@ -1,4 +1,5 @@
 import { missingPropertyFacts } from "@/lib/year-built";
+import { REVIEW_WAIT_MESSAGE, PENDING_COMMISSION_MESSAGE } from "@/lib/file-lock";
 import type {
   ListingStatus,
   TransactionFileStatus,
@@ -162,9 +163,12 @@ export function transactionStatusOptions(status: string, role: ActorRole): strin
 // SkySlope's Accepted Contract: every required listing document must be uploaded
 // (In Review or Approved) first — the RLA and AVID are never required again on
 // the transaction, so this is their last checkpoint.
+// While the broker reviews the listing an agent waits; a pending commission
+// change blocks everyone until the broker decides it.
 export function convertBlockedReason(listing: {
   status: string; checklistItems: FileChecklistItemWithDocs[]; propertyType?: string | null; yearBuilt?: number | null;
-}): string | null {
+  awaitingReview?: boolean | null; pendingCommission?: unknown;
+}, role: ActorRole): string | null {
   if (listing.status !== "ACTIVE") return "Only an Active listing can be converted";
   // The year decides which disclosures the transaction gets, so it comes first.
   const facts = missingPropertyFacts(listing);
@@ -174,6 +178,8 @@ export function convertBlockedReason(listing: {
   if (missing > 0) {
     return `Upload the ${missing} remaining required listing document${missing === 1 ? "" : "s"} before converting`;
   }
+  if (listing.pendingCommission) return PENDING_COMMISSION_MESSAGE;
+  if (role === "AGENT" && listing.awaitingReview) return REVIEW_WAIT_MESSAGE;
   return null;
 }
 

@@ -22,7 +22,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   if (forbidden) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const locked = assertFileEditable("listing", listing.status, session.user.role);
   if (locked) return locked;
-  const blocked = convertBlockedReason(listing);
+  const isAdmin = session.user.role === "ADMIN";
+  const blocked = convertBlockedReason(listing, isAdmin ? "ADMIN" : "AGENT");
   if (blocked) return NextResponse.json({ error: blocked }, { status: 400 });
 
   let body: unknown = null;
@@ -88,7 +89,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     }),
     prisma.listingFile.update({
       where: { id: listing.id },
-      data: { status: "ACTIVE_UNDER_CONTRACT" },
+      // The broker converting is a decision on the file, so it leaves Awaiting Review.
+      data: { status: "ACTIVE_UNDER_CONTRACT", ...(isAdmin ? { awaitingReview: false } : {}) },
     }),
   ]);
 

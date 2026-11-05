@@ -182,7 +182,7 @@ export default function AdminFileDetailPage() {
               <ConvertListingButton
                 listingId={id}
                 listingType={listing.listingType}
-                blockedReason={convertBlockedReason(listing)}
+                blockedReason={convertBlockedReason(listing, "ADMIN")}
                 onConverted={(transactionId) => router.push(`/admin/transactions/transaction/${transactionId}`)}
               />
             )}

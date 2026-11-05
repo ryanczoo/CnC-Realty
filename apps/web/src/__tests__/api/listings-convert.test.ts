@@ -70,6 +70,40 @@ describe("POST /api/listings/[id]/convert", () => {
     expect(res.status).toBe(201);
   });
 
+  it("makes an agent wait while the listing awaits broker review", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ ...SALE_LISTING, awaitingReview: true } as any);
+    const res = await POST(post("LISTING"), { params: { id: "l1" } });
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("Waiting for broker review");
+    expect(prisma.transactionFile.create).not.toHaveBeenCalled();
+  });
+
+  it("lets the broker convert a listing awaiting review and clears the flag", async () => {
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u3", role: "ADMIN", agentId: null } } as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ ...SALE_LISTING, awaitingReview: true } as any);
+    vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "tf-admin" } as any);
+    const res = await POST(post("LISTING"), { params: { id: "l1" } });
+    expect(res.status).toBe(201);
+    expect(vi.mocked(prisma.listingFile.update).mock.calls[0][0].data).toMatchObject({ status: "ACTIVE_UNDER_CONTRACT", awaitingReview: false });
+  });
+
+  it("does not touch awaitingReview when an agent converts", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(SALE_LISTING as any);
+    vi.mocked(prisma.transactionFile.create).mockResolvedValue({ id: "tf" } as any);
+    await POST(post("LISTING"), { params: { id: "l1" } });
+    expect(vi.mocked(prisma.listingFile.update).mock.calls[0][0].data).not.toHaveProperty("awaitingReview");
+  });
+
+  it("refuses the broker too while a commission change is pending", async () => {
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u3", role: "ADMIN", agentId: null } } as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ ...SALE_LISTING, pendingCommission: { commissionPercent: 3 } } as any);
+    const res = await POST(post("LISTING"), { params: { id: "l1" } });
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("Approve or reject the commission change first");
+  });
+
   it("refuses to convert until every required listing document is uploaded", async () => {
     vi.mocked(getServerSession).mockResolvedValue(SESSION_AGENT as any);
     vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({

@@ -253,7 +253,7 @@ export default function FileDetailPage() {
               <ConvertListingButton
                 listingId={id}
                 listingType={listing.listingType}
-                blockedReason={convertBlockedReason(listing)}
+                blockedReason={convertBlockedReason(listing, "AGENT")}
                 onConverted={(transactionId) => router.push(`/dashboard/transactions/transaction/${transactionId}`)}
               />
             )}
