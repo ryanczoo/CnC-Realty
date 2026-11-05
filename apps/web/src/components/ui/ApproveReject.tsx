@@ -16,10 +16,10 @@ export function ApproveRejectButtons({
 }) {
   return (
     <>
-      <button onClick={onApprove} disabled={busy} className="flex items-center gap-1 rounded-full bg-green-600 px-3 py-1 text-xs text-white hover:bg-green-700 disabled:opacity-50">
+      <button type="button" onClick={onApprove} disabled={busy} className="flex items-center gap-1 rounded-full bg-green-600 px-3 py-1 text-xs text-white hover:bg-green-700 disabled:opacity-50">
         <CheckCircleIcon size={12} /> Approve
       </button>
-      <button onClick={onToggleReject} className="flex items-center gap-1 rounded-full bg-red-500 px-3 py-1 text-xs text-white hover:bg-red-600">
+      <button type="button" onClick={onToggleReject} disabled={busy} className="flex items-center gap-1 rounded-full bg-red-500 px-3 py-1 text-xs text-white hover:bg-red-600 disabled:opacity-50">
         <XCircle className="h-3 w-3" /> Reject
       </button>
     </>
@@ -42,8 +42,8 @@ export function RejectReasonForm({
     <div className="mt-3 space-y-2">
       <textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Rejection reason (required)" rows={2} className="w-full rounded-lg border border-[#1B1B1B]/10 bg-[#F2F0EF] px-3 py-2 text-sm text-[#1B1B1B] placeholder:text-[#1B1B1B]/25" />
       <div className="flex justify-end gap-2">
-        <button onClick={onCancel} className="text-sm text-[#1B1B1B]/50">Cancel</button>
-        <button onClick={() => onConfirm(reason)} disabled={busy || !reason.trim()} className="rounded-full bg-red-500 px-4 py-1.5 text-sm text-white disabled:opacity-40">
+        <button type="button" onClick={onCancel} className="text-sm text-[#1B1B1B]/50">Cancel</button>
+        <button type="button" onClick={() => onConfirm(reason)} disabled={busy || !reason.trim()} className="rounded-full bg-red-500 px-4 py-1.5 text-sm text-white disabled:opacity-40">
           {busy ? "Saving…" : "Confirm Reject"}
         </button>
       </div>
