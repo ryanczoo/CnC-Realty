@@ -1,3 +1,5 @@
+"use client";
+import { useFileFetch } from "./AgentViewContext";
 import { InfoRow, type InfoRowEdit } from "./InfoRow";
 import { CommissionReviewBlock } from "./CommissionReviewBlock";
 import type { PendingCommission } from "@/lib/commission-review";
@@ -41,6 +43,7 @@ export function OverviewTab({
   onCommissionReview?: (decision: { approve: true } | { approve: false; reason: string }) => Promise<string | null>;
   onSaved?: () => void;
 }) {
+  const fileFetch = useFileFetch();
   const isReferral = !isListing && transaction?.transactionSide === "REFERRAL";
   const isLease = !isListing && isLeaseSide(transaction?.transactionSide);
   // The broker's pencil on Transaction Side: offered only for a side that has a family, on a file still open.
@@ -55,7 +58,7 @@ export function OverviewTab({
           const next = SIDES.find((x) => x.label === label)?.value;
           if (!next) return "Choose a representation.";
           if (next === transaction.transactionSide) return null;
-          const err = await changeRepresentation(transaction.id, next);
+          const err = await changeRepresentation(transaction.id, next, fileFetch);
           if (!err) onSaved?.();
           return err;
         },
@@ -70,7 +73,7 @@ export function OverviewTab({
           raw: raw == null ? "" : String(raw),
           ...opts,
           onSave: async (value) => {
-            const err = await saveFileField(isListing ? "listing" : "transaction", file.id, field, value);
+            const err = await saveFileField(isListing ? "listing" : "transaction", file.id, field, value, fileFetch);
             if (!err) onSaved?.();
             return err;
           },
@@ -92,7 +95,7 @@ export function OverviewTab({
             const err = await saveFileFields(isListing ? "listing" : "transaction", file.id, {
               [pctField]: flat ? "" : value,
               [amountField]: flat ? value : "",
-            });
+            }, fileFetch);
             if (!err) onSaved?.();
             return err;
           },
