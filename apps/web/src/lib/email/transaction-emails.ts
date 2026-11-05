@@ -1,5 +1,6 @@
 import { emailLayout, escapeHtml, buildHeadingBodyHtml } from "@/lib/email";
 import { sendEmail } from "@/lib/email/send";
+import type { CommissionChange } from "@/lib/commission-review";
 
 const BROKER_EMAIL = "info@cncrealtygroup.com";
 
@@ -266,6 +267,97 @@ export async function sendCancellationRequested(opts: {
   await sendEmail({
     to: opts.to ?? BROKER_EMAIL,
     subject: `Cancellation Requested — ${address}`,
+    html,
+    stream: "transactional",
+  });
+}
+
+const CHANGE_LINE_STYLE =
+  "color: #4b4b4b; font-size: 15px; line-height: 1.6; text-align: center; margin: 12px 0 0;";
+
+// An agent changed the commission on a file the broker already approved; the broker
+// approves or rejects the change.
+export async function sendCommissionChangeRequest(opts: {
+  fileType: "Listing" | "Transaction";
+  address: string | null;
+  agentName: string;
+  fileId: string;
+  changes: CommissionChange[];
+  to?: string;
+}): Promise<void> {
+  const address = opts.address ?? NO_ADDRESS_LABEL;
+  const changeLines = opts.changes
+    .map(
+      (c) =>
+        `<p style="${CHANGE_LINE_STYLE}">${escapeHtml(`${c.label}: ${c.from} → ${c.to}`)}</p>`,
+    )
+    .join("");
+  const bodyHtml = buildHeadingBodyHtml({
+    heading: "Commission Change Request",
+    photoUrl: `${process.env.NEXTAUTH_URL}/commission-change-photo.jpg`,
+    bodyHtml: `
+      <p style="color: #4b4b4b; font-size: 15px; line-height: 1.6; text-align: center; margin: 0;">
+        <strong style="color: #1B1B1B;">${escapeHtml(opts.agentName)}</strong> changed the commission on a ${opts.fileType.toLowerCase()} file.
+      </p>
+      <p style="${CHANGE_LINE_STYLE}">
+        Property: <strong style="color: #1B1B1B;">${escapeHtml(address)}</strong>
+      </p>
+      ${changeLines}
+    `,
+  });
+  const html = emailLayout({
+    bodyHtml,
+    ctaLabel: "Review Change",
+    ctaHref: `${process.env.NEXTAUTH_URL}/admin/transactions/${opts.fileType.toLowerCase()}/${opts.fileId}`,
+  });
+  await sendEmail({
+    to: opts.to ?? BROKER_EMAIL,
+    subject: `Commission Change Request — ${address}`,
+    html,
+    stream: "transactional",
+  });
+}
+
+// The broker rejected a commission change; the file went back to its old commission.
+export async function sendCommissionChangeRejected(opts: {
+  agentEmail: string;
+  agentName: string;
+  fileType: "Listing" | "Transaction";
+  address: string | null;
+  fileId: string;
+  reason: string;
+  changes: CommissionChange[];
+}): Promise<void> {
+  const address = opts.address ?? NO_ADDRESS_LABEL;
+  // The change is undone, so show it the other way round: from the rejected value back.
+  const changeLines = opts.changes
+    .map(
+      (c) =>
+        `<p style="${CHANGE_LINE_STYLE}">${escapeHtml(`${c.label}: ${c.to} → ${c.from}`)}</p>`,
+    )
+    .join("");
+  const bodyHtml = buildHeadingBodyHtml({
+    heading: "Commission Change Not Approved",
+    photoUrl: `${process.env.NEXTAUTH_URL}/document-correction-photo.jpg`,
+    bodyHtml: `
+      <p style="color: #4b4b4b; font-size: 15px; line-height: 1.6; text-align: center; margin: 0;">
+        Hi ${escapeHtml(opts.agentName)}, your commission change on
+        <strong style="color: #1B1B1B;">${escapeHtml(address)}</strong> was not approved, so the commission is back to what it was.
+      </p>
+      ${changeLines}
+      <p style="${CHANGE_LINE_STYLE}">
+        Reason: <em>${escapeHtml(opts.reason)}</em>
+      </p>
+    `,
+  });
+  const html = emailLayout({
+    bodyHtml,
+    ctaLabel: "View File",
+    ctaHref: `${process.env.NEXTAUTH_URL}/dashboard/transactions/${opts.fileType.toLowerCase()}/${opts.fileId}`,
+  });
+  await sendEmail({
+    to: opts.agentEmail,
+    subject: `Commission Change Not Approved — ${address}`,
     html,
     stream: "transactional",
   });

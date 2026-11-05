@@ -6,6 +6,8 @@ import { sendEmail } from "@/lib/email/send";
 import {
   sendSubmitForReview,
   sendCancellationRequested,
+  sendCommissionChangeRequest,
+  sendCommissionChangeRejected,
   sendFileClosed,
   sendDocumentRejected,
   sendAllDocsApproved,
@@ -514,5 +516,102 @@ describe("sendSubmitForReview photo", () => {
     expect(logoIndex).toBeGreaterThan(-1);
     expect(photoIndex).toBeGreaterThan(logoIndex);
     expect(headingIndex).toBeGreaterThan(photoIndex);
+  });
+});
+
+describe("sendCommissionChangeRequest", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.NEXTAUTH_URL = "http://localhost:3000";
+  });
+
+  const changes = [
+    { label: "Sale Commission %", from: "2.5%", to: "3%" },
+    { label: "Listing Commission $", from: "$10,000", to: "$12,000" },
+  ];
+
+  it("goes to the broker on the transactional stream with the right subject", async () => {
+    await sendCommissionChangeRequest({ fileType: "Transaction", address: "1 Main St", agentName: "Ann", fileId: "t1", changes });
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    expect(call.to).toBe("info@cncrealtygroup.com");
+    expect(call.stream).toBe("transactional");
+    expect(call.subject).toBe("Commission Change Request — 1 Main St");
+  });
+
+  it("shows heading, photo, property, and every change as label: from → to", async () => {
+    await sendCommissionChangeRequest({ fileType: "Listing", address: "1 Main St", agentName: "Ann", fileId: "l1", changes });
+    const html = vi.mocked(sendEmail).mock.calls[0][0].html!;
+    expect(html).toContain("Commission Change Request");
+    expect(html).toContain("http://localhost:3000/commission-change-photo.jpg");
+    expect(html).toContain("changed the commission on a listing file.");
+    expect(html).toContain("1 Main St");
+    expect(html).toContain("Sale Commission %: 2.5% → 3%");
+    expect(html).toContain("Listing Commission $: $10,000 → $12,000");
+  });
+
+  it("links the Review Change button to the admin file page", async () => {
+    await sendCommissionChangeRequest({ fileType: "Transaction", address: "1 Main St", agentName: "Ann", fileId: "t1", changes });
+    const html = vi.mocked(sendEmail).mock.calls[0][0].html!;
+    expect(html).toContain("Review Change");
+    expect(html).toContain("http://localhost:3000/admin/transactions/transaction/t1");
+  });
+
+  it("escapes the agent name once, never twice, and falls back when there is no address", async () => {
+    await sendCommissionChangeRequest({ fileType: "Transaction", address: null, agentName: "O'Brien", fileId: "t1", changes });
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    expect(call.html).toContain("O&#39;Brien");
+    expect(call.html).not.toContain("&amp;#39;");
+    expect(call.html).toContain("this referral file");
+    expect(call.subject).toBe("Commission Change Request — this referral file");
+  });
+});
+
+describe("sendCommissionChangeRejected", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.NEXTAUTH_URL = "http://localhost:3000";
+  });
+
+  const base = {
+    agentEmail: "ann@example.com",
+    agentName: "Ann",
+    fileType: "Transaction" as const,
+    address: "1 Main St",
+    fileId: "t1",
+    reason: "Not agreed with seller",
+    changes: [{ label: "Sale Commission %", from: "2.5%", to: "3%" }],
+  };
+
+  it("goes to the agent on the transactional stream", async () => {
+    await sendCommissionChangeRejected(base);
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    expect(call.to).toBe("ann@example.com");
+    expect(call.stream).toBe("transactional");
+    expect(call.subject).toContain("1 Main St");
+  });
+
+  it("shows heading, rejection photo, the reverted change (to → from) and the reason", async () => {
+    await sendCommissionChangeRejected(base);
+    const html = vi.mocked(sendEmail).mock.calls[0][0].html!;
+    expect(html).toContain("Commission Change Not Approved");
+    expect(html).toContain("http://localhost:3000/document-correction-photo.jpg");
+    expect(html).toContain("1 Main St");
+    expect(html).toContain("Sale Commission %: 3% → 2.5%");
+    expect(html).toContain("Reason: <em>Not agreed with seller</em>");
+  });
+
+  it("links View File to the agent dashboard file page", async () => {
+    await sendCommissionChangeRejected({ ...base, fileType: "Listing", fileId: "l9" });
+    const html = vi.mocked(sendEmail).mock.calls[0][0].html!;
+    expect(html).toContain("View File");
+    expect(html).toContain("http://localhost:3000/dashboard/transactions/listing/l9");
+  });
+
+  it("escapes the reason once and falls back when there is no address", async () => {
+    await sendCommissionChangeRejected({ ...base, address: null, reason: "It's <b>no</b>" });
+    const html = vi.mocked(sendEmail).mock.calls[0][0].html!;
+    expect(html).toContain("It&#39;s &lt;b&gt;no&lt;/b&gt;");
+    expect(html).not.toContain("&amp;#39;");
+    expect(html).toContain("this referral file");
   });
 });
