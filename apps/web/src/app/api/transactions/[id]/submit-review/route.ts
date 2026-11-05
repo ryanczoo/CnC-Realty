@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { checkOwnership, assertFileEditable } from "@/lib/api-auth";
 import { getChecklistProgress, CHECKLIST_ITEMS_WITH_DOCS_INCLUDE } from "@/lib/transaction-helpers";
 import { sendSubmitForReview } from "@/lib/email/transaction-emails";
+import { canClearReview } from "@/lib/commission-review";
 import { sendSafely } from "@/lib/email/send-safely";
 
 export async function POST(_req: Request, { params }: { params: { id: string } }) {
@@ -26,7 +27,15 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     return NextResponse.json({ error: `${required - satisfied} required checklist item(s) still need documents` }, { status: 400 });
   }
 
-  await prisma.transactionFile.update({ where: { id: params.id }, data: { awaitingReview: true } });
+  // Nothing left for the broker to review: don't flag the file or email.
+  if (canClearReview(tx.checklistItems, tx.pendingCommission)) {
+    return NextResponse.json({ ok: true, alreadyApproved: true });
+  }
+
+  await prisma.transactionFile.update({
+    where: { id: params.id },
+    data: { awaitingReview: true, ...(tx.reviewSubmittedAt ? {} : { reviewSubmittedAt: new Date() }) },
+  });
   await prisma.fileActivity.create({
     data: { fileType: "TRANSACTION", transactionFileId: params.id, actorId: session.user.id, actorRole: "AGENT", type: "SUBMITTED_FOR_REVIEW" },
   });

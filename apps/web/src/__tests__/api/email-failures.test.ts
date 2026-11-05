@@ -40,7 +40,7 @@ beforeEach(() => {
 describe("submit for review: an email failure is logged, never shown to the agent", () => {
   it("transaction", async () => {
     vi.mocked(getServerSession).mockResolvedValue(AGENT as any);
-    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({ id: "f1", agentId: "a1", status: "PENDING", checklistItems: [], propertyAddress: "1 A St", ...AGENT_USER } as any);
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({ id: "f1", agentId: "a1", status: "PENDING", checklistItems: [{ id: "i1", isRequired: true, documents: [{ id: "d1", reviewStatus: "PENDING_REVIEW" }] }], propertyAddress: "1 A St", ...AGENT_USER } as any);
     vi.mocked(prisma.transactionFile.update).mockResolvedValue({} as any);
     vi.mocked(sendSubmitForReview).mockRejectedValue(new Error("Postmark 406"));
     const res = await submitTransaction(post(), { params: { id: "f1" } });
@@ -51,7 +51,7 @@ describe("submit for review: an email failure is logged, never shown to the agen
 
   it("listing", async () => {
     vi.mocked(getServerSession).mockResolvedValue(AGENT as any);
-    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "f1", agentId: "a1", status: "ACTIVE", checklistItems: [], propertyAddress: "1 A St", ...AGENT_USER } as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "f1", agentId: "a1", status: "ACTIVE", checklistItems: [{ id: "i1", isRequired: true, documents: [{ id: "d1", reviewStatus: "PENDING_REVIEW" }] }], propertyAddress: "1 A St", ...AGENT_USER } as any);
     vi.mocked(prisma.listingFile.update).mockResolvedValue({} as any);
     vi.mocked(sendSubmitForReview).mockRejectedValue(new Error("Postmark 406"));
     const res = await submitListing(post(), { params: { id: "f1" } });

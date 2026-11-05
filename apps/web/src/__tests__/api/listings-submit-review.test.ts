@@ -12,6 +12,7 @@ vi.mock("@/lib/prisma", () => ({
 
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
+import { sendSubmitForReview } from "@/lib/email/transaction-emails";
 import { POST } from "../../app/api/listings/[id]/submit-review/route";
 
 const LISTING = {
@@ -69,5 +70,60 @@ describe("POST /api/listings/[id]/submit-review — ownership", () => {
     const body = await res.json();
     expect(body.error).toMatch(/locked pending transfer/i);
     expect(prisma.listingFile.update).not.toHaveBeenCalled();
+  });
+});
+
+
+const PENDING_ITEMS = [{ id: "i1", isRequired: true, documents: [{ id: "d1", reviewStatus: "PENDING_REVIEW" }] }];
+const APPROVED_ITEMS = [{ id: "i1", isRequired: true, documents: [{ id: "d1", reviewStatus: "APPROVED" }] }];
+const AGENT_SESSION = { user: { id: "u1", role: "AGENT", agentId: "a1" } } as any;
+
+describe("POST /api/listings/[id]/submit-review — review submission", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getServerSession).mockResolvedValue(AGENT_SESSION);
+    vi.mocked(prisma.listingFile.update).mockResolvedValue({} as any);
+    vi.mocked(prisma.fileActivity.create).mockResolvedValue({} as any);
+  });
+
+  it("flags the file, records reviewSubmittedAt, and emails when a required document is pending", async () => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ ...LISTING, checklistItems: PENDING_ITEMS, reviewSubmittedAt: null, pendingCommission: null } as any);
+    const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "l1" } });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true });
+    expect(prisma.listingFile.update).toHaveBeenCalledWith({
+      where: { id: "l1" },
+      data: { awaitingReview: true, reviewSubmittedAt: expect.any(Date) },
+    });
+    expect(prisma.fileActivity.create).toHaveBeenCalled();
+    expect(sendSubmitForReview).toHaveBeenCalled();
+  });
+
+  it("does not overwrite reviewSubmittedAt when it is already set", async () => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ ...LISTING, checklistItems: PENDING_ITEMS, reviewSubmittedAt: new Date("2026-01-01"), pendingCommission: null } as any);
+    const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "l1" } });
+    expect(res.status).toBe(200);
+    expect(prisma.listingFile.update).toHaveBeenCalledWith({
+      where: { id: "l1" },
+      data: { awaitingReview: true },
+    });
+  });
+
+  it("skips with alreadyApproved when every required item is approved and no commission change is pending", async () => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ ...LISTING, checklistItems: APPROVED_ITEMS, reviewSubmittedAt: null, pendingCommission: null } as any);
+    const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "l1" } });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, alreadyApproved: true });
+    expect(prisma.listingFile.update).not.toHaveBeenCalled();
+    expect(prisma.fileActivity.create).not.toHaveBeenCalled();
+    expect(sendSubmitForReview).not.toHaveBeenCalled();
+  });
+
+  it("still flags the file when everything is approved but a commission change is pending", async () => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ ...LISTING, checklistItems: APPROVED_ITEMS, reviewSubmittedAt: null, pendingCommission: { changes: [] } } as any);
+    const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "l1" } });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true });
+    expect(prisma.listingFile.update).toHaveBeenCalled();
   });
 });
