@@ -159,8 +159,15 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
   // additional document must not re-send the "all approved" email.
   if (doc.checklistItemId && isReadyToClose(checklistItems)) {
     const fileRecord = isListing
-      ? await prisma.listingFile.findUnique({ where: { id: fileId }, select: { propertyAddress: true, city: true, state: true, zip: true, agent: { select: { user: { select: { email: true, name: true } } } } } })
-      : await prisma.transactionFile.findUnique({ where: { id: fileId }, select: { propertyAddress: true, city: true, state: true, zip: true, agent: { select: { user: { select: { email: true, name: true } } } } } });
+      ? await prisma.listingFile.findUnique({ where: { id: fileId }, select: { pendingCommission: true, propertyAddress: true, city: true, state: true, zip: true, agent: { select: { user: { select: { email: true, name: true } } } } } })
+      : await prisma.transactionFile.findUnique({ where: { id: fileId }, select: { pendingCommission: true, propertyAddress: true, city: true, state: true, zip: true, agent: { select: { user: { select: { email: true, name: true } } } } } });
+
+    // The last required document is approved: unless a commission change is still
+    // waiting on the broker, nothing is left to review, so the badge clears.
+    if (fileRecord && fileRecord.pendingCommission === null) {
+      if (isListing) await prisma.listingFile.update({ where: { id: fileId }, data: { awaitingReview: false } });
+      else await prisma.transactionFile.update({ where: { id: fileId }, data: { awaitingReview: false } });
+    }
 
     if (fileRecord?.agent?.user) {
       emailFailed = (

@@ -10,8 +10,8 @@ vi.mock("@/lib/prisma", () => {
     fileActivity: { create: vi.fn() },
     fileChecklistItem: { findMany: vi.fn(), createMany: vi.fn() },
     checklistTemplate: { findFirst: vi.fn() },
-    listingFile: { findUnique: vi.fn(), updateMany: vi.fn() },
-    transactionFile: { findUnique: vi.fn(), updateMany: vi.fn() },
+    listingFile: { findUnique: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
+    transactionFile: { findUnique: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
   };
   mockPrisma.$transaction = vi.fn(async (cb: any) => cb(mockPrisma));
   return { prisma: mockPrisma };
@@ -131,5 +131,96 @@ describe("POST /api/admin/documents/[id]/approve — email failure", () => {
     expect(res.status).toBe(200);
     expect(prisma.fileDocument.update).toHaveBeenCalled();
     expect(sendAllDocsApproved).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/admin/documents/[id]/approve — Awaiting Review badge clears", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  const admin = () => vi.mocked(getServerSession).mockResolvedValue({ user: { id: "admin-1", role: "ADMIN" } } as any);
+  const fileFields = { propertyAddress: "1 A St", city: "Irvine", state: "CA", zip: "92603", agent: { user: { email: "a@x.com", name: "Ann" } } };
+  const call = (id: string) => POST(new Request(`http://localhost/api/admin/documents/${id}/approve`, { method: "POST" }), { params: { id } });
+
+  it("clears awaitingReview on a listing when the last required document is approved and no commission change is pending", async () => {
+    admin();
+    vi.mocked(prisma.fileDocument.findUnique).mockResolvedValue({
+      id: "d1", fileType: "LISTING", listingFileId: "l1", transactionFileId: null, checklistItemId: "c1", name: "a.pdf",
+    } as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "l1", status: "ACTIVE", pendingCommission: null, ...fileFields } as any);
+    vi.mocked(prisma.fileChecklistItem.findMany).mockResolvedValue([]);
+
+    await call("d1");
+
+    expect(prisma.listingFile.update).toHaveBeenCalledWith({ where: { id: "l1" }, data: { awaitingReview: false } });
+    expect(prisma.transactionFile.update).not.toHaveBeenCalled();
+  });
+
+  it("clears awaitingReview on a transaction when the last required document is approved and no commission change is pending", async () => {
+    admin();
+    vi.mocked(prisma.fileDocument.findUnique).mockResolvedValue({
+      id: "d2", fileType: "TRANSACTION", listingFileId: null, transactionFileId: "t1", checklistItemId: "c1", name: "a.pdf",
+    } as any);
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({ id: "t1", status: "PENDING", pendingCommission: null, ...fileFields } as any);
+    vi.mocked(prisma.fileChecklistItem.findMany).mockResolvedValue([]);
+
+    await call("d2");
+
+    expect(prisma.transactionFile.update).toHaveBeenCalledWith({ where: { id: "t1" }, data: { awaitingReview: false } });
+    expect(prisma.listingFile.update).not.toHaveBeenCalled();
+  });
+
+  it("clears the badge even when the file has no agent to email", async () => {
+    admin();
+    vi.mocked(prisma.fileDocument.findUnique).mockResolvedValue({
+      id: "d3", fileType: "LISTING", listingFileId: "l3", transactionFileId: null, checklistItemId: "c1", name: "a.pdf",
+    } as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "l3", status: "ACTIVE", pendingCommission: null, ...fileFields, agent: null } as any);
+    vi.mocked(prisma.fileChecklistItem.findMany).mockResolvedValue([]);
+
+    await call("d3");
+
+    expect(prisma.listingFile.update).toHaveBeenCalledWith({ where: { id: "l3" }, data: { awaitingReview: false } });
+    expect(sendAllDocsApproved).not.toHaveBeenCalled();
+  });
+
+  it("keeps the badge when a commission change is still pending", async () => {
+    admin();
+    vi.mocked(prisma.fileDocument.findUnique).mockResolvedValue({
+      id: "d4", fileType: "LISTING", listingFileId: "l4", transactionFileId: null, checklistItemId: "c1", name: "a.pdf",
+    } as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "l4", status: "ACTIVE", pendingCommission: { commissionPercent: 2.5 }, ...fileFields } as any);
+    vi.mocked(prisma.fileChecklistItem.findMany).mockResolvedValue([]);
+
+    await call("d4");
+
+    expect(prisma.listingFile.update).not.toHaveBeenCalled();
+  });
+
+  it("does not touch the badge when an additional document is approved", async () => {
+    admin();
+    vi.mocked(prisma.fileDocument.findUnique).mockResolvedValue({
+      id: "d5", fileType: "LISTING", listingFileId: "l5", transactionFileId: null, checklistItemId: null, isAdditional: true, name: "pest.pdf",
+    } as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "l5", status: "ACTIVE", pendingCommission: null, ...fileFields } as any);
+    vi.mocked(prisma.fileChecklistItem.findMany).mockResolvedValue([]);
+
+    await call("d5");
+
+    expect(prisma.listingFile.update).not.toHaveBeenCalled();
+  });
+
+  it("does not touch the badge while a required checklist item is still unapproved", async () => {
+    admin();
+    vi.mocked(prisma.fileDocument.findUnique).mockResolvedValue({
+      id: "d6", fileType: "LISTING", listingFileId: "l6", transactionFileId: null, checklistItemId: "c1", name: "a.pdf",
+    } as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue({ id: "l6", status: "ACTIVE", pendingCommission: null, ...fileFields } as any);
+    vi.mocked(prisma.fileChecklistItem.findMany).mockResolvedValue([
+      { id: "c2", isRequired: true, documents: [{ reviewStatus: "PENDING_REVIEW" }] },
+    ] as any);
+
+    await call("d6");
+
+    expect(prisma.listingFile.update).not.toHaveBeenCalled();
   });
 });
