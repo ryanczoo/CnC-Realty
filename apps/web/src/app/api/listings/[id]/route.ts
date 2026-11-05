@@ -10,6 +10,7 @@ import { trimStrings } from "@/lib/form-validation";
 import { listingDatesError } from "@/lib/listing-dates";
 import { requiredFieldError, commissionPercentError, commissionLockedError, propertyFactsChange } from "@/lib/file-edit";
 import { logCommissionChanges } from "@/lib/commission-log";
+import { afterCommissionSave } from "@/lib/commission-review-db";
 import { followDates } from "@/lib/auto-status";
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
@@ -81,6 +82,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   };
 
   const facts = propertyFactsChange(body, listing);
+  const commissionActor = { userId: session.user.id, role, name: session.user.name ?? null } as const;
 
   if (body.status && body.status !== listing.status) {
     const result = await changeFileStatus({
@@ -92,16 +94,18 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     });
     if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
     await logCommissionChanges("listing", params.id, listing, result.file, { userId: session.user.id, role });
+    const reflagged = await afterCommissionSave("listing", params.id, listing, result.file, commissionActor);
     if (facts) await applyPropertyFacts("listing", params.id, facts, { userId: session.user.id, role });
-    return NextResponse.json({ listing: result.file, ...(result.emailWarning && { emailWarning: true }) });
+    return NextResponse.json({ listing: reflagged ?? result.file, ...(result.emailWarning && { emailWarning: true }) });
   }
 
   const updated = await prisma.listingFile.update({ where: { id: params.id }, data: fieldData });
   await logCommissionChanges("listing", params.id, listing, updated, { userId: session.user.id, role });
+  const reflagged = await afterCommissionSave("listing", params.id, listing, updated, commissionActor);
   if (facts) await applyPropertyFacts("listing", params.id, facts, { userId: session.user.id, role });
   // A saved date can move the status (e.g. an extended Expired listing -> Active).
   await followDates("listing", params.id, { userId: session.user.id, role });
-  return NextResponse.json({ listing: updated });
+  return NextResponse.json({ listing: reflagged ?? updated });
 }
 
 // Broker-only, and only for an empty listing: a file that holds documents (or

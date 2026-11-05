@@ -11,7 +11,7 @@ vi.mock("@/lib/prisma", () => ({
     $transaction: vi.fn(async (ops: Promise<unknown>[]) => Promise.all(ops)),
   },
 }));
-vi.mock("@/lib/email/transaction-emails", () => ({ sendFileClosed: vi.fn(), sendCancellationRequested: vi.fn() }));
+vi.mock("@/lib/email/transaction-emails", () => ({ sendFileClosed: vi.fn(), sendCancellationRequested: vi.fn(), sendCommissionChangeRequest: vi.fn() }));
 vi.mock("@sentry/nextjs", () => ({ captureException: vi.fn() }));
 vi.mock("@/lib/auto-status", async (orig) => ({ ...(await orig<typeof import("@/lib/auto-status")>()), followDates: vi.fn() }));
 vi.mock("@/lib/file-status", async (orig) => ({ ...(await orig<typeof import("@/lib/file-status")>()), maybeAutoPending: vi.fn() }));
@@ -549,5 +549,39 @@ describe("PATCH /api/transactions/[id] — Year Built", () => {
     expect((await patch({ yearBuilt: "1400" })).status).toBe(400);
     expect((await patch({ yearBuilt: "" })).status).toBe(400);
     expect(prisma.transactionFile.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("PATCH /api/transactions/[id] - commission change after broker review", () => {
+  const AGENT = { user: { id: "u1", role: "AGENT", agentId: "a1" } };
+  const patch = (body: unknown) => PATCH(new Request("http://localhost", { method: "PATCH", body: JSON.stringify(body) }), { params: { id: "tf1" } });
+  const REVIEWED = {
+    id: "tf1", agentId: "a1", status: "PENDING", transactionSide: "PURCHASE", propertyAddress: "34 Elm Ave", salePrice: 500000,
+    awaitingReview: false, reviewSubmittedAt: new Date("2026-10-01T00:00:00.000Z"), pendingCommission: null,
+    saleCommissionPct: 2.5, saleCommissionAmount: 12500, listingCommissionPct: null, listingCommissionAmount: null,
+  };
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getServerSession).mockResolvedValue(AGENT as any);
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(REVIEWED as any);
+    vi.mocked(prisma.fileActivity.create).mockResolvedValue({} as any);
+  });
+
+  it("sends the file back to the broker on a plain save and responds with the flagged file", async () => {
+    vi.mocked(prisma.transactionFile.update)
+      .mockResolvedValueOnce({ ...REVIEWED, saleCommissionPct: 2, saleCommissionAmount: 10000 } as any)
+      .mockResolvedValueOnce({ ...REVIEWED, saleCommissionPct: 2, saleCommissionAmount: 10000, awaitingReview: true } as any);
+    const res = await patch({ saleCommissionPct: "2", saleCommissionAmount: "" });
+    expect(res.status).toBe(200);
+    const calls = vi.mocked(prisma.transactionFile.update).mock.calls;
+    expect(calls[1][0]).toMatchObject({ where: { id: "tf1" }, data: { awaitingReview: true } });
+    expect(((calls[1][0].data as any).pendingCommission).before.saleCommissionPct).toBe(2.5);
+    expect((await res.json()).transaction.awaitingReview).toBe(true);
+  });
+
+  it("does nothing extra when commission didn't change", async () => {
+    vi.mocked(prisma.transactionFile.update).mockResolvedValue({ ...REVIEWED, city: "Irvine" } as any);
+    await patch({ city: "Irvine" });
+    expect(prisma.transactionFile.update).toHaveBeenCalledTimes(1);
   });
 });

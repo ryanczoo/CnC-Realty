@@ -8,6 +8,7 @@ import { followDates } from "@/lib/auto-status";
 import { transactionEditData, requiredFieldError, commissionPercentError, transactionCommissionEdit, commissionLockedError, propertyFactsChange } from "@/lib/file-edit";
 import { applyPropertyFacts } from "@/lib/year-checklist-db";
 import { logCommissionChanges } from "@/lib/commission-log";
+import { afterCommissionSave } from "@/lib/commission-review-db";
 import { transactionDatesError } from "@/lib/transaction-dates";
 import { sendCancellationRequested } from "@/lib/email/transaction-emails";
 import { sendSafely } from "@/lib/email/send-safely";
@@ -74,6 +75,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   };
 
   const facts = propertyFactsChange(body, tx);
+  const commissionActor = { userId: session.user.id, role, name: session.user.name ?? null } as const;
 
   if (body.status && body.status !== tx.status) {
     // An agent's cancellation request must say why; the reason is logged with the
@@ -93,6 +95,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     });
     if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
     await logCommissionChanges("transaction", params.id, tx, result.file, { userId: session.user.id, role });
+    const reflagged = await afterCommissionSave("transaction", params.id, tx, result.file, commissionActor);
     if (facts) await applyPropertyFacts("transaction", params.id, facts, { userId: session.user.id, role });
     if (isCancellationRequest) {
       await sendSafely(() => sendCancellationRequested({
@@ -102,16 +105,17 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         fileId: params.id,
       }));
     }
-    return NextResponse.json({ transaction: result.file, ...(result.emailWarning && { emailWarning: true }) });
+    return NextResponse.json({ transaction: reflagged ?? result.file, ...(result.emailWarning && { emailWarning: true }) });
   }
 
   const updated = await prisma.transactionFile.update({ where: { id: params.id }, data: fieldData });
   await logCommissionChanges("transaction", params.id, tx, updated, { userId: session.user.id, role });
+  const reflagged = await afterCommissionSave("transaction", params.id, tx, updated, commissionActor);
   // A saved date can move the status (Expired -> Pending), and saved details can
   // complete the file (-> Pending).
   const actor = { userId: session.user.id, role } as const;
   if (facts) await applyPropertyFacts("transaction", params.id, facts, actor);
   await followDates("transaction", params.id, actor);
   await maybeAutoPending(params.id, actor);
-  return NextResponse.json({ transaction: updated });
+  return NextResponse.json({ transaction: reflagged ?? updated });
 }

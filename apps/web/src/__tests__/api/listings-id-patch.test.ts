@@ -5,7 +5,7 @@ vi.mock("@/lib/year-checklist-db", () => ({ applyPropertyFacts: vi.fn() }));
 vi.mock("@/lib/auth", () => ({ authOptions: {} }));
 vi.mock("@sentry/nextjs", () => ({ captureException: vi.fn() }));
 vi.mock("@/lib/r2", () => ({ deleteR2Object: vi.fn() }));
-vi.mock("@/lib/email/transaction-emails", () => ({ sendFileClosed: vi.fn() }));
+vi.mock("@/lib/email/transaction-emails", () => ({ sendFileClosed: vi.fn(), sendCommissionChangeRequest: vi.fn() }));
 vi.mock("@/lib/auto-status", async (orig) => ({ ...(await orig<typeof import("@/lib/auto-status")>()), followDates: vi.fn() }));
 vi.mock("@/lib/prisma", () => ({
   prisma: {
@@ -263,5 +263,45 @@ describe("PATCH /api/listings/[id] — Year Built and Property Type", () => {
     expect((await patch({ yearBuilt: "" })).status).toBe(400);
     expect((await patch({ yearBuilt: "3000" })).status).toBe(400);
     expect(prisma.listingFile.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("PATCH /api/listings/[id] - commission change after broker review", () => {
+  const REVIEWED = {
+    id: "lf1", agentId: "a1", status: "ACTIVE", propertyAddress: "12 Oak St",
+    awaitingReview: false, reviewSubmittedAt: new Date("2026-10-01T00:00:00.000Z"), pendingCommission: null,
+    commissionPercent: 2.5, commissionAmount: null, checklistItems: [],
+  };
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getServerSession).mockResolvedValue(AGENT as any);
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(REVIEWED as any);
+    vi.mocked(prisma.fileActivity.create).mockResolvedValue({} as any);
+    vi.mocked(prisma.agent.findUnique).mockResolvedValue({ user: { email: "a@x.com", name: "Ann" } } as any);
+  });
+
+  it("applies the status change, then sends the file back to the broker, in one response", async () => {
+    vi.mocked(prisma.listingFile.update)
+      .mockResolvedValueOnce({ ...REVIEWED, status: "COMING_SOON", commissionPercent: 2 } as any)
+      .mockResolvedValueOnce({ ...REVIEWED, status: "COMING_SOON", commissionPercent: 2, awaitingReview: true } as any);
+    const res = await patch({ commissionPercent: "2", status: "COMING_SOON" });
+    expect(res.status).toBe(200);
+    const calls = vi.mocked(prisma.listingFile.update).mock.calls;
+    expect((calls[0][0].data as any).status).toBe("COMING_SOON");
+    expect(calls[1][0]).toMatchObject({ where: { id: "lf1" }, data: { awaitingReview: true } });
+    expect(((calls[1][0].data as any).pendingCommission).before.commissionPercent).toBe(2.5);
+    const body = await res.json();
+    expect(body.listing.awaitingReview).toBe(true);
+    expect(body.listing.status).toBe("COMING_SOON");
+  });
+
+  it("sends the file back to the broker on a plain save too", async () => {
+    vi.mocked(prisma.listingFile.update)
+      .mockResolvedValueOnce({ ...REVIEWED, commissionPercent: 2 } as any)
+      .mockResolvedValueOnce({ ...REVIEWED, commissionPercent: 2, awaitingReview: true } as any);
+    const res = await patch({ commissionPercent: "2" });
+    expect(res.status).toBe(200);
+    expect(vi.mocked(prisma.listingFile.update).mock.calls[1][0]).toMatchObject({ data: { awaitingReview: true } });
+    expect((await res.json()).listing.awaitingReview).toBe(true);
   });
 });
