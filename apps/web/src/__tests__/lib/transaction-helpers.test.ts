@@ -259,13 +259,13 @@ describe("convertBlockedReason", () => {
     it("lets the broker convert a file that awaits review", () => {
       expect(convertBlockedReason({ ...ok, awaitingReview: true }, "ADMIN")).toBeNull();
     });
-    it("refuses everyone while a commission change is pending", () => {
+    it("tells an agent to wait, and the broker to decide, while a commission change is pending", () => {
       const pending = { ...ok, pendingCommission: { commissionPercent: 3 } };
-      expect(convertBlockedReason(pending, "AGENT")).toBe("Approve or reject the commission change first");
+      expect(convertBlockedReason(pending, "AGENT")).toBe("Waiting for broker review");
       expect(convertBlockedReason(pending, "ADMIN")).toBe("Approve or reject the commission change first");
     });
-    it("reports the pending change before the review wait", () => {
-      expect(convertBlockedReason({ ...ok, awaitingReview: true, pendingCommission: {} }, "AGENT")).toBe("Approve or reject the commission change first");
+    it("shows the broker the pending change even when the file awaits review", () => {
+      expect(convertBlockedReason({ ...ok, awaitingReview: true, pendingCommission: {} }, "ADMIN")).toBe("Approve or reject the commission change first");
     });
     it("keeps the existing reasons first", () => {
       expect(convertBlockedReason({ ...ok, status: "COMING_SOON", awaitingReview: true, pendingCommission: {} }, "AGENT")).toBe("Only an Active listing can be converted");
