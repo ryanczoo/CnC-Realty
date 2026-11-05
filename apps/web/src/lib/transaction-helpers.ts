@@ -336,3 +336,9 @@ const ESCROW_ROLE_BY_TYPE = { Title: "TITLE", Escrow: "ESCROW", Attorney: "ATTOR
 export function escrowTypeToRole(type: EscrowContactType): "TITLE" | "ESCROW" | "ATTORNEY" {
   return ESCROW_ROLE_BY_TYPE[type];
 }
+
+// Broker Review needs the amount received, which only the amount box collects, so
+// the status dropdown never offers it.
+export function withoutReferralReview(options: string[]): string[] {
+  return options.filter((s) => s !== "REFERRAL_BROKER_REVIEW");
+}

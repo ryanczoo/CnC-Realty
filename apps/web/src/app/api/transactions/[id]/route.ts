@@ -52,6 +52,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   const body = trimStrings(await req.json());
 
+  if (body.status === "REFERRAL_BROKER_REVIEW") {
+    const amount = typeof body.referralAmountReceived === "string" ? body.referralAmountReceived.trim() : body.referralAmountReceived;
+    if (amount === undefined || amount === null || amount === "" || !Number.isFinite(Number(amount))) {
+      return NextResponse.json({ error: "Enter the referral amount received first" }, { status: 400 });
+    }
+  }
+
   const referralFeeUpdate =
     body.status === "REFERRAL_BROKER_REVIEW" && body.referralAmountReceived !== undefined
       ? calcReferralFee(parseFloat(body.referralAmountReceived))

@@ -61,4 +61,12 @@ describe("PATCH /api/admin/files/[fileType]/[id]/status", () => {
     vi.mocked(changeFileStatus).mockResolvedValue({ ok: true, file: {}, emailWarning: true });
     expect(await (await call("transaction", { status: "CLOSED" })).json()).toEqual({ ok: true, emailWarning: true });
   });
+
+  it("refuses REFERRAL_BROKER_REVIEW without an amount and never changes status", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(ADMIN as any);
+    const res = await call("transaction", { status: "REFERRAL_BROKER_REVIEW" });
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("Enter the referral amount received first");
+    expect(changeFileStatus).not.toHaveBeenCalled();
+  });
 });

@@ -6,6 +6,7 @@ import { ArrowIcon } from "@/components/ui/ArrowIcon";
 import { StatusBadge } from "@/components/transactions/StatusBadge";
 import { DocumentReviewCard } from "@/components/transactions/DocumentReviewCard";
 import { FileStatusSelect } from "@/components/transactions/FileStatusSelect";
+import { ReferralActions } from "@/components/transactions/ReferralActions";
 import { ConvertListingButton } from "@/components/transactions/ConvertListingButton";
 import { ActivityFeed } from "@/components/transactions/ActivityFeed";
 import { PartiesTable } from "@/components/transactions/PartiesTable";
@@ -17,7 +18,7 @@ import { UploadFileButton } from "@/components/transactions/UploadFileButton";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { UploadResultLine } from "@/components/ui/UploadResultLine";
 import { AdditionalDocuments } from "@/components/transactions/AdditionalDocuments";
-import { getChecklistProgress, allowedNextStatuses, canDeleteListing, listingStatusOptions, transactionStatusOptions, convertBlockedReason } from "@/lib/transaction-helpers";
+import { getChecklistProgress, allowedNextStatuses, withoutReferralReview, canDeleteListing, listingStatusOptions, transactionStatusOptions, convertBlockedReason } from "@/lib/transaction-helpers";
 import type { FileDocumentRecord, FileChecklistItemWithDocs, ListingFileDetail, TransactionFileDetail } from "@/types/transaction";
 import { EMAIL_WARNING_TEXT } from "@/lib/file-messages";
 import { latestCancellationReason } from "@/lib/activity-detail";
@@ -147,7 +148,7 @@ export default function AdminFileDetailPage() {
     file.status as string,
     ...(isListing
       ? listingStatusOptions(file.status, "ADMIN")
-      : isReferralFile ? allowedNextStatuses(kind, file.status, "ADMIN") : transactionStatusOptions(file.status, "ADMIN")),
+      : isReferralFile ? withoutReferralReview(allowedNextStatuses(kind, file.status, "ADMIN")) : transactionStatusOptions(file.status, "ADMIN")),
   ];
   const { satisfied, required } = getChecklistProgress(file.checklistItems as FileChecklistItemWithDocs[]);
   const progressPct = required > 0 ? Math.round((satisfied / required) * 100) : 0;
@@ -211,6 +212,9 @@ export default function AdminFileDetailPage() {
               <Link href={`/admin/transactions/transaction/${linkedTransactionId}`} className="rounded-full border border-[#1B1B1B]/20 bg-white px-4 py-2 text-sm text-[#1B1B1B] hover:border-[#1B1B1B]/40">
                 View Transaction
               </Link>
+            )}
+            {isReferralFile && transaction && (
+              <ReferralActions transaction={transaction} mode="broker" viewerIsFileAgent={false} onDone={load} />
             )}
             {file.status === "PENDING_TRANSFER" ? (
               <>

@@ -12,6 +12,10 @@ export async function PATCH(req: Request, { params }: { params: { fileType: stri
   const { status } = await req.json();
   if (!status) return NextResponse.json({ error: "status is required" }, { status: 400 });
 
+  if (status === "REFERRAL_BROKER_REVIEW") {
+    return NextResponse.json({ error: "Enter the referral amount received first" }, { status: 400 });
+  }
+
   const result = await changeFileStatus({
     kind: params.fileType === "listing" ? "listing" : "transaction",
     fileId: params.id,

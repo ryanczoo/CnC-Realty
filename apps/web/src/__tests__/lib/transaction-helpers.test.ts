@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { FILE_DETAIL_INCLUDE, calcReferralFee, canTransitionTransaction, pickDisplayPrice, pickDisplayDate, listingStatusOptions, canDeleteListing, convertBlockedReason, sidePartiesReady, commissionReady, clientPartyError, isReadyForPending, transactionStatusOptions, escrowTypeToRole, latestDocument, allowedNextStatuses, canTransitionListing } from "@/lib/transaction-helpers";
+import { FILE_DETAIL_INCLUDE, calcReferralFee, canTransitionTransaction, pickDisplayPrice, pickDisplayDate, listingStatusOptions, canDeleteListing, convertBlockedReason, sidePartiesReady, commissionReady, clientPartyError, isReadyForPending, transactionStatusOptions, escrowTypeToRole, latestDocument, allowedNextStatuses, canTransitionListing, withoutReferralReview } from "@/lib/transaction-helpers";
 
 const REAL_PENDING = {
   before: { commissionPercent: 2.5, commissionAmount: null },
@@ -418,5 +418,11 @@ describe("Year Built / Property Type gates", () => {
 describe("FILE_DETAIL_INCLUDE checklist order", () => {
   it("lists required forms first, then optional ones, each in template order", () => {
     expect(FILE_DETAIL_INCLUDE.checklistItems.orderBy).toEqual([{ isRequired: "desc" }, { order: "asc" }]);
+  });
+});
+
+describe("withoutReferralReview", () => {
+  it("drops REFERRAL_BROKER_REVIEW and keeps the rest", () => {
+    expect(withoutReferralReview(["CLOSED", "REFERRAL_BROKER_REVIEW"])).toEqual(["CLOSED"]);
   });
 });
