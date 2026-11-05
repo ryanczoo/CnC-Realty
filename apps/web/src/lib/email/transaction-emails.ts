@@ -275,6 +275,17 @@ export async function sendCancellationRequested(opts: {
 const CHANGE_LINE_STYLE =
   "color: #4b4b4b; font-size: 15px; line-height: 1.6; text-align: center; margin: 12px 0 0;";
 
+// One <p> per change. "forward" reads label: from → to; "undo" shows a rejected change the other
+// way round (from the rejected value back), since the file went back to its old commission.
+function commissionChangeLines(changes: CommissionChange[], direction: "forward" | "undo"): string {
+  return changes
+    .map((c) => {
+      const [a, b] = direction === "forward" ? [c.from, c.to] : [c.to, c.from];
+      return `<p style="${CHANGE_LINE_STYLE}">${escapeHtml(`${c.label}: ${a} → ${b}`)}</p>`;
+    })
+    .join("");
+}
+
 // An agent changed the commission on a file the broker already approved; the broker
 // approves or rejects the change.
 export async function sendCommissionChangeRequest(opts: {
@@ -286,12 +297,7 @@ export async function sendCommissionChangeRequest(opts: {
   to?: string;
 }): Promise<void> {
   const address = opts.address ?? NO_ADDRESS_LABEL;
-  const changeLines = opts.changes
-    .map(
-      (c) =>
-        `<p style="${CHANGE_LINE_STYLE}">${escapeHtml(`${c.label}: ${c.from} → ${c.to}`)}</p>`,
-    )
-    .join("");
+  const changeLines = commissionChangeLines(opts.changes, "forward");
   const bodyHtml = buildHeadingBodyHtml({
     heading: "Commission Change Request",
     photoUrl: `${process.env.NEXTAUTH_URL}/commission-change-photo.jpg`,
@@ -329,20 +335,13 @@ export async function sendCommissionChangeRejected(opts: {
   changes: CommissionChange[];
 }): Promise<void> {
   const address = opts.address ?? NO_ADDRESS_LABEL;
-  // The change is undone, so show it the other way round: from the rejected value back.
-  const changeLines = opts.changes
-    .map(
-      (c) =>
-        `<p style="${CHANGE_LINE_STYLE}">${escapeHtml(`${c.label}: ${c.to} → ${c.from}`)}</p>`,
-    )
-    .join("");
+  const changeLines = commissionChangeLines(opts.changes, "undo");
   const bodyHtml = buildHeadingBodyHtml({
     heading: "Commission Change Not Approved",
     photoUrl: `${process.env.NEXTAUTH_URL}/document-correction-photo.jpg`,
     bodyHtml: `
       <p style="color: #4b4b4b; font-size: 15px; line-height: 1.6; text-align: center; margin: 0;">
-        Hi ${escapeHtml(opts.agentName)}, your commission change on
-        <strong style="color: #1B1B1B;">${escapeHtml(address)}</strong> was not approved, so the commission is back to what it was.
+        Hi ${escapeHtml(opts.agentName)}, your commission change on <strong style="color: #1B1B1B;">${escapeHtml(address)}</strong> was not approved.
       </p>
       ${changeLines}
       <p style="${CHANGE_LINE_STYLE}">

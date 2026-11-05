@@ -564,6 +564,13 @@ describe("sendCommissionChangeRequest", () => {
     expect(call.html).toContain("this referral file");
     expect(call.subject).toBe("Commission Change Request — this referral file");
   });
+
+  it("escapes a change label in the request email", async () => {
+    await sendCommissionChangeRequest({ fileType: "Transaction", address: "1 Main St", agentName: "Ann", fileId: "t1", changes: [{ label: "A <b>x</b>", from: "1", to: "2" }] });
+    const html = vi.mocked(sendEmail).mock.calls[0][0].html!;
+    expect(html).toContain("A &lt;b&gt;x&lt;/b&gt;: 1 → 2");
+    expect(html).not.toContain("<b>x</b>");
+  });
 });
 
 describe("sendCommissionChangeRejected", () => {
@@ -613,5 +620,36 @@ describe("sendCommissionChangeRejected", () => {
     expect(html).toContain("It&#39;s &lt;b&gt;no&lt;/b&gt;");
     expect(html).not.toContain("&amp;#39;");
     expect(html).toContain("this referral file");
+  });
+
+  it("escapes a change label in the rejection email", async () => {
+    await sendCommissionChangeRejected({ ...base, changes: [{ label: "A <b>x</b>", from: "1", to: "2" }] });
+    const html = vi.mocked(sendEmail).mock.calls[0][0].html!;
+    expect(html).toContain("A &lt;b&gt;x&lt;/b&gt;: 2 → 1");
+    expect(html).not.toContain("<b>x</b>");
+  });
+
+  it("escapes the agent name once in the greeting", async () => {
+    await sendCommissionChangeRejected({ ...base, agentName: "O'Brien" });
+    const html = vi.mocked(sendEmail).mock.calls[0][0].html!;
+    expect(html).toContain("Hi O&#39;Brien, your commission change on");
+    expect(html).not.toContain("&amp;#39;");
+  });
+
+  it("uses the dashed subject with the address", async () => {
+    await sendCommissionChangeRejected({ ...base, address: "11538 Foster Road" });
+    expect(vi.mocked(sendEmail).mock.calls[0][0].subject).toBe("Commission Change Not Approved — 11538 Foster Road");
+  });
+
+  it("a listing rejection links to the listing file page", async () => {
+    await sendCommissionChangeRejected({ ...base, fileType: "Listing", fileId: "l9" });
+    expect(vi.mocked(sendEmail).mock.calls[0][0].html).toContain("/dashboard/transactions/listing/");
+  });
+
+  it("says was not approved. and drops the old back-to-what-it-was wording", async () => {
+    await sendCommissionChangeRejected(base);
+    const html = vi.mocked(sendEmail).mock.calls[0][0].html!;
+    expect(html).toContain("was not approved.");
+    expect(html).not.toContain("back to what it was");
   });
 });
