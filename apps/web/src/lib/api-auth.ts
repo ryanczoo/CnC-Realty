@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isFileReadOnlyFor, type FileKind } from "@/lib/file-lock";
 import { FILE_LOCKED_MESSAGE } from "@/lib/file-messages";
+import { AGENT_VIEW_HEADER } from "@/lib/agent-view";
 
 type Role = "BUYER" | "AGENT" | "ADMIN";
 
@@ -31,6 +32,13 @@ export async function requireAuth(minRole?: "AGENT" | "ADMIN"): Promise<
   }
 
   return { session, error: null };
+}
+
+// An admin in the Agent section sends the agent-view marker and is treated as an
+// agent. The marker only removes rights: a non-admin session never changes.
+export function actingRole(sessionRole: string, req: Request): string {
+  if (sessionRole === "ADMIN" && req.headers.get(AGENT_VIEW_HEADER) === "1") return "AGENT";
+  return sessionRole;
 }
 
 export function checkOwnership<T extends { agentId: string | null }>(
