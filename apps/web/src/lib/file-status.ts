@@ -8,6 +8,7 @@ import {
   isReadyForPending,
   CHECKLIST_ITEMS_WITH_DOCS_INCLUDE,
 } from "@/lib/transaction-helpers";
+import { REVIEW_WAIT_MESSAGE, PENDING_COMMISSION_MESSAGE, reviewExitStatus, isFinishingStatus } from "@/lib/file-lock";
 import { sendFileClosed } from "@/lib/email/transaction-emails";
 import { sendSafely } from "@/lib/email/send-safely";
 import type { ListingStatus, TransactionFileStatus, FileChecklistItemWithDocs } from "@/types/transaction";
@@ -21,6 +22,8 @@ export type ChangeFileStatusArgs = {
   // Extra details for the STATUS_CHANGED activity, e.g. { automatic: true } or a
   // cancellation reason.
   activityPayloadExtra?: Record<string, unknown>;
+  // A system-made change (e.g. the automatic move to Pending). Never blocked by Awaiting Review.
+  automatic?: boolean;
 };
 
 export type ChangeFileStatusResult =
@@ -37,6 +40,7 @@ export async function changeFileStatus({
   actor,
   extraData = {},
   activityPayloadExtra = {},
+  automatic = false,
 }: ChangeFileStatusArgs): Promise<ChangeFileStatusResult> {
   const isListing = kind === "listing";
 
@@ -53,6 +57,14 @@ export async function changeFileStatus({
     : canTransitionTransaction(file.status as TransactionFileStatus, toStatus as TransactionFileStatus, actor.role);
   if (!allowed) {
     return { ok: false, status: 400, error: `Cannot transition from ${file.status} to ${toStatus}` };
+  }
+  // While the broker reviews a file the agent can only withdraw / request cancellation.
+  if (actor.role === "AGENT" && file.awaitingReview && !automatic && toStatus !== reviewExitStatus(kind)) {
+    return { ok: false, status: 400, error: REVIEW_WAIT_MESSAGE };
+  }
+  // A pending commission change must be decided before any file-finishing status (any role).
+  if (file.pendingCommission && isFinishingStatus(kind, toStatus)) {
+    return { ok: false, status: 400, error: PENDING_COMMISSION_MESSAGE };
   }
   // Pending means the deal is fully described (isReadyForPending); only the broker
   // can override that.
@@ -74,11 +86,16 @@ export async function changeFileStatus({
 
   // extraData may never set the status or Awaiting Review: only the target status and
   // the actor decide those.
-  const { awaitingReview: _ignoredAwaitingReview, status: _ignoredStatus, ...safeExtra } = extraData;
+  const {
+    awaitingReview: _ignoredAwaitingReview, status: _ignoredStatus,
+    pendingCommission: _ignoredPendingCommission, reviewSubmittedAt: _ignoredReviewSubmittedAt,
+    ...safeExtra
+  } = extraData;
   const data = {
     ...safeExtra,
     status: toStatus,
-    ...(actor.role === "ADMIN" && { awaitingReview: false }),
+    // The broker's change ends the review, unless a commission change is still waiting for a decision.
+    ...(actor.role === "ADMIN" && !file.pendingCommission && { awaitingReview: false }),
   };
   const activityData = {
     fileType: isListing ? ("LISTING" as const) : ("TRANSACTION" as const),
@@ -162,5 +179,5 @@ export async function maybeAutoPending(transactionId: string, actor: ChangeFileS
   });
   if (!tx || (tx.status !== "INCOMPLETE" && tx.status !== "PRE_CONTRACT")) return;
   if (!isReadyForPending(tx, tx.parties)) return;
-  await changeFileStatus({ kind: "transaction", fileId: transactionId, toStatus: "PENDING", actor, activityPayloadExtra: { automatic: true } });
+  await changeFileStatus({ kind: "transaction", fileId: transactionId, toStatus: "PENDING", actor, automatic: true, activityPayloadExtra: { automatic: true } });
 }

@@ -4,7 +4,10 @@ vi.mock("next-auth", () => ({ getServerSession: vi.fn() }));
 vi.mock("@/lib/auth", () => ({ authOptions: {} }));
 vi.mock("@/lib/prisma", () => ({ prisma: {} }));
 
-import { isFileLocked, isFileReadOnlyFor, isCommissionLockedFor } from "@/lib/file-lock";
+import {
+  isFileLocked, isFileReadOnlyFor, isCommissionLockedFor,
+  REVIEW_WAIT_MESSAGE, PENDING_COMMISSION_MESSAGE, reviewExitStatus, isFinishingStatus, statusOptionsDuringReview,
+} from "@/lib/file-lock";
 import { assertFileEditable } from "@/lib/api-auth";
 import { FILE_LOCKED_MESSAGE, EMAIL_WARNING_TEXT } from "@/lib/file-messages";
 
@@ -74,5 +77,33 @@ describe("isCommissionLockedFor (agents can't change commission during broker re
     expect(isCommissionLockedFor(true, "ADMIN")).toBe(false);
     expect(isCommissionLockedFor(false, "AGENT")).toBe(false);
     expect(isCommissionLockedFor(undefined, "AGENT")).toBe(false);
+  });
+});
+
+describe("review-time status rules", () => {
+  it("uses the exact copy", () => {
+    expect(REVIEW_WAIT_MESSAGE).toBe("Waiting for broker review");
+    expect(PENDING_COMMISSION_MESSAGE).toBe("Approve or reject the commission change first");
+  });
+  it("names the one status an agent may pick during review", () => {
+    expect(reviewExitStatus("listing")).toBe("WITHDRAWN");
+    expect(reviewExitStatus("transaction")).toBe("CANCELED_PENDING");
+  });
+  it.each(["CLOSED", "CANCELED"])("treats listing %s as finishing", (s) => {
+    expect(isFinishingStatus("listing", s)).toBe(true);
+  });
+  it.each(["ACTIVE", "COMING_SOON", "WITHDRAWN", "EXPIRED", "CANCELED_APPROVED"])("does not treat listing %s as finishing", (s) => {
+    expect(isFinishingStatus("listing", s)).toBe(false);
+  });
+  it.each(["CLOSED", "CANCELED_APPROVED"])("treats transaction %s as finishing", (s) => {
+    expect(isFinishingStatus("transaction", s)).toBe(true);
+  });
+  it.each(["PENDING", "CANCELED_PENDING", "CANCELED", "ARCHIVED"])("does not treat transaction %s as finishing", (s) => {
+    expect(isFinishingStatus("transaction", s)).toBe(false);
+  });
+  it("keeps only the exit status of the offered options", () => {
+    expect(statusOptionsDuringReview("listing", ["COMING_SOON", "WITHDRAWN", "EXPIRED"])).toEqual(["WITHDRAWN"]);
+    expect(statusOptionsDuringReview("transaction", ["PRE_CONTRACT", "CANCELED_PENDING"])).toEqual(["CANCELED_PENDING"]);
+    expect(statusOptionsDuringReview("transaction", ["PRE_CONTRACT"])).toEqual([]);
   });
 });

@@ -19,3 +19,22 @@ export function isFileReadOnlyFor(kind: FileKind, status: string | null | undefi
 export function isCommissionLockedFor(awaitingReview: boolean | null | undefined, role: string): boolean {
   return !!awaitingReview && role !== "ADMIN";
 }
+
+export const REVIEW_WAIT_MESSAGE = "Waiting for broker review";
+export const PENDING_COMMISSION_MESSAGE = "Approve or reject the commission change first";
+
+// The one status an agent may still pick while the broker reviews a file.
+export function reviewExitStatus(kind: FileKind): string {
+  return kind === "listing" ? "WITHDRAWN" : "CANCELED_PENDING";
+}
+
+// The statuses that finish a file; refused (any role) while a commission change is pending.
+export function isFinishingStatus(kind: FileKind, toStatus: string): boolean {
+  return kind === "listing"
+    ? toStatus === "CLOSED" || toStatus === "CANCELED"
+    : toStatus === "CLOSED" || toStatus === "CANCELED_APPROVED";
+}
+
+export function statusOptionsDuringReview(kind: FileKind, options: string[]): string[] {
+  return options.filter((s) => s === reviewExitStatus(kind));
+}

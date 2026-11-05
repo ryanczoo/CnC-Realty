@@ -337,3 +337,97 @@ describe("changeFileStatus: a listing past its expiration can't be made Active o
     expect((await changeFileStatus({ kind: "listing", fileId: "l1", toStatus: "ACTIVE", actor: ADMIN })).ok).toBe(true);
   });
 });
+
+describe("changeFileStatus: while a file awaits review", () => {
+  const listing = (over: Record<string, unknown> = {}) => ({
+    id: "l1", agentId: "a1", status: "ACTIVE", checklistItems: [],
+    listDate: new Date("2020-01-01T00:00:00.000Z"), expirationDate: new Date("2099-01-01T00:00:00.000Z"), ...over,
+  });
+
+  it("refuses an agent's other status changes, writing nothing", async () => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(listing({ awaitingReview: true }) as any);
+    const r = await changeFileStatus({ kind: "listing", fileId: "l1", toStatus: "COMING_SOON", actor: AGENT });
+    expect(r).toEqual({ ok: false, status: 400, error: "Waiting for broker review" });
+    expect(prisma.listingFile.update).not.toHaveBeenCalled();
+    expect(prisma.fileActivity.create).not.toHaveBeenCalled();
+  });
+
+  it("lets an agent withdraw a flagged listing", async () => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(listing({ awaitingReview: true }) as any);
+    const r = await changeFileStatus({ kind: "listing", fileId: "l1", toStatus: "WITHDRAWN", actor: AGENT });
+    expect(r.ok).toBe(true);
+    expect(prisma.listingFile.update).toHaveBeenCalled();
+  });
+
+  it("lets an agent request cancellation of a flagged transaction", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx({ awaitingReview: true }) as any);
+    const r = await changeFileStatus({ kind: "transaction", fileId: "f1", toStatus: "CANCELED_PENDING", actor: AGENT });
+    expect(r.ok).toBe(true);
+    expect(prisma.transactionFile.update).toHaveBeenCalled();
+  });
+
+  const COMPLETE_FLAGGED = { transactionSide: "LISTING", salePrice: 900000, acceptanceDate: new Date("2026-09-20"), closeOfEscrow: new Date("2026-10-20"), listingCommissionPct: 2.5, propertyType: "Condo", yearBuilt: 1990, parties: [{ role: "SELLER", name: "Sam" }] };
+
+  it("never blocks an automatic change", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx({ status: "PRE_CONTRACT", awaitingReview: true, ...COMPLETE_FLAGGED }) as any);
+    const r = await changeFileStatus({ kind: "transaction", fileId: "f1", toStatus: "PENDING", actor: AGENT, automatic: true });
+    expect(r.ok).toBe(true);
+  });
+
+  it("maybeAutoPending still moves a flagged, complete transaction to Pending", async () => {
+    const COMPLETE = { transactionSide: "LISTING", salePrice: 900000, acceptanceDate: new Date("2026-09-20"), closeOfEscrow: new Date("2026-10-20"), listingCommissionPct: 2.5, propertyType: "Condo", yearBuilt: 1990, parties: [{ role: "SELLER", name: "Sam" }] };
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx({ status: "PRE_CONTRACT", awaitingReview: true, ...COMPLETE }) as any);
+    await maybeAutoPending("f1", AGENT);
+    expect(prisma.transactionFile.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: "PENDING" }) }));
+  });
+});
+
+describe("changeFileStatus: while a commission change is pending", () => {
+  const PENDING_MSG = { ok: false, status: 400, error: "Approve or reject the commission change first" };
+  const pendingChange = { saleCommissionPct: 3 };
+  const listing = (over: Record<string, unknown> = {}) => ({
+    id: "l1", agentId: "a1", status: "ACTIVE", checklistItems: [], awaitingReview: true, pendingCommission: pendingChange,
+    listDate: new Date("2020-01-01T00:00:00.000Z"), expirationDate: new Date("2099-01-01T00:00:00.000Z"), ...over,
+  });
+
+  it.each(["CLOSED", "CANCELED_APPROVED"])("refuses an admin moving a transaction to %s", async (toStatus) => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx({ awaitingReview: true, pendingCommission: pendingChange }) as any);
+    const r = await changeFileStatus({ kind: "transaction", fileId: "f1", toStatus, actor: ADMIN });
+    expect(r).toEqual(PENDING_MSG);
+    expect(prisma.transactionFile.update).not.toHaveBeenCalled();
+  });
+
+  it("refuses an admin canceling a listing", async () => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(listing() as any);
+    const r = await changeFileStatus({ kind: "listing", fileId: "l1", toStatus: "CANCELED", actor: ADMIN });
+    expect(r).toEqual(PENDING_MSG);
+    expect(prisma.listingFile.update).not.toHaveBeenCalled();
+  });
+
+  it("allows an admin's other change but keeps the Awaiting Review flag", async () => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(listing() as any);
+    const r = await changeFileStatus({ kind: "listing", fileId: "l1", toStatus: "COMING_SOON", actor: ADMIN });
+    expect(r.ok).toBe(true);
+    const data = vi.mocked(prisma.listingFile.update).mock.calls[0][0].data as Record<string, unknown>;
+    expect(data).not.toHaveProperty("awaitingReview");
+    expect(data.status).toBe("COMING_SOON");
+  });
+
+  it("clears Awaiting Review for an admin when nothing is pending", async () => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(listing({ pendingCommission: null }) as any);
+    await changeFileStatus({ kind: "listing", fileId: "l1", toStatus: "COMING_SOON", actor: ADMIN });
+    expect(vi.mocked(prisma.listingFile.update).mock.calls[0][0].data).toMatchObject({ status: "COMING_SOON", awaitingReview: false });
+  });
+
+  it("drops pendingCommission and reviewSubmittedAt from extraData", async () => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(listing({ pendingCommission: null, awaitingReview: false }) as any);
+    await changeFileStatus({
+      kind: "listing", fileId: "l1", toStatus: "COMING_SOON", actor: AGENT,
+      extraData: { pendingCommission: { x: 1 }, reviewSubmittedAt: new Date(), note: "ok" },
+    });
+    const data = vi.mocked(prisma.listingFile.update).mock.calls[0][0].data as Record<string, unknown>;
+    expect(data).not.toHaveProperty("pendingCommission");
+    expect(data).not.toHaveProperty("reviewSubmittedAt");
+    expect(data.note).toBe("ok");
+  });
+});
