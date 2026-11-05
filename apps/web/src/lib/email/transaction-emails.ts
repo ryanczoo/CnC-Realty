@@ -1,6 +1,6 @@
 import { emailLayout, escapeHtml, buildHeadingBodyHtml } from "@/lib/email";
 import { sendEmail } from "@/lib/email/send";
-import type { CommissionChange } from "@/lib/commission-review";
+import type { CommissionChange } from "@/types/transaction";
 
 const BROKER_EMAIL = "info@cncrealtygroup.com";
 

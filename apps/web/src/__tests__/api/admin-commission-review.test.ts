@@ -231,6 +231,43 @@ describe("POST commission-review - reject", () => {
     expect(sendCommissionChangeRejected).toHaveBeenCalledWith(expect.objectContaining({ fileType: "Transaction" }));
   });
 
+  it("restores a flat-$ transaction commission: the % goes back to empty and the GCI is the old dollars", async () => {
+    const flatBefore = { saleCommissionPct: null, saleCommissionAmount: 8000, listingCommissionPct: null, listingCommissionAmount: null };
+    mockFile("transaction", tx({ pendingCommission: { ...TX_PENDING, before: flatBefore } }));
+    await call("transaction", { decision: "reject", reason: "Back to flat" });
+    const data = vi.mocked(prisma.transactionFile.updateMany).mock.calls[0][0].data as Record<string, unknown>;
+    expect(data.saleCommissionPct).toBeNull();
+    expect(data.saleCommissionAmount).toBe(8000);
+    expect(data.listingCommissionAmount).toBeNull();
+    expect(data.commissionGCI).toBe(8000);
+  });
+
+  it("restores a lease commission from the lease amount and recomputes the GCI", async () => {
+    const leaseBefore = { saleCommissionPct: 10, saleCommissionAmount: null, listingCommissionPct: null, listingCommissionAmount: null };
+    mockFile("transaction", tx({
+      transactionSide: "LEASE_TENANT", salePrice: null, leasePrice: 3000,
+      saleCommissionPct: 8, saleCommissionAmount: 240,
+      pendingCommission: { ...TX_PENDING, before: leaseBefore },
+    }));
+    await call("transaction", { decision: "reject", reason: "Back to 10%" });
+    const data = vi.mocked(prisma.transactionFile.updateMany).mock.calls[0][0].data as Record<string, unknown>;
+    expect(data.saleCommissionPct).toBe(10);
+    expect(data.saleCommissionAmount).toBe(300);
+    expect(data.commissionGCI).toBe(300);
+  });
+
+  it("writes the rejection to a transaction's activity log against the transaction file", async () => {
+    mockFile("transaction", tx());
+    await call("transaction", { decision: "reject", reason: "Back to 3%" });
+    expect(prisma.fileActivity.create).toHaveBeenCalledTimes(1);
+    const { data } = vi.mocked(prisma.fileActivity.create).mock.calls[0][0] as { data: Record<string, unknown> };
+    expect(data).toMatchObject({
+      type: "COMMISSION_CHANGE_REJECTED", fileType: "TRANSACTION", transactionFileId: "f1",
+      actorId: "admin1", actorRole: "ADMIN", payload: { changes: TX_PENDING.changes, reason: "Back to 3%" },
+    });
+    expect(data).not.toHaveProperty("listingFileId");
+  });
+
   it("keeps the flag on reject when a document is still unapproved", async () => {
     mockFile("listing", listing({ checklistItems: [openItem] }));
     await call("listing", { decision: "reject", reason: "No" });

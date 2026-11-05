@@ -7,6 +7,7 @@ import {
   hasPendingCommission,
 } from "@/lib/commission-review";
 import type { FileChecklistItemWithDocs } from "@/types/transaction";
+import { REAL_PENDING } from "../fixtures/files";
 
 const item = (isRequired: boolean, status: "APPROVED" | "PENDING" | null): FileChecklistItemWithDocs =>
   ({
@@ -53,10 +54,32 @@ describe("buildPendingCommission", () => {
   });
 });
 
+describe("buildPendingCommission for a transaction", () => {
+  const changes = [{ label: "Selling Agent Commission", from: "3%", to: "2%" }];
+  it("keeps the four transaction commission fields, fills missing with null, drops the rest", () => {
+    expect(
+      buildPendingCommission(
+        "transaction",
+        { saleCommissionPct: 3, saleCommissionAmount: 15000, listingCommissionPct: null, salePrice: 500000, city: "X" },
+        changes,
+        new Date("2026-11-04T00:00:00Z"),
+      ),
+    ).toEqual({
+      before: { saleCommissionPct: 3, saleCommissionAmount: 15000, listingCommissionPct: null, listingCommissionAmount: null },
+      changes,
+      requestedAt: "2026-11-04T00:00:00.000Z",
+    });
+  });
+});
+
 describe("isAfterReview", () => {
   const d = new Date("2026-11-04T00:00:00Z");
   it("false when never submitted", () => {
     expect(isAfterReview({ reviewSubmittedAt: null })).toBe(false);
+  });
+  it("treats an undefined awaitingReview (field not loaded) as cleared", () => {
+    expect(isAfterReview({ reviewSubmittedAt: d, awaitingReview: undefined })).toBe(true);
+    expect(isAfterReview({ reviewSubmittedAt: d })).toBe(true);
   });
   it("false while still awaiting review", () => {
     expect(isAfterReview({ reviewSubmittedAt: d, awaitingReview: true })).toBe(false);
@@ -65,12 +88,6 @@ describe("isAfterReview", () => {
     expect(isAfterReview({ reviewSubmittedAt: d, awaitingReview: false })).toBe(true);
   });
 });
-
-const REAL_PENDING = {
-  before: { commissionPercent: 2.5, commissionAmount: null },
-  changes: [{ label: "Commission", from: "2.5%", to: "2%" }],
-  requestedAt: "2026-10-02T00:00:00.000Z",
-};
 
 describe("hasPendingCommission", () => {
   it("is false for null, undefined, {}, and an empty changes list", () => {

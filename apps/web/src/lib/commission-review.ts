@@ -1,17 +1,6 @@
 import { isReadyToClose } from "@/lib/transaction-helpers";
 import { LISTING_COMMISSION, TX_COMMISSION } from "@/lib/file-edit";
-import type { FileChecklistItemWithDocs } from "@/types/transaction";
-
-// Same shape commissionChanges() in lib/file-edit.ts returns.
-export type CommissionChange = { label: string; from: string; to: string };
-
-// A commission change an agent asked for after the broker approved a file. The file
-// keeps its old commission (`before`) until the broker approves or rejects.
-export type PendingCommission = {
-  before: Record<string, number | null>;
-  changes: CommissionChange[];
-  requestedAt: string;
-};
+import type { CommissionChange, FileChecklistItemWithDocs, PendingCommission } from "@/types/transaction";
 
 export function commissionFields(kind: "listing" | "transaction"): readonly string[] {
   return kind === "listing" ? LISTING_COMMISSION : TX_COMMISSION;

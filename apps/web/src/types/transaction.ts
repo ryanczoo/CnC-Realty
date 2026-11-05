@@ -1,4 +1,13 @@
-import type { PendingCommission } from "@/lib/commission-review";
+// Same shape commissionChanges() in lib/file-edit.ts returns.
+export type CommissionChange = { label: string; from: string; to: string };
+
+// A commission change an agent asked for after the broker approved a file. The file
+// keeps its old commission (`before`) until the broker approves or rejects.
+export type PendingCommission = {
+  before: Record<string, number | null>;
+  changes: CommissionChange[];
+  requestedAt: string;
+};
 
 export type ListingStatus =
   | "INCOMPLETE" | "PENDING_TRANSFER" | "COMING_SOON" | "ACTIVE" | "ACTIVE_UNDER_CONTRACT"

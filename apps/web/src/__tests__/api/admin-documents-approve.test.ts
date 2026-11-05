@@ -21,12 +21,7 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { sendAllDocsApproved } from "@/lib/email/transaction-emails";
 import { POST } from "../../app/api/admin/documents/[id]/approve/route";
-
-const REAL_PENDING = {
-  before: { commissionPercent: 2.5, commissionAmount: null },
-  changes: [{ label: "Commission", from: "2.5%", to: "2%" }],
-  requestedAt: "2026-10-02T00:00:00.000Z",
-};
+import { REAL_PENDING } from "../fixtures/files";
 
 describe("POST /api/admin/documents/[id]/approve — PENDING_TRANSFER unlock", () => {
   beforeEach(() => vi.clearAllMocks());
@@ -200,6 +195,22 @@ describe("POST /api/admin/documents/[id]/approve — Awaiting Review badge clear
     await call("d4");
 
     expect(prisma.listingFile.update).not.toHaveBeenCalled();
+  });
+
+  it("keeps the badge on a transaction when a commission change is still pending", async () => {
+    admin();
+    vi.mocked(prisma.fileDocument.findUnique).mockResolvedValue({
+      id: "d4t", fileType: "TRANSACTION", listingFileId: null, transactionFileId: "t4", checklistItemId: "c1", name: "a.pdf",
+    } as any);
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({ id: "t4", status: "PENDING", pendingCommission: REAL_PENDING, ...fileFields } as any);
+    vi.mocked(prisma.fileChecklistItem.findMany).mockResolvedValue([]);
+
+    await call("d4t");
+
+    expect(prisma.transactionFile.update).not.toHaveBeenCalled();
+    expect(prisma.listingFile.update).not.toHaveBeenCalled();
+    // the agent still gets the all-approved email
+    expect(sendAllDocsApproved).toHaveBeenCalled();
   });
 
   it("clears the badge when the stored pendingCommission is {} (not a real change)", async () => {

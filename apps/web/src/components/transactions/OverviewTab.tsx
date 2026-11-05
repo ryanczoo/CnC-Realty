@@ -2,7 +2,7 @@
 import { useFileFetch } from "./AgentViewContext";
 import { InfoRow, type InfoRowEdit } from "./InfoRow";
 import { CommissionReviewBlock } from "./CommissionReviewBlock";
-import type { PendingCommission } from "@/lib/commission-review";
+import type { PendingCommission } from "@/types/transaction";
 import { formatDateOnly } from "@/lib/utils";
 import { saveFileField, saveFileFields, changeRepresentation } from "@/lib/file-actions";
 import { representationPencilSides } from "@/lib/representation";

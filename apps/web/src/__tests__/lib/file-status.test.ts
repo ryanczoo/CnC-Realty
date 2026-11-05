@@ -15,6 +15,7 @@ vi.mock("@/lib/prisma", () => ({
 import { prisma } from "@/lib/prisma";
 import { sendFileClosed } from "@/lib/email/transaction-emails";
 import { changeFileStatus, maybeAutoPending } from "@/lib/file-status";
+import { COMPLETE_TRANSACTION as COMPLETE } from "../fixtures/files";
 
 const READY = [{ isRequired: true, documents: [{ reviewStatus: "APPROVED" }] }];
 const NOT_READY = [{ isRequired: true, documents: [{ reviewStatus: "PENDING_REVIEW" }] }];
@@ -272,8 +273,6 @@ describe("changeFileStatus: keeps the originating listing in step", () => {
 });
 
 describe("changeFileStatus: Pending needs a complete transaction", () => {
-  const COMPLETE = { transactionSide: "LISTING", salePrice: 900000, acceptanceDate: new Date("2026-09-20"), closeOfEscrow: new Date("2026-10-20"), listingCommissionPct: 2.5, propertyType: "Condo", yearBuilt: 1990, parties: [{ role: "SELLER", name: "Sam" }] };
-
   it("refuses an agent moving an incomplete transaction to Pending", async () => {
     vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx({ status: "INCOMPLETE", ...COMPLETE, closeOfEscrow: null }) as any);
     const res = await changeFileStatus({ kind: "transaction", fileId: "f1", toStatus: "PENDING", actor: AGENT });
@@ -296,8 +295,6 @@ describe("changeFileStatus: Pending needs a complete transaction", () => {
 });
 
 describe("maybeAutoPending", () => {
-  const COMPLETE = { transactionSide: "LISTING", salePrice: 900000, acceptanceDate: new Date("2026-09-20"), closeOfEscrow: new Date("2026-10-20"), listingCommissionPct: 2.5, propertyType: "Condo", yearBuilt: 1990, parties: [{ role: "SELLER", name: "Sam" }] };
-
   it.each(["INCOMPLETE", "PRE_CONTRACT"])("moves a complete %s transaction to Pending, logged as automatic", async (status) => {
     vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx({ status, ...COMPLETE }) as any);
     await maybeAutoPending("f1", AGENT);
@@ -359,6 +356,14 @@ describe("changeFileStatus: while a file awaits review", () => {
     expect(prisma.listingFile.update).toHaveBeenCalled();
   });
 
+  it("refuses an agent's other status changes on a flagged transaction, writing nothing", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx({ awaitingReview: true }) as any);
+    const r = await changeFileStatus({ kind: "transaction", fileId: "f1", toStatus: "REFERRAL_SUCCESSFUL", actor: AGENT });
+    expect(r).toEqual({ ok: false, status: 400, error: "Waiting for broker review" });
+    expect(prisma.transactionFile.update).not.toHaveBeenCalled();
+    expect(prisma.fileActivity.create).not.toHaveBeenCalled();
+  });
+
   it("lets an agent request cancellation of a flagged transaction", async () => {
     vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx({ awaitingReview: true }) as any);
     const r = await changeFileStatus({ kind: "transaction", fileId: "f1", toStatus: "CANCELED_PENDING", actor: AGENT });
@@ -366,16 +371,13 @@ describe("changeFileStatus: while a file awaits review", () => {
     expect(prisma.transactionFile.update).toHaveBeenCalled();
   });
 
-  const COMPLETE_FLAGGED = { transactionSide: "LISTING", salePrice: 900000, acceptanceDate: new Date("2026-09-20"), closeOfEscrow: new Date("2026-10-20"), listingCommissionPct: 2.5, propertyType: "Condo", yearBuilt: 1990, parties: [{ role: "SELLER", name: "Sam" }] };
-
   it("never blocks an automatic change", async () => {
-    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx({ status: "PRE_CONTRACT", awaitingReview: true, ...COMPLETE_FLAGGED }) as any);
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx({ status: "PRE_CONTRACT", awaitingReview: true, ...COMPLETE }) as any);
     const r = await changeFileStatus({ kind: "transaction", fileId: "f1", toStatus: "PENDING", actor: AGENT, automatic: true });
     expect(r.ok).toBe(true);
   });
 
   it("an automatic move by an admin actor leaves the Awaiting Review flag alone", async () => {
-    const COMPLETE = { transactionSide: "LISTING", salePrice: 900000, acceptanceDate: new Date("2026-09-20"), closeOfEscrow: new Date("2026-10-20"), listingCommissionPct: 2.5, propertyType: "Condo", yearBuilt: 1990, parties: [{ role: "SELLER", name: "Sam" }] };
     vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx({ status: "PRE_CONTRACT", awaitingReview: true, ...COMPLETE }) as any);
     await maybeAutoPending("f1", ADMIN);
     const data = vi.mocked(prisma.transactionFile.update).mock.calls[0][0].data as Record<string, unknown>;
@@ -384,7 +386,6 @@ describe("changeFileStatus: while a file awaits review", () => {
   });
 
   it("maybeAutoPending still moves a flagged, complete transaction to Pending", async () => {
-    const COMPLETE = { transactionSide: "LISTING", salePrice: 900000, acceptanceDate: new Date("2026-09-20"), closeOfEscrow: new Date("2026-10-20"), listingCommissionPct: 2.5, propertyType: "Condo", yearBuilt: 1990, parties: [{ role: "SELLER", name: "Sam" }] };
     vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx({ status: "PRE_CONTRACT", awaitingReview: true, ...COMPLETE }) as any);
     await maybeAutoPending("f1", AGENT);
     expect(prisma.transactionFile.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: "PENDING" }) }));
@@ -408,6 +409,13 @@ describe("changeFileStatus: while a commission change is pending", () => {
     const r = await changeFileStatus({ kind: "transaction", fileId: "f1", toStatus, actor: ADMIN });
     expect(r).toEqual(PENDING_MSG);
     expect(prisma.transactionFile.update).not.toHaveBeenCalled();
+  });
+
+  it("does not make an unflagged file wait: an agent's change goes through when only a commission change is pending", async () => {
+    vi.mocked(prisma.listingFile.findUnique).mockResolvedValue(listing({ awaitingReview: false }) as any);
+    const r = await changeFileStatus({ kind: "listing", fileId: "l1", toStatus: "COMING_SOON", actor: AGENT });
+    expect(r.ok).toBe(true);
+    expect(prisma.listingFile.update).toHaveBeenCalled();
   });
 
   it("refuses an admin canceling a listing", async () => {

@@ -15,6 +15,7 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { sendSubmitForReview } from "@/lib/email/transaction-emails";
 import { POST } from "../../app/api/transactions/[id]/submit-review/route";
+import { AGENT_SESSION, APPROVED_ITEMS, PENDING_ITEMS, REAL_PENDING } from "../fixtures/files";
 
 const TX = {
   id: "tf1",
@@ -22,12 +23,6 @@ const TX = {
   propertyAddress: "123 Main St",
   checklistItems: [],
   agent: { user: { name: "Agent One" } },
-};
-
-const REAL_PENDING = {
-  before: { commissionPercent: 2.5, commissionAmount: null },
-  changes: [{ label: "Commission", from: "2.5%", to: "2%" }],
-  requestedAt: "2026-10-02T00:00:00.000Z",
 };
 
 describe("POST /api/transactions/[id]/submit-review — ownership", () => {
@@ -70,10 +65,6 @@ describe("POST /api/transactions/[id]/submit-review — ownership", () => {
   });
 });
 
-
-const PENDING_ITEMS = [{ id: "i1", isRequired: true, documents: [{ id: "d1", reviewStatus: "PENDING_REVIEW" }] }];
-const APPROVED_ITEMS = [{ id: "i1", isRequired: true, documents: [{ id: "d1", reviewStatus: "APPROVED" }] }];
-const AGENT_SESSION = { user: { id: "u1", role: "AGENT", agentId: "a1" } } as any;
 
 describe("POST /api/transactions/[id]/submit-review — review submission", () => {
   beforeEach(() => {

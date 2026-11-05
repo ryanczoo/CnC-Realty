@@ -2,7 +2,8 @@
 import { useState } from "react";
 import { ApproveRejectButtons, RejectReasonForm } from "@/components/ui/ApproveReject";
 import { REVIEW_WAIT_MESSAGE } from "@/lib/file-lock";
-import { hasPendingCommission, type PendingCommission } from "@/lib/commission-review";
+import { hasPendingCommission } from "@/lib/commission-review";
+import type { PendingCommission } from "@/types/transaction";
 
 // The small block under a file's commission rows on the Overview. Shared by
 // the agent and broker pages: both see the pending change lines; the broker
