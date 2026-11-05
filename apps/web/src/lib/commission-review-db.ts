@@ -1,9 +1,9 @@
 import { Prisma } from "@cnc/database";
 import { prisma } from "@/lib/prisma";
-import { commissionChanges } from "@/lib/file-edit";
+import { commissionChanges, transactionCommissionEdit } from "@/lib/file-edit";
 import { buildPendingCommission, isAfterReview, type PendingCommission } from "@/lib/commission-review";
 import { CHECKLIST_ITEMS_WITH_DOCS_INCLUDE, isReadyToClose } from "@/lib/transaction-helpers";
-import { sendCommissionChangeRequest } from "@/lib/email/transaction-emails";
+import { sendCommissionChangeRequest, sendCommissionChangeRejected } from "@/lib/email/transaction-emails";
 import { sendSafely } from "@/lib/email/send-safely";
 import type { FileChecklistItemWithDocs } from "@/types/transaction";
 
@@ -114,6 +114,77 @@ export async function afterCommissionSave(
   ) as unknown as Record<string, unknown>;
   await finishCommissionReview(followUp, kind, fileId, before, actor);
   return written;
+}
+
+export type ResolveResult =
+  | { ok: true; file: Record<string, unknown>; emailWarning?: boolean }
+  | { ok: false; status: number; error: string };
+
+// The broker decides a commission change an agent asked for after approval.
+// Approve keeps the new commission; reject puts back the old one (a transaction
+// recomputes its dollar amounts and GCI the way a normal save does). Either way the
+// pending change is cleared, and so is the review flag if every required document
+// is approved. The commission restore, the clear and the flag go in ONE update, so a
+// failure cannot half-apply; the activity row and the email follow only once it
+// has succeeded.
+export async function resolveCommissionChange(
+  kind: Kind,
+  fileId: string,
+  decision: { approve: true } | { approve: false; reason: string },
+  actor: Actor,
+): Promise<ResolveResult> {
+  const include = { checklistItems: CHECKLIST_ITEMS_WITH_DOCS_INCLUDE, agent: { include: { user: true } } };
+  const file = (kind === "listing"
+    ? await prisma.listingFile.findUnique({ where: { id: fileId }, include })
+    : await prisma.transactionFile.findUnique({ where: { id: fileId }, include })
+  ) as unknown as (FileRow & {
+    checklistItems: unknown;
+    agent?: { user?: { email: string; name: string | null } | null } | null;
+  }) | null;
+  if (!file) return { ok: false, status: 404, error: "File not found" };
+
+  const pending = file.pendingCommission as PendingCommission | null | undefined;
+  if (!pending) return { ok: false, status: 400, error: "There's no commission change to review" };
+
+  const ready = isReadyToClose(file.checklistItems as unknown as FileChecklistItemWithDocs[]);
+  const restore = decision.approve
+    ? {}
+    : kind === "listing"
+      ? { commissionPercent: pending.before.commissionPercent ?? null, commissionAmount: pending.before.commissionAmount ?? null }
+      : transactionCommissionEdit(pending.before, file as Parameters<typeof transactionCommissionEdit>[1]);
+  const data = { ...restore, pendingCommission: Prisma.DbNull, ...(ready && { awaitingReview: false }) };
+
+  const written = (kind === "listing"
+    ? await prisma.listingFile.update({ where: { id: fileId }, data: data as Prisma.ListingFileUpdateInput })
+    : await prisma.transactionFile.update({ where: { id: fileId }, data: data as Prisma.TransactionFileUpdateInput })
+  ) as unknown as Record<string, unknown>;
+
+  await prisma.fileActivity.create({
+    data: {
+      fileType: kind === "listing" ? "LISTING" : "TRANSACTION",
+      ...(kind === "listing" ? { listingFileId: fileId } : { transactionFileId: fileId }),
+      actorId: actor.userId,
+      actorRole: actor.role,
+      type: decision.approve ? "COMMISSION_CHANGE_APPROVED" : "COMMISSION_CHANGE_REJECTED",
+      payload: decision.approve ? { changes: pending.changes } : { changes: pending.changes, reason: decision.reason },
+    },
+  });
+
+  let emailFailed = false;
+  const agentUser = file.agent?.user;
+  if (!decision.approve && agentUser) {
+    const { failed } = await sendSafely(() => sendCommissionChangeRejected({
+      agentEmail: agentUser.email,
+      agentName: agentUser.name ?? "Agent",
+      fileType: kind === "listing" ? "Listing" : "Transaction",
+      address: file.propertyAddress ?? null,
+      fileId,
+      reason: decision.reason,
+      changes: pending.changes,
+    }));
+    emailFailed = failed;
+  }
+  return { ok: true, file: written, ...(emailFailed && { emailWarning: true }) };
 }
 
 function fileIdOf(f: FileRow): string {
