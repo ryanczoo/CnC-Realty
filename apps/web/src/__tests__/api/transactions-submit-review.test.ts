@@ -23,6 +23,12 @@ const TX = {
   agent: { user: { name: "Agent One" } },
 };
 
+const REAL_PENDING = {
+  before: { commissionPercent: 2.5, commissionAmount: null },
+  changes: [{ label: "Commission", from: "2.5%", to: "2%" }],
+  requestedAt: "2026-10-02T00:00:00.000Z",
+};
+
 describe("POST /api/transactions/[id]/submit-review — ownership", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -99,18 +105,35 @@ describe("POST /api/transactions/[id]/submit-review — review submission", () =
     });
   });
 
-  it("skips with alreadyApproved when every required item is approved and no commission change is pending", async () => {
+  it("records the submission time, and nothing else, when everything is approved and nothing was recorded yet", async () => {
     vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({ ...TX, checklistItems: APPROVED_ITEMS, reviewSubmittedAt: null, pendingCommission: null } as any);
     const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "tf1" } });
     expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, alreadyApproved: true });
+    expect(prisma.transactionFile.update).toHaveBeenCalledTimes(1);
+    expect(prisma.transactionFile.update).toHaveBeenCalledWith({ where: { id: "tf1" }, data: { reviewSubmittedAt: expect.any(Date) } });
+    expect(prisma.fileActivity.create).not.toHaveBeenCalled();
+    expect(sendSubmitForReview).not.toHaveBeenCalled();
+  });
+
+  it("writes nothing when everything is approved and the submission time is already recorded", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({ ...TX, checklistItems: APPROVED_ITEMS, reviewSubmittedAt: new Date("2026-01-01"), pendingCommission: null } as any);
+    const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "tf1" } });
     expect(await res.json()).toEqual({ ok: true, alreadyApproved: true });
     expect(prisma.transactionFile.update).not.toHaveBeenCalled();
     expect(prisma.fileActivity.create).not.toHaveBeenCalled();
     expect(sendSubmitForReview).not.toHaveBeenCalled();
   });
 
+  it("treats a stored {} as no pending change", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({ ...TX, checklistItems: APPROVED_ITEMS, reviewSubmittedAt: new Date("2026-01-01"), pendingCommission: {} } as any);
+    const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "tf1" } });
+    expect(await res.json()).toEqual({ ok: true, alreadyApproved: true });
+    expect(prisma.transactionFile.update).not.toHaveBeenCalled();
+  });
+
   it("still flags the file when everything is approved but a commission change is pending", async () => {
-    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({ ...TX, checklistItems: APPROVED_ITEMS, reviewSubmittedAt: null, pendingCommission: { changes: [] } } as any);
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({ ...TX, checklistItems: APPROVED_ITEMS, reviewSubmittedAt: null, pendingCommission: REAL_PENDING } as any);
     const res = await POST(new Request("http://localhost", { method: "POST" }), { params: { id: "tf1" } });
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true });

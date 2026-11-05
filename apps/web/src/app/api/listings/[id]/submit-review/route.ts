@@ -31,8 +31,12 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     return NextResponse.json({ error: `${required - satisfied} required checklist item(s) still need documents` }, { status: 400 });
   }
 
-  // Nothing left for the broker to review: don't flag the file or email.
+  // Nothing left for the broker to review: don't flag the file or email. Still record
+  // that the agent submitted, so the file counts as having been through review.
   if (canClearReview(listing.checklistItems, listing.pendingCommission)) {
+    if (!listing.reviewSubmittedAt) {
+      await prisma.listingFile.update({ where: { id: params.id }, data: { reviewSubmittedAt: new Date() } });
+    }
     return NextResponse.json({ ok: true, alreadyApproved: true });
   }
 
