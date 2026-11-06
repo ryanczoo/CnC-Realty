@@ -52,6 +52,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   const body = trimStrings(await req.json());
 
+  // Only the broker enters the referral amount received, once, on the move from
+  // Successful to Broker Review. Everything else (an agent, agent view, a re-send) is refused.
+  if (body.referralAmountReceived !== undefined) {
+    const allowedEntry = role === "ADMIN" && tx.transactionSide === "REFERRAL" && tx.status === "REFERRAL_SUCCESSFUL" && body.status === "REFERRAL_BROKER_REVIEW";
+    if (!allowedEntry) return NextResponse.json({ error: "Only the broker can enter the referral amount received" }, { status: 403 });
+  }
+
   let referralAmount: number | null = null;
   if (body.status === "REFERRAL_BROKER_REVIEW") {
     const raw = body.referralAmountReceived;
@@ -80,9 +87,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     ...(body.commissionGCI !== undefined && { commissionGCI: body.commissionGCI ? parseFloat(body.commissionGCI) : null }),
     ...(body.commissionSplit !== undefined && { commissionSplit: body.commissionSplit ? parseFloat(body.commissionSplit) : null }),
     ...(body.commissionNotes !== undefined && { commissionNotes: body.commissionNotes || null }),
-    ...(referralAmount !== null
-      ? { referralAmountReceived: referralAmount }
-      : body.referralAmountReceived !== undefined && { referralAmountReceived: parseFloat(body.referralAmountReceived) }),
+    ...(referralAmount !== null && { referralAmountReceived: referralAmount }),
     ...(referralFeeUpdate && { referralCncFee: referralFeeUpdate.cncFee }),
   };
 

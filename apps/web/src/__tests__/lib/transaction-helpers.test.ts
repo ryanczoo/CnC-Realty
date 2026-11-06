@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { FILE_DETAIL_INCLUDE, calcReferralFee, canTransitionTransaction, pickDisplayPrice, pickDisplayDate, listingStatusOptions, canDeleteListing, convertBlockedReason, sidePartiesReady, commissionReady, clientPartyError, isReadyForPending, transactionStatusOptions, escrowTypeToRole, latestDocument, allowedNextStatuses, canTransitionListing, withoutReferralReview } from "@/lib/transaction-helpers";
+import { FILE_DETAIL_INCLUDE, calcReferralFee, canTransitionTransaction, pickDisplayPrice, pickDisplayDate, listingStatusOptions, canDeleteListing, convertBlockedReason, sidePartiesReady, commissionReady, clientPartyError, isReadyForPending, transactionStatusOptions, escrowTypeToRole, latestDocument, allowedNextStatuses, canTransitionListing, canCloseReferral, referralAdminStatusOptions } from "@/lib/transaction-helpers";
 
 const REAL_PENDING = {
   before: { commissionPercent: 2.5, commissionAmount: null },
@@ -421,8 +421,38 @@ describe("FILE_DETAIL_INCLUDE checklist order", () => {
   });
 });
 
-describe("withoutReferralReview", () => {
-  it("drops REFERRAL_BROKER_REVIEW and keeps the rest", () => {
-    expect(withoutReferralReview(["CLOSED", "REFERRAL_BROKER_REVIEW"])).toEqual(["CLOSED"]);
+describe("canCloseReferral", () => {
+  it("allows an Unsuccessful referral", () => {
+    expect(canCloseReferral({ status: "REFERRAL_UNSUCCESSFUL" })).toBe(true);
+  });
+  it("allows Broker Review once the amount is in", () => {
+    expect(canCloseReferral({ status: "REFERRAL_BROKER_REVIEW", referralAmountReceived: 5000 })).toBe(true);
+  });
+  it("refuses Broker Review with no amount", () => {
+    expect(canCloseReferral({ status: "REFERRAL_BROKER_REVIEW", referralAmountReceived: null })).toBe(false);
+    expect(canCloseReferral({ status: "REFERRAL_BROKER_REVIEW" })).toBe(false);
+  });
+  it("refuses Pending and Successful", () => {
+    expect(canCloseReferral({ status: "PENDING" })).toBe(false);
+    expect(canCloseReferral({ status: "REFERRAL_SUCCESSFUL", referralAmountReceived: 5000 })).toBe(false);
+  });
+});
+
+describe("referralAdminStatusOptions", () => {
+  it("drops CLOSED from a Pending referral", () => {
+    expect(referralAdminStatusOptions({ status: "PENDING" }, ["REFERRAL_SUCCESSFUL", "CLOSED"])).toEqual(["REFERRAL_SUCCESSFUL"]);
+  });
+  it("keeps CLOSED on an Unsuccessful referral", () => {
+    expect(referralAdminStatusOptions({ status: "REFERRAL_UNSUCCESSFUL" }, ["CLOSED"])).toEqual(["CLOSED"]);
+  });
+  it("keeps CLOSED on Broker Review with an amount", () => {
+    expect(referralAdminStatusOptions({ status: "REFERRAL_BROKER_REVIEW", referralAmountReceived: 5000 }, ["CLOSED"])).toEqual(["CLOSED"]);
+  });
+  it("always drops REFERRAL_BROKER_REVIEW", () => {
+    expect(referralAdminStatusOptions({ status: "REFERRAL_SUCCESSFUL" }, ["CLOSED", "REFERRAL_BROKER_REVIEW"])).toEqual([]);
+    expect(referralAdminStatusOptions({ status: "REFERRAL_UNSUCCESSFUL" }, ["CLOSED", "REFERRAL_BROKER_REVIEW"])).toEqual(["CLOSED"]);
+  });
+  it("passes other statuses through unchanged", () => {
+    expect(referralAdminStatusOptions({ status: "PENDING" }, ["REFERRAL_SUCCESSFUL", "REFERRAL_UNSUCCESSFUL"])).toEqual(["REFERRAL_SUCCESSFUL", "REFERRAL_UNSUCCESSFUL"]);
   });
 });

@@ -5,6 +5,7 @@ import {
   canTransitionListing,
   canTransitionTransaction,
   isReadyToClose,
+  canCloseReferral,
   isReadyForPending,
   CHECKLIST_ITEMS_WITH_DOCS_INCLUDE,
 } from "@/lib/transaction-helpers";
@@ -80,6 +81,10 @@ export async function changeFileStatus({
     dateDrivenStatus({ kind: "listing", status: toStatus, listDate: file.listDate, expirationDate: file.expirationDate }, pacificToday(new Date())) === "EXPIRED"
   ) {
     return { ok: false, status: 400, error: "Expiration date is in the past!" };
+  }
+  // A referral closes only once its fee is settled, whoever asks.
+  if (!isListing && file.transactionSide === "REFERRAL" && toStatus === "CLOSED" && !canCloseReferral(file)) {
+    return { ok: false, status: 400, error: "Enter the referral amount received first" };
   }
   if (toStatus === "CLOSED" && !isReadyToClose((file.checklistItems ?? []) as FileChecklistItemWithDocs[])) {
     return { ok: false, status: 400, error: "Cannot close: not all required documents are approved" };

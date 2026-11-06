@@ -174,6 +174,7 @@ describe("PATCH /api/transactions/[id] — full referral lifecycle", () => {
     vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({
       id: "tf1",
       agentId: "a1",
+      transactionSide: "REFERRAL",
       status: "REFERRAL_SUCCESSFUL",
       checklistItems: [],
     } as any);
@@ -203,7 +204,9 @@ describe("PATCH /api/transactions/[id] — full referral lifecycle", () => {
     vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue({
       id: "tf1",
       agentId: "a1",
+      transactionSide: "REFERRAL",
       status: "REFERRAL_BROKER_REVIEW",
+      referralAmountReceived: 5000,
       checklistItems: [],
       propertyAddress: null,
     } as any);
@@ -246,7 +249,8 @@ describe("PATCH /api/transactions/[id] — full referral lifecycle", () => {
       { params: { id: "tf1" } }
     );
 
-    expect(res.status).toBe(400);
+    // The amount guard now refuses an agent before the transition rule is reached.
+    expect(res.status).toBe(403);
     expect(prisma.transactionFile.update).not.toHaveBeenCalled();
   });
 });
@@ -722,6 +726,53 @@ describe("PATCH /api/transactions/[id] — Broker Review needs an amount", () =>
     expect(res.status).toBe(200);
     expect(prisma.transactionFile.update).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ referralCncFee: 500 }) })
+    );
+  });
+});
+
+describe("PATCH /api/transactions/[id] — only the broker sets the referral amount", () => {
+  const REFUSAL = "Only the broker can enter the referral amount received";
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(prisma.fileActivity.create).mockResolvedValue({} as any);
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(REFERRAL_TX as any);
+    vi.mocked(prisma.transactionFile.update).mockResolvedValue({ ...REFERRAL_TX, status: "REFERRAL_BROKER_REVIEW" } as any);
+  });
+  const send = (body: object, marker = false) =>
+    PATCH(
+      new Request("http://localhost", { method: "PATCH", headers: marker ? { [AGENT_VIEW_HEADER]: "1" } : {}, body: JSON.stringify(body) }),
+      { params: { id: "tf1" } },
+    );
+
+  it("refuses an agent sending an amount", async () => {
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "u1", role: "AGENT", agentId: "a1" } } as any);
+    const res = await send({ referralAmountReceived: "5000" });
+    expect(res.status).toBe(403);
+    expect((await res.json()).error).toBe(REFUSAL);
+    expect(prisma.transactionFile.update).not.toHaveBeenCalled();
+  });
+  it("refuses an admin in agent view sending an amount", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(ADMIN_SESSION as any);
+    const res = await send({ status: "REFERRAL_BROKER_REVIEW", referralAmountReceived: "5000" }, true);
+    expect(res.status).toBe(403);
+    expect(prisma.transactionFile.update).not.toHaveBeenCalled();
+  });
+  it("refuses an admin re-sending an amount once the file is in Broker Review", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(ADMIN_SESSION as any);
+    const inReview = { ...REFERRAL_TX, status: "REFERRAL_BROKER_REVIEW", referralAmountReceived: 5000 };
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(inReview as any);
+    for (const body of [{ referralAmountReceived: "9000" }, { status: "REFERRAL_BROKER_REVIEW", referralAmountReceived: "9000" }]) {
+      const res = await send(body);
+      expect(res.status).toBe(403);
+    }
+    expect(prisma.transactionFile.update).not.toHaveBeenCalled();
+  });
+  it("accepts the admin's amount on Successful -> Broker Review", async () => {
+    vi.mocked(getServerSession).mockResolvedValue(ADMIN_SESSION as any);
+    const res = await send({ status: "REFERRAL_BROKER_REVIEW", referralAmountReceived: "5000" });
+    expect(res.status).toBe(200);
+    expect(prisma.transactionFile.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ referralAmountReceived: 5000, referralCncFee: 500 }) })
     );
   });
 });

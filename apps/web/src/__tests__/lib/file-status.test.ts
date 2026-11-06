@@ -460,3 +460,29 @@ describe("changeFileStatus: while a commission change is pending", () => {
     expect(data.note).toBe("ok");
   });
 });
+
+describe("changeFileStatus: a referral closes only with its fee", () => {
+  const close = () => changeFileStatus({ kind: "transaction", fileId: "f1", toStatus: "CLOSED", actor: ADMIN });
+  it("refuses Pending -> Closed, even for an admin, and writes nothing", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx({ transactionSide: "REFERRAL", status: "PENDING" }) as any);
+    const r = await close();
+    expect(r).toEqual({ ok: false, status: 400, error: "Enter the referral amount received first" });
+    expect(prisma.transactionFile.update).not.toHaveBeenCalled();
+  });
+  it("allows Unsuccessful -> Closed", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx({ transactionSide: "REFERRAL", status: "REFERRAL_UNSUCCESSFUL" }) as any);
+    expect((await close()).ok).toBe(true);
+  });
+  it("allows Broker Review with an amount -> Closed", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx({ transactionSide: "REFERRAL", status: "REFERRAL_BROKER_REVIEW", referralAmountReceived: 5000 }) as any);
+    expect((await close()).ok).toBe(true);
+  });
+  it("refuses Broker Review with no amount -> Closed", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx({ transactionSide: "REFERRAL", status: "REFERRAL_BROKER_REVIEW", referralAmountReceived: null }) as any);
+    expect((await close()).ok).toBe(false);
+  });
+  it("leaves a purchase Pending -> Closed as before", async () => {
+    vi.mocked(prisma.transactionFile.findUnique).mockResolvedValue(tx({ transactionSide: "BUYER", status: "PENDING" }) as any);
+    expect((await close()).ok).toBe(true);
+  });
+});

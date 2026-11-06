@@ -337,8 +337,14 @@ export function escrowTypeToRole(type: EscrowContactType): "TITLE" | "ESCROW" | 
   return ESCROW_ROLE_BY_TYPE[type];
 }
 
+// A referral closes only once its fee is settled: Unsuccessful (no fee), or Broker
+// Review with the amount received entered.
+export function canCloseReferral(file: { status: string; referralAmountReceived?: number | null }): boolean {
+  return file.status === "REFERRAL_UNSUCCESSFUL" || (file.status === "REFERRAL_BROKER_REVIEW" && file.referralAmountReceived != null);
+}
+
 // Broker Review needs the amount received, which only the amount box collects, so
-// the status dropdown never offers it.
-export function withoutReferralReview(options: string[]): string[] {
-  return options.filter((s) => s !== "REFERRAL_BROKER_REVIEW");
+// the status dropdown never offers it; Closed is offered only when the fee rule allows it.
+export function referralAdminStatusOptions(file: { status: string; referralAmountReceived?: number | null }, options: string[]): string[] {
+  return options.filter((s) => s !== "REFERRAL_BROKER_REVIEW" && (s !== "CLOSED" || canCloseReferral(file)));
 }
