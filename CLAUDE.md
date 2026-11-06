@@ -7891,3 +7891,68 @@ Test servers stopped; `C:\Users\hey_r\Desktop\CnC-old` worktree removed; plan wo
 2. Ryan: Google OAuth "I have fixed the issues" once the 24 h passes (if not already done).
 3. Still pending: Join FAQ (7 drafts in the 2026-10-19/20 notes, placement unconfirmed).
 4. Stale notes to ignore: the press-post fallback byline and cursor-rename items in older notes are done.
+
+---
+
+## Session Notes — 2026-11-02 → 2026-11-06 (Awaiting Review + commission approval, agent rules in the Transactions tab, referral fee gaps)
+
+Three rounds, all subagent-driven with per-task and final reviews; pushed together on 2026-11-06. Specs/plans:
+`docs/superpowers/specs/2026-11-04-awaiting-review-commission-and-status-design.md`,
+`docs/superpowers/specs/2026-11-05-agent-rules-in-transactions-tab-and-review-fixes-design.md`,
+`docs/superpowers/plans/2026-11-04-…`, `2026-11-05-agent-rules-and-review-fixes.md`, `2026-11-06-referral-fee-gaps.md`.
+Migration `20261104120000_commission_review` (ListingFile/TransactionFile `reviewSubmittedAt`, `pendingCommission`
+Json; activity types `COMMISSION_CHANGE_APPROVED/REJECTED`) was applied live on 2026-11-04 (shared DB).
+
+### Round 1 — Awaiting Review + commission approval
+- Badge auto-clears when the last required checklist document is approved (`api/admin/documents/[id]/approve`).
+  Submitting with everything already approved sets no flag ("Everything is already approved") but records
+  `reviewSubmittedAt` (the "submitted before" marker).
+- After review, an agent's commission save is kept, re-flags the file and stores the old values
+  (`lib/commission-review.ts`, `lib/commission-review-db.ts`). Ryan gets "Commission Change Request" (info@,
+  `commission-change-photo.jpg`); Approve/Reject on the Overview commission row (`CommissionReviewBlock`,
+  shared `components/ui/ApproveReject.tsx`, also used by `DocumentReviewCard`). Reject restores values + GCI and
+  emails the agent ("Commission Change Not Approved"). Route: `api/admin/files/[fileType]/[id]/commission-review`.
+- `hasPendingCommission(p)` (non-empty `changes`) is the ONLY valid pending check — `Prisma.DbNull` can read back
+  as `{}` after a dev hot reload. Clear with `Prisma.DbNull`.
+- While flagged, agents may only Withdraw (listings) / Request Cancellation (transactions); Convert blocked
+  ("Waiting for broker review"); automatic moves never blocked (`changeFileStatus(..., automatic)`). Admin Close,
+  Cancel-approve, listing Cancel and Convert refused while a commission change is pending.
+
+### Round 2 — agent rules in the Agent-section Transactions tab (Ryan's rule)
+- **Ryan's Agent section behaves like any agent's; admin rights only in Admin tabs** (Transactions tab only; other
+  Agent tabs unchanged). Mechanism: pages in that tab send header `x-cnc-agent-view: 1`
+  (`lib/agent-view.ts`: `AGENT_VIEW_HEADER`, `withAgentView`, `adminFilePathFor`); server helper
+  `actingRole(sessionRole, req)` in `lib/api-auth.ts` turns ADMIN into AGENT (can only remove rights). Every file
+  write route uses it. Client: `components/transactions/AgentViewContext.tsx` (`AgentViewProvider`, `useFileFetch`)
+  — shared components send the marker only inside the provider (agent file page); the Admin page is never wrapped.
+  The R2 presigned PUT must never carry the header. `lib/file-actions.ts`, `lib/document-actions.ts`,
+  `hooks/useFileUpload.ts` take an optional `fetchImpl`.
+- Agent file page treats every viewer as AGENT; opening another agent's file there redirects to its Admin page.
+- `ReferralActions` is a shared component (`mode="agent"|"broker"`); broker steps (amount box, Mark Closed) live on
+  the Admin file page.
+- Fix round: commission decisions apply once (`requestedAt` JSON-path `updateMany` in `$transaction`; 409 "This
+  change was already decided"); decision + Activity atomic; missing agent email → Sentry + `emailWarning`;
+  `commissionNumberError` on every commission save ("Commission must be a number"); one `commissionChangeLines`
+  helper; rejection wording "…was not approved." (live test MessageID 7c54b0e4-…). Types `CommissionChange` /
+  `PendingCommission` now in `types/transaction.ts`; shared test fixtures `__tests__/fixtures/files.ts`.
+
+### Round 3 — referral fee gaps
+- `canCloseReferral` (`lib/transaction-helpers.ts`): a referral closes only from Unsuccessful, or from Broker
+  Review with an amount — enforced in `changeFileStatus` and the Admin dropdown (`referralAdminStatusOptions`).
+- `referralAmountReceived` only via an admin moving Successful → Broker Review ("Only the broker can enter the
+  referral amount received"); fee = `calcReferralFee` (10% or $200, ICA §7.5), never editable after.
+
+### Verification + notes
+- Suite 2549/2549, tsc clean, build OK; targeted speed checks (agent + admin file pages, desktop + phone, old vs
+  new) showed no slowdown; Foster Road (`cmvivu9290001n3iejhf2jtap`) restored after every live check.
+- Deferred minors (reviewed, none blocking): commission-number test runs as AGENT; legacy non-review NaN paths for
+  `commissionGCI`/`commissionSplit`; admin save vs Reject race can log both; tests of two PATCH guard clauses;
+  Cancel not disabled while saving; no render test of `AgentViewProvider` (no React render-test infra).
+- Never-submitted files fully approved by Ryan don't count as "submitted", so their later commission changes don't
+  come back for review (open, Ryan's call).
+- Email photo crop (`commission-change-photo.jpg`): phone top / cash bottoms touch the frame — Ryan to check.
+
+### Next Session — Start Here
+1. Ryan live-tests on cncrealtygroup.com: his own file in the Agent section (agent rules), a commission change
+   request + Approve/Reject on the Admin page, and (when one exists) a referral end to end.
+2. Still pending from earlier: Join FAQ (7 drafts, placement unconfirmed).
