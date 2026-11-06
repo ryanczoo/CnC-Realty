@@ -18,7 +18,7 @@ import { UploadFileButton } from "@/components/transactions/UploadFileButton";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { UploadResultLine } from "@/components/ui/UploadResultLine";
 import { AdditionalDocuments } from "@/components/transactions/AdditionalDocuments";
-import { getChecklistProgress, allowedNextStatuses, withoutReferralReview, canDeleteListing, listingStatusOptions, transactionStatusOptions, convertBlockedReason } from "@/lib/transaction-helpers";
+import { getChecklistProgress, allowedNextStatuses, referralAdminStatusOptions, canDeleteListing, listingStatusOptions, transactionStatusOptions, convertBlockedReason } from "@/lib/transaction-helpers";
 import type { FileDocumentRecord, FileChecklistItemWithDocs, ListingFileDetail, TransactionFileDetail } from "@/types/transaction";
 import { EMAIL_WARNING_TEXT } from "@/lib/file-messages";
 import { latestCancellationReason } from "@/lib/activity-detail";
@@ -148,7 +148,7 @@ export default function AdminFileDetailPage() {
     file.status as string,
     ...(isListing
       ? listingStatusOptions(file.status, "ADMIN")
-      : isReferralFile ? withoutReferralReview(allowedNextStatuses(kind, file.status, "ADMIN")) : transactionStatusOptions(file.status, "ADMIN")),
+      : isReferralFile ? referralAdminStatusOptions(transaction!, allowedNextStatuses(kind, file.status, "ADMIN")) : transactionStatusOptions(file.status, "ADMIN")),
   ];
   const { satisfied, required } = getChecklistProgress(file.checklistItems as FileChecklistItemWithDocs[]);
   const progressPct = required > 0 ? Math.round((satisfied / required) * 100) : 0;
