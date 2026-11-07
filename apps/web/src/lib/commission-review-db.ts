@@ -5,7 +5,7 @@ import { commissionChanges, transactionCommissionEdit } from "@/lib/file-edit";
 import { buildPendingCommission, isAfterReview, hasPendingCommission } from "@/lib/commission-review";
 import type { PendingCommission } from "@/types/transaction";
 import { CHECKLIST_ITEMS_WITH_DOCS_INCLUDE, isReadyToClose } from "@/lib/transaction-helpers";
-import { sendCommissionChangeRequest, sendCommissionChangeRejected } from "@/lib/email/transaction-emails";
+import { sendCommissionChangeRequest, sendCommissionChangeRejected, sendCommissionChangeApproved } from "@/lib/email/transaction-emails";
 import { sendSafely } from "@/lib/email/send-safely";
 import type { FileChecklistItemWithDocs } from "@/types/transaction";
 
@@ -196,24 +196,25 @@ export async function resolveCommissionChange(
     throw err;
   }
 
+  // The agent hears about either decision; a missing email or failed send warns the broker.
   let emailFailed = false;
-  if (!decision.approve) {
-    const agentUser = file.agent?.user;
-    if (agentUser?.email) {
-      const { failed } = await sendSafely(() => sendCommissionChangeRejected({
-        agentEmail: agentUser.email as string,
-        agentName: agentUser.name ?? "Agent",
-        fileType: kind === "listing" ? "Listing" : "Transaction",
-        address: file.propertyAddress ?? null,
-        fileId,
-        reason: decision.reason,
-        changes: pending.changes,
-      }));
-      emailFailed = failed;
-    } else {
-      Sentry.captureMessage(`Commission change rejected on ${kind} ${fileId} but the agent has no email on file`, "warning");
-      emailFailed = true;
-    }
+  const agentUser = file.agent?.user;
+  if (agentUser?.email) {
+    const mail = {
+      agentEmail: agentUser.email,
+      agentName: agentUser.name ?? "Agent",
+      fileType: kind === "listing" ? "Listing" as const : "Transaction" as const,
+      address: file.propertyAddress ?? null,
+      fileId,
+      changes: pending.changes,
+    };
+    const { failed } = await sendSafely(() => decision.approve
+      ? sendCommissionChangeApproved(mail)
+      : sendCommissionChangeRejected({ ...mail, reason: decision.reason }));
+    emailFailed = failed;
+  } else {
+    Sentry.captureMessage(`Commission change ${decision.approve ? "approved" : "rejected"} on ${kind} ${fileId} but the agent has no email on file`, "warning");
+    emailFailed = true;
   }
   return { ok: true, file: written, ...(emailFailed && { emailWarning: true }) };
 }

@@ -361,3 +361,37 @@ export async function sendCommissionChangeRejected(opts: {
     stream: "transactional",
   });
 }
+
+// The broker approved a commission change; the agent's new commission stays.
+export async function sendCommissionChangeApproved(opts: {
+  agentEmail: string;
+  agentName: string;
+  fileType: "Listing" | "Transaction";
+  address: string | null;
+  fileId: string;
+  changes: CommissionChange[];
+}): Promise<void> {
+  const address = opts.address ?? NO_ADDRESS_LABEL;
+  const changeLines = commissionChangeLines(opts.changes, "forward");
+  const bodyHtml = buildHeadingBodyHtml({
+    heading: "Commission Change Approved",
+    photoUrl: `${process.env.NEXTAUTH_URL}/commission-approved-photo.jpg`,
+    bodyHtml: `
+      <p style="color: #4b4b4b; font-size: 15px; line-height: 1.6; text-align: center; margin: 0;">
+        Hi ${escapeHtml(opts.agentName)}, your commission change on <strong style="color: #1B1B1B;">${escapeHtml(address)}</strong> was approved.
+      </p>
+      ${changeLines}
+    `,
+  });
+  const html = emailLayout({
+    bodyHtml,
+    ctaLabel: "View File",
+    ctaHref: `${process.env.NEXTAUTH_URL}/dashboard/transactions/${opts.fileType.toLowerCase()}/${opts.fileId}`,
+  });
+  await sendEmail({
+    to: opts.agentEmail,
+    subject: `Commission Change Approved — ${address}`,
+    html,
+    stream: "transactional",
+  });
+}

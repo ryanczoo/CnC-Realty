@@ -8,6 +8,7 @@ import {
   sendCancellationRequested,
   sendCommissionChangeRequest,
   sendCommissionChangeRejected,
+  sendCommissionChangeApproved,
   sendFileClosed,
   sendDocumentRejected,
   sendAllDocsApproved,
@@ -651,5 +652,58 @@ describe("sendCommissionChangeRejected", () => {
     const html = vi.mocked(sendEmail).mock.calls[0][0].html!;
     expect(html).toContain("was not approved.");
     expect(html).not.toContain("back to what it was");
+  });
+});
+
+describe("sendCommissionChangeApproved", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.NEXTAUTH_URL = "http://localhost:3000";
+  });
+
+  const base = {
+    agentEmail: "ann@example.com",
+    agentName: "Ann",
+    fileType: "Transaction" as const,
+    address: "1 Main St",
+    fileId: "t1",
+    changes: [{ label: "Sale Commission %", from: "2.5%", to: "3%" }],
+  };
+
+  it("goes to the agent on the transactional stream with the dashed subject", async () => {
+    await sendCommissionChangeApproved({ ...base, address: "11538 Foster Road" });
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    expect(call.to).toBe("ann@example.com");
+    expect(call.stream).toBe("transactional");
+    expect(call.subject).toBe("Commission Change Approved — 11538 Foster Road");
+  });
+
+  it("shows heading, the approved photo, the greeting and the kept change (from → to)", async () => {
+    await sendCommissionChangeApproved(base);
+    const html = vi.mocked(sendEmail).mock.calls[0][0].html!;
+    expect(html).toContain("Commission Change Approved");
+    expect(html).toContain("http://localhost:3000/commission-approved-photo.jpg");
+    expect(html).toContain("Hi Ann, your commission change on");
+    expect(html).toContain("1 Main St");
+    expect(html).toContain("was approved.");
+    expect(html).toContain("Sale Commission %: 2.5% → 3%");
+  });
+
+  it("links View File to the agent dashboard file page", async () => {
+    await sendCommissionChangeApproved({ ...base, fileType: "Listing", fileId: "l9" });
+    const html = vi.mocked(sendEmail).mock.calls[0][0].html!;
+    expect(html).toContain("View File");
+    expect(html).toContain("http://localhost:3000/dashboard/transactions/listing/l9");
+  });
+
+  it("escapes the agent name and change labels once, and falls back when there is no address", async () => {
+    await sendCommissionChangeApproved({ ...base, agentName: "O'Brien", address: null, changes: [{ label: "A <b>x</b>", from: "1", to: "2" }] });
+    const call = vi.mocked(sendEmail).mock.calls[0][0];
+    expect(call.html).toContain("Hi O&#39;Brien, your commission change on");
+    expect(call.html).toContain("A &lt;b&gt;x&lt;/b&gt;: 1 → 2");
+    expect(call.html).not.toContain("<b>x</b>");
+    expect(call.html).not.toContain("&amp;#39;");
+    expect(call.html).toContain("this referral file");
+    expect(call.subject).toBe("Commission Change Approved — this referral file");
   });
 });

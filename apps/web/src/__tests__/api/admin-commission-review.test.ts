@@ -14,13 +14,14 @@ vi.mock("@/lib/prisma", () => ({
 }));
 vi.mock("@/lib/email/transaction-emails", () => ({
   sendCommissionChangeRejected: vi.fn(),
+  sendCommissionChangeApproved: vi.fn(),
   sendCommissionChangeRequest: vi.fn(),
 }));
 
 import * as Sentry from "@sentry/nextjs";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
-import { sendCommissionChangeRejected } from "@/lib/email/transaction-emails";
+import { sendCommissionChangeRejected, sendCommissionChangeApproved } from "@/lib/email/transaction-emails";
 import { POST } from "../../app/api/admin/files/[fileType]/[id]/commission-review/route";
 
 const ADMIN = { user: { id: "admin1", role: "ADMIN", name: "Ryan", agentId: null } };
@@ -69,6 +70,7 @@ beforeEach(() => {
   vi.mocked(prisma.transactionFile.updateMany).mockResolvedValue({ count: 1 } as any);
   vi.mocked(prisma.fileActivity.create).mockResolvedValue({} as any);
   vi.mocked(sendCommissionChangeRejected).mockResolvedValue(undefined);
+  vi.mocked(sendCommissionChangeApproved).mockResolvedValue(undefined);
 });
 
 describe("POST commission-review - errors", () => {
@@ -144,6 +146,7 @@ describe("POST commission-review - already decided", () => {
     expect(await res.json()).toEqual({ error: "This change was already decided" });
     expect(prisma.fileActivity.create).not.toHaveBeenCalled();
     expect(sendCommissionChangeRejected).not.toHaveBeenCalled();
+    expect(sendCommissionChangeApproved).not.toHaveBeenCalled();
   });
 
   it("409 for a transaction too", async () => {
@@ -170,6 +173,29 @@ describe("POST commission-review - approve", () => {
       }),
     });
     expect(sendCommissionChangeRejected).not.toHaveBeenCalled();
+    expect(sendCommissionChangeApproved).toHaveBeenCalledTimes(1);
+    expect(sendCommissionChangeApproved).toHaveBeenCalledWith({
+      agentEmail: "ann@example.com", agentName: "Ann Agent", fileType: "Listing",
+      address: "12 Oak St", fileId: "f1", changes: LISTING_PENDING.changes,
+    });
+  });
+
+  it("emails the agent of an approved transaction change with the transaction's changes", async () => {
+    mockFile("transaction", tx());
+    await call("transaction", { decision: "approve" });
+    expect(sendCommissionChangeApproved).toHaveBeenCalledWith({
+      agentEmail: "ann@example.com", agentName: "Ann Agent", fileType: "Transaction",
+      address: "34 Elm Ave", fileId: "f1", changes: TX_PENDING.changes,
+    });
+  });
+
+  it("reports emailWarning when the approval email fails, but the approval stands", async () => {
+    mockFile("listing", listing());
+    vi.mocked(sendCommissionChangeApproved).mockRejectedValue(new Error("smtp"));
+    const res = await call("listing", { decision: "approve" });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, file: { id: "f1" }, emailWarning: true });
+    expect(prisma.fileActivity.create).toHaveBeenCalled();
   });
 
   it("keeps the flag when a required document is not yet approved", async () => {
@@ -192,6 +218,7 @@ describe("POST commission-review - approve", () => {
     vi.mocked(prisma.listingFile.updateMany).mockRejectedValue(new Error("db down"));
     await expect(call("listing", { decision: "approve" })).rejects.toThrow("db down");
     expect(prisma.fileActivity.create).not.toHaveBeenCalled();
+    expect(sendCommissionChangeApproved).not.toHaveBeenCalled();
   });
 });
 
@@ -297,10 +324,13 @@ describe("POST commission-review - reject", () => {
     expect(prisma.fileActivity.create).toHaveBeenCalled();
   });
 
-  it("does not warn on approve when the agent has no email", async () => {
+  it("reports emailWarning and tells Sentry on approve when the agent has no email, but the approval stands", async () => {
     mockFile("listing", listing({ agent: null }));
-    expect(await (await call("listing", { decision: "approve" })).json()).toEqual({ ok: true, file: { id: "f1" } });
-    expect(Sentry.captureMessage).not.toHaveBeenCalled();
+    const res = await call("listing", { decision: "approve" });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, file: { id: "f1" }, emailWarning: true });
+    expect(Sentry.captureMessage).toHaveBeenCalledTimes(1);
+    expect(sendCommissionChangeApproved).not.toHaveBeenCalled();
   });
 
   it("neither logs nor emails when the update fails", async () => {
