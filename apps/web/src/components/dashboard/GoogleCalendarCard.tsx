@@ -2,9 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
 
 type GcalStatus = "disconnected" | "connected" | "broken";
 type ButtonLabel = "Connect Google Calendar" | "Disconnect" | "Reconnect";
@@ -22,8 +20,6 @@ export function googleCardView(
   return { line: "Lets visitors book 15-min calls on your calendar.", button: "Connect Google Calendar" };
 }
 
-const MotionLink = motion(Link);
-
 const FLASH: Record<string, { text: string; ok: boolean }> = {
   connected: { text: "Connected.", ok: true },
   "wrong-account": { text: "That wasn't ryanchong@cncrealtygroup.com — please pick that account.", ok: false },
@@ -34,12 +30,8 @@ const FLASH: Record<string, { text: string; ok: boolean }> = {
   error: { text: "Couldn't connect to Google. Please try again.", ok: false },
 };
 
+// Static on purpose (Ryan, 2026-11-17): matches the Settings page's own Save Changes button.
 const BTN = "rounded-full bg-[#1B1B1B] px-6 py-2.5 text-sm text-white transition-opacity hover:opacity-75 disabled:opacity-40";
-const pulse = {
-  animate: PULSE_ANIMATE,
-  transition: PULSE_TRANSITION,
-  whileHover: { scale: 1.05, transition: SPRING_HOVER },
-};
 
 // Rendered for admins only (the page gates it), so the status query never fires for agents.
 export default function GoogleCalendarCard() {
@@ -94,13 +86,13 @@ export default function GoogleCalendarCard() {
           <p className="text-sm text-[#1B1B1B]/70">{view.line}</p>
           {flash && <p className={`text-xs ${flash.ok ? "text-green-600" : "text-red-500"}`}>{flash.text}</p>}
           {view.button === "Disconnect" ? (
-            <motion.button type="button" onClick={disconnect} disabled={busy} className={`self-start ${BTN}`} {...pulse}>
+            <button type="button" onClick={disconnect} disabled={busy} className={`self-start ${BTN}`}>
               {busy ? "Disconnecting…" : view.button}
-            </motion.button>
+            </button>
           ) : (
-            <MotionLink href="/api/google-calendar/connect" prefetch={false} className={`self-start ${BTN}`} {...pulse}>
+            <Link href="/api/google-calendar/connect" prefetch={false} className={`self-start ${BTN}`}>
               {view.button}
-            </MotionLink>
+            </Link>
           )}
         </div>
       )}
