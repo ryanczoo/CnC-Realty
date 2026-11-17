@@ -9,6 +9,8 @@ import { isOpenSlot, type Interval } from "./slots";
 import { BOOKING_RULES } from "./rules";
 import { formatSlotPT } from "./format";
 import { manageUrl } from "./tokens";
+import { sendSafely } from "@/lib/email/send-safely";
+import { sendBookingConfirmation } from "@/lib/email/booking-emails";
 import { eventSummary, eventDescription } from "./event-text";
 
 export type BookingInput = WebsiteLeadInput & {
@@ -98,5 +100,18 @@ export async function createBooking(input: BookingInput, now: Date = new Date())
   await afterLeadCreated(lead, { newsletterConsent });
   await clearBusyCache();
 
-  return { ok: true, booking, manageUrl: manageUrl(booking.id) };
+  const url = manageUrl(booking.id);
+  await sendSafely(() =>
+    sendBookingConfirmation({
+      email: lead.email,
+      firstName: lead.firstName,
+      phone: lead.phone ?? "",
+      startsAt,
+      meetingType,
+      meetLink: booking.meetLink,
+      manageUrl: url,
+    })
+  );
+
+  return { ok: true, booking, manageUrl: url };
 }

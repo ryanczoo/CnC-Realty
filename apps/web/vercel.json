@@ -8,6 +8,7 @@
     { "path": "/api/cron/listing-expiration-warnings", "schedule": "0 17 * * *" },
     { "path": "/api/cron/campaign-deliveries", "schedule": "0 * * * *" },
     { "path": "/api/cron/wizard-photo-cleanup", "schedule": "30 10 * * *" },
-    { "path": "/api/cron/city-pages", "schedule": "20 9 * * *" }
+    { "path": "/api/cron/city-pages", "schedule": "20 9 * * *" },
+    { "path": "/api/cron/booking-reminders", "schedule": "*/15 * * * *" }
   ]
 }
