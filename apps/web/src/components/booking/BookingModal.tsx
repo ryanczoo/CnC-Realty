@@ -53,6 +53,16 @@ interface BookingModalProps {
 
 const EMPTY = { firstName: "", lastName: "", email: "", phone: "", role: "", notes: "" };
 
+/** Recruiting-link prefill goes only into empty fields, so it never overwrites what the visitor typed. */
+export function mergePrefill<T extends Record<string, string>>(form: T, prefill: Partial<T> | null): T {
+  if (!prefill) return form;
+  const next = { ...form };
+  for (const k of Object.keys(prefill) as (keyof T)[]) {
+    if (!next[k] && prefill[k]) next[k] = prefill[k] as T[keyof T];
+  }
+  return next;
+}
+
 function errorFor(status: number, apiError?: string): string {
   if (status === 400 && apiError) return apiError;
   if (status === 503) return "Booking is unavailable right now. Please try again in a bit.";
@@ -80,7 +90,7 @@ export function BookingModal({ slot, page, prefill, recruitToken, onClose, onTak
   // the recruiting-link prefill.
   useEffect(() => {
     if (!slot) return;
-    setForm((f) => ({ ...f, ...(prefill ?? {}) }));
+    setForm((f) => mergePrefill(f, prefill));
     setStatus("idle");
     setRoleError(false);
   }, [slot, prefill]);

@@ -118,6 +118,7 @@ export function BookingCalendar({ mode, heading }: BookingCalendarProps) {
   function pickDay(ymd: string) {
     setSelected(ymd);
     setChosen(null);
+    setNotice(null);
   }
 
   function closeBooking(booked: boolean) {

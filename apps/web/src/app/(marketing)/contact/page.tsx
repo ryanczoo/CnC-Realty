@@ -3,13 +3,13 @@ import { RequiredMark } from "@/components/ui/RequiredMark";
 import { FieldError } from "@/components/ui/FieldError";
 import { emailError } from "@/lib/form-validation";
 import { useCallback, useRef, useState } from "react";
-import Image from "next/image";
 import { motion } from "motion/react";
 import { RevealText } from "@/components/ui/reveal-text";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import { NAV_PANEL_CLS, NAV_ITEM_CLS, SPRING_HOVER, PULSE_ANIMATE, PULSE_TRANSITION } from "@/lib/motion";
 import { ROLE_OPTIONS } from "@/lib/role-options";
 import { ContactConsentNotice } from "@/components/ui/ContactConsentNotice";
+import { BookingCalendarLazy } from "@/components/booking/BookingCalendarLazy";
 
 export default function ContactPage() {
   const [form, setForm] = useState({ firstName: "", lastName: "", email: "", phone: "", role: "", notes: "" });
@@ -56,7 +56,8 @@ export default function ContactPage() {
 
   return (
     <main className="relative min-h-[calc(100vh-4rem)] bg-[#F2F0EF] px-8 pb-24 pt-32 lg:px-20">
-      <div className="mx-auto max-w-xl">
+      <div className="mx-auto max-w-6xl lg:grid lg:grid-cols-2 lg:gap-16">
+      <div className="max-w-xl">
         <h1 className="mb-12 font-sans text-[3rem] font-light leading-tight">
           <RevealText>Let&apos;s Chat!</RevealText>
         </h1>
@@ -141,17 +142,12 @@ export default function ContactPage() {
         )}
       </div>
 
-      <div
-        className="absolute inset-y-0 right-0 hidden lg:block"
-        style={{ left: "calc(50% + 18rem)" }}
-        aria-hidden="true"
-      >
-        <Image
-          src="/images/contact-agent.png"
-          alt=""
-          fill
-          className="object-cover opacity-[0.1] grayscale"
+      <div className="max-lg:mt-16 lg:mt-[6.75rem]">
+        <BookingCalendarLazy
+          mode={{ kind: "book", page: "CONTACT" }}
+          heading={<>Chat with <span className="text-[#9E8C61]">Ryan</span></>}
         />
+      </div>
       </div>
     </main>
   );

@@ -8,6 +8,7 @@ import { HowToJoin } from "@/components/join/HowToJoin";
 import { JoinSteps } from "@/components/join/JoinSteps";
 import { CTALineArt } from "@/components/join/CTALineArt";
 import { JoinCTAButtons } from "@/components/join/JoinCTAButtons";
+import { BookACallSection } from "@/components/join/BookACallSection";
 import { AgentPlan } from "@/components/join/AgentPlan";
 
 export const metadata = pageMeta("/join");
@@ -33,6 +34,9 @@ export default function JoinPage() {
 
       {/* ── How to Join ── */}
       <HowToJoin />
+
+      {/* ── Book a call ── */}
+      <BookACallSection />
 
       {/* ── Final CTA ── */}
       <section data-navbar-theme="light" className="relative overflow-hidden bg-[#F2F0EF] px-8 py-28 lg:px-20">
