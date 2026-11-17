@@ -135,6 +135,13 @@ describe("freeBusy calendar errors", () => {
   });
 });
 
+describe("freeBusy missing primary", () => {
+  it("throws when calendars.primary is absent", async () => {
+    fetchMock.mockResolvedValueOnce(tokenRes()).mockResolvedValueOnce(json({ calendars: {} }));
+    await expect(freeBusy(new Date(), new Date())).rejects.toThrow();
+  });
+});
+
 describe("exchangeCode email_verified", () => {
   const tok = () => json({ access_token: "at", refresh_token: "rt" });
   it("returns email when verified", async () => {

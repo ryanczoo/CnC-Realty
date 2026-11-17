@@ -24,6 +24,8 @@ vi.mock("@sentry/nextjs", () => ({ captureException: vi.fn() }));
 
 import { getConnection } from "@/lib/google-calendar/connection";
 import { freeBusy } from "@/lib/google-calendar/api";
+import { redis } from "@/lib/redis";
+import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/prisma";
 import { getBusy } from "@/lib/booking/busy";
 import { GET } from "@/app/api/booking/slots/route";
@@ -88,6 +90,36 @@ describe("GET /api/booking/slots", () => {
     const res = await GET();
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ status: "unavailable" });
+  });
+});
+
+describe("route cache and failures", () => {
+  it("two GETs a few seconds apart call freeBusy once", async () => {
+    await GET();
+    vi.setSystemTime(new Date(NOW.getTime() + 5000));
+    await GET();
+    expect(freeBusy).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports the underlying Google error to Sentry", async () => {
+    const boom = new Error("quota");
+    vi.mocked(freeBusy).mockRejectedValue(boom);
+    expect(await days()).toEqual({ status: "unavailable" });
+    expect(Sentry.captureException).toHaveBeenCalledWith(boom);
+  });
+
+  it("not-connected case is not reported", async () => {
+    vi.mocked(getConnection).mockResolvedValue(null);
+    await GET();
+    expect(Sentry.captureException).not.toHaveBeenCalled();
+  });
+
+  it("rejecting redis falls back to Google", async () => {
+    vi.mocked(redis.get).mockRejectedValueOnce(new Error("down"));
+    vi.mocked(redis.set).mockRejectedValueOnce(new Error("down"));
+    const body = await days();
+    expect(body.status).toBe("ok");
+    expect(freeBusy).toHaveBeenCalledTimes(1);
   });
 });
 

@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/prisma";
 import { redis } from "@/lib/redis";
 import { freeBusy, withGoogle } from "@/lib/google-calendar/api";
@@ -6,10 +7,12 @@ import type { Interval } from "./slots";
 
 const CACHE_KEY = "booking:busy:v1";
 const CACHE_TTL_SECONDS = 60;
+const HOUR_MS = 3_600_000;
+const WINDOW_MS = 16 * 86_400_000;
 
 export class BookingUnavailableError extends Error {
-  constructor(message = "Booking is unavailable") {
-    super(message);
+  constructor(message = "Booking is unavailable", options?: { cause?: unknown }) {
+    super(message, options);
     this.name = "BookingUnavailableError";
   }
 }
@@ -62,13 +65,18 @@ async function googleBusy(from: Date, to: Date, fresh: boolean): Promise<Interva
     const cached = await readCache(from, to);
     if (cached) return cached;
   }
+  // Quantized window so requests with a moving "now" share one cache entry.
+  const winFrom = new Date(Math.floor(from.getTime() / HOUR_MS) * HOUR_MS);
+  const winTo = new Date(Math.max(winFrom.getTime() + WINDOW_MS, to.getTime()));
   let busy: Interval[];
   try {
-    busy = await withGoogle(() => freeBusy(from, to));
-  } catch {
-    throw new BookingUnavailableError("Google Calendar request failed");
+    busy = await withGoogle(() => freeBusy(winFrom, winTo));
+  } catch (err) {
+    console.error("[booking/busy] Google freeBusy failed", err);
+    Sentry.captureException(err);
+    throw new BookingUnavailableError("Google Calendar request failed", { cause: err });
   }
-  await writeCache(from, to, busy);
+  await writeCache(winFrom, winTo, busy);
   return busy;
 }
 
