@@ -1,0 +1,6 @@
+Booking calendar speed baseline (main @ 5a7fff55, next build 2026-11-16)
+Route                 Size      First Load JS
+/contact              4.95 kB   266 kB
+/join                 13.3 kB   286 kB
+/dashboard/settings   4.2 kB    230 kB
+Shared by all: 205 kB
