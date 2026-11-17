@@ -14,6 +14,15 @@ describe("BookACallSection", () => {
     expect(html).not.toContain("Chat with");
     expect(html).not.toContain("Pacific Time");
   });
+
+  // The booking pop-up (fixed, z-50) renders inside this section. A z-index on the section
+  // would make it a stacking context and trap the pop-up under the fixed navbar (z-50).
+  it("has no z-index, so the booking pop-up can sit above the navbar", () => {
+    const html = renderToStaticMarkup(createElement(BookACallSection));
+    const section = html.match(/<section[^>]*id="book-a-call"[^>]*>/)?.[0] ?? "";
+    const classes = section.match(/class="([^"]*)"/)?.[1].split(/\s+/) ?? [];
+    expect(classes.some((c) => /^z-/.test(c))).toBe(false);
+  });
 });
 
 describe("mergePrefill", () => {
