@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { PULSE_ANIMATE, PULSE_TRANSITION } from "@/lib/motion";
 import { formatSlotPT } from "@/lib/booking/format";
@@ -19,7 +19,6 @@ export type CalendarMode =
 
 interface BookingCalendarProps {
   mode: CalendarMode;
-  heading?: ReactNode;
 }
 
 type Days = Record<string, string[]>;
@@ -35,7 +34,7 @@ function bookingWindowMonths(): MonthRef[] {
   return windowMonths(pacificDate(now), pacificDate(new Date(now.getTime() + BOOKING_RULES.windowDays * DAY_MS)));
 }
 
-export function BookingCalendar({ mode, heading }: BookingCalendarProps) {
+export function BookingCalendar({ mode }: BookingCalendarProps) {
   const [status, setStatus] = useState<"loading" | "ok" | "unavailable">("loading");
   const [days, setDays] = useState<Days>({});
   const [months, setMonths] = useState<MonthRef[]>([]);
@@ -157,12 +156,12 @@ export function BookingCalendar({ mode, heading }: BookingCalendarProps) {
     }
   }
 
-  if (status === "loading") return <CalendarSkeleton heading={heading} />;
+  if (status === "loading") return <CalendarSkeleton />;
 
   if (status === "unavailable") {
     return (
       <div className={CARD_CLS}>
-        <CalendarHeader heading={heading} />
+        <CalendarHeader />
         <div className="flex flex-1 flex-col items-center justify-center gap-6 text-center">
           <p className="max-w-xs text-base text-[#1B1B1B]/70">Booking is unavailable right now — send us a message instead</p>
           <motion.button
@@ -186,7 +185,7 @@ export function BookingCalendar({ mode, heading }: BookingCalendarProps) {
 
   return (
     <div className={CARD_CLS}>
-      <CalendarHeader heading={heading} />
+      <CalendarHeader />
       <div className="flex min-h-0 flex-1 flex-col gap-6 lg:grid lg:grid-cols-[1fr_220px]">
         <MonthGrid
           month={month}

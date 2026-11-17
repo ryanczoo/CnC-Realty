@@ -23,11 +23,11 @@ describe("dayState", () => {
 });
 
 describe("BookingCalendar markup", () => {
-  it("first render (before slots load) has the heading and no Pacific Time label", () => {
+  it("first render (before slots load) has the shared heading and no Pacific Time label", () => {
     const html = renderToStaticMarkup(
-      createElement(BookingCalendar, { mode: { kind: "book", page: "CONTACT" }, heading: "Chat with Ryan" }),
+      createElement(BookingCalendar, { mode: { kind: "book", page: "CONTACT" } }),
     );
-    expect(html).toContain("Chat with Ryan");
+    expect(html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ")).toContain("Meet with RYAN");
     expect(html).not.toMatch(/Pacific Time/i);
     expect(html).not.toMatch(/Times shown in/i);
   });

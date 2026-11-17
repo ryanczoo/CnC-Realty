@@ -19,7 +19,7 @@ function BookingCalendarLazy(props: Props) {
   const reveal = useDeferredReveal(ref);
   return (
     <div ref={ref}>
-      {reveal ? <BookingCalendarChunk {...props} /> : <CalendarSkeleton heading={props.heading} />}
+      {reveal ? <BookingCalendarChunk {...props} /> : <CalendarSkeleton />}
     </div>
   );
 }

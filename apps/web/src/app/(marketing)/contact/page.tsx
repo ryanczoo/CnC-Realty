@@ -55,7 +55,7 @@ export default function ContactPage() {
   );
 
   return (
-    <main className="relative min-h-[calc(100vh-4rem)] bg-[#F2F0EF] px-8 pb-24 pt-32 lg:px-20">
+    <main className="relative min-h-[calc(100vh-4rem)] overflow-x-clip bg-[#F2F0EF] px-8 pb-24 pt-32 lg:px-20">
       <div className="mx-auto max-w-6xl lg:grid lg:grid-cols-2 lg:gap-16">
       <div className="max-w-xl">
         <h1 className="mb-12 font-sans text-[3rem] font-light leading-tight">
@@ -142,11 +142,13 @@ export default function ContactPage() {
         )}
       </div>
 
-      <div className="max-lg:mt-16 lg:mt-[6.75rem]">
-        <BookingCalendarLazy
-          mode={{ kind: "book", page: "CONTACT" }}
-          heading={<>Chat with <span className="text-[#9E8C61]">Ryan</span></>}
-        />
+      {/* Desktop: this column reaches from the form's right edge (pulls back over the grid gap)
+          to the screen's right edge (pushes out past the page gutter), and the calendar sits
+          centered in that space at its usual width. Ryan, 2026-11-17. */}
+      <div className="max-lg:mt-16 lg:-ml-16 lg:-mr-[max(5rem,calc((100vw-72rem)/2))] lg:mt-[6.75rem] lg:flex lg:justify-center">
+        <div className="w-full lg:max-w-[34rem]">
+          <BookingCalendarLazy mode={{ kind: "book", page: "CONTACT" }} />
+        </div>
       </div>
       </div>
     </main>

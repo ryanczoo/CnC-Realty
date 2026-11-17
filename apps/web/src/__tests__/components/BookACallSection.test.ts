@@ -5,11 +5,13 @@ import { BookACallSection } from "@/components/join/BookACallSection";
 import { mergePrefill } from "@/components/booking/BookingModal";
 
 describe("BookACallSection", () => {
-  it("renders the anchored section with the Chat with Ryan heading", () => {
+  it("renders the anchored section; the calendar card's own heading is the only title", () => {
     const html = renderToStaticMarkup(createElement(BookACallSection));
     expect(html).toContain('id="book-a-call"');
-    expect(html).toContain("Chat with");
-    expect(html).toContain("#9E8C61");
+    const text = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+    expect(text.match(/Meet with RYAN/g)).toHaveLength(1);
+    expect(html.match(/<h2/g)).toHaveLength(1);
+    expect(html).not.toContain("Chat with");
     expect(html).not.toContain("Pacific Time");
   });
 });
