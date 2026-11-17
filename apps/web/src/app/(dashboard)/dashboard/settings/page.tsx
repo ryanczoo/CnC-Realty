@@ -5,7 +5,11 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { fetchAccountProfile, fetchAgentProfile } from "@/lib/dashboard-queries";
+import dynamic from "next/dynamic";
 import { digitsOnly, sanitizeCurrencyInput, formatCurrencyDisplay } from "@/lib/form-validation";
+
+// Admin-only; loaded lazily so agents never download the card or its animation code.
+const GoogleCalendarCard = dynamic(() => import("@/components/dashboard/GoogleCalendarCard"));
 
 export default function AgentSettingsPage() {
   const { data: session, update } = useSession();
@@ -176,6 +180,8 @@ export default function AgentSettingsPage() {
     }
   }
 
+  const isAdmin = session?.user?.role === "ADMIN";
+
   return (
     <div>
       <div className="mb-8">
@@ -183,7 +189,13 @@ export default function AgentSettingsPage() {
         <p className="mt-1 font-sans text-sm text-[#1B1B1B]/50">Manage your profile, agent info, and account preferences</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 max-w-5xl">
+      <div
+        className={
+          isAdmin
+            ? "grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5 max-w-5xl xl:max-w-7xl"
+            : "grid grid-cols-1 lg:grid-cols-2 gap-5 max-w-5xl"
+        }
+      >
         {/* ── LEFT COLUMN ── */}
         <div className="flex flex-col gap-5">
           {/* Profile */}
@@ -473,6 +485,13 @@ export default function AgentSettingsPage() {
             </form>
           </div>
         </div>
+
+        {/* ── THIRD COLUMN — Google Calendar (admin only) ── */}
+        {isAdmin && (
+          <div className="flex flex-col gap-5">
+            <GoogleCalendarCard />
+          </div>
+        )}
       </div>
     </div>
   );
