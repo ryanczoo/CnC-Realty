@@ -33,6 +33,21 @@ export async function getAccessToken(): Promise<string> {
   return accessToken;
 }
 
+const QUOTA_REASONS = new Set(["rateLimitExceeded", "userRateLimitExceeded", "quotaExceeded", "dailyLimitExceeded"]);
+const AUTH_REASONS = new Set(["insufficientPermissions", "accessNotConfigured", "forbidden"]);
+
+/** True when a 403 means our grant is bad (not a transient quota/rate limit). */
+async function isAuthForbidden(res: Response): Promise<boolean> {
+  try {
+    const body = (await res.clone().json()) as { error?: { errors?: { reason?: string }[]; status?: string } };
+    const reasons = (body.error?.errors ?? []).map((e) => e.reason ?? "");
+    if (reasons.some((r) => QUOTA_REASONS.has(r))) return false;
+    return reasons.some((r) => AUTH_REASONS.has(r));
+  } catch {
+    return false;
+  }
+}
+
 async function gfetch(path: string, init: RequestInit = {}): Promise<Response> {
   const token = await getAccessToken();
   const res = await fetch(`${CAL}${path}`, {
@@ -50,6 +65,9 @@ async function gfetch(path: string, init: RequestInit = {}): Promise<Response> {
       // ignore
     }
     throw new GoogleAuthError("Google returned 401");
+  }
+  if (res.status === 403 && (await isAuthForbidden(res))) {
+    throw new GoogleAuthError("Google returned 403 (insufficient permissions)");
   }
   return res;
 }

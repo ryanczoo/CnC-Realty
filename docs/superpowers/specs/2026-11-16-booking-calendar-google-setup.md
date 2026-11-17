@@ -35,7 +35,7 @@ Never paste these into chat screenshots or email.
 1. Dashboard → **Settings** → **Google Calendar** card → **Connect Google Calendar**.
 2. Pick **ryanchong@cncrealtygroup.com**.
 3. Google shows "Google hasn't verified this app". This is expected: it is a private app only you use. Click **Advanced** → **Go to CnC Realty Booking (unsafe)**.
-4. Click **Continue** / **Allow**.
+4. On the permissions screen, tick **both** Google Calendar boxes, then click **Continue** / **Allow**. (If you leave them unticked the site shows an error and won't save the connection.)
 
 ## Part D: Days off
 

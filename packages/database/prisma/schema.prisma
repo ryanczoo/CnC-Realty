@@ -474,6 +474,9 @@ enum BookingSource {
   RECRUITING_EMAIL
 }
 
+// DOUBLE-BOOKING GUARD: the partial unique index "Booking_active_startsAt_key" (on startsAt WHERE status = 'ACTIVE')
+// lives only in raw SQL in migration 20261116120000_booking. Prisma cannot express it, so any future
+// `migrate diff` that outputs DROP INDEX "Booking_active_startsAt_key" MUST have that line removed.
 model Booking {
   id               String        @id @default(cuid())
   leadId           String

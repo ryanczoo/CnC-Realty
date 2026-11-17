@@ -20,6 +20,7 @@ vi.mock("@/lib/google-calendar/oauth", () => ({
 import { requireAuth } from "@/lib/api-auth";
 import { saveConnection } from "@/lib/google-calendar/connection";
 import { exchangeCode } from "@/lib/google-calendar/oauth";
+import { MissingScopeError } from "@/lib/google-calendar/errors";
 import { GET as callback } from "../../app/api/google-calendar/callback/route";
 import { GET as connect } from "../../app/api/google-calendar/connect/route";
 
@@ -47,6 +48,13 @@ describe("callback", () => {
     const res = await callback(cb("code=c&state=s", "gcal_state=s"));
     expect(res.status).toBe(307);
     expect(res.headers.get("location")).toBe("http://localhost:3000/dashboard/settings?gcal=wrong-account");
+    expect(saveConnection).not.toHaveBeenCalled();
+  });
+
+  it("redirects missing-scope and saves nothing when calendar access was not granted", async () => {
+    vi.mocked(exchangeCode).mockRejectedValue(new MissingScopeError());
+    const res = await callback(cb("code=c&state=s", "gcal_state=s"));
+    expect(res.headers.get("location")).toBe("http://localhost:3000/dashboard/settings?gcal=missing-scope");
     expect(saveConnection).not.toHaveBeenCalled();
   });
 

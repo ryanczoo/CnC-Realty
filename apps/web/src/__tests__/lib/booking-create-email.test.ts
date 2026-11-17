@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
 const booking = { id: "b1", leadId: "l1", startsAt: new Date("2026-11-17T18:15:00Z"), meetingType: "MEET" };
-const lead = { id: "l1", firstName: "Ann", email: "a@b.com", phone: "714" };
+const lead = { id: "l1", firstName: "Ann", lastName: "L", email: "a@b.com", phone: "714" };
 
 vi.mock("@sentry/nextjs", () => ({ captureException: vi.fn() }));
 vi.mock("@/lib/prisma", () => ({
@@ -24,10 +24,13 @@ vi.mock("@/lib/booking/busy", () => ({
 }));
 vi.mock("@/lib/booking/slots", () => ({ isOpenSlot: vi.fn(() => true) }));
 vi.mock("@/lib/booking/tokens", () => ({ manageUrl: () => "https://x/manage" }));
+vi.mock("@/lib/email/send", () => ({ sendEmail: vi.fn().mockResolvedValue({ sent: true }) }));
 vi.mock("@/lib/email/booking-emails", () => ({ sendBookingConfirmation: vi.fn() }));
 
 import { createBooking } from "@/lib/booking/create-booking";
 import { sendBookingConfirmation } from "@/lib/email/booking-emails";
+import { createEvent } from "@/lib/google-calendar/api";
+import { sendEmail } from "@/lib/email/send";
 
 const input = {
   firstName: "Ann",
@@ -53,5 +56,15 @@ describe("createBooking confirmation email", () => {
     vi.mocked(sendBookingConfirmation).mockRejectedValueOnce(new Error("smtp"));
     const r = await createBooking(input, new Date("2026-11-16T00:00:00Z"));
     expect(r.ok).toBe(true);
+  });
+
+  it("emails Ryan once when the Google event fails, booking still ok", async () => {
+    vi.mocked(createEvent).mockRejectedValueOnce(new Error("403"));
+    const r = await createBooking(input, new Date("2026-11-16T00:00:00Z"));
+    expect(r.ok).toBe(true);
+    expect(sendEmail).toHaveBeenCalledTimes(1);
+    const arg = vi.mocked(sendEmail).mock.calls[0][0] as { subject: string; html: string };
+    expect(arg.subject).toContain("Booking needs a calendar event: Ann L");
+    expect(arg.html).toContain("Google Calendar didn't accept this booking");
   });
 });

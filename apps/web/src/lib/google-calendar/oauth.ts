@@ -1,5 +1,5 @@
 import { BOOKING_CALENDAR_EMAIL } from "@/lib/booking/rules";
-import { GoogleAuthError } from "./errors";
+import { GoogleAuthError, MissingScopeError } from "./errors";
 
 const AUTH_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth";
 const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
@@ -49,8 +49,15 @@ export async function exchangeCode(code: string): Promise<{ refreshToken: string
     }),
   });
   if (!res.ok) throw new Error(`Google token exchange failed (${res.status})`);
-  const tok = (await res.json()) as { access_token?: string; refresh_token?: string };
+  const tok = (await res.json()) as { access_token?: string; refresh_token?: string; scope?: string };
   if (!tok.access_token || !tok.refresh_token) throw new Error("Google did not return a refresh token");
+  // Granular consent lets the user untick the Calendar boxes; the token would then 403 on every call.
+  const granted = (tok.scope ?? "").split(" ");
+  const required = [
+    "https://www.googleapis.com/auth/calendar.events",
+    "https://www.googleapis.com/auth/calendar.freebusy",
+  ];
+  if (!required.every((s) => granted.includes(s))) throw new MissingScopeError();
 
   const info = await fetch(USERINFO_ENDPOINT, { headers: { Authorization: `Bearer ${tok.access_token}` } });
   if (!info.ok) throw new Error(`Google userinfo failed (${info.status})`);

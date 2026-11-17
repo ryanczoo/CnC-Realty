@@ -4,6 +4,7 @@ import { redis } from "@/lib/redis";
 import { BOOKING_CALENDAR_EMAIL } from "@/lib/booking/rules";
 import { saveConnection } from "@/lib/google-calendar/connection";
 import { exchangeCode } from "@/lib/google-calendar/oauth";
+import { MissingScopeError } from "@/lib/google-calendar/errors";
 
 function sameState(a: string, b: string): boolean {
   const x = Buffer.from(a);
@@ -30,8 +31,8 @@ export async function GET(req: NextRequest) {
   let tokens;
   try {
     tokens = await exchangeCode(code);
-  } catch {
-    return done("error");
+  } catch (err) {
+    return done(err instanceof MissingScopeError ? "missing-scope" : "error");
   }
 
   if (tokens.email.toLowerCase() !== BOOKING_CALENDAR_EMAIL.toLowerCase()) {

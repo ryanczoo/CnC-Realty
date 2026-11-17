@@ -27,6 +27,10 @@ const MotionLink = motion(Link);
 const FLASH: Record<string, { text: string; ok: boolean }> = {
   connected: { text: "Connected.", ok: true },
   "wrong-account": { text: "That wasn't ryanchong@cncrealtygroup.com — please pick that account.", ok: false },
+  "missing-scope": {
+    text: "Google didn't grant calendar access — click Connect again and tick both Calendar boxes.",
+    ok: false,
+  },
   error: { text: "Couldn't connect to Google. Please try again.", ok: false },
 };
 

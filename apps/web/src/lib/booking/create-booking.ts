@@ -10,6 +10,8 @@ import { BOOKING_RULES } from "./rules";
 import { formatSlotPT } from "./format";
 import { manageUrl } from "./tokens";
 import { sendSafely } from "@/lib/email/send-safely";
+import { sendEmail } from "@/lib/email/send";
+import { NOTIFY, emailLayout, buildHeadingBodyHtml, escapeHtml } from "@/lib/email";
 import { sendBookingConfirmation } from "@/lib/email/booking-emails";
 import { eventSummary, eventDescription } from "./event-text";
 
@@ -76,8 +78,30 @@ export async function createBooking(input: BookingInput, now: Date = new Date())
     });
     booking = { ...booking, googleEventId: event.id, meetLink: event.meetLink };
   } catch (err) {
-    console.error("[booking] Google event creation failed", err);
+    console.error(`[booking] Google event creation failed for booking ${booking.id} (no event id)`, err);
     Sentry.captureException(err);
+    const name = `${lead.firstName} ${lead.lastName}`.trim();
+    const when = formatSlotPT(startsAt);
+    const row = (k: string, v: string) => `<p><strong>${k}:</strong> ${escapeHtml(v)}</p>`;
+    await sendSafely(() =>
+      sendEmail({
+        to: NOTIFY,
+        subject: `Booking needs a calendar event: ${name} ${when}`,
+        html: emailLayout({
+          bodyHtml: buildHeadingBodyHtml({
+            heading: "Booking needs a calendar event",
+            bodyHtml:
+              row("Name", name) +
+              row("Email", lead.email) +
+              row("Phone", lead.phone ?? "") +
+              row("Time", when) +
+              row("Meeting type", meetingType === "MEET" ? "Google Meet" : "Phone call") +
+              "<p>Google Calendar didn't accept this booking — please add it to your calendar and send the invite.</p>",
+          }),
+        }),
+        stream: "transactional",
+      })
+    );
   }
 
   // 4. Tags (never fail the booking).

@@ -18,7 +18,7 @@ import { markBroken } from "@/lib/google-calendar/connection";
 import { sendEmail } from "@/lib/email/send";
 import { freeBusy, createEvent, eventExists, withGoogle } from "@/lib/google-calendar/api";
 import { authUrl, exchangeCode } from "@/lib/google-calendar/oauth";
-import { GoogleAuthError } from "@/lib/google-calendar/errors";
+import { GoogleAuthError, MissingScopeError } from "@/lib/google-calendar/errors";
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
@@ -143,7 +143,12 @@ describe("freeBusy missing primary", () => {
 });
 
 describe("exchangeCode email_verified", () => {
-  const tok = () => json({ access_token: "at", refresh_token: "rt" });
+  const tok = () =>
+    json({
+      access_token: "at",
+      refresh_token: "rt",
+      scope: "openid email https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.freebusy",
+    });
   it("returns email when verified", async () => {
     fetchMock.mockResolvedValueOnce(tok()).mockResolvedValueOnce(json({ email: "a@b.c", email_verified: true }));
     await expect(exchangeCode("c")).resolves.toEqual({ refreshToken: "rt", email: "a@b.c" });
@@ -155,5 +160,41 @@ describe("exchangeCode email_verified", () => {
   it("throws when email_verified is missing", async () => {
     fetchMock.mockResolvedValueOnce(tok()).mockResolvedValueOnce(json({ email: "a@b.c" }));
     await expect(exchangeCode("c")).rejects.toThrow();
+  });
+});
+
+const errBody = (reason: string) => json({ error: { code: 403, errors: [{ reason }] } }, 403);
+
+describe("403 classification", () => {
+  it("insufficientPermissions is a GoogleAuthError", async () => {
+    fetchMock.mockResolvedValueOnce(tokenRes()).mockResolvedValueOnce(errBody("insufficientPermissions"));
+    await expect(freeBusy(new Date(), new Date())).rejects.toBeInstanceOf(GoogleAuthError);
+  });
+  it("rateLimitExceeded stays a plain Error", async () => {
+    fetchMock.mockResolvedValueOnce(tokenRes()).mockResolvedValueOnce(errBody("rateLimitExceeded"));
+    const p = freeBusy(new Date(), new Date());
+    await expect(p).rejects.not.toBeInstanceOf(GoogleAuthError);
+    await expect(p).rejects.toThrow(/403/);
+  });
+});
+
+describe("exchangeCode scopes", () => {
+  it("throws MissingScopeError when calendar.events was not granted", async () => {
+    fetchMock.mockResolvedValueOnce(
+      json({ access_token: "at", refresh_token: "rt", scope: "openid email https://www.googleapis.com/auth/calendar.freebusy" })
+    );
+    await expect(exchangeCode("c")).rejects.toBeInstanceOf(MissingScopeError);
+  });
+  it("accepts a token with both calendar scopes", async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        json({
+          access_token: "at",
+          refresh_token: "rt",
+          scope: "openid email https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.freebusy",
+        })
+      )
+      .mockResolvedValueOnce(json({ email: "a@b.c", email_verified: true }));
+    await expect(exchangeCode("c")).resolves.toEqual({ refreshToken: "rt", email: "a@b.c" });
   });
 });
