@@ -81,11 +81,16 @@ async function googleBusy(from: Date, to: Date, fresh: boolean): Promise<Interva
 }
 
 /** Google busy time (60 s cached unless `fresh`) plus active DB bookings (always live). */
-export async function getBusy(from: Date, to: Date, opts: { fresh?: boolean } = {}): Promise<Interval[]> {
+export async function getBusy(from: Date, to: Date, opts: { fresh?: boolean; excludeBookingId?: string } = {}): Promise<Interval[]> {
   const [google, rows] = await Promise.all([
     googleBusy(from, to, opts.fresh === true),
     prisma.booking.findMany({
-      where: { status: "ACTIVE", startsAt: { lt: to }, endsAt: { gt: from } },
+      where: {
+        status: "ACTIVE",
+        startsAt: { lt: to },
+        endsAt: { gt: from },
+        ...(opts.excludeBookingId ? { id: { not: opts.excludeBookingId } } : {}),
+      },
       select: { startsAt: true, endsAt: true },
     }),
   ]);

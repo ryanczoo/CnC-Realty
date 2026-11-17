@@ -149,3 +149,23 @@ describe("getBusy cache", () => {
     expect(prisma.booking.findMany).toHaveBeenCalledTimes(2);
   });
 });
+
+describe("getBusy excludeBookingId", () => {
+  const from = new Date("2026-11-16T00:00:00Z");
+  const to = new Date("2026-12-01T00:00:00Z");
+
+  it("excludes that booking id from the DB query", async () => {
+    await getBusy(from, to, { excludeBookingId: "b1" });
+    expect(prisma.booking.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ status: "ACTIVE", id: { not: "b1" } }),
+      })
+    );
+  });
+
+  it("does not filter by id when not given", async () => {
+    await getBusy(from, to);
+    const arg = vi.mocked(prisma.booking.findMany).mock.calls[0][0] as { where: Record<string, unknown> };
+    expect(arg.where).not.toHaveProperty("id");
+  });
+});
