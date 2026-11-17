@@ -55,6 +55,10 @@ const config: Config = {
         "cnc-red": "var(--cnc-red)",
         "cnc-green": "var(--cnc-green)",
       },
+      boxShadow: {
+        // The deep "floating" shadow from the homepage Services cards; reused on the booking calendar.
+        floating: "0 40px 80px rgba(0,0,0,0.32), 0 16px 32px rgba(0,0,0,0.20), 0 4px 8px rgba(0,0,0,0.12)",
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",

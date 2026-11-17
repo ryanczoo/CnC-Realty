@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 // The fixed-height white card every calendar state renders in (loading,
 // loaded, unavailable), so swapping between them never moves the page.
 export const CARD_CLS =
-  "flex h-[640px] flex-col rounded-2xl bg-white p-8 font-sans text-[#1B1B1B] shadow-sm max-lg:p-5 lg:h-[540px]";
+  "flex h-[640px] flex-col rounded-2xl bg-white p-8 font-sans text-[#1B1B1B] shadow-floating max-lg:p-5 lg:h-[540px]";
 
 export function CalendarHeader({ heading }: { heading?: ReactNode }) {
   return (

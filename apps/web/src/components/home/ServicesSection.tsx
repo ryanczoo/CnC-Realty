@@ -135,7 +135,7 @@ function ServiceCard({
       {/* Entry animation wrapper */}
       <motion.div
         ref={cardRef}
-        className="relative aspect-[3/4] w-full rounded-2xl max-lg:aspect-square"
+        className="relative aspect-[3/4] w-full rounded-2xl shadow-floating max-lg:aspect-square"
         initial={{ opacity: 0, y: 52 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay }}
@@ -150,8 +150,6 @@ function ServiceCard({
         onMouseLeave={() => setHovered(false)}
         style={{
           perspective: "1200px",
-          boxShadow:
-            "0 40px 80px rgba(0,0,0,0.32), 0 16px 32px rgba(0,0,0,0.20), 0 4px 8px rgba(0,0,0,0.12)",
           cursor: hovered && !flipped ? "none" : "auto",
         }}
       >
