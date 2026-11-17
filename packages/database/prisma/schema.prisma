@@ -449,12 +449,52 @@ model Lead {
   deals             Deal[]
   enrollments       LeadPlanEnrollment[]
   triggerExecutions TriggerExecution[]
+  bookings          Booking[]
 
   @@index([agentId])
   @@index([status])
   @@index([createdAt])
   @@index([agentId, createdAt])
   @@index([email])
+}
+
+enum BookingStatus {
+  ACTIVE
+  CANCELLED
+}
+
+enum MeetingType {
+  PHONE
+  MEET
+}
+
+enum BookingSource {
+  CONTACT
+  JOIN
+  RECRUITING_EMAIL
+}
+
+model Booking {
+  id               String        @id @default(cuid())
+  leadId           String
+  startsAt         DateTime
+  endsAt           DateTime
+  status           BookingStatus @default(ACTIVE)
+  meetingType      MeetingType
+  source           BookingSource
+  googleEventId    String?
+  meetLink         String?
+  scheduledAt      DateTime      @default(now())
+  reminder24SentAt DateTime?
+  reminder1SentAt  DateTime?
+  cancelledAt      DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([startsAt])
+  @@index([leadId])
 }
 
 model Activity {
