@@ -197,7 +197,7 @@ pop-up skipped — details already known) or "Cancel call". Updates Booking, Goo
 
 ## Open calls I made (Ryan please check while reading)
 
-1. Join-page section heading: "Book a Call with Ryan" (placeholder copy).
+1. Calendar heading (Join section and Contact page): "Chat with Ryan" (Ryan's call 2026-11-16, replaces "Book a Call with Ryan").
 2. (Settled by Ryan 2026-11-16: recruiting-email button opens the Join page.)
 3. A visitor who books twice with the same email gets a second lead (same as the contact form today).
 4. Booking pop-up shows the contact-form consent notice and enrolls in the newsletter like the contact form does.

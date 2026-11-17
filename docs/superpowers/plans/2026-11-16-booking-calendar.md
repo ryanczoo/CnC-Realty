@@ -1,4 +1,4 @@
-# Booking Calendar ("Book a Call with Ryan") Implementation Plan
+# Booking Calendar ("Chat with Ryan") Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -18,6 +18,7 @@ All app paths below are relative to `apps/web/` unless they start with `packages
 - Busy source: ONLY the Google primary calendar of `ryanchong@cncrealtygroup.com`. The OAuth callback must refuse any other Google account.
 - Every lead from a booking: `agentId: null` (Unassigned), `source: "WEBSITE"`, same notification + newsletter behavior as `/api/leads`. Never auto-assign.
 - Booking form fields: First*, Last*, Email*, Phone* (required), I am a* (`ROLE_OPTIONS`), Phone call / Google Meet*, Message (optional). Consent notice shown (`ContactConsentNotice`), `newsletterConsent: true`.
+- Calendar heading copy: "Chat with Ryan" ("Ryan" in gold `#9E8C61`) on both the Join section and the Contact page.
 - Time display: "Tue, Nov 17 · 10:15 AM PT" style, always Pacific regardless of the visitor's device timezone. NO "Times shown in Pacific Time" label anywhere.
 - Every new button: `animate={PULSE_ANIMATE}`, `transition={PULSE_TRANSITION}`, `whileHover={{ scale: 1.05, transition: SPRING_HOVER }}` from `@/lib/motion`.
 - Layout split by `max-lg:` CSS; `useIsMobile` only for animation values.
@@ -508,15 +509,15 @@ it("rejects garbage", () => { expect(verifyManageToken("abc")).toBeNull(); });
 **Interfaces:**
 - Consumes: `BookingCalendarLazy`.
 - Produces:
-  - **Contact:** wrapper becomes `mx-auto max-w-6xl lg:grid lg:grid-cols-2 lg:gap-16`. The existing form block stays on the left unchanged (phone optional, message required). Right column: `<BookingCalendarLazy mode={{ kind: "book", page: "CONTACT" }} heading="Book a 15-min Call" />` inside a white rounded card. Phone: the calendar stacks below the form.
-  - **Join:** `BookACallSection` = `<section id="book-a-call" data-navbar-theme="light" className="bg-[#F2F0EF] px-8 py-24 lg:px-20 scroll-mt-24">` with heading "Book a Call with **Ryan**" (Ryan in gold `#9E8C61`, same heading scale as `HowToJoin`), then the calendar with `page: "JOIN"`.
+  - **Contact:** wrapper becomes `mx-auto max-w-6xl lg:grid lg:grid-cols-2 lg:gap-16`. The existing form block stays on the left unchanged (phone optional, message required). Right column: `<BookingCalendarLazy mode={{ kind: "book", page: "CONTACT" }} heading="Chat with Ryan" />` inside a white rounded card. Phone: the calendar stacks below the form.
+  - **Join:** `BookACallSection` = `<section id="book-a-call" data-navbar-theme="light" className="bg-[#F2F0EF] px-8 py-24 lg:px-20 scroll-mt-24">` with heading "Chat with **Ryan**" (Ryan in gold `#9E8C61`, same heading scale as `HowToJoin`), then the calendar with `page: "JOIN"`.
   - **Manage page:** reads `t`, calls the manage GET server-side (or the lib directly) and shows:
     - the booking time,
     - a [Cancel call] button with a confirm step,
     - "Pick a new time" with `BookingCalendarLazy mode={{ kind: "reschedule", token }}`.
     - Cancelled → "This call was cancelled." Bad link → "This link isn't valid anymore." plus a link to `/contact`.
 
-- [ ] **Step 1: Write failing test:** the `BookACallSection` markup contains `id="book-a-call"` and "Book a Call with".
+- [ ] **Step 1: Write failing test:** the `BookACallSection` markup contains `id="book-a-call"` and "Chat with".
 - [ ] **Step 2:** Run. Expected: FAIL.
 - [ ] **Step 3:** Implement all three.
 - [ ] **Step 4:** Run the test. Expected: PASS. Check in the dev server:
