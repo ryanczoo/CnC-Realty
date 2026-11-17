@@ -3,7 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/api-auth";
 import { leadCreateData, afterLeadCreated } from "@/lib/leads/create-lead";
-import { publicFormRateLimit } from "@/lib/rate-limit";
+import { checkPublicRateLimit } from "@/lib/public-rate-limit";
 import { applyTag } from "@/lib/tags";
 import { buildLeadWhere, hasNewsletterFilter, FilterCondition } from "@/lib/smart-list-filters";
 
@@ -21,21 +21,8 @@ const createSchema = z.object({
 
 // Public — no auth required. Authenticated users skip rate limiting.
 export async function POST(req: Request) {
-  const { session: authSession } = await requireAuth("AGENT");
-  if (!authSession) {
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "anonymous";
-    try {
-      const { success, reset } = await publicFormRateLimit.limit(ip);
-      if (!success) {
-        return NextResponse.json(
-          { error: "Too many requests. Please try again later." },
-          { status: 429, headers: { "Retry-After": String(Math.ceil((reset - Date.now()) / 1000)) } }
-        );
-      }
-    } catch (err) {
-      console.error("[POST /api/leads] rate limiter unavailable, proceeding:", err);
-    }
-  }
+  const limited = await checkPublicRateLimit(req);
+  if (limited) return limited;
 
   try {
     const body = await req.json();
