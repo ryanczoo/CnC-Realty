@@ -9,11 +9,11 @@ without paying for Calendly, built into the CnC site so every booking lands in t
 daily recruiting emails (cnc-outreach-mailer) a one-click "Book a call" next step for agents at other brokerages.
 
 Success: a visitor (buyer, seller, renter or agent) picks an open 15-minute slot, gets a Google Calendar invite,
-and Ryan sees the call on his Workspace calendar and the lead in his CRM, with zero manual steps by Ryan.
+and Ryan sees the call on his Google calendar and the lead in his CRM, with zero manual steps by Ryan.
 
 ## Goals
 
-1. Live open times from Ryan's Google Workspace calendar (ryanchong@cncrealtygroup.com).
+1. Live open times from Ryan's Google calendar (ryanchong@cncrealtygroup.com).
 2. Booking rules: hours, minimum notice, booking window (values below).
 3. Days off: handled through Google Calendar itself, all-day event set to Busy (no new dashboard screen).
 4. Calendar invite with a Google Meet link or the visitor's phone number.
@@ -50,7 +50,7 @@ and Ryan sees the call on his Workspace calendar and the lead in his CRM, with z
 | Minimum notice | 15 minutes |
 | Booking window | 14 days out |
 | Daily max | None |
-| Busy check | Only the Workspace calendar ryanchong@cncrealtygroup.com. Not personal Gmail |
+| Busy check | Only the Google calendar of ryanchong@cncrealtygroup.com. Not personal Gmail |
 | Days off | Ryan blocks time in Google Calendar: an all-day event set to **"Busy"** closes the day; any normal event blocks its hours. Rarely used but wanted. (Not "Out of office" — see Account type) |
 | Meeting type | Visitor chooses "Phone call" or "Google Meet" |
 | Booking form | Contact-form fields: First, Last, Email, **Phone (required)**, I am a…, Phone call / Google Meet, **Message (optional)** |
