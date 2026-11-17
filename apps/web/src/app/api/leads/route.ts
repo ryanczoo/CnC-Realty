@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/api-auth";
-import { sendLeadNotification } from "@/lib/email";
+import { leadCreateData, afterLeadCreated } from "@/lib/leads/create-lead";
 import { publicFormRateLimit } from "@/lib/rate-limit";
 import { applyTag } from "@/lib/tags";
-import { subscribeToNewsletter } from "@/lib/newsletter";
 import { buildLeadWhere, hasNewsletterFilter, FilterCondition } from "@/lib/smart-list-filters";
 
 const createSchema = z.object({
@@ -42,21 +40,14 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const data = createSchema.parse(body);
-    const { role, newsletterConsent, ...leadFields } = data;
-    const lead = await prisma.lead.create({
-      data: { ...leadFields, visitorRole: role },
-    });
-    sendLeadNotification(lead).catch(console.error);
+    const { newsletterConsent, ...leadInput } = data;
+    const lead = await prisma.lead.create({ data: leadCreateData(leadInput) });
     if (data.source === "OPEN_HOUSE") {
       applyTag(lead.id, "Open House").catch(console.error);
     }
-    // Only the /contact page and the shared contact pop-up send this — both
-    // show the consent disclaimer. A failed enrollment never fails the inquiry.
-    if (newsletterConsent) {
-      await subscribeToNewsletter({ email: lead.email, leadId: lead.id, source: "contact-form" }).catch((err) =>
-        Sentry.captureException(err)
-      );
-    }
+    // Notification + consented newsletter enrollment (only the /contact page and
+    // the shared contact pop-up send newsletterConsent) live in the shared core.
+    await afterLeadCreated(lead, { newsletterConsent });
     return NextResponse.json({ id: lead.id }, { status: 201 });
   } catch (err) {
     if (err instanceof z.ZodError) {
