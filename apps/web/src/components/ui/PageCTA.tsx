@@ -7,6 +7,7 @@ import { RevealLine } from "@/components/ui/reveal-text";
 import { CTALineArt } from "@/components/join/CTALineArt";
 import { ContactModal } from "@/components/ui/ContactModal";
 import { SPRING_HOVER, PULSE_ANIMATE, PULSE_TRANSITION } from "@/lib/motion";
+import { CTA_MESSAGE_CLS } from "@/components/ui/cta-styles";
 
 const MotionLink = motion(Link);
 
@@ -44,7 +45,7 @@ export function PageCTA({
   primaryLabel,
   secondaryHref,
   secondaryLabel,
-  secondaryClassName = "inline-flex items-center rounded-full border border-[#1B1B1B]/20 px-8 py-3.5 font-sans text-sm font-medium text-[#1B1B1B]",
+  secondaryClassName = CTA_MESSAGE_CLS,
   showContactModal = false,
   primaryShowContactModal = false,
   contactSource = "WEBSITE_CTA",
