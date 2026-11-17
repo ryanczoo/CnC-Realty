@@ -1,14 +1,14 @@
 "use client";
-import { RequiredMark } from "@/components/ui/RequiredMark";
-import { FieldError } from "@/components/ui/FieldError";
 import { emailError } from "@/lib/form-validation";
 
-import { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import { useClickOutside } from "@/hooks/useClickOutside";
-import { NAV_PANEL_CLS, NAV_ITEM_CLS, PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
+import { useEffect, useState } from "react";
+import { motion } from "motion/react";
+import { PULSE_ANIMATE, PULSE_TRANSITION, SPRING_HOVER } from "@/lib/motion";
 import { ROLE_OPTIONS } from "@/lib/role-options";
 import { ContactConsentNotice } from "@/components/ui/ContactConsentNotice";
+import { ModalShell } from "@/components/ui/ModalShell";
+import { UnderlineField } from "@/components/ui/UnderlineField";
+import { RoleSelect } from "@/components/ui/RoleSelect";
 
 export { ROLE_OPTIONS };
 
@@ -21,19 +21,7 @@ interface ContactModalProps {
 export function ContactModal({ open, source, onClose }: ContactModalProps) {
   const [form, setForm] = useState({ firstName: "", lastName: "", email: "", role: "", notes: "" });
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
-  const [roleOpen, setRoleOpen] = useState(false);
   const [roleError, setRoleError] = useState(false);
-
-  const roleRef = useRef<HTMLDivElement>(null);
-
-  useClickOutside(roleRef, () => setRoleOpen(false));
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [open, onClose]);
 
   useEffect(() => {
     if (open) {
@@ -67,158 +55,80 @@ export function ContactModal({ open, source, onClose }: ContactModalProps) {
   }
 
   return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-          role="dialog" aria-modal="true" aria-label="Let's Chat" className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 max-lg:items-start max-lg:pb-4 max-lg:pt-20"
-          onClick={onClose}
-        >
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 8 }}
-            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-            onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-lg rounded-2xl bg-white p-10 max-lg:max-h-[calc(100dvh-6rem)] max-lg:overflow-y-auto max-lg:p-5"
+    <ModalShell open={open} onClose={onClose} label="Let's Chat">
+      <h2 className="font-sans text-[2rem] font-light leading-tight text-[#1B1B1B] max-lg:text-[1.6rem]">
+        Let&apos;s Chat
+      </h2>
+      <p className="mt-1 mb-8 font-sans text-sm text-[#1B1B1B]/50 max-lg:mb-4">
+        We&apos;re super responsive!
+      </p>
+
+      {status === "success" ? (
+        <div className="py-8 text-center">
+          <p className="font-sans text-lg font-light text-[#1B1B1B]">Message received.</p>
+          <p className="mt-2 font-sans text-sm text-[#1B1B1B]/50">We&apos;ll be in touch soon.</p>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="flex flex-col gap-6 max-lg:gap-3">
+          {/* First + Last Name: side by side on phones; display:contents on desktop keeps the stacked layout. */}
+          <div className="contents max-lg:grid max-lg:grid-cols-2 max-lg:gap-3">
+            <UnderlineField
+              className="flex flex-col gap-1.5 max-lg:min-w-0 max-lg:gap-1"
+              label="First Name"
+              autoFocus
+              value={form.firstName}
+              onChange={(v) => setForm((f) => ({ ...f, firstName: v }))}
+            />
+            <UnderlineField
+              className="flex flex-col gap-1.5 max-lg:min-w-0 max-lg:gap-1"
+              label="Last Name"
+              value={form.lastName}
+              onChange={(v) => setForm((f) => ({ ...f, lastName: v }))}
+            />
+          </div>
+
+          <UnderlineField
+            label="Email"
+            type="email"
+            value={form.email}
+            onChange={(v) => setForm((f) => ({ ...f, email: v }))}
+            error={emailError(form.email)}
+          />
+
+          <RoleSelect
+            value={form.role}
+            onChange={(role) => setForm((f) => ({ ...f, role }))}
+            error={roleError}
+            onOpen={() => setRoleError(false)}
+          />
+
+          <UnderlineField
+            label="Message"
+            multiline
+            rows={4}
+            placeholder="Type away..."
+            value={form.notes}
+            onChange={(v) => setForm((f) => ({ ...f, notes: v }))}
+          />
+
+          {status === "error" && (
+            <p className="font-sans text-sm text-red-500">Something went wrong. Please try again.</p>
+          )}
+
+          <ContactConsentNotice />
+
+          <motion.button
+            type="submit"
+            disabled={status === "loading" || !!emailError(form.email)}
+            animate={PULSE_ANIMATE}
+            transition={PULSE_TRANSITION}
+            whileHover={{ scale: 1.02, transition: SPRING_HOVER }}
+            className="w-full rounded-full bg-[#1B1B1B] py-3.5 font-sans text-sm font-medium text-white disabled:opacity-40 max-lg:py-3"
           >
-            <button
-              onClick={onClose}
-              aria-label="Close"
-              className="absolute right-6 top-6 text-[#1B1B1B]/40 transition-colors hover:text-[#1B1B1B]"
-            >
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path d="M4 4l12 12M16 4L4 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-              </svg>
-            </button>
-
-            <h2 className="font-sans text-[2rem] font-light leading-tight text-[#1B1B1B] max-lg:text-[1.6rem]">
-              Let&apos;s Chat
-            </h2>
-            <p className="mt-1 mb-8 font-sans text-sm text-[#1B1B1B]/50 max-lg:mb-4">
-              We&apos;re super responsive!
-            </p>
-
-            {status === "success" ? (
-              <div className="py-8 text-center">
-                <p className="font-sans text-lg font-light text-[#1B1B1B]">Message received.</p>
-                <p className="mt-2 font-sans text-sm text-[#1B1B1B]/50">We&apos;ll be in touch soon.</p>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="flex flex-col gap-6 max-lg:gap-3">
-                {/* First + Last Name: side by side on phones; display:contents on desktop keeps the stacked layout. */}
-                <div className="contents max-lg:grid max-lg:grid-cols-2 max-lg:gap-3">
-                <div className="flex flex-col gap-1.5 max-lg:min-w-0 max-lg:gap-1">
-                  <label className="font-sans text-sm text-left text-[#1B1B1B]/60">First Name<RequiredMark /></label>
-                  <input
-                    type="text"
-                    required
-                    autoFocus
-                    value={form.firstName}
-                    onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
-                    className="border-b border-[#1B1B1B]/20 bg-transparent py-2 font-sans text-base text-[#1B1B1B] outline-none transition-colors focus:border-[#1B1B1B]/60 max-lg:py-1.5"
-                    placeholder=""
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5 max-lg:min-w-0 max-lg:gap-1">
-                  <label className="font-sans text-sm text-left text-[#1B1B1B]/60">Last Name<RequiredMark /></label>
-                  <input
-                    type="text"
-                    required
-                    value={form.lastName}
-                    onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
-                    className="border-b border-[#1B1B1B]/20 bg-transparent py-2 font-sans text-base text-[#1B1B1B] outline-none transition-colors focus:border-[#1B1B1B]/60 max-lg:py-1.5"
-                    placeholder=""
-                  />
-                </div>
-                </div>
-
-                <div className="flex flex-col gap-1.5 max-lg:gap-1">
-                  <label className="font-sans text-sm text-left text-[#1B1B1B]/60">Email<RequiredMark /></label>
-                  <input
-                    type="email"
-                    required
-                    value={form.email}
-                    onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                    className="border-b border-[#1B1B1B]/20 bg-transparent py-2 font-sans text-base text-[#1B1B1B] outline-none transition-colors focus:border-[#1B1B1B]/60 max-lg:py-1.5"
-                    placeholder=""
-                  />
-                  <FieldError message={emailError(form.email)} />
-                </div>
-
-                <div className="flex flex-col gap-1.5 max-lg:gap-1" ref={roleRef}>
-                  <label className={`font-sans text-sm text-left ${roleError ? "text-red-500" : "text-[#1B1B1B]/60"}`}>
-                    I am a<RequiredMark />
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => { setRoleOpen((o) => !o); setRoleError(false); }}
-                    className="flex items-center justify-between border-b py-2 font-sans text-base transition-colors focus:outline-none max-lg:py-1.5"
-                    style={{ borderColor: roleError ? "rgb(239,68,68)" : roleOpen ? "rgba(27,27,27,0.6)" : "rgba(27,27,27,0.2)" }}
-                  >
-                    <span className={form.role ? "text-[#1B1B1B]" : "text-[#1B1B1B]/30"}>
-                      {form.role || "Select one…"}
-                    </span>
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
-                      className={`transition-transform duration-200 ${roleOpen ? "rotate-180" : ""}`}>
-                      <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#1B1B1B]/40" />
-                    </svg>
-                  </button>
-                  {roleOpen && (
-                    <div className="relative z-50">
-                      <div className={`absolute left-0 top-1 w-52 ${NAV_PANEL_CLS}`}>
-                        {ROLE_OPTIONS.map((opt) => (
-                          <button
-                            key={opt}
-                            type="button"
-                            onClick={() => { setForm((f) => ({ ...f, role: opt })); setRoleOpen(false); }}
-                            className={`${NAV_ITEM_CLS} ${form.role === opt ? "text-[#c9a84c]" : "text-white/80"}`}
-                          >
-                            {opt}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex flex-col gap-1.5 max-lg:gap-1">
-                  <label className="font-sans text-sm text-left text-[#1B1B1B]/60">Message<RequiredMark /></label>
-                  <textarea
-                    rows={4}
-                    required
-                    value={form.notes}
-                    onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-                    className="resize-none border-b border-[#1B1B1B]/20 bg-transparent py-2 font-sans text-base text-[#1B1B1B] outline-none transition-colors focus:border-[#1B1B1B]/60 max-lg:h-14"
-                    placeholder="Type away..."
-                  />
-                </div>
-
-                {status === "error" && (
-                  <p className="font-sans text-sm text-red-500">Something went wrong. Please try again.</p>
-                )}
-
-                <ContactConsentNotice />
-
-                <motion.button
-                  type="submit"
-                  disabled={status === "loading" || !!emailError(form.email)}
-                  animate={PULSE_ANIMATE}
-                  transition={PULSE_TRANSITION}
-                  whileHover={{ scale: 1.02, transition: SPRING_HOVER }}
-                  className="w-full rounded-full bg-[#1B1B1B] py-3.5 font-sans text-sm font-medium text-white disabled:opacity-40 max-lg:py-3"
-                >
-                  {status === "loading" ? "Sending…" : "Send Message"}
-                </motion.button>
-              </form>
-            )}
-          </motion.div>
-        </motion.div>
+            {status === "loading" ? "Sending…" : "Send Message"}
+          </motion.button>
+        </form>
       )}
-    </AnimatePresence>
+    </ModalShell>
   );
 }
