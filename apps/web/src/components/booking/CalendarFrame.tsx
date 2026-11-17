@@ -5,7 +5,8 @@ export const CARD_CLS =
 
 // The one calendar heading, used on every page the calendar appears. Styled like the Buy
 // page's "One stop / SHOP" title: "Meet with" light, then a gold "RYAN" in the second
-// column so it sits directly under "with". The block and the subtitle are centered.
+// column so it sits directly under "with". Centered, no subtitle (Phone / Google Meet is
+// chosen in the booking steps).
 const LINE_ONE = "text-[1.6rem] max-lg:text-[1.4rem]";
 
 export function CalendarHeader() {
@@ -16,7 +17,6 @@ export function CalendarHeader() {
         <span className={`col-start-2 ${LINE_ONE}`}>with</span>{" "}
         <span className="col-start-2 text-[2.1rem] font-medium text-cnc-gold max-lg:text-[1.8rem]">RYAN</span>
       </h2>
-      <p className="mt-1 text-center text-sm text-[#1B1B1B]/50">by phone or Google Meet</p>
     </div>
   );
 }

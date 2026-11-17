@@ -4,14 +4,17 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { CalendarHeader, CalendarSkeleton } from "@/components/booking/CalendarFrame";
 
 // Ryan (2026-11-17): the calendar heading is "Meet with" over a gold "RYAN" (styled like the
-// Buy page's "One stop / SHOP" title, RYAN sitting under "with"), then "by phone or Google Meet",
-// both centered. It lives in the shared CalendarHeader so every calendar placement matches.
+// Buy page's "One stop / SHOP" title, RYAN sitting under "with"), centered, with no subtitle
+// (Ryan dropped "by phone or Google Meet": visitors pick that in the booking steps).
+// It lives in the shared CalendarHeader so every calendar placement matches.
 describe("CalendarHeader", () => {
   const html = renderToStaticMarkup(createElement(CalendarHeader));
   const text = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
 
-  it("says Meet with RYAN, by phone or Google Meet (no old wording)", () => {
-    expect(text).toContain("Meet with RYAN by phone or Google Meet");
+  it("says just Meet with RYAN: no subtitle, no old wording", () => {
+    expect(text.trim()).toBe("Meet with RYAN");
+    expect(html).not.toContain("<p");
+    expect(html).not.toContain("Google Meet");
     expect(html).not.toContain("Chat with");
     expect(html).not.toContain("Phone call");
   });
@@ -25,9 +28,8 @@ describe("CalendarHeader", () => {
     expect(withWord).toContain("col-start-2");
   });
 
-  it("centers the heading block and the subtitle", () => {
+  it("centers the heading block", () => {
     expect(html).toMatch(/<h2[^>]*mx-auto/);
-    expect(html).toMatch(/<p[^>]*text-center[^>]*>by phone or Google Meet<\/p>/);
   });
 });
 
@@ -35,6 +37,7 @@ describe("CalendarSkeleton", () => {
   it("shows the same real heading while loading, so nothing shifts when the calendar arrives", () => {
     const html = renderToStaticMarkup(createElement(CalendarSkeleton));
     const text = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
-    expect(text).toContain("Meet with RYAN by phone or Google Meet");
+    expect(text).toContain("Meet with RYAN");
+    expect(html).not.toContain("Google Meet");
   });
 });
