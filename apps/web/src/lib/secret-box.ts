@@ -23,7 +23,8 @@ export function openSecret(sealed: string): string {
   const parts = sealed.split(".");
   if (parts.length !== 3) throw new Error("Malformed sealed secret");
   const [iv, tag, ct] = parts.map((p) => Buffer.from(p, "base64url"));
-  const decipher = createDecipheriv("aes-256-gcm", key, iv);
+  if (iv.length !== 12) throw new Error("Malformed sealed secret");
+  const decipher = createDecipheriv("aes-256-gcm", key, iv, { authTagLength: 16 });
   decipher.setAuthTag(tag);
   return Buffer.concat([decipher.update(ct), decipher.final()]).toString("utf8");
 }

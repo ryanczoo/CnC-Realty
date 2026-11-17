@@ -36,17 +36,26 @@ export async function saveConnection(email: string, refreshToken: string): Promi
   });
 }
 
-/** Marks the connection broken; firstTime is true only the first time (alert once). */
+/**
+ * Marks the connection broken; firstTime is true only for the caller that wins the write
+ * (alert once). Compare-and-swap on the stored value so concurrent callers or a concurrent
+ * saveConnection can't be clobbered by a stale read.
+ */
 export async function markBroken(): Promise<{ firstTime: boolean }> {
-  const conn = await getConnection();
-  if (!conn) return { firstTime: false };
-  const firstTime = conn.alertSentAt === null;
-  await write({
+  const row = await prisma.siteSettings.findUnique({ where: { key: KEY } });
+  if (!row) return { firstTime: false };
+  const conn = JSON.parse(openSecret(row.value)) as CalendarConnection;
+  if (conn.status === "broken" && conn.alertSentAt) return { firstTime: false };
+  const next: CalendarConnection = {
     ...conn,
     status: "broken",
     alertSentAt: conn.alertSentAt ?? new Date().toISOString(),
+  };
+  const { count } = await prisma.siteSettings.updateMany({
+    where: { key: KEY, value: row.value },
+    data: { value: sealSecret(JSON.stringify(next)) },
   });
-  return { firstTime };
+  return { firstTime: count === 1 };
 }
 
 export async function deleteConnection(): Promise<void> {

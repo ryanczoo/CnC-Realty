@@ -3,7 +3,7 @@ import { randomBytes } from "node:crypto";
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
-    siteSettings: { findUnique: vi.fn(), upsert: vi.fn(), deleteMany: vi.fn() },
+    siteSettings: { findUnique: vi.fn(), upsert: vi.fn(), updateMany: vi.fn(), deleteMany: vi.fn() },
   },
 }));
 
@@ -22,6 +22,13 @@ describe("google calendar connection", () => {
     vi.mocked(prisma.siteSettings.upsert).mockImplementation((async (args: any) => {
       row = { value: args.update.value };
       return row;
+    }) as any);
+    vi.mocked(prisma.siteSettings.updateMany).mockImplementation((async (args: any) => {
+      if (row && row.value === args.where.value) {
+        row = { value: args.data.value };
+        return { count: 1 };
+      }
+      return { count: 0 };
     }) as any);
     vi.mocked(prisma.siteSettings.deleteMany).mockImplementation((async () => {
       row = null;
@@ -56,6 +63,36 @@ describe("google calendar connection", () => {
   it("markBroken with no row does nothing", async () => {
     expect(await markBroken()).toEqual({ firstTime: false });
     expect(prisma.siteSettings.upsert).not.toHaveBeenCalled();
+    expect(prisma.siteSettings.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("two concurrent markBroken calls: exactly one gets firstTime true", async () => {
+    await saveConnection("ryan@x.com", "r");
+    const results = await Promise.all([markBroken(), markBroken()]);
+    expect(results.filter((r) => r.firstTime)).toHaveLength(1);
+    expect((await getConnection())!.status).toBe("broken");
+  });
+
+  it("markBroken does not clobber a concurrent saveConnection", async () => {
+    await saveConnection("ryan@x.com", "old");
+    const realFind = vi.mocked(prisma.siteSettings.findUnique).getMockImplementation()!;
+    // After markBroken reads, Ryan reconnects before the write lands.
+    vi.mocked(prisma.siteSettings.findUnique).mockImplementationOnce((async (a: any) => {
+      const stale = await (realFind as any)(a);
+      await saveConnection("ryan@x.com", "new");
+      return stale;
+    }) as any);
+    expect(await markBroken()).toEqual({ firstTime: false });
+    const c = await getConnection();
+    expect(c).toMatchObject({ status: "connected", refreshToken: "new", alertSentAt: null });
+  });
+
+  it("markBroken when already broken with alert sent does not write", async () => {
+    await saveConnection("ryan@x.com", "r");
+    await markBroken();
+    vi.mocked(prisma.siteSettings.updateMany).mockClear();
+    expect(await markBroken()).toEqual({ firstTime: false });
+    expect(prisma.siteSettings.updateMany).not.toHaveBeenCalled();
   });
 
   it("saveConnection after broken resets alert state", async () => {
