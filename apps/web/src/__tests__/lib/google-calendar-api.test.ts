@@ -17,7 +17,7 @@ import { redis } from "@/lib/redis";
 import { markBroken } from "@/lib/google-calendar/connection";
 import { sendEmail } from "@/lib/email/send";
 import { freeBusy, createEvent, eventExists, withGoogle } from "@/lib/google-calendar/api";
-import { authUrl } from "@/lib/google-calendar/oauth";
+import { authUrl, exchangeCode } from "@/lib/google-calendar/oauth";
 import { GoogleAuthError } from "@/lib/google-calendar/errors";
 
 const json = (body: unknown, status = 200) =>
@@ -123,5 +123,30 @@ describe("withGoogle", () => {
   it("passes through non-auth errors without markBroken", async () => {
     await expect(withGoogle(() => Promise.reject(new Error("boom")))).rejects.toThrow("boom");
     expect(markBroken).not.toHaveBeenCalled();
+  });
+});
+
+describe("freeBusy calendar errors", () => {
+  it("throws when primary calendar reports errors instead of reporting free time", async () => {
+    fetchMock.mockResolvedValueOnce(tokenRes()).mockResolvedValueOnce(
+      json({ calendars: { primary: { errors: [{ domain: "global", reason: "notFound" }], busy: [] } } })
+    );
+    await expect(freeBusy(new Date(), new Date())).rejects.toThrow();
+  });
+});
+
+describe("exchangeCode email_verified", () => {
+  const tok = () => json({ access_token: "at", refresh_token: "rt" });
+  it("returns email when verified", async () => {
+    fetchMock.mockResolvedValueOnce(tok()).mockResolvedValueOnce(json({ email: "a@b.c", email_verified: true }));
+    await expect(exchangeCode("c")).resolves.toEqual({ refreshToken: "rt", email: "a@b.c" });
+  });
+  it("throws when email_verified is false", async () => {
+    fetchMock.mockResolvedValueOnce(tok()).mockResolvedValueOnce(json({ email: "a@b.c", email_verified: false }));
+    await expect(exchangeCode("c")).rejects.toThrow();
+  });
+  it("throws when email_verified is missing", async () => {
+    fetchMock.mockResolvedValueOnce(tok()).mockResolvedValueOnce(json({ email: "a@b.c" }));
+    await expect(exchangeCode("c")).rejects.toThrow();
   });
 });

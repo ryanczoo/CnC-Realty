@@ -64,7 +64,12 @@ export async function freeBusy(from: Date, to: Date): Promise<Interval[]> {
     body: JSON.stringify({ timeMin: from.toISOString(), timeMax: to.toISOString(), items: [{ id: "primary" }] }),
   });
   assertOk(res, "freeBusy");
-  const data = (await res.json()) as { calendars?: { primary?: { busy?: { start: string; end: string }[] } } };
+  const data = (await res.json()) as {
+    calendars?: { primary?: { errors?: unknown[]; busy?: { start: string; end: string }[] } };
+  };
+  if ((data.calendars?.primary?.errors?.length ?? 0) > 0) {
+    throw new Error("Google Calendar freeBusy reported errors for the primary calendar");
+  }
   return (data.calendars?.primary?.busy ?? []).map((b) => ({ start: new Date(b.start), end: new Date(b.end) }));
 }
 

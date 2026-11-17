@@ -54,8 +54,9 @@ export async function exchangeCode(code: string): Promise<{ refreshToken: string
 
   const info = await fetch(USERINFO_ENDPOINT, { headers: { Authorization: `Bearer ${tok.access_token}` } });
   if (!info.ok) throw new Error(`Google userinfo failed (${info.status})`);
-  const { email } = (await info.json()) as { email?: string };
+  const { email, email_verified } = (await info.json()) as { email?: string; email_verified?: boolean };
   if (!email) throw new Error("Google did not return an email");
+  if (email_verified !== true) throw new Error("Google email is not verified");
   return { refreshToken: tok.refresh_token, email };
 }
 
