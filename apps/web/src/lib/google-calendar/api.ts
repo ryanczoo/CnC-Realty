@@ -103,6 +103,9 @@ export type NewEvent = {
   location?: string;
 };
 
+// sendUpdates=none on every event write: Google's guest emails come "from" our domain without
+// our domain's signature and land in junk. The visitor keeps their attendee spot (so Meet lets
+// them straight in), and the site's own emails carry the calendar invite (lib/booking/ics.ts).
 export async function createEvent(e: NewEvent): Promise<{ id: string; meetLink: string | null }> {
   const body: Record<string, unknown> = {
     summary: e.summary,
@@ -117,7 +120,7 @@ export async function createEvent(e: NewEvent): Promise<{ id: string; meetLink: 
       createRequest: { requestId: e.bookingId, conferenceSolutionKey: { type: "hangoutsMeet" } },
     };
   }
-  const res = await gfetch("/calendars/primary/events?conferenceDataVersion=1&sendUpdates=all", {
+  const res = await gfetch("/calendars/primary/events?conferenceDataVersion=1&sendUpdates=none", {
     method: "POST",
     body: JSON.stringify(body),
   });
@@ -132,7 +135,7 @@ export async function createEvent(e: NewEvent): Promise<{ id: string; meetLink: 
 }
 
 export async function moveEvent(id: string, start: Date, end: Date): Promise<void> {
-  const res = await gfetch(`/calendars/primary/events/${encodeURIComponent(id)}?sendUpdates=all`, {
+  const res = await gfetch(`/calendars/primary/events/${encodeURIComponent(id)}?sendUpdates=none`, {
     method: "PATCH",
     body: JSON.stringify({ start: { dateTime: start.toISOString() }, end: { dateTime: end.toISOString() } }),
   });
@@ -140,7 +143,7 @@ export async function moveEvent(id: string, start: Date, end: Date): Promise<voi
 }
 
 export async function deleteEvent(id: string): Promise<void> {
-  const res = await gfetch(`/calendars/primary/events/${encodeURIComponent(id)}?sendUpdates=all`, {
+  const res = await gfetch(`/calendars/primary/events/${encodeURIComponent(id)}?sendUpdates=none`, {
     method: "DELETE",
   });
   if (res.status === 404 || res.status === 410) return;

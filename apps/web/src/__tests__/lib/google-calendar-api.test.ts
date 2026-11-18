@@ -16,7 +16,7 @@ vi.mock("@/lib/email/send", () => ({ sendEmail: vi.fn().mockResolvedValue({ sent
 import { redis } from "@/lib/redis";
 import { markBroken } from "@/lib/google-calendar/connection";
 import { sendEmail } from "@/lib/email/send";
-import { freeBusy, createEvent, eventExists, withGoogle } from "@/lib/google-calendar/api";
+import { freeBusy, createEvent, moveEvent, deleteEvent, eventExists, withGoogle } from "@/lib/google-calendar/api";
 import { authUrl, exchangeCode } from "@/lib/google-calendar/oauth";
 import { GoogleAuthError, MissingScopeError } from "@/lib/google-calendar/errors";
 
@@ -71,12 +71,27 @@ describe("google calendar api", () => {
     const r = await createEvent({ ...ev, meet: true });
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toContain("conferenceDataVersion=1");
-    expect(url).toContain("sendUpdates=all");
+    expect(url).toContain("sendUpdates=none");
     expect(JSON.parse(init.body).conferenceData.createRequest).toEqual({
       requestId: "b1",
       conferenceSolutionKey: { type: "hangoutsMeet" },
     });
     expect(r).toEqual({ id: "e1", meetLink: "https://meet.google.com/abc" });
+  });
+
+  // Google must never email the visitor: its invites came "from" our domain without our
+  // signature and landed in junk. The site's own emails carry the calendar invite instead.
+  it("moveEvent and deleteEvent tell Google not to email guests", async () => {
+    vi.mocked(redis.get).mockResolvedValue("at");
+    fetchMock.mockResolvedValueOnce(json({ id: "e1" }));
+    await moveEvent("e1", new Date("2026-11-17T19:00:00Z"), new Date("2026-11-17T19:15:00Z"));
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }));
+    await deleteEvent("e1");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    for (const [url] of fetchMock.mock.calls) {
+      expect(url).toContain("sendUpdates=none");
+      expect(url).not.toContain("sendUpdates=all");
+    }
   });
 
   it("createEvent without meet sends no conferenceData", async () => {

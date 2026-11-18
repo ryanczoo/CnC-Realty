@@ -1,6 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
-const booking = { id: "b1", leadId: "l1", startsAt: new Date("2026-11-17T18:15:00Z"), meetingType: "MEET" };
+const booking = {
+  id: "b1",
+  leadId: "l1",
+  startsAt: new Date("2026-11-17T18:15:00Z"),
+  meetingType: "MEET",
+  scheduledAt: new Date("2026-11-16T00:00:05Z"),
+};
 const lead = { id: "l1", firstName: "Ann", lastName: "L", email: "a@b.com", phone: "714" };
 
 vi.mock("@sentry/nextjs", () => ({ captureException: vi.fn() }));
@@ -25,7 +31,10 @@ vi.mock("@/lib/booking/busy", () => ({
 vi.mock("@/lib/booking/slots", () => ({ isOpenSlot: vi.fn(() => true) }));
 vi.mock("@/lib/booking/tokens", () => ({ manageUrl: () => "https://x/manage" }));
 vi.mock("@/lib/email/send", () => ({ sendEmail: vi.fn().mockResolvedValue({ sent: true }) }));
-vi.mock("@/lib/email/booking-emails", () => ({ sendBookingConfirmation: vi.fn() }));
+vi.mock("@/lib/email/booking-emails", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/email/booking-emails")>()),
+  sendBookingConfirmation: vi.fn(),
+}));
 
 import { createBooking } from "@/lib/booking/create-booking";
 import { sendBookingConfirmation } from "@/lib/email/booking-emails";
@@ -50,6 +59,14 @@ describe("createBooking confirmation email", () => {
     const r = await createBooking(input, new Date("2026-11-16T00:00:00Z"));
     expect(r.ok).toBe(true);
     expect(sendBookingConfirmation).toHaveBeenCalledTimes(1);
+  });
+
+  it("the confirmation carries the booking's calendar invite reference", async () => {
+    await createBooking(input, new Date("2026-11-16T00:00:00Z"));
+    expect(vi.mocked(sendBookingConfirmation).mock.calls[0][1]).toEqual({
+      bookingId: "b1",
+      changedAt: booking.scheduledAt,
+    });
   });
 
   it("an email failure never fails the booking", async () => {

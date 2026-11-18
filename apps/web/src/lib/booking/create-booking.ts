@@ -11,8 +11,8 @@ import { formatSlotPT } from "./format";
 import { manageUrl } from "./tokens";
 import { sendSafely } from "@/lib/email/send-safely";
 import { sendEmail } from "@/lib/email/send";
-import { NOTIFY, emailLayout, buildHeadingBodyHtml, escapeHtml } from "@/lib/email";
-import { sendBookingConfirmation } from "@/lib/email/booking-emails";
+import { NOTIFY, emailLayout, buildHeadingBodyHtml } from "@/lib/email";
+import { sendBookingConfirmation, detailRowsHtml } from "@/lib/email/booking-emails";
 import { eventSummary, eventDescription } from "./event-text";
 
 export type BookingInput = WebsiteLeadInput & {
@@ -82,7 +82,6 @@ export async function createBooking(input: BookingInput, now: Date = new Date())
     Sentry.captureException(err);
     const name = `${lead.firstName} ${lead.lastName}`.trim();
     const when = formatSlotPT(startsAt);
-    const row = (k: string, v: string) => `<p><strong>${k}:</strong> ${escapeHtml(v)}</p>`;
     await sendSafely(() =>
       sendEmail({
         to: NOTIFY,
@@ -91,12 +90,14 @@ export async function createBooking(input: BookingInput, now: Date = new Date())
           bodyHtml: buildHeadingBodyHtml({
             heading: "Booking needs a calendar event",
             bodyHtml:
-              row("Name", name) +
-              row("Email", lead.email) +
-              row("Phone", lead.phone ?? "") +
-              row("Time", when) +
-              row("Meeting type", meetingType === "MEET" ? "Google Meet" : "Phone call") +
-              "<p>Google Calendar didn't accept this booking — please add it to your calendar and send the invite.</p>",
+              detailRowsHtml([
+                ["Name", name],
+                ["Email", lead.email],
+                ["Phone", lead.phone ?? ""],
+                ["Time", when],
+                ["Meeting type", meetingType === "MEET" ? "Google Meet" : "Phone call"],
+              ]) +
+              "<p>Google Calendar didn't accept this booking — please add it to your calendar. The visitor still gets the site's confirmation and calendar invite, but for a Google Meet call it has no Meet link, so send them one.</p>",
           }),
         }),
         stream: "transactional",
@@ -134,7 +135,7 @@ export async function createBooking(input: BookingInput, now: Date = new Date())
       meetingType,
       meetLink: booking.meetLink,
       manageUrl: url,
-    })
+    }, { bookingId: booking.id, changedAt: booking.scheduledAt })
   );
 
   return { ok: true, booking, manageUrl: url };

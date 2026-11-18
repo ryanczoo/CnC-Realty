@@ -5,6 +5,14 @@ import { moveEvent, deleteEvent, withGoogle } from "@/lib/google-calendar/api";
 import { isOpenSlot } from "./slots";
 import { formatSlotPT } from "./format";
 import { BOOKING_RULES } from "./rules";
+import { manageUrl } from "./tokens";
+import { sendSafely } from "@/lib/email/send-safely";
+import {
+  sendBookingRescheduled,
+  sendBookingCancelled,
+  sendBookingChangeAlert,
+  type BookingEmailInput,
+} from "@/lib/email/booking-emails";
 
 export type ManageView = { status: "ACTIVE" | "CANCELLED"; startsAt: string; meetingType: string; firstName: string };
 
@@ -13,7 +21,36 @@ export type RescheduleResult =
   | { ok: false; reason: "taken" | "cancelled" | "unavailable" | "not_found" };
 
 function findBooking(id: string) {
-  return prisma.booking.findUnique({ where: { id }, include: { lead: { select: { firstName: true } } } });
+  return prisma.booking.findUnique({
+    where: { id },
+    include: { lead: { select: { firstName: true, lastName: true, email: true, phone: true } } },
+  });
+}
+
+type FoundBooking = NonNullable<Awaited<ReturnType<typeof findBooking>>>;
+
+function visitorEmail(b: FoundBooking, startsAt: Date): BookingEmailInput {
+  return {
+    email: b.lead.email,
+    firstName: b.lead.firstName,
+    phone: b.lead.phone ?? "",
+    startsAt,
+    meetingType: b.meetingType,
+    meetLink: b.meetLink,
+    manageUrl: manageUrl(b.id),
+  };
+}
+
+function alertFor(b: FoundBooking) {
+  return {
+    leadId: b.leadId,
+    firstName: b.lead.firstName,
+    lastName: b.lead.lastName,
+    email: b.lead.email,
+    phone: b.lead.phone ?? "",
+    meetingType: b.meetingType,
+    oldStartsAt: b.startsAt,
+  };
 }
 
 export async function getManageView(bookingId: string): Promise<ManageView | null> {
@@ -51,6 +88,9 @@ export async function cancelBooking(bookingId: string, now: Date = new Date()): 
     .create({ data: { type: "NOTE", content: "Cancelled the call", leadId: b.leadId } })
     .catch(console.error);
   await clearBusyCache();
+  // The visitor's cancel invite removes the entry from their calendar; Ryan gets a heads-up.
+  await sendSafely(() => sendBookingCancelled(visitorEmail(b, b.startsAt), { bookingId: b.id, changedAt: now }));
+  await sendSafely(() => sendBookingChangeAlert({ ...alertFor(b), kind: "cancelled" }));
   return true;
 }
 
@@ -98,5 +138,8 @@ export async function rescheduleBooking(
     })
     .catch(console.error);
   await clearBusyCache();
+  // Same UID, later SEQUENCE: the visitor's calendar moves the existing entry.
+  await sendSafely(() => sendBookingRescheduled(visitorEmail(b, startsAt), { bookingId: b.id, changedAt: now }));
+  await sendSafely(() => sendBookingChangeAlert({ ...alertFor(b), kind: "moved", newStartsAt: startsAt }));
   return { ok: true, startsAt };
 }

@@ -19,14 +19,21 @@ vi.mock("@/lib/google-calendar/api", () => ({
 }));
 vi.mock("@/lib/booking/tokens", () => ({
   verifyManageToken: vi.fn((t: string) => (t === "good" ? "b1" : null)),
+  manageUrl: vi.fn((id: string) => `https://x/manage/${id}`),
 }));
 vi.mock("@sentry/nextjs", () => ({ captureException: vi.fn() }));
+vi.mock("@/lib/email/booking-emails", () => ({
+  sendBookingRescheduled: vi.fn().mockResolvedValue(undefined),
+  sendBookingCancelled: vi.fn().mockResolvedValue(undefined),
+  sendBookingChangeAlert: vi.fn().mockResolvedValue(undefined),
+}));
 
 import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/prisma";
 import { getBusy, clearBusyCache, BookingUnavailableError } from "@/lib/booking/busy";
 import { moveEvent, deleteEvent } from "@/lib/google-calendar/api";
 import { GET, POST } from "@/app/api/booking/manage/route";
+import { sendBookingRescheduled, sendBookingCancelled, sendBookingChangeAlert } from "@/lib/email/booking-emails";
 
 const NOW = new Date("2026-11-16T17:00:00Z");
 const OLD = { start: new Date("2026-11-17T18:15:00Z"), end: new Date("2026-11-17T18:30:00Z") };
@@ -41,10 +48,29 @@ function booking(over: object = {}) {
     endsAt: OLD.end,
     meetingType: "MEET",
     googleEventId: "g1",
-    lead: { firstName: "Jordan" },
+    meetLink: "https://meet.google.com/abc",
+    lead: { firstName: "Jordan", lastName: "Reyes", email: "j@r.co", phone: "714-555-0100" },
     ...over,
   };
 }
+const visitor = (startsAt: Date) => ({
+  email: "j@r.co",
+  firstName: "Jordan",
+  phone: "714-555-0100",
+  startsAt,
+  meetingType: "MEET",
+  meetLink: "https://meet.google.com/abc",
+  manageUrl: "https://x/manage/b1",
+});
+const alertBase = {
+  leadId: "l1",
+  firstName: "Jordan",
+  lastName: "Reyes",
+  email: "j@r.co",
+  phone: "714-555-0100",
+  meetingType: "MEET",
+  oldStartsAt: OLD.start,
+};
 function post(body: object) {
   return POST(
     new Request("http://x/api/booking/manage", {
@@ -117,6 +143,29 @@ describe("POST cancel", () => {
     expect(clearBusyCache).toHaveBeenCalled();
   });
 
+  it("emails the visitor a cancel invite and alerts Ryan, once each", async () => {
+    await post({ t: "good", action: "cancel" });
+    expect(sendBookingCancelled).toHaveBeenCalledTimes(1);
+    expect(sendBookingCancelled).toHaveBeenCalledWith(visitor(OLD.start), { bookingId: "b1", changedAt: NOW });
+    expect(sendBookingChangeAlert).toHaveBeenCalledTimes(1);
+    expect(sendBookingChangeAlert).toHaveBeenCalledWith({ ...alertBase, kind: "cancelled" });
+  });
+
+  it("an email failure does not fail the cancel", async () => {
+    vi.mocked(sendBookingCancelled).mockRejectedValueOnce(new Error("smtp"));
+    vi.mocked(sendBookingChangeAlert).mockRejectedValueOnce(new Error("smtp"));
+    const res = await post({ t: "good", action: "cancel" });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ status: "CANCELLED" });
+  });
+
+  it("an already-cancelled booking sends no emails", async () => {
+    vi.mocked(prisma.booking.findUnique).mockResolvedValue(booking({ status: "CANCELLED" }) as never);
+    await post({ t: "good", action: "cancel" });
+    expect(sendBookingCancelled).not.toHaveBeenCalled();
+    expect(sendBookingChangeAlert).not.toHaveBeenCalled();
+  });
+
   it("cancelling twice makes no second deleteEvent call", async () => {
     await post({ t: "good", action: "cancel" });
     expect(deleteEvent).toHaveBeenCalledTimes(1);
@@ -162,6 +211,31 @@ describe("POST reschedule", () => {
     expect(await res.json()).toEqual({ error: "taken" });
     expect(prisma.booking.update).not.toHaveBeenCalled();
     expect(moveEvent).not.toHaveBeenCalled();
+    expect(sendBookingRescheduled).not.toHaveBeenCalled();
+    expect(sendBookingChangeAlert).not.toHaveBeenCalled();
+  });
+
+  it("success emails the visitor an updated invite and alerts Ryan with old and new times", async () => {
+    await post({ t: "good", action: "reschedule", startsAt: NEW_SLOT });
+    expect(sendBookingRescheduled).toHaveBeenCalledTimes(1);
+    expect(sendBookingRescheduled).toHaveBeenCalledWith(visitor(new Date(NEW_SLOT)), {
+      bookingId: "b1",
+      changedAt: NOW,
+    });
+    expect(sendBookingChangeAlert).toHaveBeenCalledTimes(1);
+    expect(sendBookingChangeAlert).toHaveBeenCalledWith({
+      ...alertBase,
+      kind: "moved",
+      newStartsAt: new Date(NEW_SLOT),
+    });
+  });
+
+  it("an email failure does not fail the reschedule", async () => {
+    vi.mocked(sendBookingRescheduled).mockRejectedValueOnce(new Error("smtp"));
+    vi.mocked(sendBookingChangeAlert).mockRejectedValueOnce(new Error("smtp"));
+    const res = await post({ t: "good", action: "reschedule", startsAt: NEW_SLOT });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ startsAt: NEW_SLOT });
   });
 
   it("past time -> 409 taken", async () => {
