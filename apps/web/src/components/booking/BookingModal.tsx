@@ -9,6 +9,7 @@ import { UnderlineField } from "@/components/ui/UnderlineField";
 import { RoleSelect } from "@/components/ui/RoleSelect";
 import { ContactConsentNotice } from "@/components/ui/ContactConsentNotice";
 import { RequiredMark } from "@/components/ui/RequiredMark";
+import { WHITE_PILL_COLORS } from "@/components/ui/cta-styles";
 
 export type MeetingType = "PHONE" | "MEET";
 export type Prefill = { firstName: string; lastName: string; email: string };
@@ -20,6 +21,16 @@ const MEETING_OPTIONS: { value: MeetingType; label: string }[] = [
 ];
 
 export const PILL_HOVER = { scale: 1.05, transition: SPRING_HOVER };
+
+/** "How should we meet?" option: chosen = solid black; not chosen = the site's white pill
+ *  (solid black outline, black text), so it stands out on the white pop-up (Ryan, 2026-11-17).
+ *  Both states carry a 1px border so switching never changes the buttons' size. */
+export function meetingOptionCls(active: boolean): string {
+  const base = "flex-1 rounded-full py-2 text-sm transition-colors";
+  return active
+    ? `${base} border border-[#1B1B1B] bg-[#1B1B1B] font-medium text-white`
+    : `${base} ${WHITE_PILL_COLORS}`;
+}
 
 /** The confirmation shown inside the pop-up after a successful booking. */
 export function BookingSuccess({ startsAt, meetingType, manageUrl }: Booked) {
@@ -160,9 +171,7 @@ export function BookingModal({ slot, page, prefill, recruitToken, onClose, onTak
                   type="button"
                   onClick={() => setMeetingType(o.value)}
                   aria-pressed={meetingType === o.value}
-                  className={`flex-1 rounded-full py-2 text-sm transition-colors ${
-                    meetingType === o.value ? "bg-[#1B1B1B] text-white" : "border border-[#1B1B1B]/15 hover:border-[#1B1B1B]/50"
-                  }`}
+                  className={meetingOptionCls(meetingType === o.value)}
                 >
                   {o.label}
                 </button>
