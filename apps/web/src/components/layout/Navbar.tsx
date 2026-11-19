@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { isTransparentNavPath } from "@/lib/navbar-theme";
 import { NAV_ITEM_CLS, SPRING_HOVER } from "@/lib/motion";
 import { AnimatePresence, motion } from "motion/react";
 import { X } from "lucide-react";
@@ -37,26 +38,8 @@ export function Navbar() {
   const { data: session } = useSession();
   const pathname = usePathname();
   const isHomepage = pathname === "/";
-  // Transparent on all marketing pages; solid on dashboard/auth/admin
-  const isTransparent =
-    !pathname.startsWith("/dashboard") &&
-    !pathname.startsWith("/admin") &&
-    !pathname.startsWith("/account") &&
-    !pathname.startsWith("/agents/") &&
-    pathname !== "/contact" &&
-    pathname !== "/login" &&
-    pathname !== "/register" &&
-    pathname !== "/forgot-password" &&
-    pathname !== "/accessibility" &&
-    pathname !== "/privacy" &&
-    pathname !== "/terms" &&
-    pathname !== "/fair-housing" &&
-    pathname !== "/join/apply" &&
-    pathname !== "/join/apply/submitted" &&
-    pathname !== "/join/ica" &&
-    pathname !== "/setup-account" &&
-    pathname !== "/unsubscribe" &&
-    pathname !== "/home-value";
+  // Transparent on pages with a photo/video hero; solid elsewhere (see lib/navbar-theme).
+  const isTransparent = isTransparentNavPath(pathname);
   const [scrolled, setScrolled] = useState(false);
   const [pastHero, setPastHero] = useState(!isTransparent);
   const [menuOpen, setMenuOpen] = useState(false);
