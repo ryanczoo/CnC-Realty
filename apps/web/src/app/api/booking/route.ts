@@ -12,8 +12,8 @@ const schema = z.object({
   // Caps keep oversized text out of the Google event, the invite and the emails.
   firstName: z.string().trim().min(1, "First name required").max(100, "First name is too long"),
   lastName: z.string().trim().min(1, "Last name required").max(100, "Last name is too long"),
-  email: z.string().email("Valid email required"),
-  phone: z.string().refine((v) => v.replace(/\D/g, "").length >= 7, "Valid phone number required"),
+  email: z.string().max(254, "Email is too long").email("Valid email required"),
+  phone: z.string().max(40, "Phone number is too long").refine((v) => v.replace(/\D/g, "").length >= 7, "Valid phone number required"),
   role: z.string().refine((v) => ROLE_OPTIONS.includes(v), "Please choose an option"),
   notes: z.string().max(2000, "Message is too long (2,000 characters max)").optional(),
   meetingType: z.enum(["PHONE", "MEET"]),

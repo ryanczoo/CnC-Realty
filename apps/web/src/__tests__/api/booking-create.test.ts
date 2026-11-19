@@ -153,6 +153,11 @@ describe("POST /api/booking", () => {
     expect((await POST(req(body({ lastName: "x".repeat(101) })))).status).toBe(400);
   });
 
+  it("returns 400 for an email over 254 or a phone over 40 characters", async () => {
+    expect((await POST(req(body({ email: `${"x".repeat(250)}@b.co` })))).status).toBe(400);
+    expect((await POST(req(body({ phone: "1".repeat(41) })))).status).toBe(400);
+  });
+
   it("returns 400 for a role outside ROLE_OPTIONS", async () => {
     expect((await POST(req(body({ role: "Wizard" })))).status).toBe(400);
   });

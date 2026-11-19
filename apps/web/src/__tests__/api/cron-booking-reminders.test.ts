@@ -190,6 +190,16 @@ describe("/api/cron/booking-reminders", () => {
       expect(sendEmail).not.toHaveBeenCalled();
     });
 
+    // A duplicate alert beats silence while every call is held.
+    it("Redis down during the brake: still alerts Ryan", async () => {
+      vi.mocked(prisma.booking.findMany).mockResolvedValue([farOut(1), farOut(2), farOut(3)] as never);
+      vi.mocked(eventExists).mockResolvedValue(false);
+      vi.mocked(redis.set).mockRejectedValue(new Error("redis down"));
+      const res = await GET(req(secret));
+      expect(await res.json()).toEqual({ sent: 0, cancelled: 0, held: 3 });
+      expect(sentTo(NOTIFY)).toHaveLength(1);
+    });
+
     it("2 missing (under the brake) are cancelled normally", async () => {
       vi.mocked(prisma.booking.findMany).mockResolvedValue([farOut(1), farOut(2)] as never);
       vi.mocked(eventExists).mockResolvedValue(false);

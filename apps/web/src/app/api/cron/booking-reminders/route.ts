@@ -72,7 +72,8 @@ export async function POST(req: NextRequest) {
   if (missing.length >= BRAKE_MIN_MISSING && missing.length === checked) {
     held = missing.length;
     console.error(`[booking-reminders] safety brake: all ${held} checked bookings missing from Google; cancelling none`);
-    let firstToday = false;
+    // At most once a day; if Redis is down, alert anyway (a duplicate beats silence).
+    let firstToday = true;
     try {
       firstToday = (await redis.set(BRAKE_ALERT_KEY, now.toISOString(), { nx: true, ex: 86_400 })) === "OK";
     } catch (err) {
