@@ -30,9 +30,25 @@ describe("buildBookingIcs", () => {
     expect(l).toContain("DTEND:20261117T183000Z");
     expect(l).toContain("STATUS:CONFIRMED");
     expect(l).toContain("ORGANIZER;CN=Ryan Chong:mailto:ryanchong@cncrealtygroup.com");
-    expect(l).toContain("ATTENDEE;CN=Ann;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:a@b.com");
+    // RSVP=FALSE: Ryan doesn't need "Accepted" reply emails.
+    expect(l).toContain("ATTENDEE;CN=Ann;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=FALSE:mailto:a@b.com");
     expect(l).toContain("SUMMARY:Call with Ryan (CnC Realty)");
     expect(l).toContain(`SEQUENCE:${inviteSequence(base.changedAt)}`);
+  });
+
+  // Gmail guests already get Google's copy of Ryan's event (they're attendees). Sharing Google's
+  // iCalUID (verified 2026-11-19: always "<event id>@google.com", unchanged by moves and deletes)
+  // makes our invite the same calendar entry instead of a second one.
+  it("uses Google's event UID when the booking has a Google event", () => {
+    const l = lines(unfold(buildBookingIcs({ ...base, googleEventId: "9m1fttap1jptqto9p9pdu67dqo" })));
+    expect(l).toContain("UID:9m1fttap1jptqto9p9pdu67dqo@google.com");
+    expect(l.some((x) => x.startsWith("UID:booking-"))).toBe(false);
+  });
+
+  it("falls back to the booking UID when there is no Google event", () => {
+    expect(lines(unfold(buildBookingIcs({ ...base, googleEventId: null })))).toContain(
+      "UID:booking-b1@cncrealtygroup.com"
+    );
   });
 
   it("Meet call: location and description carry the Meet link and the manage link", () => {
@@ -67,7 +83,7 @@ describe("buildBookingIcs", () => {
 
   it("quotes an attendee name with special characters", () => {
     const u = unfold(buildBookingIcs({ ...base, attendeeName: 'Ann, "Jr"; x:y' }));
-    expect(lines(u)).toContain("ATTENDEE;CN=\"Ann, 'Jr'; x:y\";ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:a@b.com");
+    expect(lines(u)).toContain("ATTENDEE;CN=\"Ann, 'Jr'; x:y\";ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=FALSE:mailto:a@b.com");
   });
 
   it("folds every line to at most 75 octets", () => {

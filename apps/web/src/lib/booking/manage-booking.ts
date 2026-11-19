@@ -79,7 +79,13 @@ export async function cancelBooking(bookingId: string, now: Date = new Date()): 
   if (!b) return false;
   if (b.status === "CANCELLED") return true;
 
-  await prisma.booking.update({ where: { id: b.id }, data: { status: "CANCELLED", cancelledAt: now } });
+  // Only an ACTIVE booking flips: a second simultaneous cancel (double click, or the
+  // cron's deleted-event check) changes nothing and sends nothing.
+  const { count } = await prisma.booking.updateMany({
+    where: { id: b.id, status: "ACTIVE" },
+    data: { status: "CANCELLED", cancelledAt: now },
+  });
+  if (count === 0) return true;
   if (b.googleEventId) {
     const eventId = b.googleEventId;
     await googleSafely("delete", () => deleteEvent(eventId));
@@ -89,7 +95,7 @@ export async function cancelBooking(bookingId: string, now: Date = new Date()): 
     .catch(console.error);
   await clearBusyCache();
   // The visitor's cancel invite removes the entry from their calendar; Ryan gets a heads-up.
-  await sendSafely(() => sendBookingCancelled(visitorEmail(b, b.startsAt), { bookingId: b.id, changedAt: now }));
+  await sendSafely(() => sendBookingCancelled(visitorEmail(b, b.startsAt), { bookingId: b.id, changedAt: now, googleEventId: b.googleEventId }));
   await sendSafely(() => sendBookingAlert({ ...alertFor(b), kind: "cancelled" }));
   return true;
 }
@@ -102,6 +108,8 @@ export async function rescheduleBooking(
   const b = await findBooking(bookingId);
   if (!b) return { ok: false, reason: "not_found" };
   if (b.status === "CANCELLED") return { ok: false, reason: "cancelled" };
+  // Already at that time: nothing to change, so no "moved" email or alert.
+  if (startsAt.getTime() === b.startsAt.getTime()) return { ok: true, startsAt };
 
   const endsAt = new Date(startsAt.getTime() + BOOKING_RULES.slotMinutes * 60_000);
 
@@ -139,7 +147,7 @@ export async function rescheduleBooking(
     .catch(console.error);
   await clearBusyCache();
   // Same UID, later SEQUENCE: the visitor's calendar moves the existing entry.
-  await sendSafely(() => sendBookingRescheduled(visitorEmail(b, startsAt), { bookingId: b.id, changedAt: now }));
+  await sendSafely(() => sendBookingRescheduled(visitorEmail(b, startsAt), { bookingId: b.id, changedAt: now, googleEventId: b.googleEventId }));
   await sendSafely(() => sendBookingAlert({ ...alertFor(b), kind: "moved", newStartsAt: startsAt }));
   return { ok: true, startsAt };
 }

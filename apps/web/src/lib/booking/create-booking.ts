@@ -136,7 +136,7 @@ export async function createBooking(input: BookingInput, now: Date = new Date())
       meetingType,
       meetLink: booking.meetLink,
       manageUrl: url,
-    }, { bookingId: booking.id, changedAt: booking.scheduledAt })
+    }, { bookingId: booking.id, changedAt: booking.scheduledAt, googleEventId: booking.googleEventId })
   );
   await sendSafely(() =>
     sendBookingAlert({

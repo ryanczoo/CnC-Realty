@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
-    booking: { findUnique: vi.fn(), update: vi.fn() },
+    booking: { findUnique: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
     activity: { create: vi.fn() },
   },
 }));
@@ -87,6 +87,7 @@ beforeEach(() => {
   vi.setSystemTime(NOW);
   vi.mocked(prisma.booking.findUnique).mockResolvedValue(booking() as never);
   vi.mocked(prisma.booking.update).mockResolvedValue({} as never);
+  vi.mocked(prisma.booking.updateMany).mockResolvedValue({ count: 1 } as never);
   vi.mocked(prisma.activity.create).mockResolvedValue({} as never);
   vi.mocked(getBusy).mockResolvedValue([]);
   vi.mocked(moveEvent).mockResolvedValue(undefined);
@@ -132,8 +133,9 @@ describe("POST cancel", () => {
     const res = await post({ t: "good", action: "cancel" });
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ status: "CANCELLED" });
-    expect(prisma.booking.update).toHaveBeenCalledWith({
-      where: { id: "b1" },
+    // Only an ACTIVE booking flips, so a second, simultaneous cancel is a no-op.
+    expect(prisma.booking.updateMany).toHaveBeenCalledWith({
+      where: { id: "b1", status: "ACTIVE" },
       data: { status: "CANCELLED", cancelledAt: NOW },
     });
     expect(deleteEvent).toHaveBeenCalledWith("g1");
@@ -146,7 +148,7 @@ describe("POST cancel", () => {
   it("emails the visitor a cancel invite and alerts Ryan, once each", async () => {
     await post({ t: "good", action: "cancel" });
     expect(sendBookingCancelled).toHaveBeenCalledTimes(1);
-    expect(sendBookingCancelled).toHaveBeenCalledWith(visitor(OLD.start), { bookingId: "b1", changedAt: NOW });
+    expect(sendBookingCancelled).toHaveBeenCalledWith(visitor(OLD.start), { bookingId: "b1", changedAt: NOW, googleEventId: "g1" });
     expect(sendBookingAlert).toHaveBeenCalledTimes(1);
     expect(sendBookingAlert).toHaveBeenCalledWith({ ...alertBase, kind: "cancelled" });
   });
@@ -166,16 +168,27 @@ describe("POST cancel", () => {
     expect(sendBookingAlert).not.toHaveBeenCalled();
   });
 
+  it("a cancel that loses a race (already cancelled when written) does nothing more", async () => {
+    vi.mocked(prisma.booking.updateMany).mockResolvedValue({ count: 0 } as never);
+    const res = await post({ t: "good", action: "cancel" });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ status: "CANCELLED" });
+    expect(deleteEvent).not.toHaveBeenCalled();
+    expect(prisma.activity.create).not.toHaveBeenCalled();
+    expect(sendBookingCancelled).not.toHaveBeenCalled();
+    expect(sendBookingAlert).not.toHaveBeenCalled();
+  });
+
   it("cancelling twice makes no second deleteEvent call", async () => {
     await post({ t: "good", action: "cancel" });
     expect(deleteEvent).toHaveBeenCalledTimes(1);
     vi.mocked(prisma.booking.findUnique).mockResolvedValue(booking({ status: "CANCELLED" }) as never);
-    vi.mocked(prisma.booking.update).mockClear();
+    vi.mocked(prisma.booking.updateMany).mockClear();
     const res = await post({ t: "good", action: "cancel" });
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ status: "CANCELLED" });
     expect(deleteEvent).toHaveBeenCalledTimes(1);
-    expect(prisma.booking.update).not.toHaveBeenCalled();
+    expect(prisma.booking.updateMany).not.toHaveBeenCalled();
   });
 
   it("Google delete failure does not fail the cancel", async () => {
@@ -221,6 +234,7 @@ describe("POST reschedule", () => {
     expect(sendBookingRescheduled).toHaveBeenCalledWith(visitor(new Date(NEW_SLOT)), {
       bookingId: "b1",
       changedAt: NOW,
+      googleEventId: "g1",
     });
     expect(sendBookingAlert).toHaveBeenCalledTimes(1);
     expect(sendBookingAlert).toHaveBeenCalledWith({
@@ -270,10 +284,16 @@ describe("POST reschedule", () => {
     expect(clearBusyCache).toHaveBeenCalled();
   });
 
-  it("ignores the booking's own Google event (exact old interval)", async () => {
+  // Picking the time it's already at: no change, no "moved" email, no alert.
+  it("rescheduling to the current time is a no-op", async () => {
     vi.mocked(getBusy).mockResolvedValue([OLD]);
     const res = await post({ t: "good", action: "reschedule", startsAt: OLD.start.toISOString() });
     expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ startsAt: OLD.start.toISOString() });
+    expect(prisma.booking.update).not.toHaveBeenCalled();
+    expect(moveEvent).not.toHaveBeenCalled();
+    expect(sendBookingRescheduled).not.toHaveBeenCalled();
+    expect(sendBookingAlert).not.toHaveBeenCalled();
   });
 
   it("unique-index P2002 -> 409 taken", async () => {

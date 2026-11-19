@@ -142,6 +142,17 @@ describe("POST /api/booking", () => {
     expect(tx.lead.create).not.toHaveBeenCalled();
   });
 
+  // Oversized text would land in the Google event, the invite and every email.
+  it("returns 400 for a message over 2000 characters, accepts exactly 2000", async () => {
+    expect((await POST(req(body({ notes: "x".repeat(2001) })))).status).toBe(400);
+    expect((await POST(req(body({ notes: "x".repeat(2000) })))).status).toBe(201);
+  });
+
+  it("returns 400 for a first or last name over 100 characters", async () => {
+    expect((await POST(req(body({ firstName: "x".repeat(101) })))).status).toBe(400);
+    expect((await POST(req(body({ lastName: "x".repeat(101) })))).status).toBe(400);
+  });
+
   it("returns 400 for a role outside ROLE_OPTIONS", async () => {
     expect((await POST(req(body({ role: "Wizard" })))).status).toBe(400);
   });

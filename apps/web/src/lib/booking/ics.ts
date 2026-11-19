@@ -7,10 +7,18 @@ import { BOOKING_CALENDAR_EMAIL, BOOKING_RULES } from "./rules";
 // Postmark emails carry this file instead. Every file for one booking shares a
 // UID, and each later file has a higher SEQUENCE, so the visitor's calendar
 // app moves or removes the one entry rather than adding another.
+//
+// The UID is the Google event's own iCalUID when there is one. The visitor is
+// a guest on Ryan's event, so Gmail users already get Google's copy; sharing
+// its UID keeps that and our invite as one entry. Google's iCalUID is
+// "<event id>@google.com", unchanged by moves and deletes (checked against the
+// live API 2026-11-19; createEvent logs if that ever stops being true).
 
 export type BookingInvite = {
   method: "REQUEST" | "CANCEL";
   bookingId: string;
+  /** Ryan's Google event for this booking, when it was created. */
+  googleEventId?: string | null;
   /** When the booking last changed (booked, rescheduled or cancelled). Drives SEQUENCE. */
   changedAt: Date;
   startsAt: Date;
@@ -30,6 +38,10 @@ const SEQUENCE_EPOCH = Date.UTC(2026, 0, 1);
 
 export function inviteSequence(changedAt: Date): number {
   return Math.max(0, Math.floor((changedAt.getTime() - SEQUENCE_EPOCH) / 1000));
+}
+
+export function inviteUid(i: Pick<BookingInvite, "bookingId" | "googleEventId">): string {
+  return i.googleEventId ? `${i.googleEventId}@google.com` : `booking-${i.bookingId}@cncrealtygroup.com`;
 }
 
 function icsDate(d: Date): string {
@@ -92,7 +104,7 @@ export function buildBookingIcs(i: BookingInvite): string {
     "CALSCALE:GREGORIAN",
     `METHOD:${i.method}`,
     "BEGIN:VEVENT",
-    `UID:booking-${i.bookingId}@cncrealtygroup.com`,
+    `UID:${inviteUid(i)}`,
     `SEQUENCE:${inviteSequence(i.changedAt)}`,
     `DTSTAMP:${icsDate(i.changedAt)}`,
     `DTSTART:${icsDate(i.startsAt)}`,
@@ -102,7 +114,7 @@ export function buildBookingIcs(i: BookingInvite): string {
     `LOCATION:${escapeText(location(i))}`,
     ...(i.meetingType === "MEET" && i.meetLink ? [`URL:${i.meetLink}`] : []),
     `ORGANIZER;CN=${paramValue(ORGANIZER_NAME)}:mailto:${BOOKING_CALENDAR_EMAIL}`,
-    `ATTENDEE;CN=${paramValue(i.attendeeName)};ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:${i.attendeeEmail}`,
+    `ATTENDEE;CN=${paramValue(i.attendeeName)};ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=FALSE:mailto:${i.attendeeEmail}`,
     `STATUS:${cancel ? "CANCELLED" : "CONFIRMED"}`,
     "TRANSP:OPAQUE",
     "END:VEVENT",

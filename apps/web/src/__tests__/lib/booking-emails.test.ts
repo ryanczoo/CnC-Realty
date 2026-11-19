@@ -76,6 +76,11 @@ describe("visitor confirmation", () => {
     expect(a.text).toContain("mailto:a@b.com");
   });
 
+  it("the invite shares the Google event's UID when there is one", async () => {
+    await sendBookingConfirmation(input, { ...invite, googleEventId: "ev123" });
+    expect(ics().text).toContain("UID:ev123@google.com");
+  });
+
   it("escapes the visitor's name", async () => {
     await sendBookingConfirmation({ ...input, firstName: "<script>alert(1)</script>" }, invite);
     expect(sent().html).not.toContain("<script>alert(1)");

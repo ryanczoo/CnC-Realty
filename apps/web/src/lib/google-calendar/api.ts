@@ -127,9 +127,14 @@ export async function createEvent(e: NewEvent): Promise<{ id: string; meetLink: 
   assertOk(res, "createEvent");
   const data = (await res.json()) as {
     id: string;
+    iCalUID?: string;
     hangoutLink?: string;
     conferenceData?: { entryPoints?: { entryPointType?: string; uri?: string }[] };
   };
+  // Visitor invites use "<id>@google.com" as their UID (lib/booking/ics.ts) so Gmail shows one entry.
+  if (data.iCalUID && data.iCalUID !== `${data.id}@google.com`) {
+    console.error("[google-calendar] iCalUID is not <id>@google.com; visitor invites may duplicate", data.id, data.iCalUID);
+  }
   const video = data.conferenceData?.entryPoints?.find((p) => p.entryPointType === "video")?.uri;
   return { id: data.id, meetLink: data.hangoutLink ?? video ?? null };
 }

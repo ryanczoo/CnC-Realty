@@ -94,6 +94,19 @@ describe("google calendar api", () => {
     }
   });
 
+  // Invites reuse "<id>@google.com" as their UID (lib/booking/ics.ts); flag it if Google ever differs.
+  it("createEvent logs an error when Google's iCalUID isn't <id>@google.com", async () => {
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.mocked(redis.get).mockResolvedValue("at");
+    fetchMock.mockResolvedValueOnce(json({ id: "e3", iCalUID: "e3@google.com" }));
+    await createEvent({ ...ev, meet: false });
+    expect(err).not.toHaveBeenCalled();
+    fetchMock.mockResolvedValueOnce(json({ id: "e4", iCalUID: "something-else@google.com" }));
+    await createEvent({ ...ev, meet: false });
+    expect(err).toHaveBeenCalledWith(expect.stringContaining("iCalUID"), "e4", "something-else@google.com");
+    err.mockRestore();
+  });
+
   it("createEvent without meet sends no conferenceData", async () => {
     vi.mocked(redis.get).mockResolvedValue("at");
     fetchMock.mockResolvedValueOnce(json({ id: "e2" }));

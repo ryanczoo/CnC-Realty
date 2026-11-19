@@ -16,7 +16,7 @@ export type BookingEmailInput = {
 };
 
 /** Which booking a calendar invite belongs to, and when it last changed (orders the updates). */
-export type InviteRef = { bookingId: string; changedAt: Date };
+export type InviteRef = { bookingId: string; changedAt: Date; googleEventId?: string | null };
 
 type Attachment = ReturnType<typeof inviteAttachment>;
 
@@ -50,6 +50,7 @@ function invite(b: BookingEmailInput, ref: InviteRef, method: "REQUEST" | "CANCE
   return inviteAttachment({
     method,
     bookingId: ref.bookingId,
+    googleEventId: ref.googleEventId,
     changedAt: ref.changedAt,
     startsAt: b.startsAt,
     attendeeEmail: b.email,
@@ -223,6 +224,34 @@ export async function sendBookingAlert(a: BookingAlert): Promise<void> {
       ctaLabel: "Open lead",
       ctaHref: `${process.env.NEXTAUTH_URL}/dashboard/leads/${encodeURIComponent(a.leadId)}`,
     }),
+    stream: "transactional",
+  });
+}
+
+/**
+ * Safety brake alert (info@): the 15-minute check found every upcoming call missing from Google at
+ * once, which looks like a Google problem rather than Ryan deleting them, so nothing was cancelled.
+ */
+export async function sendMissingEventsAlert(
+  calls: { firstName: string; lastName: string; email: string; startsAt: Date }[]
+): Promise<void> {
+  const rows: [string, string][] = calls.map((c) => [
+    formatSlotPT(c.startsAt),
+    `${c.firstName} ${c.lastName}`.trim() + ` (${c.email})`,
+  ]);
+  const bodyHtml = buildHeadingBodyHtml({
+    heading: "Booked calls missing from your calendar",
+    bodyHtml:
+      `<p>All ${calls.length} upcoming booked calls are missing from your Google Calendar at the same time. ` +
+      `That usually means a Google problem, not deleted calls, so none were cancelled and no clients were emailed.</p>` +
+      detailRowsHtml(rows) +
+      `<p>If you deleted them on purpose, they still need cancelling on the site so each client is told. ` +
+      `Otherwise check Settings → Google Calendar. This alert repeats at most once a day while it lasts.</p>`,
+  });
+  await sendEmail({
+    to: NOTIFY,
+    subject: `Check needed: ${calls.length} booked calls are missing from your Google Calendar`,
+    html: emailLayout({ bodyHtml, ctaLabel: "Open Settings", ctaHref: `${process.env.NEXTAUTH_URL}/dashboard/settings` }),
     stream: "transactional",
   });
 }

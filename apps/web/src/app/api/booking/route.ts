@@ -9,12 +9,13 @@ export const dynamic = "force-dynamic";
 
 const schema = z.object({
   startsAt: z.string().datetime({ offset: true, message: "Valid time required" }),
-  firstName: z.string().trim().min(1, "First name required"),
-  lastName: z.string().trim().min(1, "Last name required"),
+  // Caps keep oversized text out of the Google event, the invite and the emails.
+  firstName: z.string().trim().min(1, "First name required").max(100, "First name is too long"),
+  lastName: z.string().trim().min(1, "Last name required").max(100, "Last name is too long"),
   email: z.string().email("Valid email required"),
   phone: z.string().refine((v) => v.replace(/\D/g, "").length >= 7, "Valid phone number required"),
   role: z.string().refine((v) => ROLE_OPTIONS.includes(v), "Please choose an option"),
-  notes: z.string().optional(),
+  notes: z.string().max(2000, "Message is too long (2,000 characters max)").optional(),
   meetingType: z.enum(["PHONE", "MEET"]),
   page: z.enum(["CONTACT", "JOIN"]),
   recruitToken: z.string().optional(),

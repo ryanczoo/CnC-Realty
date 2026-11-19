@@ -70,6 +70,7 @@ describe("createBooking confirmation email", () => {
     expect(vi.mocked(sendBookingConfirmation).mock.calls[0][1]).toEqual({
       bookingId: "b1",
       changedAt: booking.scheduledAt,
+      googleEventId: "ev",
     });
   });
 
