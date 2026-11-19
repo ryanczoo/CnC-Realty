@@ -8040,6 +8040,8 @@ start times, raw SQL only). Speed baseline: `docs/superpowers/plans/2026-11-16-b
 
 ### Next Session — Start Here
 1. Part E: booking button in the recruiting email template + mailer `--test` send; then the next 50-email batch.
-2. Ryan: turn on "CnC Realty Calendar" in the Outlook phone app (add the aznfrkguy Gmail account there if needed).
+   Works from the office Wi-Fi (mailer uses Hostinger SMTP 465 / IMAP 993, no DB); run `Test-NetConnection
+   smtp.hostinger.com -Port 465` and `imap.hostinger.com -Port 993` first. Local site/DB checks won't work there (5432).
+2. ~~Ryan: turn on "CnC Realty Calendar" in the Outlook phone app~~ — DONE 2026-11-19.
 3. Optional: self-host the two Google fonts (prevents the transient build failure).
 4. Still pending from earlier: Join FAQ (7 drafts, placement unconfirmed); live tests listed in the 2026-11-06 notes.
