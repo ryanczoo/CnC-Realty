@@ -111,7 +111,7 @@ describe("POST /api/booking", () => {
       where: { id: "b1" },
       data: { googleEventId: "evt1", meetLink: "https://meet.google.com/abc" },
     });
-    expect(afterLeadCreated).toHaveBeenCalledWith(expect.anything(), { newsletterConsent: true });
+    expect(afterLeadCreated).toHaveBeenCalledWith(expect.anything(), { newsletterConsent: true, notifyRyan: false });
   });
 
   it("returns 409 taken on a unique violation and does not create an event", async () => {

@@ -9,7 +9,7 @@ export type EventTextInput = {
   bookingSource: "CONTACT" | "JOIN" | "RECRUITING_EMAIL";
 };
 
-const SOURCE_LABEL = {
+export const SOURCE_LABEL = {
   CONTACT: "Contact page",
   JOIN: "Join page",
   RECRUITING_EMAIL: "Recruiting email",

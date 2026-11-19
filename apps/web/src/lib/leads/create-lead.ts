@@ -20,8 +20,12 @@ export function leadCreateData(input: WebsiteLeadInput): Prisma.LeadCreateInput 
   return { ...fields, visitorRole: role };
 }
 
-export async function afterLeadCreated(lead: Lead, opts: { newsletterConsent?: boolean }): Promise<void> {
-  sendLeadNotification(lead).catch(console.error);
+// notifyRyan: false when the caller sends Ryan its own alert (bookings send "Meeting confirmed").
+export async function afterLeadCreated(
+  lead: Lead,
+  opts: { newsletterConsent?: boolean; notifyRyan?: boolean }
+): Promise<void> {
+  if (opts.notifyRyan !== false) sendLeadNotification(lead).catch(console.error);
   // A failed enrollment never fails the inquiry.
   if (opts.newsletterConsent) {
     await subscribeToNewsletter({ email: lead.email, leadId: lead.id, source: "contact-form" }).catch((err) =>

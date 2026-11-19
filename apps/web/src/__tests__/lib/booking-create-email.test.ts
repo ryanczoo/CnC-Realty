@@ -34,10 +34,12 @@ vi.mock("@/lib/email/send", () => ({ sendEmail: vi.fn().mockResolvedValue({ sent
 vi.mock("@/lib/email/booking-emails", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/email/booking-emails")>()),
   sendBookingConfirmation: vi.fn(),
+  sendBookingAlert: vi.fn(),
 }));
 
 import { createBooking } from "@/lib/booking/create-booking";
-import { sendBookingConfirmation } from "@/lib/email/booking-emails";
+import { sendBookingConfirmation, sendBookingAlert } from "@/lib/email/booking-emails";
+import { afterLeadCreated } from "@/lib/leads/create-lead";
 import { createEvent } from "@/lib/google-calendar/api";
 import { sendEmail } from "@/lib/email/send";
 
@@ -46,9 +48,11 @@ const input = {
   lastName: "L",
   email: "a@b.com",
   phone: "714",
+  role: "Agent",
+  notes: "hi",
   startsAt: booking.startsAt,
   meetingType: "MEET" as const,
-  bookingSource: "WEBSITE" as never,
+  bookingSource: "JOIN" as never,
   newsletterConsent: true,
 } as never;
 
@@ -67,6 +71,34 @@ describe("createBooking confirmation email", () => {
       bookingId: "b1",
       changedAt: booking.scheduledAt,
     });
+  });
+
+  // Ryan gets "Meeting confirmed" instead of the general New Lead email (2026-11-18).
+  it("skips the New Lead email and sends Ryan the Meeting confirmed alert", async () => {
+    await createBooking(input, new Date("2026-11-16T00:00:00Z"));
+    expect(vi.mocked(afterLeadCreated).mock.calls[0][1]).toEqual({ newsletterConsent: true, notifyRyan: false });
+    expect(sendBookingAlert).toHaveBeenCalledTimes(1);
+    expect(sendBookingAlert).toHaveBeenCalledWith({
+      kind: "confirmed",
+      leadId: "l1",
+      firstName: "Ann",
+      lastName: "L",
+      email: "a@b.com",
+      phone: "714",
+      meetingType: "MEET",
+      startsAt: booking.startsAt,
+      meetLink: "https://meet.google.com/x",
+      role: "Agent",
+      notes: "hi",
+      bookingSource: "JOIN",
+    });
+  });
+
+  it("a failed Meeting confirmed alert never fails the booking", async () => {
+    vi.mocked(sendBookingAlert).mockRejectedValueOnce(new Error("smtp"));
+    const r = await createBooking(input, new Date("2026-11-16T00:00:00Z"));
+    expect(r.ok).toBe(true);
+    expect(sendBookingConfirmation).toHaveBeenCalledTimes(1);
   });
 
   it("an email failure never fails the booking", async () => {

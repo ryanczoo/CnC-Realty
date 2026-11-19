@@ -10,7 +10,7 @@ import { sendSafely } from "@/lib/email/send-safely";
 import {
   sendBookingRescheduled,
   sendBookingCancelled,
-  sendBookingChangeAlert,
+  sendBookingAlert,
   type BookingEmailInput,
 } from "@/lib/email/booking-emails";
 
@@ -90,7 +90,7 @@ export async function cancelBooking(bookingId: string, now: Date = new Date()): 
   await clearBusyCache();
   // The visitor's cancel invite removes the entry from their calendar; Ryan gets a heads-up.
   await sendSafely(() => sendBookingCancelled(visitorEmail(b, b.startsAt), { bookingId: b.id, changedAt: now }));
-  await sendSafely(() => sendBookingChangeAlert({ ...alertFor(b), kind: "cancelled" }));
+  await sendSafely(() => sendBookingAlert({ ...alertFor(b), kind: "cancelled" }));
   return true;
 }
 
@@ -140,6 +140,6 @@ export async function rescheduleBooking(
   await clearBusyCache();
   // Same UID, later SEQUENCE: the visitor's calendar moves the existing entry.
   await sendSafely(() => sendBookingRescheduled(visitorEmail(b, startsAt), { bookingId: b.id, changedAt: now }));
-  await sendSafely(() => sendBookingChangeAlert({ ...alertFor(b), kind: "moved", newStartsAt: startsAt }));
+  await sendSafely(() => sendBookingAlert({ ...alertFor(b), kind: "moved", newStartsAt: startsAt }));
   return { ok: true, startsAt };
 }

@@ -12,7 +12,7 @@ import { manageUrl } from "./tokens";
 import { sendSafely } from "@/lib/email/send-safely";
 import { sendEmail } from "@/lib/email/send";
 import { NOTIFY, emailLayout, buildHeadingBodyHtml } from "@/lib/email";
-import { sendBookingConfirmation, detailRowsHtml } from "@/lib/email/booking-emails";
+import { sendBookingConfirmation, sendBookingAlert, detailRowsHtml } from "@/lib/email/booking-emails";
 import { eventSummary, eventDescription } from "./event-text";
 
 export type BookingInput = WebsiteLeadInput & {
@@ -121,8 +121,9 @@ export async function createBooking(input: BookingInput, now: Date = new Date())
     })
     .catch(console.error);
 
-  // 6. Notification + newsletter; 7. drop the busy cache.
-  await afterLeadCreated(lead, { newsletterConsent });
+  // 6. Newsletter (Ryan's New Lead email is replaced by the Meeting confirmed alert below);
+  // 7. drop the busy cache.
+  await afterLeadCreated(lead, { newsletterConsent, notifyRyan: false });
   await clearBusyCache();
 
   const url = manageUrl(booking.id);
@@ -136,6 +137,22 @@ export async function createBooking(input: BookingInput, now: Date = new Date())
       meetLink: booking.meetLink,
       manageUrl: url,
     }, { bookingId: booking.id, changedAt: booking.scheduledAt })
+  );
+  await sendSafely(() =>
+    sendBookingAlert({
+      kind: "confirmed",
+      leadId: lead.id,
+      firstName: lead.firstName,
+      lastName: lead.lastName,
+      email: lead.email,
+      phone: lead.phone ?? "",
+      meetingType,
+      startsAt,
+      meetLink: booking.meetLink,
+      role: leadInput.role,
+      notes: leadInput.notes,
+      bookingSource,
+    })
   );
 
   return { ok: true, booking, manageUrl: url };

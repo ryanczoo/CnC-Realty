@@ -4,21 +4,24 @@ import { isAuthorizedCronRequest } from "@/lib/cron-auth";
 import { eventExists, withGoogle } from "@/lib/google-calendar/api";
 import { reminderDue } from "@/lib/booking/reminders";
 import { manageUrl } from "@/lib/booking/tokens";
-import { sendBookingReminder } from "@/lib/email/booking-emails";
+import { sendBookingReminder, sendBookingCancelled, type BookingEmailInput } from "@/lib/email/booking-emails";
+import { sendSafely } from "@/lib/email/send-safely";
+import { clearBusyCache } from "@/lib/booking/busy";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-// Every 15 minutes: sends 24h / 1h reminders, and cancels bookings whose Google event Ryan deleted.
+// Every 15 minutes: checks every upcoming booking's Google event (one small lookup each), so a call
+// Ryan deletes from his calendar is cancelled and the visitor emailed within 15 minutes; then sends
+// any 24h / 1h reminder that's due.
 export async function POST(req: NextRequest) {
   if (!isAuthorizedCronRequest(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const now = new Date();
-  const horizon = new Date(now.getTime() + (24 * 60 + 15) * 60_000);
   const bookings = await prisma.booking.findMany({
-    where: { status: "ACTIVE", startsAt: { gt: now, lte: horizon } },
+    where: { status: "ACTIVE", startsAt: { gt: now } },
     include: { lead: { select: { firstName: true, email: true, phone: true } } },
   });
 
@@ -27,8 +30,17 @@ export async function POST(req: NextRequest) {
 
   for (const b of bookings) {
     try {
-      const which = reminderDue(b, now);
-      if (!which || !b.googleEventId) continue;
+      if (!b.googleEventId) continue;
+
+      const visitor: BookingEmailInput = {
+        email: b.lead.email,
+        firstName: b.lead.firstName,
+        phone: b.lead.phone ?? "",
+        startsAt: b.startsAt,
+        meetingType: b.meetingType,
+        meetLink: b.meetLink,
+        manageUrl: manageUrl(b.id),
+      };
 
       let exists: boolean;
       try {
@@ -47,21 +59,15 @@ export async function POST(req: NextRequest) {
           })
           .catch(console.error);
         cancelled++;
+        await clearBusyCache();
+        // Same UID, later SEQUENCE: the visitor's calendar removes the entry.
+        await sendSafely(() => sendBookingCancelled(visitor, { bookingId: b.id, changedAt: now }, "ryan"));
         continue;
       }
 
-      await sendBookingReminder(
-        {
-          email: b.lead.email,
-          firstName: b.lead.firstName,
-          phone: b.lead.phone ?? "",
-          startsAt: b.startsAt,
-          meetingType: b.meetingType,
-          meetLink: b.meetLink,
-          manageUrl: manageUrl(b.id),
-        },
-        which
-      );
+      const which = reminderDue(b, now);
+      if (!which) continue;
+      await sendBookingReminder(visitor, which);
       await prisma.booking.update({
         where: { id: b.id },
         data: which === "24h" ? { reminder24SentAt: now } : { reminder1SentAt: now },

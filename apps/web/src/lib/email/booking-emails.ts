@@ -1,8 +1,9 @@
-import type { MeetingType } from "@cnc/database";
+import type { BookingSource, MeetingType } from "@cnc/database";
 import { emailLayout, buildHeadingBodyHtml, escapeHtml, NOTIFY } from "@/lib/email";
 import { sendEmail } from "@/lib/email/send";
 import { formatSlotPT } from "@/lib/booking/format";
 import { inviteAttachment } from "@/lib/booking/ics";
+import { SOURCE_LABEL } from "@/lib/booking/event-text";
 
 export type BookingEmailInput = {
   email: string;
@@ -18,6 +19,12 @@ export type BookingEmailInput = {
 export type InviteRef = { bookingId: string; changedAt: Date };
 
 type Attachment = ReturnType<typeof inviteAttachment>;
+
+// One photo per moment, shared by the visitor's email and Ryan's alert (Ryan, 2026-11-18).
+type Moment = "confirmed" | "moved" | "cancelled";
+function photoUrl(m: Moment): string {
+  return `${process.env.NEXTAUTH_URL}/meeting-${m}-photo.jpg`;
+}
 
 /** Bold "Label: value" lines for Ryan's booking alerts. Values are escaped. */
 export function detailRowsHtml(rows: [string, string][]): string {
@@ -39,13 +46,6 @@ function detailsHtml(b: BookingEmailInput): string {
   return `${when}<p>Google Meet</p>${link}`;
 }
 
-function manageLinksHtml(url: string): string {
-  const href = escapeHtml(url);
-  return `<p style="text-align: center; font-size: 16px; margin: 20px 0 0;">
-    <a href="${href}" style="color: #9E8C61;">Reschedule</a> &nbsp;|&nbsp; <a href="${href}" style="color: #9E8C61;">Cancel</a>
-  </p>`;
-}
-
 function invite(b: BookingEmailInput, ref: InviteRef, method: "REQUEST" | "CANCEL"): Attachment {
   return inviteAttachment({
     method,
@@ -61,63 +61,65 @@ function invite(b: BookingEmailInput, ref: InviteRef, method: "REQUEST" | "CANCE
   });
 }
 
+// The visitor's booked/moved/reminder emails: details plus one "Manage my meeting" button,
+// which opens the manage page (pick a new time or cancel).
 async function send(
   b: BookingEmailInput,
-  subject: string,
-  heading: string,
-  intro: string,
-  attachment?: Attachment
+  opts: { subject: string; heading: string; intro: string; moment?: Moment; attachment?: Attachment }
 ): Promise<void> {
   const bodyHtml = buildHeadingBodyHtml({
-    heading,
-    bodyHtml: `<p>Hi ${escapeHtml(b.firstName)},</p><p>${intro}</p>${detailsHtml(b)}`,
+    heading: opts.heading,
+    bodyHtml: `<p>Hi ${escapeHtml(b.firstName)},</p><p>${opts.intro}</p>${detailsHtml(b)}`,
+    ...(opts.moment ? { photoUrl: photoUrl(opts.moment) } : {}),
   });
   await sendEmail({
     to: b.email,
-    subject,
-    html: emailLayout({
-      bodyHtml,
-      ctaLabel: "Reschedule or cancel",
-      ctaHref: b.manageUrl,
-      afterCtaHtml: manageLinksHtml(b.manageUrl),
-    }),
+    subject: opts.subject,
+    html: emailLayout({ bodyHtml, ctaLabel: "Manage my meeting", ctaHref: escapeHtml(b.manageUrl) }),
     stream: "transactional",
-    ...(attachment ? { attachments: [attachment] } : {}),
+    ...(opts.attachment ? { attachments: [opts.attachment] } : {}),
   });
 }
 
 export async function sendBookingConfirmation(b: BookingEmailInput, ref: InviteRef): Promise<void> {
-  await send(
-    b,
-    "You're booked: your call with Ryan",
-    "You're booked!",
-    "Your call with Ryan is confirmed.",
-    invite(b, ref, "REQUEST")
-  );
+  await send(b, {
+    subject: "Meeting with Ryan confirmed!",
+    heading: "You're booked!",
+    intro: "Your call with Ryan is confirmed.",
+    moment: "confirmed",
+    attachment: invite(b, ref, "REQUEST"),
+  });
 }
 
 export async function sendBookingRescheduled(b: BookingEmailInput, ref: InviteRef): Promise<void> {
-  await send(
-    b,
-    "Your call with Ryan has moved",
-    "Your call has moved",
-    "Your call with Ryan is now at the new time below.",
-    invite(b, ref, "REQUEST")
-  );
+  await send(b, {
+    subject: "Meeting with Ryan moved!",
+    heading: "Your call has moved",
+    intro: "Your call with Ryan is now at the new time below.",
+    moment: "moved",
+    attachment: invite(b, ref, "REQUEST"),
+  });
 }
 
-export async function sendBookingCancelled(b: BookingEmailInput, ref: InviteRef): Promise<void> {
+/** cancelledBy "ryan": Ryan deleted the event from his calendar, so the wording says he cancelled. */
+export async function sendBookingCancelled(
+  b: BookingEmailInput,
+  ref: InviteRef,
+  cancelledBy: "visitor" | "ryan" = "visitor"
+): Promise<void> {
+  const intro = cancelledBy === "ryan" ? "Ryan needed to cancel your call." : "Your call with Ryan has been cancelled.";
   const bodyHtml = buildHeadingBodyHtml({
     heading: "Your call is cancelled",
+    photoUrl: photoUrl("cancelled"),
     bodyHtml:
       `<p>Hi ${escapeHtml(b.firstName)},</p>` +
-      `<p>Your call with Ryan has been cancelled.</p>` +
+      `<p>${intro}</p>` +
       `<p><strong>${escapeHtml(formatSlotPT(b.startsAt))}</strong></p>` +
       `<p>Want to talk another time? Pick a new time whenever you're ready.</p>`,
   });
   await sendEmail({
     to: b.email,
-    subject: "Your call with Ryan is cancelled",
+    subject: "Meeting with Ryan cancelled!",
     html: emailLayout({ bodyHtml, ctaLabel: "Book a new time", ctaHref: `${process.env.NEXTAUTH_URL}/contact` }),
     stream: "transactional",
     attachments: [invite(b, ref, "CANCEL")],
@@ -126,46 +128,96 @@ export async function sendBookingCancelled(b: BookingEmailInput, ref: InviteRef)
 
 export async function sendBookingReminder(b: BookingEmailInput, which: "24h" | "1h"): Promise<void> {
   if (which === "24h") {
-    await send(b, "Reminder: your call with Ryan is tomorrow", "Your call is tomorrow", "A quick reminder about your call with Ryan.");
+    await send(b, {
+      subject: "Reminder: your call with Ryan is tomorrow",
+      heading: "Your call is tomorrow",
+      intro: "A quick reminder about your call with Ryan.",
+    });
   } else {
-    await send(b, "Reminder: your call with Ryan starts in 1 hour", "Your call starts in 1 hour", "Your call with Ryan starts in about an hour.");
+    await send(b, {
+      subject: "Reminder: your call with Ryan starts in 1 hour",
+      heading: "Your call starts in 1 hour",
+      intro: "Your call with Ryan starts in about an hour.",
+    });
   }
 }
 
-export type BookingChangeAlert = {
+type AlertPerson = {
   leadId: string;
   firstName: string;
   lastName: string;
   email: string;
   phone: string;
   meetingType: MeetingType;
-  oldStartsAt: Date;
-} & ({ kind: "moved"; newStartsAt: Date } | { kind: "cancelled" });
+};
 
-/** Heads-up to Ryan (info@) when a visitor reschedules or cancels from their manage link. */
-export async function sendBookingChangeAlert(a: BookingChangeAlert): Promise<void> {
+export type BookingAlert = AlertPerson &
+  (
+    | {
+        kind: "confirmed";
+        startsAt: Date;
+        meetLink: string | null;
+        role?: string | null;
+        notes?: string | null;
+        bookingSource: BookingSource;
+      }
+    | { kind: "moved"; oldStartsAt: Date; newStartsAt: Date }
+    | { kind: "cancelled"; oldStartsAt: Date }
+  );
+
+const ALERT_TITLE: Record<Moment, string> = {
+  confirmed: "Meeting confirmed",
+  moved: "Meeting moved",
+  cancelled: "Meeting cancelled",
+};
+
+/** Ryan's alert (info@) when a visitor books, reschedules, or cancels. */
+export async function sendBookingAlert(a: BookingAlert): Promise<void> {
   const name = `${a.firstName} ${a.lastName}`.trim();
-  const oldWhen = formatSlotPT(a.oldStartsAt);
-  const moved = a.kind === "moved";
-  const newWhen = moved ? formatSlotPT(a.newStartsAt) : "";
-  const subject = moved ? `Call moved: ${name} · ${oldWhen} → ${newWhen}` : `Call cancelled: ${name} · ${oldWhen}`;
-  const timeRows: [string, string][] = moved ? [["Was", oldWhen], ["Now", newWhen]] : [["Time", oldWhen]];
+  const optional = (label: string, v: string | null | undefined): [string, string][] => (v ? [[label, v]] : []);
+
+  let when: string;
+  let timeRows: [string, string][];
+  let extraRows: [string, string][] = [];
+  let note: string;
+  if (a.kind === "confirmed") {
+    when = formatSlotPT(a.startsAt);
+    timeRows = [["Time", when]];
+    extraRows = [
+      ...optional("Meet link", a.meetingType === "MEET" ? a.meetLink : null),
+      ...optional("I am a", a.role),
+      ...optional("Message", a.notes),
+      ["Booked from", SOURCE_LABEL[a.bookingSource]],
+    ];
+    note = "It's on your Google Calendar.";
+  } else if (a.kind === "moved") {
+    const oldWhen = formatSlotPT(a.oldStartsAt);
+    const newWhen = formatSlotPT(a.newStartsAt);
+    when = `${oldWhen} → ${newWhen}`;
+    timeRows = [["Was", oldWhen], ["Now", newWhen]];
+    note = "Your Google Calendar has been updated.";
+  } else {
+    when = formatSlotPT(a.oldStartsAt);
+    timeRows = [["Time", when]];
+    note = "The time is open again on the site.";
+  }
+
   const rows: [string, string][] = [
     ["Name", name],
     ["Email", a.email],
-    ...(a.phone ? ([["Phone", a.phone]] as [string, string][]) : []),
+    ...optional("Phone", a.phone),
     ...timeRows,
     ["Meeting type", meetingLabel(a.meetingType)],
+    ...extraRows,
   ];
   const bodyHtml = buildHeadingBodyHtml({
-    heading: moved ? "Call moved" : "Call cancelled",
-    bodyHtml:
-      detailRowsHtml(rows) +
-      (moved ? "<p>Your Google Calendar has been updated.</p>" : "<p>The time is open again on the site.</p>"),
+    heading: ALERT_TITLE[a.kind],
+    photoUrl: photoUrl(a.kind),
+    bodyHtml: detailRowsHtml(rows) + `<p>${note}</p>`,
   });
   await sendEmail({
     to: NOTIFY,
-    subject,
+    subject: `${ALERT_TITLE[a.kind]}: ${name} · ${when}`,
     html: emailLayout({
       bodyHtml,
       ctaLabel: "Open lead",

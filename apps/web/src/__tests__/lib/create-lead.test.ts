@@ -40,4 +40,11 @@ describe("afterLeadCreated", () => {
     await expect(afterLeadCreated(lead, { newsletterConsent: true })).resolves.toBeUndefined();
     expect(Sentry.captureException).toHaveBeenCalled();
   });
+  // Bookings send Ryan their own "Meeting confirmed" alert instead of the New Lead email.
+  it("notifyRyan: false skips the New Lead email but still subscribes", async () => {
+    vi.mocked(sendLeadNotification).mockClear();
+    await afterLeadCreated(lead, { newsletterConsent: true, notifyRyan: false });
+    expect(sendLeadNotification).not.toHaveBeenCalled();
+    expect(subscribeToNewsletter).toHaveBeenCalledTimes(1);
+  });
 });
