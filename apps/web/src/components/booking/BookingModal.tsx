@@ -193,7 +193,7 @@ export function BookingModal({ slot, page, prefill, recruitToken, onClose, onTak
             whileHover={PILL_HOVER}
             className="w-full rounded-full bg-[#1B1B1B] py-3.5 text-sm font-medium text-white disabled:opacity-40 max-lg:py-3"
           >
-            {status === "loading" ? "Booking…" : "Confirm Call"}
+            {status === "loading" ? "Booking…" : "Confirm"}
           </motion.button>
         </form>
       ) : null}
