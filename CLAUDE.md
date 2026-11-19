@@ -7956,3 +7956,90 @@ Json; activity types `COMMISSION_CHANGE_APPROVED/REJECTED`) was applied live on 
 1. Ryan live-tests on cncrealtygroup.com: his own file in the Agent section (agent rules), a commission change
    request + Approve/Reject on the Admin page, and (when one exists) a referral end to end.
 2. Still pending from earlier: Join FAQ (7 drafts, placement unconfirmed).
+
+---
+
+## Session Notes — 2026-11-16 → 2026-11-19 ("Meet with RYAN" booking calendar — LIVE)
+
+Built subagent-driven from `docs/superpowers/specs/2026-11-16-booking-calendar-design.md` (+ `-google-setup.md`)
+and `docs/superpowers/plans/2026-11-16-booking-calendar.md`; final whole-branch review + scoped re-review, then
+**pushed live 2026-11-19** (`53d8c742..b723ca83`, then `1aba81b1` "Confirm" button, `a6809bae` navbar). Migration
+`20261116120000_booking` was applied to the shared DB on 2026-11-17 (Booking table + partial unique index on ACTIVE
+start times, raw SQL only). Speed baseline: `docs/superpowers/plans/2026-11-16-booking-calendar-baseline.txt`.
+
+### What it does
+- Calendar card on Contact + Join (`#book-a-call`, recruiting links `join?book=<signed token>` prefill the form).
+  15-min slots, Pacific Time, 08:00–19:45, 14 days. Availability = Ryan's Google free/busy + DB bookings
+  (`lib/booking/busy.ts`, short Redis cache). Pop-up form (`components/booking/BookingModal.tsx`, submit "Confirm").
+- Each booking = Unassigned lead (tag "Booked Call", + "Recruiting Email" from recruit links) + Booking row +
+  Google event on Ryan's primary calendar (Meet link for Google Meet). `lib/booking/create-booking.ts`.
+- Visitor manages via signed link → **meeting Manage page** `/booking/manage?t=…` (NOT `/manage`, which is Property
+  Management): reschedule or cancel (`lib/booking/manage-booking.ts`).
+- Google OAuth connection (Settings → Google Calendar card) stored AES-GCM in SiteSettings `google_calendar`, locked
+  to `BOOKING_CALENDAR_EMAIL` (ryanchong@cncrealtygroup.com). Google Cloud project "CnC Booking" is **In production**
+  (no 7-day token expiry). Vercel has `GOOGLE_CAL_CLIENT_ID`, `GOOGLE_CAL_CLIENT_SECRET`, `GOOGLE_TOKEN_KEY`,
+  `BOOKING_LINK_SECRET` (Production + Preview, Sensitive) — **`GOOGLE_TOKEN_KEY` must stay identical to `.env.local`**
+  (shared DB; a different key can't unlock the stored connection).
+
+### Emails (decided by Ryan 2026-11-18)
+- Google writes events with `sendUpdates=none`: Google's guest invites came "from" ryanchong@ without our domain's
+  signature → Hotmail junk. The site's Postmark emails carry `invite.ics` instead (`lib/booking/ics.ts`): UID =
+  Google's iCalUID `<eventId>@google.com` (verified against the live API: unchanged by moves and deletes; fallback
+  `booking-<id>@cncrealtygroup.com`), SEQUENCE = seconds since 2026-01-01 of the last change, RSVP=FALSE,
+  REQUEST for booked/moved, CANCEL for cancelled. `createEvent` logs if the iCalUID format ever changes.
+- Visitor: "Meeting with Ryan confirmed! / moved! / cancelled!" with photos `public/meeting-{confirmed,moved,
+  cancelled}-photo.jpg` (2400x693 banners like the other email photos); one gold **"Manage"** button (Reschedule |
+  Cancel links removed). Cancelled email → "Book a new time" (/contact); if Ryan deleted the event it says "Ryan
+  needed to cancel your call." Reminders 24h/1h keep the Manage button, no photo.
+- Ryan (info@): `sendBookingAlert` — "Meeting confirmed" (**replaces the New Lead email for bookings only**:
+  `afterLeadCreated(..., { notifyRyan: false })`), "Meeting moved", "Meeting cancelled", same photo as the visitor's
+  matching email, "Open lead" → `/dashboard/leads/<id>`. Shared `detailRowsHtml` for alert rows.
+- All in `lib/email/booking-emails.ts`; sends wrapped in `sendSafely` (never fail the booking/cancel).
+
+### 15-minute cron (`api/cron/booking-reminders`, existing `*/15` entry)
+- Checks EVERY upcoming ACTIVE booking's Google event each run (not only when a reminder is due). Missing (404/410
+  or status cancelled) → booking CANCELLED (conditional `updateMany` on ACTIVE — first cancel wins), lead note,
+  busy cache cleared, visitor emailed "Ryan needed to cancel". No alert to Ryan (he deleted it). Google errors →
+  skip, never cancel. Bookings with no Google event still get reminders. Response `{sent, cancelled, held}`.
+- **Safety brake:** ≥3 missing AND that's every booking checked → cancel none, email no clients, alert info@
+  "Check needed: N booked calls are missing…" at most once/day (Upstash `set nx ex 86400`; alerts anyway if Redis is
+  down). Trade-off Ryan knows: deleting ALL his 3+ upcoming calls on purpose also trips it → cancel them by hand.
+- Cost/speed checked: no new cron, no extra Neon wake-ups, Google lookups free, ~96 Redis calls/day.
+
+### Other changes this round
+- Navbar solid/see-through page list moved to `lib/navbar-theme.ts` (`isTransparentNavPath`, tested);
+  `/booking/manage` added (solid black bar like Contact — the see-through white logo vanished on its off-white page).
+- Booking API caps: names 100, notes 2000, email 254, phone 40. Same-time reschedule is a no-op.
+- Calendar card UI: shared `shadow-floating` (Tailwind) from the homepage Services cards; heading "Meet with / RYAN";
+  "Phone call" option uses the shared white pill (`components/ui/cta-styles.ts` `WHITE_PILL_COLORS`).
+
+### Outlook ↔ Google calendar (no code)
+- Ryan's Outlook "ryanchong@cncrealtygroup.com" account is Hostinger IMAP (mail only; its "Ryan Chong" calendar is
+  local and invisible to the site). The Google calendar ("CnC Realty Calendar") is shared to aznfrkguy@gmail.com
+  (already in Outlook) with "Make changes and see all event details", so it shows and is editable in Outlook.
+  New Outlook won't add the same address twice — do NOT remove the IMAP account (it carries his mail).
+- Blocks Ryan adds on "CnC Realty Calendar" in Outlook remove site slots; deleting a booked call there triggers the
+  cron cancel. Verified both directions.
+
+### Deploy + live test (2026-11-19)
+- First Vercel build of `b723ca83` failed: transient Google Fonts response in `next/font` (layout.tsx, not our
+  code); `vercel redeploy` of the same deployment succeeded. Optional hardening: self-host Inter + Cormorant via
+  `next/font/local` (Google Sans Flex already is).
+- Live test by Ryan (Hotmail): book → reschedule → cancel, then book + delete in Outlook — all verified in DB,
+  Google and Postmark (cron caught the delete 16 s after it). Test data (leads Test 2/Test 3, earlier test leads,
+  Hotmail newsletter subscription) deleted; booking table empty. Suite 2791/2791, tsc + lint clean.
+
+### Deferred (reviewed, owner's call)
+- Slots endpoint has no rate limit (60 s cache; low traffic). Deleting a lead leaves its Google event (delete it by
+  hand). Ryan moving an event's time directly in Google isn't synced back to the booking.
+
+### Recruiting mailer
+- 50 emails sent 2026-11-18 08:00–10:22 PT (0 failures); next batch allowed after 10:22 AM PT 2026-11-19.
+- Part E still pending: add the Outlook "Book a call" button `https://cncrealtygroup.com/join?book=AGENT#book-a-call`
+  to the recruiting template (mailer swaps `?book=AGENT` for a signed token), then `node send.mjs --test`.
+
+### Next Session — Start Here
+1. Part E: booking button in the recruiting email template + mailer `--test` send; then the next 50-email batch.
+2. Ryan: turn on "CnC Realty Calendar" in the Outlook phone app (add the aznfrkguy Gmail account there if needed).
+3. Optional: self-host the two Google fonts (prevents the transient build failure).
+4. Still pending from earlier: Join FAQ (7 drafts, placement unconfirmed); live tests listed in the 2026-11-06 notes.
