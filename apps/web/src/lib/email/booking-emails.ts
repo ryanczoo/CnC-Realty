@@ -61,7 +61,7 @@ function invite(b: BookingEmailInput, ref: InviteRef, method: "REQUEST" | "CANCE
   });
 }
 
-// The visitor's booked/moved/reminder emails: details plus one "Manage my meeting" button,
+// The visitor's booked/moved/reminder emails: details plus one "Manage" button,
 // which opens the manage page (pick a new time or cancel).
 async function send(
   b: BookingEmailInput,
@@ -75,7 +75,7 @@ async function send(
   await sendEmail({
     to: b.email,
     subject: opts.subject,
-    html: emailLayout({ bodyHtml, ctaLabel: "Manage my meeting", ctaHref: escapeHtml(b.manageUrl) }),
+    html: emailLayout({ bodyHtml, ctaLabel: "Manage", ctaHref: escapeHtml(b.manageUrl) }),
     stream: "transactional",
     ...(opts.attachment ? { attachments: [opts.attachment] } : {}),
   });

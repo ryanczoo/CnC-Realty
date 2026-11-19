@@ -40,11 +40,12 @@ beforeEach(() => {
   vi.stubEnv("NEXTAUTH_URL", "https://cncrealtygroup.com");
 });
 
-// Ryan (2026-11-18): one gold "Manage my meeting" button; the Reschedule | Cancel links
+// Ryan (2026-11-18): one gold "Manage" button; the Reschedule | Cancel links
 // under it went to the same page, so they're gone.
 function expectManageButtonOnly(html: string | undefined) {
   html = html ?? "";
-  expect(html).toContain("Manage my meeting");
+  expect(html).toMatch(/>\s*Manage\s*<\/a>/);
+  expect(html).not.toContain("Manage my meeting");
   expect(html).toContain(input.manageUrl);
   expect(html).not.toContain(">Reschedule</a>");
   expect(html).not.toContain(">Cancel</a>");
