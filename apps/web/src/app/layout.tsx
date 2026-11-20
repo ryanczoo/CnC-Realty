@@ -2,7 +2,6 @@ import { Footer } from "@/components/layout/Footer";
 import { Navbar } from "@/components/layout/Navbar";
 import { Providers } from "@/components/Providers";
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Inter } from "next/font/google";
 import localFont from "next/font/local";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -18,17 +17,15 @@ const googleSansFlex = localFont({
   weight: "100 900",
 });
 
-const inter = Inter({
-  subsets: ["latin"],
+// Self-hosted (the Google Fonts loader downloads at build time — a Google hiccup failed a
+// deploy on 2026-11-19). Same latin file Google served. Only the Join StatsBar numbers use it
+// (font-chopin), so it isn't preloaded on every page.
+const inter = localFont({
+  src: "./fonts/Inter-latin.woff2",
   variable: "--font-chopin",
   display: "swap",
-});
-
-const cormorant = Cormorant_Garamond({
-  subsets: ["latin"],
-  weight: ["300", "400"],
-  variable: "--font-display",
-  display: "swap",
+  weight: "100 900",
+  preload: false,
 });
 
 // No `alternates` here: a root canonical would be inherited by every page that
@@ -46,7 +43,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const session = await getServerSession(authOptions);
 
   return (
-    <html lang="en" className={`${googleSansFlex.variable} ${inter.variable} ${cormorant.variable} dark`}>
+    <html lang="en" className={`${googleSansFlex.variable} ${inter.variable} dark`}>
       {/* Phones: every text box at 16px so iPhone Safari doesn't auto-zoom on
           tap (the zoom then carried over to the next page). Desktop unchanged. */}
       <body className={`antialiased ${PHONE_FIELDS_16}`}>

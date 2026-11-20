@@ -14,7 +14,6 @@ const config: Config = {
       fontFamily: {
         sans: ["var(--font-sans)", "ui-sans-serif", "system-ui", "sans-serif"],
         chopin: ["var(--font-chopin)", "ui-sans-serif", "sans-serif"],
-        display: ["var(--font-display)", "Georgia", "serif"],
       },
       colors: {
         background: "var(--background)",
