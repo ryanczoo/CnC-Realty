@@ -31,8 +31,17 @@ export const STAT_CARD_CLS = "flex min-w-0 flex-col rounded-2xl p-6 md:aspect-sq
 // inline desktop size, which stays exactly as it was from md up.
 export const STAT_VALUE_FIT_CLS = "max-md:!text-[clamp(1.25rem,calc((50vw_-_71px)_/_4.1),2rem)]";
 
+// Shorter values: the widest ("$40.4M") needs ~3.47px of width per px of font size, so 3.55
+// fits them on the 320px 2016 iPhone SE (90px of room) and 360px phones (110px). It caps at
+// the normal 2rem from ~369px wide, so every larger phone is unchanged.
+export const STAT_VALUE_SHORT_FIT_CLS = "max-md:!text-[clamp(1.25rem,calc((50vw_-_71px)_/_3.55),2rem)]";
+
 export function isLongStatValue(value: string): boolean {
   return (value.match(/\d/g)?.length ?? 0) >= 4;
+}
+
+export function statValueFitCls(value: string): string {
+  return isLongStatValue(value) ? STAT_VALUE_FIT_CLS : STAT_VALUE_SHORT_FIT_CLS;
 }
 
 function SingleCard({
@@ -61,7 +70,7 @@ function SingleCard({
       <div>{ICONS[type]}</div>
       <div className="mt-auto pt-8">
         <p
-          className={`font-sans font-medium leading-none text-white${isLongStatValue(value) ? ` ${STAT_VALUE_FIT_CLS}` : ""}`}
+          className={`font-sans font-medium leading-none text-white ${statValueFitCls(value)}`}
           style={{ fontSize: "clamp(2rem, 3vw, 2.75rem)", letterSpacing: "-0.01em" }}
         >
           {value}

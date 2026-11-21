@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { STAT_GRID_CLS, STAT_CARD_CLS, isLongStatValue, STAT_VALUE_FIT_CLS } from "@/components/agents/StatCards";
+import { STAT_GRID_CLS, STAT_CARD_CLS, isLongStatValue, STAT_VALUE_FIT_CLS, statValueFitCls } from "@/components/agents/StatCards";
 
 // Ryan (2026-11-20): on phones the agent page's 4 stat cards were a sideways strip — only 1 card
 // fit on screen and nobody would know to swipe for the rest (the strip also clipped the staggered
@@ -53,8 +53,23 @@ describe("agent StatCards long values", () => {
   });
 
   it("shrinks only on phones (below md) and overrides the desktop inline size", () => {
-    const cls = classes(STAT_VALUE_FIT_CLS);
-    expect(cls).toHaveLength(1);
-    expect(cls[0]).toMatch(/^max-md:!text-\[clamp\(/);
+    for (const v of ["$125.4M", "$74.3M", "7"]) {
+      const cls = classes(statValueFitCls(v));
+      expect(cls).toHaveLength(1);
+      expect(cls[0]).toMatch(/^max-md:!text-\[clamp\(/);
+    }
+  });
+
+  it("gives long values the stronger shrink", () => {
+    expect(statValueFitCls("$125.4M")).toBe(STAT_VALUE_FIT_CLS);
+  });
+
+  // Ryan (2026-11-20): on the 320px-wide 2016 iPhone SE even "$74.3M" (104px) spills out of a
+  // 90px card, and "$40.4M" (111px) spills 1px out of a 360px phone's 110px card.
+  it("also fits shorter values on the narrowest phones, with a gentler shrink", () => {
+    const short = statValueFitCls("$74.3M");
+    expect(short).not.toBe(STAT_VALUE_FIT_CLS);
+    expect(statValueFitCls("$40.4M")).toBe(short);
+    expect(statValueFitCls("7")).toBe(short);
   });
 });
