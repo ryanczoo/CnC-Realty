@@ -18,6 +18,12 @@ const ICONS: Record<StatType, React.ReactNode> = {
 // FIND uses ~26px stagger increments
 const Y_START = [70, 96, 122, 148] as const;
 
+// Phones: 2 rows of 2 (was a sideways swipe strip — only 1 card fit on screen and the strip
+// clipped the staggered cards). auto-rows-fr keeps all 4 phone cards the same height (a 2-line
+// label would otherwise make one taller). Tablet/desktop (md+): the same square 4-across row.
+export const STAT_GRID_CLS = "grid grid-cols-2 auto-rows-fr gap-2.5 md:grid-cols-4";
+export const STAT_CARD_CLS = "flex min-w-0 flex-col rounded-2xl p-6 md:aspect-square md:p-[3.2rem]";
+
 function SingleCard({
   type, value, label, index, scrollYProgress,
 }: {
@@ -39,7 +45,7 @@ function SingleCard({
         backgroundColor: "rgba(33,33,33,0.9)",
         border: "1px solid rgba(179,179,179,0.1)",
       }}
-      className="flex min-w-[200px] flex-shrink-0 [scroll-snap-align:start] flex-col rounded-2xl p-6 md:aspect-square md:min-w-0 md:p-[3.2rem]"
+      className={STAT_CARD_CLS}
     >
       <div>{ICONS[type]}</div>
       <div className="mt-auto pt-8">
@@ -65,11 +71,7 @@ export function StatCards({ stats }: { stats: StatCardData[] }) {
   });
 
   return (
-    <div
-      ref={ref}
-      className="flex gap-2.5 overflow-x-auto pb-1 [scroll-snap-type:x_mandatory] md:grid md:grid-cols-4 md:overflow-visible md:pb-0"
-      style={{ scrollbarWidth: "none" }}
-    >
+    <div ref={ref} className={STAT_GRID_CLS}>
       {stats.map((stat, i) => (
         <SingleCard
           key={stat.label}
