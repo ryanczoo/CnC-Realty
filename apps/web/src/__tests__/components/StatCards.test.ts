@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { STAT_GRID_CLS, STAT_CARD_CLS } from "@/components/agents/StatCards";
+import { STAT_GRID_CLS, STAT_CARD_CLS, isLongStatValue, STAT_VALUE_FIT_CLS } from "@/components/agents/StatCards";
 
 // Ryan (2026-11-20): on phones the agent page's 4 stat cards were a sideways strip — only 1 card
 // fit on screen and nobody would know to swipe for the rest (the strip also clipped the staggered
@@ -34,5 +34,27 @@ describe("agent StatCards layout", () => {
     // Square on phones let "Years of Experience" (2 lines) grow its card past its neighbour.
     expect(classes(STAT_CARD_CLS)).not.toContain("aspect-square");
     expect(classes(STAT_GRID_CLS)).toContain("auto-rows-fr");
+  });
+});
+
+// Ryan (2026-11-20): 4-digit values (e.g. "$125.4M") must shrink to fit the card on small phones.
+// The widest one ("$444.4M") is 129px at the normal 32px size; a 360px phone card has ~109px of room.
+describe("agent StatCards long values", () => {
+  it("treats a value with 4 or more digits as long", () => {
+    expect(isLongStatValue("$125.4M")).toBe(true);
+    expect(isLongStatValue("$1250M")).toBe(true);
+    expect(isLongStatValue("1250")).toBe(true);
+  });
+
+  it("leaves values with 3 or fewer digits alone", () => {
+    expect(isLongStatValue("$74.3M")).toBe(false);
+    expect(isLongStatValue("12")).toBe(false);
+    expect(isLongStatValue("—")).toBe(false);
+  });
+
+  it("shrinks only on phones (below md) and overrides the desktop inline size", () => {
+    const cls = classes(STAT_VALUE_FIT_CLS);
+    expect(cls).toHaveLength(1);
+    expect(cls[0]).toMatch(/^max-md:!text-\[clamp\(/);
   });
 });

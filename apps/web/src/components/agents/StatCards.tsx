@@ -24,6 +24,17 @@ const Y_START = [70, 96, 122, 148] as const;
 export const STAT_GRID_CLS = "grid grid-cols-2 auto-rows-fr gap-2.5 md:grid-cols-4";
 export const STAT_CARD_CLS = "flex min-w-0 flex-col rounded-2xl p-6 md:aspect-square md:p-[3.2rem]";
 
+// A value with 4+ digits (e.g. "$125.4M") is ~129px wide at the normal 32px, but a 360px phone
+// card only has ~109px of room. Below md those values shrink with the card's room, which is
+// about (50vw − 71px); the widest digits ("$444.4M") need ~4.03px of width per px of font size,
+// so 4.1 leaves a little slack. From ~430px wide it caps at the normal 2rem. `!` overrides the
+// inline desktop size, which stays exactly as it was from md up.
+export const STAT_VALUE_FIT_CLS = "max-md:!text-[clamp(1.25rem,calc((50vw_-_71px)_/_4.1),2rem)]";
+
+export function isLongStatValue(value: string): boolean {
+  return (value.match(/\d/g)?.length ?? 0) >= 4;
+}
+
 function SingleCard({
   type, value, label, index, scrollYProgress,
 }: {
@@ -50,7 +61,7 @@ function SingleCard({
       <div>{ICONS[type]}</div>
       <div className="mt-auto pt-8">
         <p
-          className="font-sans font-medium leading-none text-white"
+          className={`font-sans font-medium leading-none text-white${isLongStatValue(value) ? ` ${STAT_VALUE_FIT_CLS}` : ""}`}
           style={{ fontSize: "clamp(2rem, 3vw, 2.75rem)", letterSpacing: "-0.01em" }}
         >
           {value}
